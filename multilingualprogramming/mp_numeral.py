@@ -87,3 +87,16 @@ class MPNumeral:
                 self.language_name, self.to_numeral() + numeral.to_numeral()
             )
         )
+
+    def __mul__(self, numeral):
+        """
+        Multiply a MPNumeral with a numeral or another MPNumeral
+
+        return:
+           MPNumeral: multiplication of the two MPNumeral values
+        """
+        return MPNumeral(
+            get_unicode_character_string(
+                self.language_name, self.to_numeral() * numeral.to_numeral()
+            )
+        )
