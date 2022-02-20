@@ -9,7 +9,11 @@ Test suite for multilingual numerals
 """
 
 import unittest
-from multilingualprogramming.unicode_string import get_number_list
+from multilingualprogramming.unicode_string import (
+    get_number_list,
+    get_unicode_character,
+    get_unicode_character_string,
+)
 
 
 class UnicodeStringTestSuite(unittest.TestCase):
@@ -28,10 +32,18 @@ class UnicodeStringTestSuite(unittest.TestCase):
         """
         desired_number_list = ["൦", "൧", "൨", "൩", "൪", "൫", "൬", "൭", "൮", "൯"]
         number_list = get_number_list("MALAYALAM")  # create a numeral
-        # The value must be 12
+        # The length must be 10
         self.assertTrue(len(number_list) == 10)
         for i, j in zip(desired_number_list, number_list):
             self.assertTrue(i == j)
+
+    def test_get_unicode_character_malayalam(self):
+        """
+        Get number in Malayalam
+        """
+        desired_number = "൧"
+        character = get_unicode_character("MALAYALAM", "ONE")  # create a numeral
+        self.assertTrue(desired_number == character)
 
     def test_get_number_list_bengali(self):
         """
@@ -43,3 +55,11 @@ class UnicodeStringTestSuite(unittest.TestCase):
         self.assertTrue(len(number_list) == 10)
         for i, j in zip(desired_number_list, number_list):
             self.assertTrue(i == j)
+
+    def test_get_unicode_character_string(self):
+        """
+        Get unicode number string (Malayalam)
+        """
+        unicode_string = get_unicode_character_string("MALAYALAM", 12345)
+        self.assertTrue(len(unicode_string) == 5)
+        self.assertTrue(unicode_string == "൧൨൩൪൫")

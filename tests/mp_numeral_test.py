@@ -34,6 +34,13 @@ class MPNumeralTestSuite(unittest.TestCase):
         # The value must be 12
         self.assertTrue(num.to_numeral() == 12)
 
+    def test_mp_numeral_repr(self):
+        """
+        Test to create a base 10 numeral
+        """
+        num = mpn.MPNumeral("12")  # create a numeral
+        self.assertTrue(repr(num) == 'MPNumeral("12")')
+
     def test_invalid_mp_numeral(self):
         """
         Test to create a non-digit number
@@ -56,3 +63,25 @@ class MPNumeralTestSuite(unittest.TestCase):
                     MultipleLanguageCharacterMixError,
                 )
             )
+
+    def test_mp_numeral_addition(self):
+        """
+        Test to create a base 10 numeral
+        """
+        num1 = mpn.MPNumeral("12")  # create a numeral
+        num2 = mpn.MPNumeral("14")  # create a numeral
+        self.assertTrue(repr(num1) == 'MPNumeral("12")')
+        num3 = num1 + num2
+        self.assertTrue(str(num3) == "26")
+        self.assertTrue(repr(num3) == 'MPNumeral("26")')
+
+    def test_mp_numeral_malayalam_addition(self):
+        """
+        Test to create a base 10 numeral
+        """
+        num1 = mpn.MPNumeral("൧൩")  # create a numeral
+        num2 = mpn.MPNumeral("൨൪")  # create a numeral
+        self.assertTrue(repr(num1) == 'MPNumeral("൧൩")')
+        num3 = num1 + num2
+        self.assertTrue(str(num3) == "൩൭")
+        self.assertTrue(repr(num3) == 'MPNumeral("൩൭")')
