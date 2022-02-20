@@ -9,9 +9,9 @@ Main file to run all the test suites
 
 import unittest
 
-from tests.mp_numeral_test import MP_Numeral_TestSuite
+from tests.mp_numeral_test import MPNumeralTestSuite
 
 if __name__ == "__main__":
-    mp_numeral_tests = MP_Numeral_TestSuite()
+    mp_numeral_tests = MPNumeralTestSuite()
     tests = unittest.TestSuite([mp_numeral_tests])
     unittest.main()
