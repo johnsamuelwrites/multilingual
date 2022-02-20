@@ -13,7 +13,5 @@ from tests.mp_numeral_test import MP_Numeral_TestSuite
 
 if __name__ == "__main__":
     mp_numeral_tests = MP_Numeral_TestSuite()
-    tests = unittest.TestSuite(
-        [mp_numeral_tests]
-    )
+    tests = unittest.TestSuite([mp_numeral_tests])
     unittest.main()

@@ -29,4 +29,3 @@ class MP_Numeral_TestSuite(unittest.TestCase):
         num = mpn.mp_numeral("12")  # create a numeral
         # The length must be greater than 0
         self.assertTrue(num.to_numeral() == 12)
-

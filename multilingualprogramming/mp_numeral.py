@@ -9,10 +9,10 @@
 
 import unicodedata
 
+
 class mp_numeral:
-    def __init__(self, numstr:str):
+    def __init__(self, numstr: str):
         self.numstr = numstr
 
     def to_numeral(self):
         return int(self.numstr)
-
