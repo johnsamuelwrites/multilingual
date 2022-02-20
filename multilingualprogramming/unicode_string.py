@@ -9,15 +9,28 @@
 
 import unicodedata
 
-number_strings = ["ZERO", "ONE", "TWO", "THREE", "FOUR",
-        "FIVE", "SIX", "SEVEN", "EIGHT", "NINE"]
+NUMBER_STRINGS = [
+    "ZERO",
+    "ONE",
+    "TWO",
+    "THREE",
+    "FOUR",
+    "FIVE",
+    "SIX",
+    "SEVEN",
+    "EIGHT",
+    "NINE",
+]
 
-digit_string = "DIGIT"
+DIGIT_STRING = "DIGIT"
 
-def get_number_list(language:str):
+
+def get_number_list(language: str):
+    """
+    Get the unicode characters for the numbers in a given language
+    """
     number_list = []
-    for number in number_strings:
-        number = unicodedata.lookup(language + " " + digit_string + " " +
-                number)
+    for number in NUMBER_STRINGS:
+        number = unicodedata.lookup(language + " " + DIGIT_STRING + " " + number)
         number_list.append(number)
-    return (number_list)
+    return number_list

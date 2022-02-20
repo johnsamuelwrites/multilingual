@@ -22,24 +22,24 @@ class UnicodeStringTestSuite(unittest.TestCase):
         Set up TestSuite
         """
 
-    def test_get_number_list_Malayalam(self):
+    def test_get_number_list_malayalam(self):
         """
-        Get numbers from a list
+        Get numbers from a list (Malayalam)
         """
         desired_number_list = ["൦", "൧", "൨", "൩", "൪", "൫", "൬", "൭", "൮", "൯"]
         number_list = get_number_list("MALAYALAM")  # create a numeral
         # The value must be 12
         self.assertTrue(len(number_list) == 10)
         for i, j in zip(desired_number_list, number_list):
-            self.assertTrue(i==j)
+            self.assertTrue(i == j)
 
-    def test_get_number_list_Bengali(self):
+    def test_get_number_list_bengali(self):
         """
-        Get numbers from a list
+        Get numbers from a list (Bengali)
         """
         desired_number_list = ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"]
         number_list = get_number_list("BENGALI")  # create a numeral
         # The value must be 12
         self.assertTrue(len(number_list) == 10)
         for i, j in zip(desired_number_list, number_list):
-            self.assertTrue(i==j)
+            self.assertTrue(i == j)
