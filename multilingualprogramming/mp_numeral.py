@@ -20,7 +20,8 @@ class MPNumeral:
     Handling numerals in unicode-supported languages
     """
 
-    def __verify_unicode_category__(self, numstr: str):
+    @classmethod
+    def __verify_unicode_category__(cls, numstr: str):
         running_character_name = None
         for character in numstr:
             if unicodedata.category(character) != "Nd":

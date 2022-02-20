@@ -13,6 +13,7 @@ class InvalidNumeralCharacterError(Exception):
     """
 
     def __init__(self, message):
+        message = "Invalid numeral: " + message
         super().__init__(message)
 
 
@@ -23,4 +24,5 @@ class MultipleLanguageCharacterMixError(Exception):
     """
 
     def __init__(self, message):
+        message = "Mix of characters: " + message
         super().__init__(message)

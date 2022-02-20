@@ -10,7 +10,10 @@ Test suite for multilingual numerals
 
 import unittest
 import multilingualprogramming.mp_numeral as mpn
-import multilingualprogramming.exceptions
+from multilingualprogramming.exceptions import (
+    MultipleLanguageCharacterMixError,
+    InvalidNumeralCharacterError,
+)
 
 
 class MPNumeralTestSuite(unittest.TestCase):
@@ -36,24 +39,20 @@ class MPNumeralTestSuite(unittest.TestCase):
         Test to create a non-digit number
         """
         try:
-            num = mpn.MPNumeral("ab")  # create a numeral
-        except Exception as e:
-            self.assertTrue(
-                isinstance(
-                    e, multilingualprogramming.exceptions.InvalidNumeralCharacterError
-                )
-            )
+            mpn.MPNumeral("ab")  # create a numeral
+        except InvalidNumeralCharacterError as exception:
+            self.assertTrue(isinstance(exception, InvalidNumeralCharacterError))
 
     def test_character_mix_mp_numeral(self):
         """
         Test to verify mix of digits from different languages
         """
         try:
-            num = mpn.MPNumeral("1෫")  # create a numeral
-        except Exception as e:
+            mpn.MPNumeral("1෫")  # create a numeral
+        except MultipleLanguageCharacterMixError as exception:
             self.assertTrue(
                 isinstance(
-                    e,
-                    multilingualprogramming.exceptions.MultipleLanguageCharacterMixError,
+                    exception,
+                    MultipleLanguageCharacterMixError,
                 )
             )
