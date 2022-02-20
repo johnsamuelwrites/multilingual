@@ -1,6 +1,11 @@
 # multilingual
 Multilingual programming
 
+## Usage
+To use `multilingual`, check the following example
+
+![Running multilingual](resources/multilingual.png "Running multilingual")
+
 ## Resources
 [Resources](resources/README.md): Resources and references to sources in different languages
 
