@@ -38,7 +38,11 @@ class MPNumeralTestSuite(unittest.TestCase):
         try:
             num = mpn.MPNumeral("ab")  # create a numeral
         except Exception as e:
-            self.assertTrue(isinstance(e, multilingualprogramming.exceptions.InvalidNumeralCharacterError))
+            self.assertTrue(
+                isinstance(
+                    e, multilingualprogramming.exceptions.InvalidNumeralCharacterError
+                )
+            )
 
     def test_character_mix_mp_numeral(self):
         """
@@ -47,4 +51,9 @@ class MPNumeralTestSuite(unittest.TestCase):
         try:
             num = mpn.MPNumeral("1෫")  # create a numeral
         except Exception as e:
-            self.assertTrue(isinstance(e, multilingualprogramming.exceptions.MultipleLanguageCharacterMixError))
+            self.assertTrue(
+                isinstance(
+                    e,
+                    multilingualprogramming.exceptions.MultipleLanguageCharacterMixError,
+                )
+            )
