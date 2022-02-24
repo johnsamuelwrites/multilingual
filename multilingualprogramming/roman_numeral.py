@@ -8,7 +8,6 @@
 """
 
 from roman import fromRoman, toRoman
-from roman_numerals import convert_to_integer
 
 class RomanNumeral:
     """
@@ -58,11 +57,7 @@ class RomanNumeral:
         return:
            RomanNumeral: returns the sum of a RomanNumeral
         """
-        return RomanNumeral(
-            toRoman(
-                self.to_numeral() + numeral.to_numeral()
-            )
-        )
+        return RomanNumeral(toRoman(self.to_numeral() + numeral.to_numeral()))
 
     def __mul__(self, numeral):
         """
@@ -71,8 +66,4 @@ class RomanNumeral:
         return:
            RomanNumeral: multiplication of the two RomanNumeral values
         """
-        return RomanNumeral(
-            toRoman(
-                self.to_numeral() * numeral.to_numeral()
-            )
-        )
+        return RomanNumeral(toRoman(self.to_numeral() * numeral.to_numeral()))
