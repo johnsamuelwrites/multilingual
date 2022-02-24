@@ -17,5 +17,7 @@ if __name__ == "__main__":
     mp_numeral_tests = MPNumeralTestSuite()
     roman_numeral_tests = RomanNumeralTestSuite()
     unicode_string_tests = UnicodeStringTestSuite()
-    tests = unittest.TestSuite([mp_numeral_tests, roman_numeral_tests, unicode_string_tests])
+    tests = unittest.TestSuite(
+        [mp_numeral_tests, roman_numeral_tests, unicode_string_tests]
+    )
     unittest.main()
