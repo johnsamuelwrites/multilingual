@@ -7,6 +7,7 @@
 """Functions to handle Roman numerals
 """
 
+from operator import invert, neg
 from roman import fromRoman, toRoman
 from multilingualprogramming.exceptions import (
     InvalidNumeralCharacterError,
@@ -39,7 +40,7 @@ class RomanNumeral(AbstractNumeral):
 
     def to_numeral(self):
         """
-        Returns the number associated with the number string
+        Returns the number associated with the number string (Roman numeral)
         given by the user
 
         return:
@@ -116,7 +117,7 @@ class RomanNumeral(AbstractNumeral):
 
     def __str__(self):
         """
-        Returns the original number string
+        Returns the original number string (Roman numeral)
 
         return:
            numstr: original number string
@@ -125,7 +126,7 @@ class RomanNumeral(AbstractNumeral):
 
     def __repr__(self):
         """
-        Returns the representation of an instance
+        Returns the representation (Roman numeral) of an instance
 
         return:
            reprstr: representation of an instance
@@ -150,90 +151,101 @@ class RomanNumeral(AbstractNumeral):
         """
         return RomanNumeral(toRoman(self.to_numeral() * numeral.to_numeral()))
 
-    def __lshift__(self, numeral):
-        """
-        Left-shifting
-
-        return:
-           AbstractNumeral: returns the left shifted value
-        """
-
-    def __rshift__(self, numeral):
-        """
-        Right-shifting
-
-        return:
-           AbstractNumeral: returns the right shifted value
-        """
-
     def __sub__(self, numeral):
         """
-        Substraction
+        Substraction of Roman Numerals
 
         return:
            AbstractNumeral: returns the difference
         """
+        return RomanNumeral(toRoman(self.to_numeral() - numeral.to_numeral()))
+
+    def __lshift__(self, numeral):
+        """
+        Left-shifting of Roman Numerals
+
+        return:
+           AbstractNumeral: returns the left shifted value
+        """
+        return RomanNumeral(toRoman(self.to_numeral() << numeral.to_numeral()))
+
+    def __rshift__(self, numeral):
+        """
+        Right-shifting of Roman Numerals
+
+        return:
+           AbstractNumeral: returns the right shifted value
+        """
+        return RomanNumeral(toRoman(self.to_numeral() >> numeral.to_numeral()))
 
     def __truediv__(self, numeral):
         """
-        True division
+        True division of Roman Numerals
 
         return:
            AbstractNumeral: returns the value after true division
         """
+        return RomanNumeral(toRoman(self.to_numeral() / numeral.to_numeral()))
 
     def __floordiv__(self, numeral):
         """
-        Floor division
+        Floor division of Roman Numerals
 
         return:
            AbstractNumeral: returns the value after floor division
         """
+        return RomanNumeral(toRoman(self.to_numeral() // numeral.to_numeral()))
 
     def __neg__(self):
         """
-        Negation
+        Negation of Roman Numerals
 
         return:
            AbstractNumeral: returns the negation
         """
+        return RomanNumeral(toRoman(neg(self.to_numeral())))
 
     def __pow__(self, numeral):
         """
-        Power
+        Power of Roman Numerals
 
         return:
            AbstractNumeral: returns the power
         """
+        return RomanNumeral(toRoman(self.to_numeral() ** numeral.to_numeral()))
 
     def __mod__(self, numeral):
         """
-        Modulus
+        Modulus of Roman Numerals
 
         return:
            AbstractNumeral: returns the modulus value
         """
+        return RomanNumeral(toRoman(self.to_numeral() % numeral.to_numeral()))
 
     def __xor__(self, numeral):
         """
-        XOR value
+        XOR value of Roman Numerals
 
         return:
            AbstractNumeral: returns the XOR value
         """
+        return RomanNumeral(toRoman(self.to_numeral() ^ numeral.to_numeral()))
 
     def __invert__(self):
         """
-        Bitwise inversion value
+        Bitwise inversion value of Roman Numerals
 
         return:
            AbstractNumeral: returns the bitwise-inverted value
         """
+        return RomanNumeral(invert(toRoman(self.to_numeral())))
 
     def __or__(self, numeral):
         """
-        OR value
+        OR value of Roman Numerals
 
         return:
            AbstractNumeral: returns the OR value
         """
+        return RomanNumeral(toRoman(self.to_numeral() | numeral.to_numeral()))

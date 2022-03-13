@@ -5,7 +5,7 @@
 #
 
 """
-Test suite for multilingual numerals
+Test suite for multilingual numerals and associated operations
 """
 
 import unittest

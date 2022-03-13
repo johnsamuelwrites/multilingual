@@ -9,6 +9,7 @@
 
 import unicodedata
 import re
+from operator import invert, neg
 from multilingualprogramming.exceptions import (
     InvalidNumeralCharacterError,
     MultipleLanguageCharacterMixError,
@@ -108,88 +109,139 @@ class UnicodeNumeral(AbstractNumeral):
 
     def __lshift__(self, numeral):
         """
-        Left-shifting
+        Left-shifting of Unicode Numerals
 
         return:
            AbstractNumeral: returns the left shifted value
         """
+        return UnicodeNumeral(
+            get_unicode_character_string(
+                self.language_name, self.to_numeral() << numeral.to_numeral()
+            )
+        )
 
     def __rshift__(self, numeral):
         """
-        Right-shifting
+        Right-shifting of Unicode Numerals
 
         return:
            AbstractNumeral: returns the right shifted value
         """
+        return UnicodeNumeral(
+            get_unicode_character_string(
+                self.language_name, self.to_numeral() >> numeral.to_numeral()
+            )
+        )
 
     def __sub__(self, numeral):
         """
-        Substraction
+        Substraction of Unicode Numerals
 
         return:
            AbstractNumeral: returns the difference
         """
+        return UnicodeNumeral(
+            get_unicode_character_string(
+                self.language_name, self.to_numeral() - numeral.to_numeral()
+            )
+        )
 
     def __truediv__(self, numeral):
         """
-        True division
+        True division of Unicode Numerals
 
         return:
            AbstractNumeral: returns the value after true division
         """
+        return UnicodeNumeral(
+            get_unicode_character_string(
+                self.language_name, self.to_numeral() / numeral.to_numeral()
+            )
+        )
 
     def __floordiv__(self, numeral):
         """
-        Floor division
+        Floor division of Unicode Numerals
 
         return:
            AbstractNumeral: returns the value after floor division
         """
+        return UnicodeNumeral(
+            get_unicode_character_string(
+                self.language_name, self.to_numeral() // numeral.to_numeral()
+            )
+        )
 
     def __neg__(self):
         """
-        Negation
+        Negation of Unicode Numerals
 
         return:
            AbstractNumeral: returns the negation
         """
+        return UnicodeNumeral(
+            get_unicode_character_string(self.language_name, neg(self.to_numeral()))
+        )
 
     def __pow__(self, numeral):
         """
-        Power
+        Power of Unicode Numerals
 
         return:
            AbstractNumeral: returns the power
         """
+        return UnicodeNumeral(
+            get_unicode_character_string(
+                self.language_name, self.to_numeral() ** numeral.to_numeral()
+            )
+        )
 
     def __mod__(self, numeral):
         """
-        Modulus
+        Modulus of Unicode Numerals
 
         return:
            AbstractNumeral: returns the modulus value
         """
+        return UnicodeNumeral(
+            get_unicode_character_string(
+                self.language_name, self.to_numeral() % numeral.to_numeral()
+            )
+        )
 
     def __xor__(self, numeral):
         """
-        XOR value
+        XOR value of Unicode Numerals
 
         return:
            AbstractNumeral: returns the XOR value
         """
+        return UnicodeNumeral(
+            get_unicode_character_string(
+                self.language_name, self.to_numeral() ^ numeral.to_numeral()
+            )
+        )
 
     def __invert__(self):
         """
-        Bitwise inversion value
+        Bitwise inversion value of Unicode Numerals
 
         return:
            AbstractNumeral: returns the bitwise-inverted value
         """
+        return UnicodeNumeral(
+            get_unicode_character_string(self.language_name, invert(self.to_numeral()))
+        )
 
     def __or__(self, numeral):
         """
-        OR value
+        OR value of Unicode Numerals
 
         return:
            AbstractNumeral: returns the OR value
         """
+        return UnicodeNumeral(
+            get_unicode_character_string(
+                self.language_name, self.to_numeral() | numeral.to_numeral()
+            )
+        )

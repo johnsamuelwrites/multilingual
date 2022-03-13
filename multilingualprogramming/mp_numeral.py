@@ -7,17 +7,6 @@
 """Functions to handle numbers of multiple languages
 """
 
-import unicodedata
-import re
-from multilingualprogramming.exceptions import (
-    InvalidNumeralCharacterError,
-    MultipleLanguageCharacterMixError,
-)
-from multilingualprogramming.unicode_string import get_unicode_character_string
-from multilingualprogramming.abstract_numeral import AbstractNumeral
-import multilingualprogramming.roman_numeral as rn
-import multilingualprogramming.unicode_numeral as un
-
 
 class MPNumeral:
     """
@@ -31,31 +20,28 @@ class MPNumeral:
 
     def to_numeral(self):
         """
-        Returns the number associated with the number string
+        Returns the number (Multilingual Numeral) associated with the number string
         given by the user
 
         return:
            number: number associated with the number string
         """
-        return int(self.numstr)
 
     def __str__(self):
         """
-        Returns the original number string
+        Returns the original number string (Multilingual Numeral)
 
         return:
            numstr: original number string
         """
-        return self.numstr
 
     def __repr__(self):
         """
-        Returns the representation of an instance
+        Returns the representation (Multilingual numeral) of an instance
 
         return:
            reprstr: representation of an instance
         """
-        return f'MPNumeral("{self.numstr}")'
 
     def __add__(self, numeral):
         """
@@ -75,7 +61,7 @@ class MPNumeral:
 
     def __lshift__(self, numeral):
         """
-        Left-shifting
+        Left-shifting of Multilingual numerals
 
         return:
            AbstractNumeral: returns the left shifted value
@@ -83,7 +69,7 @@ class MPNumeral:
 
     def __rshift__(self, numeral):
         """
-        Right-shifting
+        Right-shifting of Multilingual numerals
 
         return:
            AbstractNumeral: returns the right shifted value
@@ -91,7 +77,7 @@ class MPNumeral:
 
     def __sub__(self, numeral):
         """
-        Substraction
+        Substraction of Multilingual numerals
 
         return:
            AbstractNumeral: returns the difference
@@ -99,7 +85,7 @@ class MPNumeral:
 
     def __truediv__(self, numeral):
         """
-        True division
+        True division of Multilingual numerals
 
         return:
            AbstractNumeral: returns the value after true division
@@ -107,7 +93,7 @@ class MPNumeral:
 
     def __floordiv__(self, numeral):
         """
-        Floor division
+        Floor division of Multilingual numerals
 
         return:
            AbstractNumeral: returns the value after floor division
@@ -115,7 +101,7 @@ class MPNumeral:
 
     def __neg__(self):
         """
-        Negation
+        Negation of Multilingual numerals
 
         return:
            AbstractNumeral: returns the negation
@@ -123,7 +109,7 @@ class MPNumeral:
 
     def __pow__(self, numeral):
         """
-        Power
+        Power of Multilingual numerals
 
         return:
            AbstractNumeral: returns the power
@@ -131,7 +117,7 @@ class MPNumeral:
 
     def __mod__(self, numeral):
         """
-        Modulus
+        Modulus of Multilingual numerals
 
         return:
            AbstractNumeral: returns the modulus value
@@ -139,7 +125,7 @@ class MPNumeral:
 
     def __xor__(self, numeral):
         """
-        XOR value
+        XOR value of Multilingual numerals
 
         return:
            AbstractNumeral: returns the XOR value
@@ -147,7 +133,7 @@ class MPNumeral:
 
     def __invert__(self):
         """
-        Bitwise inversion value
+        Bitwise inversion value of Multilingual numerals
 
         return:
            AbstractNumeral: returns the bitwise-inverted value
@@ -155,7 +141,7 @@ class MPNumeral:
 
     def __or__(self, numeral):
         """
-        OR value
+        OR value of Multilingual numerals
 
         return:
            AbstractNumeral: returns the OR value
