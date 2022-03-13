@@ -61,7 +61,10 @@ class MPNumeralTestSuite(unittest.TestCase):
         """
         try:
             mpn.MPNumeral("1෫")  # create a numeral
-        except MultipleLanguageCharacterMixError as exception:
+        except (
+            InvalidNumeralCharacterError,
+            MultipleLanguageCharacterMixError,
+        ) as exception:
             self.assertTrue(
                 isinstance(
                     exception,
