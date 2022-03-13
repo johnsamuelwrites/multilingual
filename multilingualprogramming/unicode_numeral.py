@@ -106,7 +106,6 @@ class UnicodeNumeral(AbstractNumeral):
             )
         )
 
-
     def __lshift__(self, numeral):
         """
         Left-shifting
@@ -114,7 +113,6 @@ class UnicodeNumeral(AbstractNumeral):
         return:
            AbstractNumeral: returns the left shifted value
         """
-
 
     def __rshift__(self, numeral):
         """
@@ -132,7 +130,6 @@ class UnicodeNumeral(AbstractNumeral):
            AbstractNumeral: returns the difference
         """
 
-
     def __truediv__(self, numeral):
         """
         True division
@@ -140,7 +137,6 @@ class UnicodeNumeral(AbstractNumeral):
         return:
            AbstractNumeral: returns the value after true division
         """
-
 
     def __floordiv__(self, numeral):
         """
@@ -150,7 +146,6 @@ class UnicodeNumeral(AbstractNumeral):
            AbstractNumeral: returns the value after floor division
         """
 
-
     def __neg__(self):
         """
         Negation
@@ -158,7 +153,6 @@ class UnicodeNumeral(AbstractNumeral):
         return:
            AbstractNumeral: returns the negation
         """
-
 
     def __pow__(self, numeral):
         """
@@ -168,7 +162,6 @@ class UnicodeNumeral(AbstractNumeral):
            AbstractNumeral: returns the power
         """
 
-
     def __mod__(self, numeral):
         """
         Modulus
@@ -176,7 +169,6 @@ class UnicodeNumeral(AbstractNumeral):
         return:
            AbstractNumeral: returns the modulus value
         """
-
 
     def __xor__(self, numeral):
         """
@@ -186,7 +178,6 @@ class UnicodeNumeral(AbstractNumeral):
            AbstractNumeral: returns the XOR value
         """
 
-
     def __invert__(self):
         """
         Bitwise inversion value
@@ -194,7 +185,6 @@ class UnicodeNumeral(AbstractNumeral):
         return:
            AbstractNumeral: returns the bitwise-inverted value
         """
-
 
     def __or__(self, numeral):
         """

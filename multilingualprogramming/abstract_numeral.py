@@ -9,6 +9,7 @@
 
 from abc import ABC, abstractmethod
 
+
 class AbstractNumeral(ABC):
     """
     Methods related to numerals
@@ -16,7 +17,6 @@ class AbstractNumeral(ABC):
 
     def __init__(self, numstr: str):
         pass
-
 
     @abstractmethod
     def to_numeral(self):
@@ -28,7 +28,6 @@ class AbstractNumeral(ABC):
            number: number associated with the number string
         """
 
-
     def __str__(self):
         """
         Returns the original number string
@@ -37,7 +36,6 @@ class AbstractNumeral(ABC):
            numstr: original number string
         """
 
-
     def __repr__(self):
         """
         Returns the representation of an instance
@@ -45,7 +43,6 @@ class AbstractNumeral(ABC):
         return:
            reprstr: representation of an instance
         """
-
 
     @abstractmethod
     def __lshift__(self, numeral):
@@ -56,7 +53,6 @@ class AbstractNumeral(ABC):
            AbstractNumeral: returns the left shifted value
         """
 
-
     @abstractmethod
     def __rshift__(self, numeral):
         """
@@ -65,7 +61,6 @@ class AbstractNumeral(ABC):
         return:
            AbstractNumeral: returns the right shifted value
         """
-
 
     @abstractmethod
     def __add__(self, numeral):
@@ -76,7 +71,6 @@ class AbstractNumeral(ABC):
            AbstractNumeral: returns the sum of a AbstractNumeral
         """
 
-
     @abstractmethod
     def __mul__(self, numeral):
         """
@@ -85,7 +79,6 @@ class AbstractNumeral(ABC):
         return:
            AbstractNumeral: returns the product
         """
-
 
     @abstractmethod
     def __sub__(self, numeral):
@@ -96,7 +89,6 @@ class AbstractNumeral(ABC):
            AbstractNumeral: returns the difference
         """
 
-
     @abstractmethod
     def __truediv__(self, numeral):
         """
@@ -105,7 +97,6 @@ class AbstractNumeral(ABC):
         return:
            AbstractNumeral: returns the value after true division
         """
-
 
     @abstractmethod
     def __floordiv__(self, numeral):
@@ -116,7 +107,6 @@ class AbstractNumeral(ABC):
            AbstractNumeral: returns the value after floor division
         """
 
-
     @abstractmethod
     def __neg__(self):
         """
@@ -125,7 +115,6 @@ class AbstractNumeral(ABC):
         return:
            AbstractNumeral: returns the negation
         """
-
 
     @abstractmethod
     def __pow__(self, numeral):
@@ -136,7 +125,6 @@ class AbstractNumeral(ABC):
            AbstractNumeral: returns the power
         """
 
-
     @abstractmethod
     def __mod__(self, numeral):
         """
@@ -145,7 +133,6 @@ class AbstractNumeral(ABC):
         return:
            AbstractNumeral: returns the modulus value
         """
-
 
     @abstractmethod
     def __xor__(self, numeral):
@@ -156,7 +143,6 @@ class AbstractNumeral(ABC):
            AbstractNumeral: returns the XOR value
         """
 
-
     @abstractmethod
     def __invert__(self):
         """
@@ -165,7 +151,6 @@ class AbstractNumeral(ABC):
         return:
            AbstractNumeral: returns the bitwise-inverted value
         """
-
 
     @abstractmethod
     def __or__(self, numeral):
