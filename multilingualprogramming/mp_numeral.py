@@ -27,10 +27,9 @@ class MPNumeral:
         self.language_name = None
         try:
             self.num = un.UnicodeNumeral(numstr)  # create a numeral
-        except (
-            MultipleLanguageCharacterMixError,
-            InvalidNumeralCharacterError,
-        ) as exception:
+        except (MultipleLanguageCharacterMixError,) as exception:
+            raise exception
+        except (InvalidNumeralCharacterError,) as exception:
             try:
                 self.num = rn.RomanNumeral(numstr)  # create a numeral
             except (
