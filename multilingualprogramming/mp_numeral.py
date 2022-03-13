@@ -7,6 +7,12 @@
 """Functions to handle numbers of multiple languages
 """
 
+import multilingualprogramming.unicode_numeral as un
+import multilingualprogramming.roman_numeral as rn
+from multilingualprogramming.exceptions import (
+    MultipleLanguageCharacterMixError,
+    InvalidNumeralCharacterError,
+)
 
 class MPNumeral:
     """
@@ -16,7 +22,12 @@ class MPNumeral:
 
     def __init__(self, numstr: str):
         self.numstr = numstr
+        self.num = None
         self.language_name = None
+        try:
+            self.num = un.UnicodeNumeral(numstr)  # create a numeral
+        except Exception as exception:
+            self.num = rn.RomanNumeral(numstr)  # create a numeral
 
     def to_numeral(self):
         """
@@ -26,6 +37,8 @@ class MPNumeral:
         return:
            number: number associated with the number string
         """
+        if self.num:
+            return self.num.to_numeral()
 
     def __str__(self):
         """
