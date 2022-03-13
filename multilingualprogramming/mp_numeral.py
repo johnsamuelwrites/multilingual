@@ -14,6 +14,7 @@ from multilingualprogramming.exceptions import (
     InvalidNumeralCharacterError,
 )
 
+
 class MPNumeral:
     """
     Handling numerals in unicode-supported languages and
@@ -26,8 +27,17 @@ class MPNumeral:
         self.language_name = None
         try:
             self.num = un.UnicodeNumeral(numstr)  # create a numeral
-        except Exception as exception:
-            self.num = rn.RomanNumeral(numstr)  # create a numeral
+        except (
+            MultipleLanguageCharacterMixError,
+            InvalidNumeralCharacterError,
+        ) as exception:
+            try:
+                self.num = rn.RomanNumeral(numstr)  # create a numeral
+            except (
+                MultipleLanguageCharacterMixError,
+                InvalidNumeralCharacterError,
+            ) as exception:
+                raise exception
 
     def to_numeral(self):
         """
@@ -39,6 +49,7 @@ class MPNumeral:
         """
         if self.num:
             return self.num.to_numeral()
+        return None
 
     def __str__(self):
         """
