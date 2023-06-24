@@ -80,18 +80,31 @@ class MPNumeralTestSuite(unittest.TestCase):
         Test to create a base 10 numeral
         """
         num1 = mpn.MPNumeral("12.34")  # create a numeral
-        print(num1.to_numeral())
         # The value must be 12.34
         self.assertTrue(num1.to_numeral() == 12.34)
 
         locale_code = "fr_FR.UTF-8"  # Specify the desired locale code
+        original_locale = locale.setlocale(locale.LC_ALL)
 
         try:
-            original_locale = locale.setlocale(locale.LC_ALL)
             locale.setlocale(locale.LC_ALL, locale_code)
             num1 = mpn.MPNumeral("12,34")  # create a numeral
-            print(num1.to_numeral())
+
             # The value must be 12.34
             self.assertTrue(num1.to_numeral() == 12.34)
         finally:
             locale.setlocale(locale.LC_ALL, original_locale)
+
+    def test_mp_numeral_operations(self):
+        """
+        Test to create a base 10 numeral
+        """
+        num1 = mpn.MPNumeral("12")  # create a numeral
+        num2 = mpn.MPNumeral("15")  # create a numeral
+        result = num1 + num2
+        self.assertTrue(result.to_numeral() == 27)
+
+        num1 = mpn.MPNumeral("V")  # create a numeral
+        num2 = mpn.MPNumeral("IV")  # create a numeral
+        result = num1 + num2
+        self.assertTrue(result.to_numeral() == 9)

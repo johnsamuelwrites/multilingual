@@ -32,14 +32,17 @@ class UnicodeNumeral(AbstractNumeral):
         running_character_name = None
         for character in numstr:
             if unicodedata.category(character) != "Nd":
+                # Handle decimal separators of all locales
                 decimal_separator = locale.localeconv()["decimal_point"]
                 if character == decimal_separator:
                     continue
+
                 raise InvalidNumeralCharacterError(
                     "Not a valid number, contains the character: " + character
                 )
             current_character_name = unicodedata.name(character)
             current_character_name = re.sub(r" .*$", "", current_character_name)
+
             if running_character_name is not None:
                 if running_character_name != current_character_name:
                     self.language_name = None
@@ -70,8 +73,7 @@ class UnicodeNumeral(AbstractNumeral):
         try:
             if "." in self.numstr:
                 return float(self.numstr)
-            else:
-                return int(self.numstr)
+            return int(self.numstr)
         except ValueError:
             return None
 

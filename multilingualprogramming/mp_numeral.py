@@ -21,15 +21,14 @@ class MPNumeral:
     Roman numerals
     """
 
-    def __init__(self, numstr: str):
+    def __init__(self, numstr: str, num_type=un.UnicodeNumeral.__class__):
         self.numstr = numstr
         self.num = None
-        self.language_name = None
         try:
             self.num = un.UnicodeNumeral(numstr)  # create a numeral
-        except (MultipleLanguageCharacterMixError,) as exception:
-            raise exception
-        except (InvalidNumeralCharacterError,) as exception:
+        except (MultipleLanguageCharacterMixError,) as mlcmexception:
+            raise mlcmexception
+        except (InvalidNumeralCharacterError,) as incexception:
             try:
                 self.num = rn.RomanNumeral(numstr)  # create a numeral
             except (
@@ -57,6 +56,7 @@ class MPNumeral:
         return:
            numstr: original number string
         """
+        return str(self.num)
 
     def __repr__(self):
         """
@@ -73,6 +73,7 @@ class MPNumeral:
         return:
            MPNumeral: returns the sum of a MPNumeral
         """
+        return MPNumeral(str(self.to_numeral() + numeral.to_numeral()), type(self.num))
 
     def __mul__(self, numeral):
         """
@@ -81,6 +82,7 @@ class MPNumeral:
         return:
            MPNumeral: multiplication of the two MPNumeral values
         """
+        return MPNumeral(str(self.to_numeral() * numeral.to_numeral()), type(self.num))
 
     def __lshift__(self, numeral):
         """
@@ -89,6 +91,7 @@ class MPNumeral:
         return:
            AbstractNumeral: returns the left shifted value
         """
+        return MPNumeral(str(self.to_numeral() << numeral.to_numeral()), type(self.num))
 
     def __rshift__(self, numeral):
         """
@@ -97,6 +100,7 @@ class MPNumeral:
         return:
            AbstractNumeral: returns the right shifted value
         """
+        return MPNumeral(str(self.to_numeral() >> numeral.to_numeral()), type(self.num))
 
     def __sub__(self, numeral):
         """
@@ -105,6 +109,7 @@ class MPNumeral:
         return:
            AbstractNumeral: returns the difference
         """
+        return MPNumeral(str(self.to_numeral() - numeral.to_numeral()), type(self.num))
 
     def __truediv__(self, numeral):
         """
@@ -113,6 +118,7 @@ class MPNumeral:
         return:
            AbstractNumeral: returns the value after true division
         """
+        return MPNumeral(str(self.to_numeral() / numeral.to_numeral()), type(self.num))
 
     def __floordiv__(self, numeral):
         """
@@ -121,6 +127,7 @@ class MPNumeral:
         return:
            AbstractNumeral: returns the value after floor division
         """
+        return MPNumeral(str(self.to_numeral() // numeral.to_numeral()), type(self.num))
 
     def __neg__(self):
         """
@@ -129,6 +136,7 @@ class MPNumeral:
         return:
            AbstractNumeral: returns the negation
         """
+        return MPNumeral(str(neg(self.to_numeral())), type(self.num))
 
     def __pow__(self, numeral):
         """
@@ -137,6 +145,7 @@ class MPNumeral:
         return:
            AbstractNumeral: returns the power
         """
+        return MPNumeral(str(self.to_numeral() ** numeral.to_numeral()), type(self.num))
 
     def __mod__(self, numeral):
         """
@@ -145,6 +154,7 @@ class MPNumeral:
         return:
            AbstractNumeral: returns the modulus value
         """
+        return MPNumeral(str(self.to_numeral() % numeral.to_numeral()), type(self.num))
 
     def __xor__(self, numeral):
         """
@@ -153,6 +163,7 @@ class MPNumeral:
         return:
            AbstractNumeral: returns the XOR value
         """
+        return MPNumeral(str(self.to_numeral() ^ numeral.to_numeral()), type(self.num))
 
     def __invert__(self):
         """
@@ -161,6 +172,7 @@ class MPNumeral:
         return:
            AbstractNumeral: returns the bitwise-inverted value
         """
+        return MPNumeral(str(invert(self.to_numeral())), type(self.num))
 
     def __or__(self, numeral):
         """
@@ -169,3 +181,4 @@ class MPNumeral:
         return:
            AbstractNumeral: returns the OR value
         """
+        return MPNumeral(str(self.to_numeral() | numeral.to_numeral()), type(self.num))
