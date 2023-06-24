@@ -9,6 +9,7 @@
 
 import unicodedata
 import re
+import locale
 from operator import invert, neg
 from multilingualprogramming.exceptions import (
     InvalidNumeralCharacterError,
@@ -31,6 +32,9 @@ class UnicodeNumeral(AbstractNumeral):
         running_character_name = None
         for character in numstr:
             if unicodedata.category(character) != "Nd":
+                decimal_separator = locale.localeconv()["decimal_point"]
+                if character == decimal_separator:
+                    continue
                 raise InvalidNumeralCharacterError(
                     "Not a valid number, contains the character: " + character
                 )
@@ -61,7 +65,15 @@ class UnicodeNumeral(AbstractNumeral):
         return:
            number: number associated with the number string
         """
-        return int(self.numstr)
+        decimal_separator = locale.localeconv()["decimal_point"]
+        self.numstr = self.numstr.replace(decimal_separator, ".")
+        try:
+            if "." in self.numstr:
+                return float(self.numstr)
+            else:
+                return int(self.numstr)
+        except ValueError:
+            return None
 
     def __str__(self):
         """
