@@ -34,7 +34,7 @@ class UnicodeNumeral(AbstractNumeral):
             if unicodedata.category(character) != "Nd":
                 # Handle decimal separators of all locales
                 decimal_separator = locale.localeconv()["decimal_point"]
-                if character == decimal_separator:
+                if character in set(decimal_separator,"-"):
                     continue
 
                 raise InvalidNumeralCharacterError(

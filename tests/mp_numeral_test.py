@@ -97,7 +97,7 @@ class MPNumeralTestSuite(unittest.TestCase):
 
     def test_mp_numeral_operations(self):
         """
-        Test to create a base 10 numeral
+        Test for operations on MPNumeral
         """
         num1 = mpn.MPNumeral("12")  # create a numeral
         num2 = mpn.MPNumeral("15")  # create a numeral
@@ -108,3 +108,18 @@ class MPNumeralTestSuite(unittest.TestCase):
         num2 = mpn.MPNumeral("IV")  # create a numeral
         result = num1 + num2
         self.assertTrue(result.to_numeral() == 9)
+
+    def test_negative_mp_numeral(self):
+        """
+        Test to create a base 10 numeral
+        """
+        num1 = mpn.MPNumeral("-12")  # create a numeral
+        self.assertTrue(num1.to_numeral() == -12)
+        num2 = mpn.MPNumeral("15")  # create a numeral
+        result = num1 + num2
+        self.assertTrue(result.to_numeral() == 3)
+
+        num1 = mpn.MPNumeral("-12")  # create a numeral
+        num2 = mpn.MPNumeral("5")  # create a numeral
+        result = num1 + num2
+        self.assertTrue(result.to_numeral() == -7)
