@@ -16,7 +16,7 @@ from multilingualprogramming.exceptions import (
     MultipleLanguageCharacterMixError,
 )
 from multilingualprogramming.unicode_string import get_unicode_character_string
-from multilingualprogramming.abstract_numeral import AbstractNumeral
+from multilingualprogramming.numeral.abstract_numeral import AbstractNumeral
 
 
 class UnicodeNumeral(AbstractNumeral):

@@ -12,7 +12,7 @@ from roman import fromRoman, toRoman
 from multilingualprogramming.exceptions import (
     InvalidNumeralCharacterError,
 )
-from multilingualprogramming.abstract_numeral import AbstractNumeral
+from multilingualprogramming.numeral.abstract_numeral import AbstractNumeral
 
 
 class RomanNumeral(AbstractNumeral):

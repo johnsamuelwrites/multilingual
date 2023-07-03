@@ -10,7 +10,7 @@ Test suite for multilingual numerals
 
 import unittest
 import locale
-import multilingualprogramming.mp_numeral as mpn
+import multilingualprogramming.numeral.mp_numeral as mpn
 from multilingualprogramming.exceptions import (
     MultipleLanguageCharacterMixError,
     InvalidNumeralCharacterError,

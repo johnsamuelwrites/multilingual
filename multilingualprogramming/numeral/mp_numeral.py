@@ -8,8 +8,8 @@
 """
 
 from operator import invert, neg
-import multilingualprogramming.unicode_numeral as un
-import multilingualprogramming.roman_numeral as rn
+import multilingualprogramming.numeral.unicode_numeral as un
+import multilingualprogramming.numeral.roman_numeral as rn
 from multilingualprogramming.exceptions import (
     MultipleLanguageCharacterMixError,
     InvalidNumeralCharacterError,

@@ -9,7 +9,7 @@ Test suite for multilingual numerals
 """
 
 import unittest
-import multilingualprogramming.unicode_numeral as un
+import multilingualprogramming.numeral.unicode_numeral as un
 from multilingualprogramming.exceptions import (
     MultipleLanguageCharacterMixError,
     InvalidNumeralCharacterError,

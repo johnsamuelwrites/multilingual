@@ -9,7 +9,7 @@ Test suite for roman numerals
 """
 
 import unittest
-import multilingualprogramming.roman_numeral as rn
+import multilingualprogramming.numeral.roman_numeral as rn
 
 
 class RomanNumeralTestSuite(unittest.TestCase):
