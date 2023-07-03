@@ -26,18 +26,15 @@ class MPNumeral:
         self.numstr = numstr
         self.num = None
         try:
-            self.num = un.UnicodeNumeral(numstr)  # create a numeral
-        except (MultipleLanguageCharacterMixError,) as mlcmexception:
-            raise mlcmexception
-        except (InvalidNumeralCharacterError,) as incexception:
-            try:
-                self.num = rn.RomanNumeral(numstr)  # create a numeral
-            except (
-                MultipleLanguageCharacterMixError,
-                InvalidNumeralCharacterError,
-            ) as exception:
-                raise exception
-            raise incexception
+            if rn.RomanNumeral.is_roman_numeral(numstr):
+                self.num = rn.RomanNumeral(numstr)  # create a Roman numeral
+            else:
+                self.num = un.UnicodeNumeral(numstr)  # create a Unicode numeral
+        except (
+            MultipleLanguageCharacterMixError,
+            InvalidNumeralCharacterError,
+        ) as exception:
+            raise exception
 
     def to_numeral(self):
         """

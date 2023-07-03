@@ -20,21 +20,86 @@ class RomanNumeral(AbstractNumeral):
     Handling Roman numerals
     """
 
+    roman_numerals_list = [
+        "X",
+        "V",
+        "I",
+        "L",
+        "C",
+        "D",
+        "M",
+        "x",
+        "v",
+        "i",
+        "l",
+        "c",
+        "d",
+        "m",
+        "Ⅰ",
+        "Ⅱ",
+        "Ⅲ",
+        "Ⅳ",
+        "Ⅴ",
+        "Ⅵ",
+        "Ⅶ",
+        "Ⅷ",
+        "Ⅸ",
+        "Ⅹ",
+        "Ⅺ",
+        "Ⅻ,Ⅼ",
+        "Ⅽ",
+        "Ⅾ",
+        "Ⅿ",
+        "ↀ",
+        "ↁ",
+        "ↂ",
+        "ↇ",
+        "ↈ",
+        "ⅰ",
+        "ⅱ",
+        "ⅲ",
+        "ⅳ",
+        "ⅴ",
+        "ⅵ",
+        "ⅶ",
+        "ⅷ",
+        "ⅷ",
+        "ⅸ",
+        "ⅹ",
+        "ⅺ",
+        "ⅻ",
+        "ⅼ",
+        "ⅽ",
+        "ⅾ",
+        "ⅿ",
+        "ↅ",
+        "ↆ",
+        "Ↄ",
+    ]
+
     @classmethod
     def __verify_roman_characters__(cls, self, numstr: str):
         """
         Verify whether each character is a Roman character
         """
-        roman_numerals_list = self.get_roman_numerals()
         for character in numstr:
-            if character not in roman_numerals_list:
+            if character not in self.roman_numerals_list:
                 raise InvalidNumeralCharacterError(
                     "Not a valid number, contains the character: " + character
                 )
 
+    @staticmethod
+    def is_roman_numeral(numstr: str) -> bool:
+        """
+        Verify whether each character is a Roman character
+        """
+        for character in numstr:
+            if character not in RomanNumeral.roman_numerals_list:
+                return False
+        return True
+
     def __init__(self, numstr: str):
         super().__init__(numstr)
-        self.set_roman_numerals()
         self.numstr = numstr
         self.__verify_roman_characters__(self, numstr)
 
@@ -48,72 +113,18 @@ class RomanNumeral(AbstractNumeral):
         """
         return fromRoman(self.numstr)
 
-    def get_roman_numerals(self):
+    @staticmethod
+    def get_roman_numerals() -> list:
         """
         Get list of Roman numerals
         """
-        return self.roman_numerals_list
+        return roman_numerals_list
 
-    def set_roman_numerals(self):
+    def set_roman_numerals(self, numerals: list):
         """
         Set list of Roman numerals
         """
-        self.roman_numerals_list = [
-            "X",
-            "V",
-            "I",
-            "L",
-            "C",
-            "D",
-            "M",
-            "x",
-            "v",
-            "i",
-            "l",
-            "c",
-            "d",
-            "m",
-            "Ⅰ",
-            "Ⅱ",
-            "Ⅲ",
-            "Ⅳ",
-            "Ⅴ",
-            "Ⅵ",
-            "Ⅶ",
-            "Ⅷ",
-            "Ⅸ",
-            "Ⅹ",
-            "Ⅺ",
-            "Ⅻ,Ⅼ",
-            "Ⅽ",
-            "Ⅾ",
-            "Ⅿ",
-            "ↀ",
-            "ↁ",
-            "ↂ",
-            "ↇ",
-            "ↈ",
-            "ⅰ",
-            "ⅱ",
-            "ⅲ",
-            "ⅳ",
-            "ⅴ",
-            "ⅵ",
-            "ⅶ",
-            "ⅷ",
-            "ⅷ",
-            "ⅸ",
-            "ⅹ",
-            "ⅺ",
-            "ⅻ",
-            "ⅼ",
-            "ⅽ",
-            "ⅾ",
-            "ⅿ",
-            "ↅ",
-            "ↆ",
-            "Ↄ",
-        ]
+        self.roman_numerals_list = numerals
 
     def __str__(self):
         """
