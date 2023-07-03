@@ -118,7 +118,7 @@ class RomanNumeral(AbstractNumeral):
         """
         Get list of Roman numerals
         """
-        return roman_numerals_list
+        return RomanNumeral.roman_numerals_list
 
     def set_roman_numerals(self, numerals: list):
         """
