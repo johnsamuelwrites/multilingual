@@ -60,8 +60,11 @@ def get_unicode_character_string(language: str, number: int):
         lookup_language = language + " " + DIGIT_STRING
     unicode_numstr = ""
     for character in numstr:
-        unicode_character = unicodedata.lookup(
-            lookup_language + " " + NUMBER_STRINGS[int(character)]
-        )
-        unicode_numstr = unicode_numstr + unicode_character
+        if character == "-":
+            unicode_numstr = character
+        else:
+            unicode_character = unicodedata.lookup(
+                lookup_language + " " + NUMBER_STRINGS[int(character)]
+            )
+            unicode_numstr = unicode_numstr + unicode_character
     return unicode_numstr

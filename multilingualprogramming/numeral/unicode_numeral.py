@@ -60,7 +60,7 @@ class UnicodeNumeral(AbstractNumeral):
         self.language_name = None
         self.__verify_unicode_category__(self, numstr)
 
-    def to_numeral(self):
+    def to_decimal(self):
         """
         Returns the number associated with the number string
         given by the user
@@ -104,7 +104,7 @@ class UnicodeNumeral(AbstractNumeral):
         """
         return UnicodeNumeral(
             get_unicode_character_string(
-                self.language_name, self.to_numeral() + numeral.to_numeral()
+                self.language_name, self.to_decimal() + numeral.to_decimal()
             )
         )
 
@@ -117,7 +117,7 @@ class UnicodeNumeral(AbstractNumeral):
         """
         return UnicodeNumeral(
             get_unicode_character_string(
-                self.language_name, self.to_numeral() * numeral.to_numeral()
+                self.language_name, self.to_decimal() * numeral.to_decimal()
             )
         )
 
@@ -130,7 +130,7 @@ class UnicodeNumeral(AbstractNumeral):
         """
         return UnicodeNumeral(
             get_unicode_character_string(
-                self.language_name, self.to_numeral() << numeral.to_numeral()
+                self.language_name, self.to_decimal() << numeral.to_decimal()
             )
         )
 
@@ -143,7 +143,7 @@ class UnicodeNumeral(AbstractNumeral):
         """
         return UnicodeNumeral(
             get_unicode_character_string(
-                self.language_name, self.to_numeral() >> numeral.to_numeral()
+                self.language_name, self.to_decimal() >> numeral.to_decimal()
             )
         )
 
@@ -156,7 +156,7 @@ class UnicodeNumeral(AbstractNumeral):
         """
         return UnicodeNumeral(
             get_unicode_character_string(
-                self.language_name, self.to_numeral() - numeral.to_numeral()
+                self.language_name, self.to_decimal() - numeral.to_decimal()
             )
         )
 
@@ -169,7 +169,7 @@ class UnicodeNumeral(AbstractNumeral):
         """
         return UnicodeNumeral(
             get_unicode_character_string(
-                self.language_name, self.to_numeral() / numeral.to_numeral()
+                self.language_name, self.to_decimal() / numeral.to_decimal()
             )
         )
 
@@ -182,7 +182,7 @@ class UnicodeNumeral(AbstractNumeral):
         """
         return UnicodeNumeral(
             get_unicode_character_string(
-                self.language_name, self.to_numeral() // numeral.to_numeral()
+                self.language_name, self.to_decimal() // numeral.to_decimal()
             )
         )
 
@@ -194,7 +194,7 @@ class UnicodeNumeral(AbstractNumeral):
            AbstractNumeral: returns the negation
         """
         return UnicodeNumeral(
-            get_unicode_character_string(self.language_name, neg(self.to_numeral()))
+            get_unicode_character_string(self.language_name, neg(self.to_decimal()))
         )
 
     def __pow__(self, numeral):
@@ -206,7 +206,7 @@ class UnicodeNumeral(AbstractNumeral):
         """
         return UnicodeNumeral(
             get_unicode_character_string(
-                self.language_name, self.to_numeral() ** numeral.to_numeral()
+                self.language_name, self.to_decimal() ** numeral.to_decimal()
             )
         )
 
@@ -219,7 +219,7 @@ class UnicodeNumeral(AbstractNumeral):
         """
         return UnicodeNumeral(
             get_unicode_character_string(
-                self.language_name, self.to_numeral() % numeral.to_numeral()
+                self.language_name, self.to_decimal() % numeral.to_decimal()
             )
         )
 
@@ -232,7 +232,7 @@ class UnicodeNumeral(AbstractNumeral):
         """
         return UnicodeNumeral(
             get_unicode_character_string(
-                self.language_name, self.to_numeral() ^ numeral.to_numeral()
+                self.language_name, self.to_decimal() ^ numeral.to_decimal()
             )
         )
 
@@ -244,7 +244,7 @@ class UnicodeNumeral(AbstractNumeral):
            AbstractNumeral: returns the bitwise-inverted value
         """
         return UnicodeNumeral(
-            get_unicode_character_string(self.language_name, invert(self.to_numeral()))
+            get_unicode_character_string(self.language_name, invert(self.to_decimal()))
         )
 
     def __or__(self, numeral):
@@ -256,6 +256,6 @@ class UnicodeNumeral(AbstractNumeral):
         """
         return UnicodeNumeral(
             get_unicode_character_string(
-                self.language_name, self.to_numeral() | numeral.to_numeral()
+                self.language_name, self.to_decimal() | numeral.to_decimal()
             )
         )

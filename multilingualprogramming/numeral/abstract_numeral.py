@@ -19,9 +19,9 @@ class AbstractNumeral(ABC):
         pass
 
     @abstractmethod
-    def to_numeral(self):
+    def to_decimal(self):
         """
-        Returns the number associated with the number string
+        Returns the decimal number associated with the number string
         given by the user
 
         return:

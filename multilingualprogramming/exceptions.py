@@ -26,3 +26,14 @@ class MultipleLanguageCharacterMixError(Exception):
     def __init__(self, message):
         message = "Mix of characters: " + message
         super().__init__(message)
+
+
+class DifferentNumeralTypeError(Exception):
+    """
+    Exception raised when an operation is performed on different
+    types of numeral type
+    """
+
+    def __init__(self, message):
+        message = "Invalid operation (different numeral type): " + message
+        super().__init__(message)

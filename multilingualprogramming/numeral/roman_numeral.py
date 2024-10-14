@@ -103,7 +103,7 @@ class RomanNumeral(AbstractNumeral):
         self.numstr = numstr
         self.__verify_roman_characters__(self, numstr)
 
-    def to_numeral(self):
+    def to_decimal(self):
         """
         Returns the number associated with the number string (Roman numeral)
         given by the user
@@ -144,68 +144,82 @@ class RomanNumeral(AbstractNumeral):
         """
         return f'RomanNumeral("{self.numstr}")'
 
-    def __add__(self, numeral):
+    def __add__(self, second):
         """
         Add a RomanNumeral with a numeral or another RomanNumeral
 
         return:
            RomanNumeral: returns the sum of a RomanNumeral
         """
-        return RomanNumeral(toRoman(self.to_numeral() + numeral.to_numeral()))
+        if isinstance(second, RomanNumeral):
+            return RomanNumeral(toRoman(self.to_decimal() + second.to_decimal()))
+        raise TypeError("Cannot substract a Roman numeral with a non-Roman numeral")
 
-    def __mul__(self, numeral):
+    def __mul__(self, second):
         """
         Multiply a RomanNumeral with a numeral or another RomanNumeral
 
         return:
            RomanNumeral: multiplication of the two RomanNumeral values
         """
-        return RomanNumeral(toRoman(self.to_numeral() * numeral.to_numeral()))
+        if isinstance(second, RomanNumeral):
+            return RomanNumeral(toRoman(self.to_decimal() * second.to_decimal()))
+        raise TypeError("Cannot multiply a Roman numeral with a non-Roman numeral")
 
-    def __sub__(self, numeral):
+    def __sub__(self, second):
         """
         Substraction of Roman Numerals
 
         return:
            AbstractNumeral: returns the difference
         """
-        return RomanNumeral(toRoman(self.to_numeral() - numeral.to_numeral()))
+        if isinstance(second, RomanNumeral):
+            return RomanNumeral(toRoman(self.to_decimal() - second.to_decimal()))
+        raise TypeError("Cannot substract a Roman numeral with a non-Roman numeral")
 
-    def __lshift__(self, numeral):
+    def __lshift__(self, second):
         """
         Left-shifting of Roman Numerals
 
         return:
            AbstractNumeral: returns the left shifted value
         """
-        return RomanNumeral(toRoman(self.to_numeral() << numeral.to_numeral()))
+        if isinstance(second, RomanNumeral):
+            return RomanNumeral(toRoman(self.to_decimal() << second.to_decimal()))
+        raise TypeError("Cannot left-shift a Roman numeral with a non-Roman numeral")
 
-    def __rshift__(self, numeral):
+    def __rshift__(self, second):
         """
         Right-shifting of Roman Numerals
 
         return:
            AbstractNumeral: returns the right shifted value
         """
-        return RomanNumeral(toRoman(self.to_numeral() >> numeral.to_numeral()))
+        if isinstance(second, RomanNumeral):
+            return RomanNumeral(toRoman(self.to_decimal() >> second.to_decimal()))
+        raise TypeError("Cannot right-shift a Roman numeral with a non-Roman numeral")
 
-    def __truediv__(self, numeral):
+    def __truediv__(self, second):
         """
         True division of Roman Numerals
 
         return:
            AbstractNumeral: returns the value after true division
         """
-        return RomanNumeral(toRoman(self.to_numeral() / numeral.to_numeral()))
+        if isinstance(second, RomanNumeral):
+            return RomanNumeral(toRoman(self.to_decimal() / second.to_decimal()))
+        raise TypeError("Cannot divide a Roman numeral with a non-Roman numeral")
 
-    def __floordiv__(self, numeral):
+    def __floordiv__(self, second):
         """
         Floor division of Roman Numerals
 
         return:
            AbstractNumeral: returns the value after floor division
         """
-        return RomanNumeral(toRoman(self.to_numeral() // numeral.to_numeral()))
+        if isinstance(second, RomanNumeral):
+            return RomanNumeral(toRoman(self.to_decimal() // second.to_decimal()))
+        raise TypeError("Cannot floor divide a Roman numeral with a non-Roman numeral")
 
     def __neg__(self):
         """
@@ -214,34 +228,46 @@ class RomanNumeral(AbstractNumeral):
         return:
            AbstractNumeral: returns the negation
         """
-        return RomanNumeral(toRoman(neg(self.to_numeral())))
+        return RomanNumeral(toRoman(neg(self.to_decimal())))
 
-    def __pow__(self, numeral):
+    def __pow__(self, second):
         """
         Power of Roman Numerals
 
         return:
            AbstractNumeral: returns the power
         """
-        return RomanNumeral(toRoman(self.to_numeral() ** numeral.to_numeral()))
+        if isinstance(second, RomanNumeral):
+            return RomanNumeral(toRoman(self.to_decimal() ** second.to_decimal()))
+        raise TypeError(
+            "Cannot compute power of a Roman numeral with a non-Roman numeral"
+        )
 
-    def __mod__(self, numeral):
+    def __mod__(self, second):
         """
         Modulus of Roman Numerals
 
         return:
            AbstractNumeral: returns the modulus value
         """
-        return RomanNumeral(toRoman(self.to_numeral() % numeral.to_numeral()))
+        if isinstance(second, RomanNumeral):
+            return RomanNumeral(toRoman(self.to_decimal() % second.to_decimal()))
+        raise TypeError(
+            "Cannot compute modulus of a Roman numeral with a non-Roman numeral"
+        )
 
-    def __xor__(self, numeral):
+    def __xor__(self, second):
         """
         XOR value of Roman Numerals
 
         return:
            AbstractNumeral: returns the XOR value
         """
-        return RomanNumeral(toRoman(self.to_numeral() ^ numeral.to_numeral()))
+        if isinstance(second, RomanNumeral):
+            return RomanNumeral(toRoman(self.to_decimal() ^ second.to_decimal()))
+        raise TypeError(
+            "Cannot compute XOR of a Roman numeral with a non-Roman numeral"
+        )
 
     def __invert__(self):
         """
@@ -250,13 +276,17 @@ class RomanNumeral(AbstractNumeral):
         return:
            AbstractNumeral: returns the bitwise-inverted value
         """
-        return RomanNumeral(invert(toRoman(self.to_numeral())))
+        return RomanNumeral(invert(toRoman(self.to_decimal())))
 
-    def __or__(self, numeral):
+    def __or__(self, second):
         """
         OR value of Roman Numerals
 
         return:
            AbstractNumeral: returns the OR value
         """
-        return RomanNumeral(toRoman(self.to_numeral() | numeral.to_numeral()))
+        if isinstance(second, RomanNumeral):
+            return RomanNumeral(toRoman(self.to_decimal() | second.to_decimal()))
+        raise TypeError(
+            "Cannot computer OR of a Roman numeral with a non-Roman numeral"
+        )
