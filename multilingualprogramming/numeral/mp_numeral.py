@@ -8,13 +8,14 @@
 """
 
 from operator import invert, neg
-from roman import fromRoman, toRoman
+from roman import toRoman
 from multilingualprogramming.unicode_string import get_unicode_character_string
 import multilingualprogramming.numeral.unicode_numeral as un
 import multilingualprogramming.numeral.roman_numeral as rn
 from multilingualprogramming.exceptions import (
     MultipleLanguageCharacterMixError,
     InvalidNumeralCharacterError,
+    DifferentNumeralTypeError
 )
 
 
@@ -52,18 +53,6 @@ class MPNumeral:
             return self.num.to_decimal()
         return None
 
-    @staticmethod
-    def convert_to_mpnumeral(decimal, numeral_type):
-        if numeral_type == "Roman":
-            # decimal to Roman numerals
-            pass
-
-        elif numeral_type == "Unicode":
-            # decimal to Unicode numerals
-            pass
-        else:
-            raise ValueError("Invalid numeral type")
-
     def __str__(self):
         """
         Returns the original number string (Multilingual Numeral)
@@ -81,7 +70,7 @@ class MPNumeral:
            reprstr: representation of an instance
         """
 
-    def to_MPNumeral(self, number):
+    def to_mp_numeral(self, number):
         """
         Returns the number (Multilingual Numeral) associated with the number string
         given by the user
@@ -109,9 +98,8 @@ class MPNumeral:
         """
         if isinstance(numeral, MPNumeral) and self.numeral_type == numeral.numeral_type:
             result = operation(self.to_decimal(), numeral.to_decimal())
-            return self.to_MPNumeral(result)
-        else:
-            raise DifferentNumeralTypeError(operation.__name__)
+            return self.to_mp_numeral(result)
+        raise DifferentNumeralTypeError(operation.__name__)
 
     def __add__(self, numeral):
         """

@@ -4,6 +4,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 
+"""Examples to demonstrate operations on numbers from different numeral systems
+"""
 
 # Reference of numeral systems: https://en.wikipedia.org/wiki/List_of_numeral_systems
 
