@@ -32,10 +32,10 @@ class MPNumeralTestSuite(unittest.TestCase):
         Test to create a Roman numeral
         """
         num = mpn.MPNumeral("X")  # create a numeral
-        self.assertTrue(num.to_numeral() == 10)
+        self.assertTrue(num.to_decimal() == 10)
         num = mpn.MPNumeral("CLVIII")  # create a numeral
         # The value must be 158
-        self.assertTrue(num.to_numeral() == 158)
+        self.assertTrue(num.to_decimal() == 158)
 
     def test_mp_numeral_with_un_numeral(self):
         """
@@ -43,11 +43,11 @@ class MPNumeralTestSuite(unittest.TestCase):
         """
         num1 = mpn.MPNumeral("12")  # create a numeral
         # The value must be 12
-        self.assertTrue(num1.to_numeral() == 12)
+        self.assertTrue(num1.to_decimal() == 12)
         num2 = mpn.MPNumeral("൧൩")  # create a numeral
-        self.assertTrue(num2.to_numeral() == 13)
+        self.assertTrue(num2.to_decimal() == 13)
         num3 = mpn.MPNumeral("١٢٣٤٥")  # Arabic-Indic numerals
-        self.assertTrue(num3.to_numeral() == 12345)
+        self.assertTrue(num3.to_decimal() == 12345)
 
     def test_mp_numeral_with_invalid_un_numeral(self):
         """
@@ -81,7 +81,7 @@ class MPNumeralTestSuite(unittest.TestCase):
         """
         num1 = mpn.MPNumeral("12.34")  # create a numeral
         # The value must be 12.34
-        self.assertTrue(num1.to_numeral() == 12.34)
+        self.assertTrue(num1.to_decimal() == 12.34)
 
         locale_code = "fr_FR.UTF-8"  # Specify the desired locale code
         original_locale = locale.setlocale(locale.LC_ALL)
@@ -91,7 +91,7 @@ class MPNumeralTestSuite(unittest.TestCase):
             num1 = mpn.MPNumeral("12,34")  # create a numeral
 
             # The value must be 12.34
-            self.assertTrue(num1.to_numeral() == 12.34)
+            self.assertTrue(num1.to_decimal() == 12.34)
         finally:
             locale.setlocale(locale.LC_ALL, original_locale)
 
@@ -102,24 +102,24 @@ class MPNumeralTestSuite(unittest.TestCase):
         num1 = mpn.MPNumeral("12")  # create a numeral
         num2 = mpn.MPNumeral("15")  # create a numeral
         result = num1 + num2
-        self.assertTrue(result.to_numeral() == 27)
+        self.assertTrue(result.to_decimal() == 27)
 
         num1 = mpn.MPNumeral("V")  # create a numeral
         num2 = mpn.MPNumeral("IV")  # create a numeral
         result = num1 + num2
-        self.assertTrue(result.to_numeral() == 9)
+        self.assertTrue(result.to_decimal() == 9)
 
     def test_negative_mp_numeral(self):
         """
         Test to create a base 10 numeral
         """
         num1 = mpn.MPNumeral("-12")  # create a numeral
-        self.assertTrue(num1.to_numeral() == -12)
+        self.assertTrue(num1.to_decimal() == -12)
         num2 = mpn.MPNumeral("15")  # create a numeral
         result = num1 + num2
-        self.assertTrue(result.to_numeral() == 3)
+        self.assertTrue(result.to_decimal() == 3)
 
         num1 = mpn.MPNumeral("-12")  # create a numeral
         num2 = mpn.MPNumeral("5")  # create a numeral
         result = num1 + num2
-        self.assertTrue(result.to_numeral() == -7)
+        self.assertTrue(result.to_decimal() == -7)

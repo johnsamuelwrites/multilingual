@@ -28,10 +28,10 @@ class RomanNumeralTestSuite(unittest.TestCase):
         """
         num = rn.RomanNumeral("X")  # create a numeral
         # The value must be 10
-        self.assertTrue(num.to_numeral() == 10)
+        self.assertTrue(num.to_decimal() == 10)
         num = rn.RomanNumeral("CLVIII")  # create a numeral
         # The value must be 10
-        self.assertTrue(num.to_numeral() == 158)
+        self.assertTrue(num.to_decimal() == 158)
 
     def test_roman_numeral_addition(self):
         """

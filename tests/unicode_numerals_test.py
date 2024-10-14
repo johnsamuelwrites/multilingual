@@ -32,7 +32,7 @@ class UnicodeNumeralTestSuite(unittest.TestCase):
         """
         num = un.UnicodeNumeral("12")  # create a numeral
         # The value must be 12
-        self.assertTrue(num.to_numeral() == 12)
+        self.assertTrue(num.to_decimal() == 12)
 
     def test_un_numeral_repr(self):
         """
