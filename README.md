@@ -5,7 +5,30 @@ Python application for multilingual programming
 To use `multilingual`, check the following example for handling arithmetic
 operations
 
-![Running multilingual](resources/multilingual.png "Running multilingual")
+```python
+from multilingualprogramming.numeral.mp_numeral import MPNumeral
+
+## Roman numerals
+num1 = MPNumeral("VII")
+num2 = MPNumeral("III")
+
+print(num1 + num2)
+print(num1 - num2)
+print(num1 * num2)
+print(num1 // num2)
+print(num1 % num2)
+print(num1**num2)
+```
+
+This will give the following output:
+
+```bash
+X
+IV
+XXI
+II
+I
+```
 
 ## Resources
 [Resources](resources/README.md): Resources and references to sources in different languages
