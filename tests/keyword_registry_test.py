@@ -141,6 +141,16 @@ class KeywordRegistryTestSuite(unittest.TestCase):
         # + 4 variables + 6 types + 2 io = 42 total
         self.assertEqual(len(concepts), 42)
 
+class KeywordRegistryErrorTestSuite(unittest.TestCase):
+    """
+    Test error handling and singleton behavior for keyword registry
+    """
+
+    def setUp(self):
+        """Reset singleton for clean test state."""
+        KeywordRegistry.reset()
+        self.registry = KeywordRegistry()
+
     def test_unknown_keyword_error(self):
         """Test that UnknownKeywordError is raised for unknown concepts."""
         with self.assertRaises(UnknownKeywordError):
@@ -204,8 +214,8 @@ class KeywordValidatorTestSuite(unittest.TestCase):
         for lang in registry.get_supported_languages():
             ambiguities = self.validator.validate_no_ambiguity(lang)
             # Log ambiguities but don't fail — some are expected
-            for keyword, concepts in ambiguities:
+            for _, concepts in ambiguities:
                 self.assertGreater(
                     len(concepts), 1,
-                    f"Ambiguity entry should have >1 concepts"
+                    "Ambiguity entry should have >1 concepts"
                 )

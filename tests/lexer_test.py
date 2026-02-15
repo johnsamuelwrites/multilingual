@@ -15,9 +15,9 @@ from multilingualprogramming.lexer.token_types import TokenType
 from multilingualprogramming.exceptions import UnexpectedTokenError
 
 
-class LexerTestSuite(unittest.TestCase):
+class LexerTestBase(unittest.TestCase):
     """
-    Test cases for the multilingual lexer
+    Shared helpers for lexer test suites
     """
 
     def setUp(self):
@@ -31,6 +31,12 @@ class LexerTestSuite(unittest.TestCase):
     def _token_values(self, tokens):
         """Extract token values from a token list (excluding EOF)."""
         return [t.value for t in tokens if t.type != TokenType.EOF]
+
+
+class LexerTokenizationTestSuite(LexerTestBase):
+    """
+    Test cases for lexer tokenization primitives
+    """
 
     def test_simple_english(self):
         """Test tokenizing simple English code."""
@@ -236,6 +242,12 @@ class LexerTestSuite(unittest.TestCase):
         types = self._token_types(tokens)
         self.assertIn(TokenType.INDENT, types)
 
+
+class LexerBehaviorTestSuite(LexerTestBase):
+    """
+    Test cases for lexer behavior, detection, and errors
+    """
+
     def test_dedentation(self):
         """Test dedentation handling."""
         source = "if x:\n    y = 1\nz = 2"
@@ -260,14 +272,14 @@ class LexerTestSuite(unittest.TestCase):
         """Test automatic language detection for English."""
         source = "if x > 5:\n    return x"
         lexer = Lexer(source)
-        tokens = lexer.tokenize()
+        lexer.tokenize()
         self.assertEqual(lexer.language, "en")
 
     def test_language_auto_detect_french(self):
         """Test automatic language detection for French."""
         source = "si x > 5:\n    retour x"
         lexer = Lexer(source)
-        tokens = lexer.tokenize()
+        lexer.tokenize()
         self.assertEqual(lexer.language, "fr")
 
     def test_line_column_tracking(self):

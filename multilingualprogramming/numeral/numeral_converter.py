@@ -8,9 +8,7 @@
 
 from multilingualprogramming.numeral.unicode_numeral import UnicodeNumeral
 from multilingualprogramming.unicode_string import (
-    convert_numeral_string,
     get_unicode_character_string,
-    get_language_from_character,
 )
 
 
@@ -79,7 +77,7 @@ class NumeralConverter:
             while mantissa >= 10:
                 mantissa /= 10
                 exponent += 1
-        elif mantissa < 1 and mantissa > 0:
+        elif 0 < mantissa < 1:
             while mantissa < 1:
                 mantissa *= 10
                 exponent -= 1
