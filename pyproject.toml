@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "multilingualprogramming"
+version = "0.2.0"
+description = "Python application for multilingual programming"
+readme = "README.md"
+license = {text = "GPL-3.0-or-later"}
+requires-python = ">=3.10"
+authors = [
+    {name = "John Samuel", email = "johnsamuelwrites@example.com"},
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "roman>=3.3",
+    "python-dateutil>=2.8",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-cov",
+    "pylint",
+]
+
+[project.urls]
+Homepage = "https://github.com/johnsamuelwrites/multilingual"
+
+[tool.setuptools.packages.find]
+include = ["multilingualprogramming*"]
+
+[tool.setuptools.package-data]
+multilingualprogramming = [
+    "resources/*/*.json",
+    "resources/*/*/*.json",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

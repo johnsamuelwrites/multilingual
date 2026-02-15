@@ -1,0 +1,32 @@
+{
+  "version": "1.0",
+  "description": "Date and time format patterns per language/locale",
+  "date_formats": {
+    "en": {"full": "DD-MONTH-YYYY", "short": "MM/DD/YYYY", "iso": "YYYY-MM-DD"},
+    "fr": {"full": "DD-MONTH-YYYY", "short": "DD/MM/YYYY", "iso": "YYYY-MM-DD"},
+    "es": {"full": "DD-MONTH-YYYY", "short": "DD/MM/YYYY", "iso": "YYYY-MM-DD"},
+    "de": {"full": "DD-MONTH-YYYY", "short": "DD.MM.YYYY", "iso": "YYYY-MM-DD"},
+    "hi": {"full": "DD-MONTH-YYYY", "short": "DD/MM/YYYY", "iso": "YYYY-MM-DD"},
+    "ar": {"full": "DD-MONTH-YYYY", "short": "DD/MM/YYYY", "iso": "YYYY-MM-DD"},
+    "bn": {"full": "DD-MONTH-YYYY", "short": "DD/MM/YYYY", "iso": "YYYY-MM-DD"},
+    "ta": {"full": "DD-MONTH-YYYY", "short": "DD/MM/YYYY", "iso": "YYYY-MM-DD"},
+    "zh": {"full": "YYYY年MM月DD日", "short": "YYYY/MM/DD", "iso": "YYYY-MM-DD"},
+    "ja": {"full": "YYYY年MM月DD日", "short": "YYYY/MM/DD", "iso": "YYYY-MM-DD"}
+  },
+  "time_formats": {
+    "en": {"24h": "HH:MM:SS", "12h": "hh:MM:SS AM/PM"},
+    "fr": {"24h": "HH:MM:SS", "12h": "hh:MM:SS"},
+    "es": {"24h": "HH:MM:SS", "12h": "hh:MM:SS a.m./p.m."},
+    "de": {"24h": "HH:MM:SS", "12h": "hh:MM:SS"},
+    "hi": {"24h": "HH:MM:SS", "12h": "hh:MM:SS पूर्वाह्न/अपराह्न"},
+    "ar": {"24h": "HH:MM:SS", "12h": "hh:MM:SS ص/م"},
+    "bn": {"24h": "HH:MM:SS", "12h": "hh:MM:SS পূর্বাহ্ন/অপরাহ্ন"},
+    "ta": {"24h": "HH:MM:SS", "12h": "hh:MM:SS முற்பகல்/பிற்பகல்"},
+    "zh": {"24h": "HH:MM:SS", "12h": "上午/下午 hh:MM:SS"},
+    "ja": {"24h": "HH:MM:SS", "12h": "午前/午後 hh:MM:SS"}
+  },
+  "separator": {
+    "en": "-", "fr": "-", "es": "-", "de": ".", "hi": "-",
+    "ar": "-", "bn": "-", "ta": "-", "zh": "", "ja": ""
+  }
+}

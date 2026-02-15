@@ -1,0 +1,150 @@
+{
+  "version": "1.0",
+  "description": "Month names in multiple languages (Gregorian calendar)",
+  "months": {
+    "JANUARY": {
+      "en": {"full": "January", "abbr": "Jan"},
+      "fr": {"full": "Janvier", "abbr": "Jan"},
+      "es": {"full": "Enero", "abbr": "Ene"},
+      "de": {"full": "Januar", "abbr": "Jan"},
+      "hi": {"full": "जनवरी", "abbr": "जन"},
+      "ar": {"full": "يناير", "abbr": "ينا"},
+      "bn": {"full": "জানুয়ারি", "abbr": "জানু"},
+      "ta": {"full": "ஜனவரி", "abbr": "ஜன"},
+      "zh": {"full": "一月", "abbr": "1月"},
+      "ja": {"full": "一月", "abbr": "1月"}
+    },
+    "FEBRUARY": {
+      "en": {"full": "February", "abbr": "Feb"},
+      "fr": {"full": "Février", "abbr": "Fév"},
+      "es": {"full": "Febrero", "abbr": "Feb"},
+      "de": {"full": "Februar", "abbr": "Feb"},
+      "hi": {"full": "फ़रवरी", "abbr": "फ़र"},
+      "ar": {"full": "فبراير", "abbr": "فبر"},
+      "bn": {"full": "ফেব্রুয়ারি", "abbr": "ফেব"},
+      "ta": {"full": "பிப்ரவரி", "abbr": "பிப்"},
+      "zh": {"full": "二月", "abbr": "2月"},
+      "ja": {"full": "二月", "abbr": "2月"}
+    },
+    "MARCH": {
+      "en": {"full": "March", "abbr": "Mar"},
+      "fr": {"full": "Mars", "abbr": "Mar"},
+      "es": {"full": "Marzo", "abbr": "Mar"},
+      "de": {"full": "März", "abbr": "Mär"},
+      "hi": {"full": "मार्च", "abbr": "मार"},
+      "ar": {"full": "مارس", "abbr": "مار"},
+      "bn": {"full": "মার্চ", "abbr": "মার"},
+      "ta": {"full": "மார்ச்", "abbr": "மார்"},
+      "zh": {"full": "三月", "abbr": "3月"},
+      "ja": {"full": "三月", "abbr": "3月"}
+    },
+    "APRIL": {
+      "en": {"full": "April", "abbr": "Apr"},
+      "fr": {"full": "Avril", "abbr": "Avr"},
+      "es": {"full": "Abril", "abbr": "Abr"},
+      "de": {"full": "April", "abbr": "Apr"},
+      "hi": {"full": "अप्रैल", "abbr": "अप्रै"},
+      "ar": {"full": "أبريل", "abbr": "أبر"},
+      "bn": {"full": "এপ্রিল", "abbr": "এপ্রি"},
+      "ta": {"full": "ஏப்ரல்", "abbr": "ஏப்"},
+      "zh": {"full": "四月", "abbr": "4月"},
+      "ja": {"full": "四月", "abbr": "4月"}
+    },
+    "MAY": {
+      "en": {"full": "May", "abbr": "May"},
+      "fr": {"full": "Mai", "abbr": "Mai"},
+      "es": {"full": "Mayo", "abbr": "May"},
+      "de": {"full": "Mai", "abbr": "Mai"},
+      "hi": {"full": "मई", "abbr": "मई"},
+      "ar": {"full": "مايو", "abbr": "ماي"},
+      "bn": {"full": "মে", "abbr": "মে"},
+      "ta": {"full": "மே", "abbr": "மே"},
+      "zh": {"full": "五月", "abbr": "5月"},
+      "ja": {"full": "五月", "abbr": "5月"}
+    },
+    "JUNE": {
+      "en": {"full": "June", "abbr": "Jun"},
+      "fr": {"full": "Juin", "abbr": "Jun"},
+      "es": {"full": "Junio", "abbr": "Jun"},
+      "de": {"full": "Juni", "abbr": "Jun"},
+      "hi": {"full": "जून", "abbr": "जून"},
+      "ar": {"full": "يونيو", "abbr": "يون"},
+      "bn": {"full": "জুন", "abbr": "জুন"},
+      "ta": {"full": "ஜூன்", "abbr": "ஜூன்"},
+      "zh": {"full": "六月", "abbr": "6月"},
+      "ja": {"full": "六月", "abbr": "6月"}
+    },
+    "JULY": {
+      "en": {"full": "July", "abbr": "Jul"},
+      "fr": {"full": "Juillet", "abbr": "Jul"},
+      "es": {"full": "Julio", "abbr": "Jul"},
+      "de": {"full": "Juli", "abbr": "Jul"},
+      "hi": {"full": "जुलाई", "abbr": "जुल"},
+      "ar": {"full": "يوليو", "abbr": "يول"},
+      "bn": {"full": "জুলাই", "abbr": "জুল"},
+      "ta": {"full": "ஜூலை", "abbr": "ஜூலை"},
+      "zh": {"full": "七月", "abbr": "7月"},
+      "ja": {"full": "七月", "abbr": "7月"}
+    },
+    "AUGUST": {
+      "en": {"full": "August", "abbr": "Aug"},
+      "fr": {"full": "Août", "abbr": "Aoû"},
+      "es": {"full": "Agosto", "abbr": "Ago"},
+      "de": {"full": "August", "abbr": "Aug"},
+      "hi": {"full": "अगस्त", "abbr": "अग"},
+      "ar": {"full": "أغسطس", "abbr": "أغس"},
+      "bn": {"full": "আগস্ট", "abbr": "আগ"},
+      "ta": {"full": "ஆகஸ்ட்", "abbr": "ஆக"},
+      "zh": {"full": "八月", "abbr": "8月"},
+      "ja": {"full": "八月", "abbr": "8月"}
+    },
+    "SEPTEMBER": {
+      "en": {"full": "September", "abbr": "Sep"},
+      "fr": {"full": "Septembre", "abbr": "Sep"},
+      "es": {"full": "Septiembre", "abbr": "Sep"},
+      "de": {"full": "September", "abbr": "Sep"},
+      "hi": {"full": "सितम्बर", "abbr": "सित"},
+      "ar": {"full": "سبتمبر", "abbr": "سبت"},
+      "bn": {"full": "সেপ্টেম্বর", "abbr": "সেপ"},
+      "ta": {"full": "செப்டம்பர்", "abbr": "செப்"},
+      "zh": {"full": "九月", "abbr": "9月"},
+      "ja": {"full": "九月", "abbr": "9月"}
+    },
+    "OCTOBER": {
+      "en": {"full": "October", "abbr": "Oct"},
+      "fr": {"full": "Octobre", "abbr": "Oct"},
+      "es": {"full": "Octubre", "abbr": "Oct"},
+      "de": {"full": "Oktober", "abbr": "Okt"},
+      "hi": {"full": "अक्टूबर", "abbr": "अक्टू"},
+      "ar": {"full": "أكتوبر", "abbr": "أكت"},
+      "bn": {"full": "অক্টোবর", "abbr": "অক্টো"},
+      "ta": {"full": "அக்டோபர்", "abbr": "அக்"},
+      "zh": {"full": "十月", "abbr": "10月"},
+      "ja": {"full": "十月", "abbr": "10月"}
+    },
+    "NOVEMBER": {
+      "en": {"full": "November", "abbr": "Nov"},
+      "fr": {"full": "Novembre", "abbr": "Nov"},
+      "es": {"full": "Noviembre", "abbr": "Nov"},
+      "de": {"full": "November", "abbr": "Nov"},
+      "hi": {"full": "नवम्बर", "abbr": "नव"},
+      "ar": {"full": "نوفمبر", "abbr": "نوف"},
+      "bn": {"full": "নভেম্বর", "abbr": "নভ"},
+      "ta": {"full": "நவம்பர்", "abbr": "நவ"},
+      "zh": {"full": "十一月", "abbr": "11月"},
+      "ja": {"full": "十一月", "abbr": "11月"}
+    },
+    "DECEMBER": {
+      "en": {"full": "December", "abbr": "Dec"},
+      "fr": {"full": "Décembre", "abbr": "Déc"},
+      "es": {"full": "Diciembre", "abbr": "Dic"},
+      "de": {"full": "Dezember", "abbr": "Dez"},
+      "hi": {"full": "दिसम्बर", "abbr": "दिस"},
+      "ar": {"full": "ديسمبر", "abbr": "ديس"},
+      "bn": {"full": "ডিসেম্বর", "abbr": "ডিস"},
+      "ta": {"full": "டிசம்பர்", "abbr": "டிச"},
+      "zh": {"full": "十二月", "abbr": "12月"},
+      "ja": {"full": "十二月", "abbr": "12月"}
+    }
+  }
+}

@@ -15,7 +15,10 @@ from multilingualprogramming.exceptions import (
     InvalidNumeralCharacterError,
     MultipleLanguageCharacterMixError,
 )
-from multilingualprogramming.unicode_string import get_unicode_character_string
+from multilingualprogramming.unicode_string import (
+    get_unicode_character_string,
+    convert_numeral_string,
+)
 from multilingualprogramming.numeral.abstract_numeral import AbstractNumeral
 
 
@@ -259,3 +262,31 @@ class UnicodeNumeral(AbstractNumeral):
                 self.language_name, self.to_decimal() | numeral.to_decimal()
             )
         )
+
+    def __abs__(self):
+        """
+        Absolute value of Unicode Numerals
+
+        return:
+           UnicodeNumeral: returns the absolute value
+        """
+        return UnicodeNumeral(
+            get_unicode_character_string(
+                self.language_name, abs(self.to_decimal())
+            )
+        )
+
+    def convert_to(self, target_language):
+        """
+        Convert this numeral to a different Unicode script.
+
+        Parameters:
+            target_language (str): Target language name (e.g., "ARABIC-INDIC")
+
+        Returns:
+            UnicodeNumeral: A new numeral in the target script
+        """
+        converted = convert_numeral_string(
+            self.numstr, self.language_name, target_language
+        )
+        return UnicodeNumeral(converted)

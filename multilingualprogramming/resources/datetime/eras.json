@@ -1,0 +1,23 @@
+{
+  "version": "1.0",
+  "description": "Calendar era names for display purposes",
+  "eras": {
+    "GREGORIAN": {
+      "en": {"ce": "CE", "bce": "BCE"},
+      "fr": {"ce": "apr. J.-C.", "bce": "av. J.-C."},
+      "es": {"ce": "d.C.", "bce": "a.C."},
+      "de": {"ce": "n. Chr.", "bce": "v. Chr."},
+      "hi": {"ce": "ईस्वी", "bce": "ईसा पूर्व"},
+      "ar": {"ce": "م", "bce": "ق.م"},
+      "bn": {"ce": "খ্রিস্টাব্দ", "bce": "খ্রিস্টপূর্ব"},
+      "ta": {"ce": "கி.பி.", "bce": "கி.மு."},
+      "zh": {"ce": "公元", "bce": "公元前"},
+      "ja": {"ce": "西暦", "bce": "紀元前"}
+    },
+    "JAPANESE": {
+      "reiwa": {"ja": "令和", "en": "Reiwa", "start_year": 2019},
+      "heisei": {"ja": "平成", "en": "Heisei", "start_year": 1989},
+      "showa": {"ja": "昭和", "en": "Showa", "start_year": 1926}
+    }
+  }
+}

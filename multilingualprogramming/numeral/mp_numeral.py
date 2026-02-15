@@ -222,3 +222,22 @@ class MPNumeral:
            MPNumeral: returns the OR value
         """
         return self._perform_operation(numeral, lambda x, y: x | y)
+
+    def convert_to(self, target_language):
+        """
+        Convert this numeral to a different script.
+
+        Only works for Unicode numerals.
+
+        Parameters:
+            target_language (str): Target language name (e.g., "ARABIC-INDIC")
+
+        Returns:
+            MPNumeral: A new MPNumeral in the target script
+        """
+        if self.numeral_type == "Unicode":
+            converted = self.num.convert_to(target_language)
+            return MPNumeral(str(converted))
+        raise DifferentNumeralTypeError(
+            "Cannot convert Roman numerals to another script"
+        )

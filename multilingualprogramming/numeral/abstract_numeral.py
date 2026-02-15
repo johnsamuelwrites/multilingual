@@ -160,3 +160,73 @@ class AbstractNumeral(ABC):
         return:
            AbstractNumeral: returns the OR value
         """
+
+    def __eq__(self, other):
+        """
+        Equality comparison
+
+        return:
+           bool: True if both numerals have equal decimal values
+        """
+        if isinstance(other, AbstractNumeral):
+            return self.to_decimal() == other.to_decimal()
+        return NotImplemented
+
+    def __lt__(self, other):
+        """
+        Less-than comparison
+
+        return:
+           bool: True if this numeral is less than the other
+        """
+        if isinstance(other, AbstractNumeral):
+            return self.to_decimal() < other.to_decimal()
+        return NotImplemented
+
+    def __le__(self, other):
+        """
+        Less-than-or-equal comparison
+
+        return:
+           bool: True if this numeral is less than or equal to the other
+        """
+        if isinstance(other, AbstractNumeral):
+            return self.to_decimal() <= other.to_decimal()
+        return NotImplemented
+
+    def __gt__(self, other):
+        """
+        Greater-than comparison
+
+        return:
+           bool: True if this numeral is greater than the other
+        """
+        if isinstance(other, AbstractNumeral):
+            return self.to_decimal() > other.to_decimal()
+        return NotImplemented
+
+    def __ge__(self, other):
+        """
+        Greater-than-or-equal comparison
+
+        return:
+           bool: True if this numeral is greater than or equal to the other
+        """
+        if isinstance(other, AbstractNumeral):
+            return self.to_decimal() >= other.to_decimal()
+        return NotImplemented
+
+    def __hash__(self):
+        """
+        Hash based on decimal value for consistency with __eq__
+        """
+        return hash(self.to_decimal())
+
+    def __abs__(self):
+        """
+        Absolute value
+
+        return:
+           AbstractNumeral: returns the absolute value
+        """
+        raise NotImplementedError("Subclasses must implement __abs__")

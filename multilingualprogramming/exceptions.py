@@ -37,3 +37,69 @@ class DifferentNumeralTypeError(Exception):
     def __init__(self, message):
         message = "Invalid operation (different numeral type): " + message
         super().__init__(message)
+
+
+class UnknownKeywordError(Exception):
+    """
+    Exception raised when a keyword string is not found in any language
+    """
+
+    def __init__(self, message):
+        message = "Unknown keyword: " + message
+        super().__init__(message)
+
+
+class AmbiguousKeywordError(Exception):
+    """
+    Exception raised when a keyword matches multiple concepts
+    """
+
+    def __init__(self, message):
+        message = "Ambiguous keyword: " + message
+        super().__init__(message)
+
+
+class UnsupportedLanguageError(Exception):
+    """
+    Exception raised when a requested language is not in the registry
+    """
+
+    def __init__(self, message):
+        message = "Unsupported language: " + message
+        super().__init__(message)
+
+
+class InvalidDateError(Exception):
+    """
+    Exception raised for malformed multilingual dates
+    """
+
+    def __init__(self, message):
+        message = "Invalid date: " + message
+        super().__init__(message)
+
+
+class LexerError(Exception):
+    """
+    Base exception for lexer errors
+    """
+
+    def __init__(self, message, line=None, column=None):
+        location = ""
+        if line is not None:
+            location = f" at line {line}"
+            if column is not None:
+                location += f", column {column}"
+        message = "Lexer error" + location + ": " + message
+        self.line = line
+        self.column = column
+        super().__init__(message)
+
+
+class UnexpectedTokenError(LexerError):
+    """
+    Exception raised for unexpected tokens during lexing
+    """
+
+    def __init__(self, message, line=None, column=None):
+        super().__init__("Unexpected token: " + message, line, column)

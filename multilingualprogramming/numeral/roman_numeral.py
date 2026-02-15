@@ -290,3 +290,12 @@ class RomanNumeral(AbstractNumeral):
         raise TypeError(
             "Cannot computer OR of a Roman numeral with a non-Roman numeral"
         )
+
+    def __abs__(self):
+        """
+        Absolute value of Roman Numerals
+
+        return:
+           RomanNumeral: returns the absolute value
+        """
+        return RomanNumeral(toRoman(abs(self.to_decimal())))

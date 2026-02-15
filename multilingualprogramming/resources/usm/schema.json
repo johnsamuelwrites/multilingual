@@ -1,0 +1,34 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "USM Keywords Schema",
+  "description": "Schema for validating keyword mapping files in the Universal Semantic Model",
+  "type": "object",
+  "required": ["version", "languages", "categories"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+$"
+    },
+    "description": {
+      "type": "string"
+    },
+    "languages": {
+      "type": "array",
+      "items": {"type": "string"},
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "categories": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": {
+          "type": "object",
+          "description": "Concept mapping: keys are language codes, values are keyword strings",
+          "additionalProperties": {"type": "string"},
+          "minProperties": 1
+        }
+      }
+    }
+  }
+}

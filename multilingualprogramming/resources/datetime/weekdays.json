@@ -1,0 +1,90 @@
+{
+  "version": "1.0",
+  "description": "Weekday names in multiple languages",
+  "weekdays": {
+    "MONDAY": {
+      "en": {"full": "Monday", "abbr": "Mon"},
+      "fr": {"full": "Lundi", "abbr": "Lun"},
+      "es": {"full": "Lunes", "abbr": "Lun"},
+      "de": {"full": "Montag", "abbr": "Mo"},
+      "hi": {"full": "सोमवार", "abbr": "सोम"},
+      "ar": {"full": "الاثنين", "abbr": "اثن"},
+      "bn": {"full": "সোমবার", "abbr": "সোম"},
+      "ta": {"full": "திங்கள்", "abbr": "திங்"},
+      "zh": {"full": "星期一", "abbr": "周一"},
+      "ja": {"full": "月曜日", "abbr": "月"}
+    },
+    "TUESDAY": {
+      "en": {"full": "Tuesday", "abbr": "Tue"},
+      "fr": {"full": "Mardi", "abbr": "Mar"},
+      "es": {"full": "Martes", "abbr": "Mar"},
+      "de": {"full": "Dienstag", "abbr": "Di"},
+      "hi": {"full": "मंगलवार", "abbr": "मंगल"},
+      "ar": {"full": "الثلاثاء", "abbr": "ثلا"},
+      "bn": {"full": "মঙ্গলবার", "abbr": "মঙ্গল"},
+      "ta": {"full": "செவ்வாய்", "abbr": "செவ்"},
+      "zh": {"full": "星期二", "abbr": "周二"},
+      "ja": {"full": "火曜日", "abbr": "火"}
+    },
+    "WEDNESDAY": {
+      "en": {"full": "Wednesday", "abbr": "Wed"},
+      "fr": {"full": "Mercredi", "abbr": "Mer"},
+      "es": {"full": "Miércoles", "abbr": "Mié"},
+      "de": {"full": "Mittwoch", "abbr": "Mi"},
+      "hi": {"full": "बुधवार", "abbr": "बुध"},
+      "ar": {"full": "الأربعاء", "abbr": "أرب"},
+      "bn": {"full": "বুধবার", "abbr": "বুধ"},
+      "ta": {"full": "புதன்", "abbr": "புத"},
+      "zh": {"full": "星期三", "abbr": "周三"},
+      "ja": {"full": "水曜日", "abbr": "水"}
+    },
+    "THURSDAY": {
+      "en": {"full": "Thursday", "abbr": "Thu"},
+      "fr": {"full": "Jeudi", "abbr": "Jeu"},
+      "es": {"full": "Jueves", "abbr": "Jue"},
+      "de": {"full": "Donnerstag", "abbr": "Do"},
+      "hi": {"full": "गुरुवार", "abbr": "गुरु"},
+      "ar": {"full": "الخميس", "abbr": "خمي"},
+      "bn": {"full": "বৃহস্পতিবার", "abbr": "বৃহ"},
+      "ta": {"full": "வியாழன்", "abbr": "வியா"},
+      "zh": {"full": "星期四", "abbr": "周四"},
+      "ja": {"full": "木曜日", "abbr": "木"}
+    },
+    "FRIDAY": {
+      "en": {"full": "Friday", "abbr": "Fri"},
+      "fr": {"full": "Vendredi", "abbr": "Ven"},
+      "es": {"full": "Viernes", "abbr": "Vie"},
+      "de": {"full": "Freitag", "abbr": "Fr"},
+      "hi": {"full": "शुक्रवार", "abbr": "शुक्र"},
+      "ar": {"full": "الجمعة", "abbr": "جمع"},
+      "bn": {"full": "শুক্রবার", "abbr": "শুক্র"},
+      "ta": {"full": "வெள்ளி", "abbr": "வெள்"},
+      "zh": {"full": "星期五", "abbr": "周五"},
+      "ja": {"full": "金曜日", "abbr": "金"}
+    },
+    "SATURDAY": {
+      "en": {"full": "Saturday", "abbr": "Sat"},
+      "fr": {"full": "Samedi", "abbr": "Sam"},
+      "es": {"full": "Sábado", "abbr": "Sáb"},
+      "de": {"full": "Samstag", "abbr": "Sa"},
+      "hi": {"full": "शनिवार", "abbr": "शनि"},
+      "ar": {"full": "السبت", "abbr": "سبت"},
+      "bn": {"full": "শনিবার", "abbr": "শনি"},
+      "ta": {"full": "சனி", "abbr": "சனி"},
+      "zh": {"full": "星期六", "abbr": "周六"},
+      "ja": {"full": "土曜日", "abbr": "土"}
+    },
+    "SUNDAY": {
+      "en": {"full": "Sunday", "abbr": "Sun"},
+      "fr": {"full": "Dimanche", "abbr": "Dim"},
+      "es": {"full": "Domingo", "abbr": "Dom"},
+      "de": {"full": "Sonntag", "abbr": "So"},
+      "hi": {"full": "रविवार", "abbr": "रवि"},
+      "ar": {"full": "الأحد", "abbr": "أحد"},
+      "bn": {"full": "রবিবার", "abbr": "রবি"},
+      "ta": {"full": "ஞாயிறு", "abbr": "ஞாயி"},
+      "zh": {"full": "星期日", "abbr": "周日"},
+      "ja": {"full": "日曜日", "abbr": "日"}
+    }
+  }
+}
