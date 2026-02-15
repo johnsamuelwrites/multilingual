@@ -8,7 +8,6 @@
 
 from multilingualprogramming.datetime.mp_date import MPDate
 from multilingualprogramming.datetime.mp_time import MPTime
-from multilingualprogramming.datetime.mp_datetime import MPDatetime
 
 # Create a date and format in multiple languages
 date = MPDate(2024, 1, 15)

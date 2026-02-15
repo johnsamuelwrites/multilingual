@@ -11,8 +11,8 @@ from multilingualprogramming.lexer.token_types import TokenType
 
 # Tokenize English code
 print("== Tokenizing English code ==")
-source_en = 'if x > 5:\n    print("hello")'
-lexer = Lexer(source_en, language="en")
+SOURCE_EN = 'if x > 5:\n    print("hello")'
+lexer = Lexer(SOURCE_EN, language="en")
 tokens = lexer.tokenize()
 for token in tokens:
     if token.type != TokenType.EOF:
@@ -21,8 +21,8 @@ print(f"  Detected language: {lexer.language}")
 
 # Tokenize French code
 print("\n== Tokenizing French code ==")
-source_fr = 'si x > 5:\n    afficher("bonjour")'
-lexer = Lexer(source_fr, language="fr")
+SOURCE_FR = 'si x > 5:\n    afficher("bonjour")'
+lexer = Lexer(SOURCE_FR, language="fr")
 tokens = lexer.tokenize()
 for token in tokens:
     if token.type != TokenType.EOF:
@@ -31,8 +31,8 @@ print(f"  Detected language: {lexer.language}")
 
 # Tokenize Hindi code with Devanagari numerals
 print("\n== Tokenizing Hindi code ==")
-source_hi = "अगर x > ५:\n    छापो(x)"
-lexer = Lexer(source_hi, language="hi")
+SOURCE_HI = "अगर x > ५:\n    छापो(x)"
+lexer = Lexer(SOURCE_HI, language="hi")
 tokens = lexer.tokenize()
 for token in tokens:
     if token.type != TokenType.EOF:
@@ -41,16 +41,16 @@ print(f"  Detected language: {lexer.language}")
 
 # Auto-detect language
 print("\n== Auto-detecting language ==")
-source_auto = "si x > 5:\n    retour x"
-lexer = Lexer(source_auto)
+SOURCE_AUTO = "si x > 5:\n    retour x"
+lexer = Lexer(SOURCE_AUTO)
 tokens = lexer.tokenize()
-print(f"  Source: {source_auto!r}")
+print(f"  Source: {SOURCE_AUTO!r}")
 print(f"  Detected language: {lexer.language}")
 
 # Unicode operators
 print("\n== Unicode operators ==")
-source_unicode = "x \u00d7 y \u2260 z"
-lexer = Lexer(source_unicode)
+SOURCE_UNICODE = "x \u00d7 y \u2260 z"
+lexer = Lexer(SOURCE_UNICODE)
 tokens = lexer.tokenize()
 for token in tokens:
     if token.type == TokenType.OPERATOR:

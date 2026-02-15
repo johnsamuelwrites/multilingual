@@ -5,9 +5,11 @@
 #
 
 """Registry for multilingual keyword lookups based on the Universal Semantic Model."""
+# pylint: disable=unsubscriptable-object
 
 import json
 from pathlib import Path
+from typing import Any, cast
 from multilingualprogramming.exceptions import (
     UnknownKeywordError,
     UnsupportedLanguageError,
@@ -23,7 +25,7 @@ class KeywordRegistry:
     """
 
     _instance = None
-    _data = None
+    _data: dict[str, Any] | None = None
 
     def __new__(cls):
         if cls._instance is None:
@@ -33,6 +35,10 @@ class KeywordRegistry:
     def __init__(self):
         if KeywordRegistry._data is None:
             self._load()
+        if not hasattr(self, "_reverse_index"):
+            self._reverse_index = {}
+        if not hasattr(self, "_concept_map"):
+            self._concept_map = {}
 
     def _load(self):
         """Load keywords.json from the resources directory."""
@@ -45,8 +51,11 @@ class KeywordRegistry:
         self._reverse_index = {}
         # Build flat concept map: {concept_id: {language: keyword}}
         self._concept_map = {}
+        data = cast(dict[str, Any] | None, KeywordRegistry._data)
+        if data is None:
+            raise UnsupportedLanguageError("unknown")
 
-        for category_concepts in self._data["categories"].values():
+        for category_concepts in data["categories"].values():
             for concept_id, translations in category_concepts.items():
                 self._concept_map[concept_id] = translations
                 for lang, keyword in translations.items():
@@ -58,8 +67,15 @@ class KeywordRegistry:
 
     def _check_language(self, language):
         """Raise UnsupportedLanguageError if language is not in the registry."""
-        if language not in self._data["languages"]:
+        data = cast(dict[str, Any] | None, self._data)
+        if data is None:
             raise UnsupportedLanguageError(language)
+        if language not in data["languages"]:
+            raise UnsupportedLanguageError(language)
+
+    def check_language(self, language):
+        """Public language validation helper."""
+        self._check_language(language)
 
     def get_keyword(self, concept_id, language):
         """
@@ -164,7 +180,10 @@ class KeywordRegistry:
         Returns:
             list[str]: Language codes
         """
-        return list(self._data["languages"])
+        data = cast(dict[str, Any] | None, self._data)
+        if data is None:
+            return []
+        return list(data["languages"])
 
     def detect_language(self, keywords):
         """
@@ -178,8 +197,11 @@ class KeywordRegistry:
         Returns:
             str | None: The language code with the most matches, or None
         """
+        data = cast(dict[str, Any] | None, self._data)
+        if data is None:
+            return None
         scores = {}
-        for lang in self._data["languages"]:
+        for lang in data["languages"]:
             lang_index = self._reverse_index.get(lang, {})
             score = sum(1 for kw in keywords if kw in lang_index)
             if score > 0:
@@ -197,6 +219,15 @@ class KeywordRegistry:
             list[str]: All concept IDs
         """
         return list(self._concept_map.keys())
+
+    def get_language_index(self, language):
+        """Get reverse index for a language."""
+        self._check_language(language)
+        return self._reverse_index.get(language, {})
+
+    def get_concept_map(self):
+        """Get concept map used for validation workflows."""
+        return self._concept_map
 
     @classmethod
     def reset(cls):

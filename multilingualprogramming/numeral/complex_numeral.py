@@ -5,8 +5,6 @@
 #
 
 """Functions to handle complex numbers in multiple languages"""
-
-import re
 from multilingualprogramming.numeral.unicode_numeral import UnicodeNumeral
 from multilingualprogramming.exceptions import (
     InvalidNumeralCharacterError,

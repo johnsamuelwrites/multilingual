@@ -22,7 +22,8 @@ class Token:
         column (int): Column number (1-based)
     """
 
-    def __init__(self, token_type, value, line=1, column=1,
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
+    def __init__(self, token_type: TokenType, value, line=1, column=1,
                  concept=None, language=None):
         self.type = token_type
         self.value = value

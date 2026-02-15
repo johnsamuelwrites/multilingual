@@ -7,11 +7,13 @@
 """Parser for multilingual date strings."""
 
 import unicodedata
+from typing import Any, cast
+from multilingualprogramming.datetime.resource_loader import load_datetime_resource
 from multilingualprogramming.exceptions import InvalidDateError
 from multilingualprogramming.unicode_string import get_language_from_character
-from multilingualprogramming.datetime.resource_loader import load_datetime_resource
 
 
+# pylint: disable=too-few-public-methods
 class DateParser:
     """
     Parses multilingual date strings into (year, month, day) tuples.
@@ -22,26 +24,32 @@ class DateParser:
     - Various separator characters (-, /, .)
     """
 
-    _months_data = None
-    _month_lookup = None  # {language: {month_name_lower: month_number}}
+    _months_data: dict[str, Any] | None = None
+    _month_lookup: dict[str, dict[str, int]] | None = None
 
     @classmethod
     def _load(cls):
         """Load month names from JSON."""
-        if cls._months_data is not None:
+        if cls._months_data is not None and cls._month_lookup is not None:
             return
-        cls._months_data = load_datetime_resource("months.json")
+
+        months_data = load_datetime_resource("months.json")
+        if not isinstance(months_data, dict):
+            raise InvalidDateError("Invalid months data format")
 
         # Build lookup: {lang: {month_name_lower: month_number}}
-        cls._month_lookup = {}
-        month_names = list(cls._months_data["months"].keys())
+        month_lookup: dict[str, dict[str, int]] = {}
+        month_names = list(months_data["months"].keys())
         for idx, month_key in enumerate(month_names, 1):
-            month_data = cls._months_data["months"][month_key]
+            month_data = months_data["months"][month_key]
             for lang, names in month_data.items():
-                if lang not in cls._month_lookup:
-                    cls._month_lookup[lang] = {}
-                cls._month_lookup[lang][names["full"].lower()] = idx
-                cls._month_lookup[lang][names["abbr"].lower()] = idx
+                if lang not in month_lookup:
+                    month_lookup[lang] = {}
+                month_lookup[lang][names["full"].lower()] = idx
+                month_lookup[lang][names["abbr"].lower()] = idx
+
+        cls._months_data = months_data
+        cls._month_lookup = month_lookup
 
     @classmethod
     def _extract_number(cls, token):
@@ -53,19 +61,18 @@ class DateParser:
         """
         if not token:
             return None
-        # Try direct int conversion first (ASCII digits)
         try:
             return int(token)
         except ValueError:
             pass
-        # Try Unicode digit conversion
+
         result = 0
         for char in token:
             if unicodedata.category(char) == "Nd":
                 result = result * 10 + unicodedata.decimal(char)
             else:
                 return None
-        return result if token else None
+        return result
 
     @classmethod
     def _find_month(cls, token):
@@ -75,6 +82,9 @@ class DateParser:
         Returns:
             tuple(int, str) | None: (month_number, language) or None
         """
+        if cls._month_lookup is None:
+            return None
+
         token_lower = token.lower()
         for lang, months in cls._month_lookup.items():
             if token_lower in months:
@@ -82,12 +92,13 @@ class DateParser:
         return None
 
     @classmethod
+    # pylint: disable=too-many-locals,too-many-return-statements,too-many-branches,too-many-statements
     def parse(cls, datestr, language=None):
         """
         Parse a multilingual date string.
 
         Parameters:
-            datestr (str): Date string (e.g., "15-January-2024", "१५-जनवरी-२०२४")
+            datestr (str): Date string (e.g., "15-January-2024")
             language (str): Optional language hint
 
         Returns:
@@ -99,7 +110,6 @@ class DateParser:
         cls._load()
         datestr = datestr.strip()
 
-        # Split on common separators
         separators = ["-", "/", ".", " ", "年", "月", "日"]
         tokens = []
         current = ""
@@ -116,7 +126,6 @@ class DateParser:
         if len(tokens) < 2:
             raise InvalidDateError(f"Cannot parse date: {datestr}")
 
-        # Classify each token as number or month name
         numbers = []
         month_info = None
         detected_lang = language
@@ -125,60 +134,57 @@ class DateParser:
             num = cls._extract_number(token)
             if num is not None:
                 numbers.append(num)
-                # Detect language from Unicode digits
                 if detected_lang is None:
                     for char in token:
                         lang_name = get_language_from_character(char)
                         if lang_name and lang_name != "DIGIT":
                             detected_lang = lang_name
                             break
-            else:
-                # Try as month name
-                result = cls._find_month(token)
-                if result is not None:
-                    month_num, lang = result
-                    month_info = month_num
-                    if detected_lang is None:
-                        detected_lang = lang
-                else:
-                    raise InvalidDateError(
-                        f"Cannot identify token: {token}"
-                    )
+                continue
+
+            result = cls._find_month(token)
+            if result is None:
+                raise InvalidDateError(f"Cannot identify token: {token}")
+
+            month_num = result[0]
+            lang = result[1]
+            month_info = month_num
+            if detected_lang is None:
+                detected_lang = lang
 
         if detected_lang is None:
             detected_lang = "en"
 
-        # Determine year, month, day from parsed values
         if month_info is not None:
-            # We have a named month
             if len(numbers) == 2:
-                # Determine which is day and which is year
-                if numbers[0] > 31:
-                    year, day = numbers[0], numbers[1]
-                elif numbers[1] > 31:
-                    day, year = numbers[0], numbers[1]
-                elif numbers[0] > 12:
-                    day, year = numbers[0], numbers[1]
+                first = numbers[0]
+                second = numbers[1]
+                if first > 31:
+                    year, day = first, second
+                elif second > 31:
+                    day, year = first, second
+                elif first > 12:
+                    day, year = first, second
                 else:
-                    day, year = numbers[0], numbers[1]
+                    day, year = first, second
                 return (year, month_info, day, detected_lang)
+
             if len(numbers) == 1:
-                # Assume year if > 31, else day
-                if numbers[0] > 31:
-                    return (numbers[0], month_info, 1, detected_lang)
-                return (2024, month_info, numbers[0], detected_lang)
-        elif len(numbers) == 3:
-            # All numeric: try to determine order
-            a, b, c = numbers
-            # If first number > 31, assume YYYY-MM-DD
+                value = cast(int, numbers[0])
+                if value > 31:
+                    return (value, month_info, 1, detected_lang)
+                return (2024, month_info, value, detected_lang)
+
+        if len(numbers) == 3:
+            a = numbers[0]
+            b = numbers[1]
+            c = numbers[2]
             if a > 31:
                 return (a, b, c, detected_lang)
-            # If third number > 31, assume DD-MM-YYYY or MM-DD-YYYY
             if c > 31:
                 if a > 12:
-                    return (c, b, a, detected_lang)  # DD-MM-YYYY
-                return (c, a, b, detected_lang)  # MM-DD-YYYY or DD-MM-YYYY
-            # Ambiguous — default to DD-MM-YYYY
+                    return (c, b, a, detected_lang)
+                return (c, a, b, detected_lang)
             return (c, b, a, detected_lang)
 
         raise InvalidDateError(f"Cannot determine date components: {datestr}")

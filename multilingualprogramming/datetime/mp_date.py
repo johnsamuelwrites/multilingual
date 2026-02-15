@@ -5,8 +5,10 @@
 #
 
 """Multilingual date handling."""
+# pylint: disable=unsubscriptable-object
 
 import datetime as dt
+from typing import Any, cast
 from multilingualprogramming.datetime.date_parser import DateParser
 from multilingualprogramming.datetime.resource_loader import load_datetime_resource
 from multilingualprogramming.exceptions import InvalidDateError
@@ -20,7 +22,7 @@ class MPDate:
     Internally stores as Python datetime.date (Gregorian).
     """
 
-    _months_data = None
+    _months_data: dict[str, Any] | None = None
 
     @classmethod
     def _load_months(cls):
@@ -93,9 +95,12 @@ class MPDate:
     def _get_month_name(self, language, abbreviated=False):
         """Get the month name in a given language."""
         self._load_months()
-        month_keys = list(self._months_data["months"].keys())
+        if self._months_data is None:
+            raise InvalidDateError("Month data not loaded")
+        months_data = cast(dict[str, Any], self._months_data)
+        month_keys = list(months_data["months"].keys())
         month_key = month_keys[self._date.month - 1]
-        month_data = self._months_data["months"][month_key]
+        month_data = months_data["months"][month_key]
         if language in month_data:
             form = "abbr" if abbreviated else "full"
             return month_data[language][form]
@@ -127,6 +132,9 @@ class MPDate:
         Returns:
             str: Formatted date string
         """
+        if fmt is not None:
+            return self._date.strftime(fmt)
+
         month_name = self._get_month_name(language)
         day_str = self._format_number(self._date.day, language)
         year_str = self._format_number(self._date.year, language)

@@ -20,6 +20,7 @@ class MPDatetime:
     Combines MPDate and MPTime. Internally stores as Python datetime.datetime.
     """
 
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(self, year=None, month=None, day=None,
                  hour=0, minute=0, second=0, datetime_obj=None):
         """
@@ -121,6 +122,9 @@ class MPDatetime:
         Returns:
             str: Formatted datetime string
         """
+        if fmt is not None:
+            return self._datetime.strftime(fmt)
+
         date_part = self.date().to_string(language)
         time_part = self.time().to_string(language)
         return f"{date_part} {time_part}"

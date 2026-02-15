@@ -85,6 +85,7 @@ def _is_digit(char):
     return unicodedata.category(char) == "Nd"
 
 
+# pylint: disable=too-few-public-methods
 class Lexer:
     """
     Tokenizes multilingual source code.
@@ -111,6 +112,7 @@ class Lexer:
         self._at_line_start = True
         self._detected_keywords = []
 
+    # pylint: disable=too-many-branches,too-many-statements
     def tokenize(self):
         """
         Tokenize the entire source string.
@@ -142,7 +144,7 @@ class Lexer:
                 if self.reader.is_at_end():
                     break
                 char = self.reader.peek()
-                if char == "\n" or char == "#":
+                if char in ("\n", "#"):
                     continue
 
             # String literals

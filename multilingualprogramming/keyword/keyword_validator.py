@@ -32,9 +32,9 @@ class KeywordValidator:
             list[tuple[str, list[str]]]: List of (keyword, [concept_ids])
                 for ambiguous keywords. Empty list if no ambiguities.
         """
-        self.registry._check_language(language)
+        self.registry.check_language(language)
         ambiguities = []
-        lang_index = self.registry._reverse_index.get(language, {})
+        lang_index = self.registry.get_language_index(language)
         for keyword, concepts in lang_index.items():
             if len(concepts) > 1:
                 ambiguities.append((keyword, concepts))
@@ -51,9 +51,9 @@ class KeywordValidator:
             list[str]: List of concept IDs missing translations.
                 Empty list if complete.
         """
-        self.registry._check_language(language)
+        self.registry.check_language(language)
         missing = []
-        for concept_id, translations in self.registry._concept_map.items():
+        for concept_id, translations in self.registry.get_concept_map().items():
             if language not in translations:
                 missing.append(concept_id)
         return missing
