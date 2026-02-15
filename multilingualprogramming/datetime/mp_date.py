@@ -6,10 +6,9 @@
 
 """Multilingual date handling."""
 
-import json
 import datetime as dt
-from pathlib import Path
 from multilingualprogramming.datetime.date_parser import DateParser
+from multilingualprogramming.datetime.resource_loader import load_datetime_resource
 from multilingualprogramming.exceptions import InvalidDateError
 from multilingualprogramming.unicode_string import get_unicode_character_string
 
@@ -28,10 +27,7 @@ class MPDate:
         """Load month names from JSON."""
         if cls._months_data is not None:
             return
-        resources_dir = Path(__file__).parent.parent / "resources" / "datetime"
-        months_path = resources_dir / "months.json"
-        with open(months_path, "r", encoding="utf-8") as f:
-            cls._months_data = json.load(f)
+        cls._months_data = load_datetime_resource("months.json")
 
     def __init__(self, year=None, month=None, day=None, date=None):
         """

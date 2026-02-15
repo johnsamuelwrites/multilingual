@@ -16,7 +16,7 @@ from multilingualprogramming.datetime.mp_datetime import MPDatetime
 from multilingualprogramming.exceptions import InvalidDateError
 
 
-class MPDateTestSuite(unittest.TestCase):
+class MPDateParsingAndFormattingTestSuite(unittest.TestCase):
     """
     Test cases for MPDate
     """
@@ -142,6 +142,12 @@ class MPDateTestSuite(unittest.TestCase):
         formatted = d1.to_string("fr")
         d2 = MPDate.from_string(formatted)
         self.assertEqual(d1, d2)
+
+
+class MPDateOperationsTestSuite(unittest.TestCase):
+    """
+    Test cases for MPDate arithmetic and comparisons
+    """
 
     def test_add_days(self):
         """Test adding days to a date."""

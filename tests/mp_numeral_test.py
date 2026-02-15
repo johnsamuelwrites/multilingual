@@ -83,17 +83,34 @@ class MPNumeralTestSuite(unittest.TestCase):
         # The value must be 12.34
         self.assertTrue(num1.to_decimal() == 12.34)
 
-        locale_code = "fr_FR.UTF-8"  # Specify the desired locale code
-        original_locale = locale.setlocale(locale.LC_ALL)
+        original_locale = locale.setlocale(locale.LC_NUMERIC)
+        locale_candidates = [
+            "fr_FR.UTF-8",
+            "fr_FR.utf8",
+            "fr_FR",
+            "French_France.1252",
+        ]
+        selected_locale = None
 
         try:
-            locale.setlocale(locale.LC_ALL, locale_code)
+            for locale_code in locale_candidates:
+                try:
+                    selected_locale = locale.setlocale(
+                        locale.LC_NUMERIC, locale_code
+                    )
+                    break
+                except locale.Error:
+                    continue
+
+            if selected_locale is None:
+                self.skipTest("No French locale with comma decimal separator is installed")
+
             num1 = mpn.MPNumeral("12,34")  # create a numeral
 
             # The value must be 12.34
             self.assertTrue(num1.to_decimal() == 12.34)
         finally:
-            locale.setlocale(locale.LC_ALL, original_locale)
+            locale.setlocale(locale.LC_NUMERIC, original_locale)
 
     def test_mp_numeral_operations(self):
         """

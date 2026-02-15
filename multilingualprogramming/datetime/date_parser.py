@@ -6,11 +6,10 @@
 
 """Parser for multilingual date strings."""
 
-import json
 import unicodedata
-from pathlib import Path
 from multilingualprogramming.exceptions import InvalidDateError
 from multilingualprogramming.unicode_string import get_language_from_character
+from multilingualprogramming.datetime.resource_loader import load_datetime_resource
 
 
 class DateParser:
@@ -31,10 +30,7 @@ class DateParser:
         """Load month names from JSON."""
         if cls._months_data is not None:
             return
-        resources_dir = Path(__file__).parent.parent / "resources" / "datetime"
-        months_path = resources_dir / "months.json"
-        with open(months_path, "r", encoding="utf-8") as f:
-            cls._months_data = json.load(f)
+        cls._months_data = load_datetime_resource("months.json")
 
         # Build lookup: {lang: {month_name_lower: month_number}}
         cls._month_lookup = {}
