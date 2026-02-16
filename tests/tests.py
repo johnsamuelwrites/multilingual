@@ -46,6 +46,20 @@ from tests.semantic_analyzer_test import (
 )
 from tests.ast_printer_test import ASTPrinterTestSuite
 from tests.error_messages_test import ErrorMessageRegistryTestSuite
+from tests.python_generator_test import (
+    PythonGeneratorExpressionTestSuite,
+    PythonGeneratorStatementTestSuite,
+    PythonGeneratorCompoundTestSuite,
+    PythonGeneratorMultilingualTestSuite,
+)
+from tests.executor_test import (
+    ExecutorBasicTestSuite,
+    ExecutorMultilingualTestSuite,
+    ExecutorTranspileTestSuite,
+    ExecutorErrorTestSuite,
+)
+from tests.runtime_builtins_test import RuntimeBuiltinsTestSuite
+from tests.repl_test import REPLTestSuite, REPLFrenchTestSuite
 
 if __name__ == "__main__":
     mp_numeral_tests = MPNumeralTestSuite()
@@ -78,6 +92,17 @@ if __name__ == "__main__":
     symbol_table_tests = SymbolTableTestSuite()
     ast_printer_tests = ASTPrinterTestSuite()
     error_messages_tests = ErrorMessageRegistryTestSuite()
+    python_gen_expr_tests = PythonGeneratorExpressionTestSuite()
+    python_gen_stmt_tests = PythonGeneratorStatementTestSuite()
+    python_gen_compound_tests = PythonGeneratorCompoundTestSuite()
+    python_gen_multilingual_tests = PythonGeneratorMultilingualTestSuite()
+    executor_basic_tests = ExecutorBasicTestSuite()
+    executor_multilingual_tests = ExecutorMultilingualTestSuite()
+    executor_transpile_tests = ExecutorTranspileTestSuite()
+    executor_error_tests = ExecutorErrorTestSuite()
+    runtime_builtins_tests = RuntimeBuiltinsTestSuite()
+    repl_tests = REPLTestSuite()
+    repl_french_tests = REPLFrenchTestSuite()
     tests = unittest.TestSuite(
         [
             mp_numeral_tests,
@@ -110,6 +135,17 @@ if __name__ == "__main__":
             symbol_table_tests,
             ast_printer_tests,
             error_messages_tests,
+            python_gen_expr_tests,
+            python_gen_stmt_tests,
+            python_gen_compound_tests,
+            python_gen_multilingual_tests,
+            executor_basic_tests,
+            executor_multilingual_tests,
+            executor_transpile_tests,
+            executor_error_tests,
+            runtime_builtins_tests,
+            repl_tests,
+            repl_french_tests,
         ]
     )
     unittest.main()

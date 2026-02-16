@@ -26,6 +26,10 @@ from multilingualprogramming.parser.semantic_analyzer import (
     Symbol, Scope, SymbolTable, SemanticAnalyzer,
 )
 from multilingualprogramming.parser.error_messages import ErrorMessageRegistry
+from multilingualprogramming.codegen.python_generator import PythonCodeGenerator
+from multilingualprogramming.codegen.runtime_builtins import RuntimeBuiltins
+from multilingualprogramming.codegen.executor import ProgramExecutor, ExecutionResult
+from multilingualprogramming.codegen.repl import REPL
 
 __all__ = [
     "MPNumeral",
@@ -49,4 +53,9 @@ __all__ = [
     "SymbolTable",
     "SemanticAnalyzer",
     "ErrorMessageRegistry",
+    "PythonCodeGenerator",
+    "RuntimeBuiltins",
+    "ProgramExecutor",
+    "ExecutionResult",
+    "REPL",
 ]

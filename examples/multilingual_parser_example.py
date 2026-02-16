@@ -4,45 +4,30 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 
-"""Example: Same program parsed in multiple languages produces identical ASTs."""
+"""Example: Same program parsed in all pilot languages."""
 
+from multilingualprogramming.keyword.keyword_registry import KeywordRegistry
 from multilingualprogramming.lexer.lexer import Lexer
-from multilingualprogramming.parser.parser import Parser
 from multilingualprogramming.parser.ast_printer import ASTPrinter
+from multilingualprogramming.parser.parser import Parser
 
-# The same factorial function in 5 languages
-PROGRAMS = {
-    "en": """\
-def factorial(n):
-    if n <= 1:
-        return 1
-    return n * factorial(n - 1)
-""",
-    "fr": """\
-d\u00e9f factorial(n):
-    si n <= 1:
-        retour 1
-    retour n * factorial(n - 1)
-""",
-    "hi": """\
-\u092a\u0930\u093f\u092d\u093e\u0937\u093e factorial(n):
-    \u0905\u0917\u0930 n <= 1:
-        \u0935\u093e\u092a\u0938\u0940 1
-    \u0935\u093e\u092a\u0938\u0940 n * factorial(n - 1)
-""",
-    "zh": """\
-\u51fd\u6570 factorial(n):
-    \u5982\u679c n <= 1:
-        \u8fd4\u56de 1
-    \u8fd4\u56de n * factorial(n - 1)
-""",
-    "ar": """\
-\u062f\u0627\u0644\u0629 factorial(n):
-    \u0625\u0630\u0627 n <= 1:
-        \u0625\u0631\u062c\u0627\u0639 1
-    \u0625\u0631\u062c\u0627\u0639 n * factorial(n - 1)
-""",
-}
+
+def build_factorial_source(registry, language):
+    """Build the same factorial program using keywords of one language."""
+    func_def = registry.get_keyword("FUNC_DEF", language)
+    cond_if = registry.get_keyword("COND_IF", language)
+    kw_return = registry.get_keyword("RETURN", language)
+    return (
+        f"{func_def} factorial(n):\n"
+        f"    {cond_if} n <= 1:\n"
+        f"        {kw_return} 1\n"
+        f"    {kw_return} n * factorial(n - 1)\n"
+    )
+
+
+registry = KeywordRegistry()
+LANGUAGES = registry.get_supported_languages()
+PROGRAMS = {lang: build_factorial_source(registry, lang) for lang in LANGUAGES}
 
 printer = ASTPrinter()
 

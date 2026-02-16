@@ -137,3 +137,30 @@ class SemanticError(Exception):
         self.column = column
         message = "Semantic error" + location + ": " + message
         super().__init__(message)
+
+
+class CodeGenerationError(Exception):
+    """
+    Exception for code generation errors
+    """
+
+    def __init__(self, message, line=None, column=None):
+        location = ""
+        if line is not None:
+            location = f" at line {line}"
+            if column is not None:
+                location += f", column {column}"
+        self.line = line
+        self.column = column
+        message = "Code generation error" + location + ": " + message
+        super().__init__(message)
+
+
+class RuntimeExecutionError(Exception):
+    """
+    Exception for runtime execution errors
+    """
+
+    def __init__(self, message):
+        message = "Runtime error: " + message
+        super().__init__(message)

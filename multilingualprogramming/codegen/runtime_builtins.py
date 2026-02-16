@@ -1,0 +1,162 @@
+#
+# SPDX-FileCopyrightText: 2024 John Samuel <johnsamuelwrites@gmail.com>
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+
+"""
+Runtime built-in functions for the multilingual programming language.
+
+Provides a namespace dict of built-in functions that are injected into
+the execution environment so that multilingual identifiers (e.g., the
+Hindi word for "print") resolve to Python built-ins.
+"""
+
+from multilingualprogramming.keyword.keyword_registry import KeywordRegistry
+
+
+class RuntimeBuiltins:
+    """
+    Builds a dict of built-in names that should be available at runtime.
+
+    For a given source language, the keyword used for PRINT, INPUT, and
+    type keywords are mapped to the corresponding Python built-ins.
+
+    Usage:
+        builtins = RuntimeBuiltins("fr").namespace()
+        # {'afficher': <built-in function print>,
+        #  'saisir':   <built-in function input>, ...}
+
+    The returned dict is intended to be merged into the exec() globals
+    so that transpiled code can call built-in functions by their
+    multilingual names.
+    """
+
+    # Mapping from USM concept ID to the Python built-in object
+    _CONCEPT_TO_BUILTIN = {
+        "PRINT":      print,
+        "INPUT":      input,
+        "TYPE_INT":   int,
+        "TYPE_FLOAT": float,
+        "TYPE_STR":   str,
+        "TYPE_BOOL":  bool,
+        "TYPE_LIST":  list,
+        "TYPE_DICT":  dict,
+    }
+
+    # Additional Python built-ins available in every language
+    _UNIVERSAL_BUILTINS = {
+        "len":       len,
+        "range":     range,
+        "abs":       abs,
+        "min":       min,
+        "max":       max,
+        "sum":       sum,
+        "sorted":    sorted,
+        "reversed":  reversed,
+        "enumerate": enumerate,
+        "zip":       zip,
+        "map":       map,
+        "filter":    filter,
+        "isinstance": isinstance,
+        "type":      type,
+        "hasattr":   hasattr,
+        "getattr":   getattr,
+        "setattr":   setattr,
+        "repr":      repr,
+        "round":     round,
+        "open":      open,
+        "iter":      iter,
+        "next":      next,
+        "any":       any,
+        "all":       all,
+        "chr":       chr,
+        "ord":       ord,
+        "hex":       hex,
+        "oct":       oct,
+        "bin":       bin,
+        "id":        id,
+        "hash":      hash,
+        "callable":  callable,
+        "dir":       dir,
+        "vars":      vars,
+        "super":     super,
+        "property":  property,
+        "staticmethod": staticmethod,
+        "classmethod":  classmethod,
+        "print":     print,
+        "input":     input,
+        "int":       int,
+        "float":     float,
+        "str":       str,
+        "bool":      bool,
+        "list":      list,
+        "dict":      dict,
+        "set":       set,
+        "tuple":     tuple,
+        "frozenset": frozenset,
+        "bytes":     bytes,
+        "bytearray": bytearray,
+        "memoryview": memoryview,
+        "object":    object,
+        "Exception": Exception,
+        "ValueError": ValueError,
+        "TypeError":  TypeError,
+        "KeyError":   KeyError,
+        "IndexError": IndexError,
+        "AttributeError": AttributeError,
+        "RuntimeError":   RuntimeError,
+        "StopIteration":  StopIteration,
+        "ZeroDivisionError": ZeroDivisionError,
+        "FileNotFoundError": FileNotFoundError,
+        "IOError":    IOError,
+        "OSError":    OSError,
+        "ImportError": ImportError,
+        "NotImplementedError": NotImplementedError,
+        "True":  True,
+        "False": False,
+        "None":  None,
+    }
+
+    def __init__(self, source_language="en"):
+        self._language = source_language
+        self._registry = KeywordRegistry()
+
+    def namespace(self):
+        """
+        Return a dict mapping multilingual names to Python built-ins.
+
+        Includes:
+        1. Language-specific keyword mappings (PRINT -> afficher, etc.)
+        2. Universal Python built-ins (len, range, abs, etc.)
+        """
+        ns = dict(self._UNIVERSAL_BUILTINS)
+
+        # Add language-specific mappings
+        for concept, builtin_obj in self._CONCEPT_TO_BUILTIN.items():
+            try:
+                keyword = self._registry.get_keyword(concept, self._language)
+                ns[keyword] = builtin_obj
+            except Exception:
+                pass  # Skip if concept not found for this language
+
+        return ns
+
+    @classmethod
+    def all_languages_namespace(cls):
+        """
+        Return a namespace containing built-in mappings for ALL supported
+        languages simultaneously. Useful for multi-language environments.
+        """
+        ns = dict(cls._UNIVERSAL_BUILTINS)
+        registry = KeywordRegistry()
+
+        for lang in registry.get_supported_languages():
+            for concept, builtin_obj in cls._CONCEPT_TO_BUILTIN.items():
+                try:
+                    keyword = registry.get_keyword(concept, lang)
+                    ns[keyword] = builtin_obj
+                except Exception:
+                    pass
+
+        return ns
