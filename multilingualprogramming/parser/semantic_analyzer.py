@@ -138,13 +138,34 @@ class SemanticAnalyzer:
 
     def visit_Assignment(self, node):
         node.value.accept(self)
-        node.target.accept(self)
+        # Tuple unpacking: define targets instead of looking them up
+        from multilingualprogramming.parser.ast_nodes import TupleLiteral, Identifier
+        if isinstance(node.target, TupleLiteral):
+            self._define_assignment_target(node.target)
+        else:
+            node.target.accept(self)
         # Check const reassignment
         if hasattr(node.target, 'name'):
             sym = self.symbol_table.lookup(node.target.name)
             if sym and sym.is_const:
                 self._report("CONST_REASSIGNMENT", node,
                              name=node.target.name)
+
+    def _define_assignment_target(self, target):
+        """Define variables in a tuple unpacking assignment target."""
+        from multilingualprogramming.parser.ast_nodes import TupleLiteral, Identifier
+        if isinstance(target, Identifier):
+            existing = self.symbol_table.lookup(target.name)
+            if existing is None:
+                self.symbol_table.define(
+                    target.name, "variable",
+                    line=target.line, column=target.column
+                )
+        elif isinstance(target, TupleLiteral):
+            for elem in target.elements:
+                self._define_assignment_target(elem)
+        else:
+            target.accept(self)
 
     def visit_ExpressionStatement(self, node):
         node.expression.accept(self)
@@ -424,8 +445,6 @@ class SemanticAnalyzer:
                 line=node.line, column=node.column
             )
         else:
-            node.target.accept(self)
-            # Define identifier targets
             self._define_comp_target(node.target, node)
         node.element.accept(self)
         for cond in node.conditions:
@@ -441,7 +460,6 @@ class SemanticAnalyzer:
                 line=node.line, column=node.column
             )
         else:
-            node.target.accept(self)
             self._define_comp_target(node.target, node)
         node.key.accept(self)
         node.value.accept(self)
@@ -458,7 +476,6 @@ class SemanticAnalyzer:
                 line=node.line, column=node.column
             )
         else:
-            node.target.accept(self)
             self._define_comp_target(node.target, node)
         node.element.accept(self)
         for cond in node.conditions:

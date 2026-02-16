@@ -39,3 +39,7 @@ python -m examples.executor_example
 - `examples/codegen_example.py`: code generation from multilingual AST to Python source, with numeral conversion.
 - `examples/multilingual_codegen_example.py`: equivalent source transpiled to Python in all 10 pilot languages.
 - `examples/executor_example.py`: execute equivalent programs in all 10 pilot languages through the full pipeline.
+
+### Phase 3.5 — Critical Language Features
+
+Phase 3.5 features (slices, comprehensions, default parameters, *args/**kwargs, tuple unpacking, decorators, f-strings, triple-quoted strings) are exercised through the existing Phase 3 examples and the test suite (`tests/critical_features_test.py`). These features work across all 10 pilot languages.

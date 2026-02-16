@@ -2,7 +2,7 @@
 
 A Python framework for building programming languages that use **any human language** for keywords, identifiers, numerals, dates, and operators. Write code in English, French, Hindi, Arabic, Chinese, Japanese, and more — all backed by a Universal Semantic Model that maps programming concepts across 10 pilot languages.
 
-Current version: `0.2.0`
+Current version: `0.3.0`
 
 ## Features
 
@@ -17,7 +17,7 @@ Current version: `0.2.0`
 ### Phase 2 — Parser & Semantic Analysis
 
 - **Recursive-descent parser** — `Parser` consuming token streams and producing an AST, dispatching on `token.concept` for language-agnostic parsing
-- **35 AST node classes** — `Program`, 7 literal types, 11 expression types, 11 statement types, 10 compound statement types, 2 import types, all with visitor pattern support
+- **43+ AST node classes** — `Program`, 8 literal types, 18 expression types, 11 statement types, 10 compound statement types, 2 import types, all with visitor pattern support
 - **14-level operator precedence** — from logical OR down through power and primary expressions, with chained comparisons (`a < b < c`)
 - **Semantic analyzer** — `SemanticAnalyzer` with `SymbolTable` and scope chain (global/function/class/block), detecting undefined names, const reassignment, break/continue/return/yield context errors
 - **Multilingual error messages** — `ErrorMessageRegistry` with 16 error templates in all 10 languages, using `{placeholder}` substitution
@@ -29,6 +29,20 @@ Current version: `0.2.0`
 - **Runtime built-ins** — `RuntimeBuiltins` injects multilingual names for built-in functions (`afficher` -> `print`, `saisir` -> `input`, etc.) into the execution environment
 - **Program executor** — `ProgramExecutor` provides the full pipeline: source -> lex -> parse -> semantic check -> generate Python -> execute, with captured output and error reporting
 - **Interactive REPL** — `REPL` for interactive multilingual programming with persistent state across interactions, multi-line block support, and optional Python source display
+
+### Phase 3.5 — Critical Language Features
+
+- **Slice syntax** — `a[1:3]`, `a[::2]`, `a[::-1]` for strings, lists, and sequences
+- **List comprehensions** — `[x * 2 for x in range(10)]` with optional `if` filter
+- **Dict comprehensions** — `{k: v for k, v in items}` with optional `if` filter
+- **Generator expressions** — `sum(x for x in range(10))` in function calls and parenthesized expressions
+- **Default parameters** — `def f(x=5, y=10):` with arbitrary default expressions
+- **Variadic functions** — `def f(*args, **kwargs):` for positional and keyword variadic arguments
+- **Starred call arguments** — `f(*args)`, `f(**kwargs)` for unpacking in function calls
+- **Tuple unpacking** — `a, b = 1, 2` in assignments and `for a, b in items:` in for loops
+- **Decorators** — `@decorator` and `@decorator(args)` for functions and classes
+- **F-strings** — `f"hello {name}"` with arbitrary expression interpolation
+- **Triple-quoted strings** — `"""multi-line text"""` for multi-line string literals
 
 ### Supported Languages
 
@@ -178,6 +192,97 @@ python_code = ProgramExecutor(language="zh").transpile("""\
 print(python_code)
 # def 加法(甲, 乙):
 #     return (甲 + 乙)
+```
+
+### Slices, Comprehensions & F-Strings
+
+```python
+from multilingualprogramming import ProgramExecutor
+
+executor = ProgramExecutor(language="en")
+
+# Slicing
+result = executor.execute('let s = "hello world"\nprint(s[0:5])\nprint(s[::-1])\n')
+# hello
+# dlrow olleh
+
+# List comprehension
+result = executor.execute('print([x * x for x in range(6)])\n')
+# [0, 1, 4, 9, 16, 25]
+
+# Dict comprehension
+result = executor.execute('print({x: x * x for x in range(4)})\n')
+# {0: 0, 1: 1, 2: 4, 3: 9}
+
+# Generator expression
+result = executor.execute('print(sum(x * x for x in range(5)))\n')
+# 30
+
+# F-strings
+result = executor.execute('let name = "world"\nprint(f"hello {name}")\n')
+# hello world
+```
+
+### Default Parameters, *args, **kwargs & Decorators
+
+```python
+from multilingualprogramming import ProgramExecutor
+
+executor = ProgramExecutor(language="en")
+
+# Default parameters
+result = executor.execute("""\
+def greet(name, greeting="Hello"):
+    print(f"{greeting}, {name}!")
+
+greet("Alice")
+greet("Bob", "Bonjour")
+""")
+# Hello, Alice!
+# Bonjour, Bob!
+
+# Variadic functions
+result = executor.execute("""\
+def total(*args):
+    return sum(args)
+
+print(total(1, 2, 3, 4, 5))
+""")
+# 15
+
+# Tuple unpacking
+result = executor.execute("""\
+a, b, c = 10, 20, 30
+print(a + b + c)
+""")
+# 60
+
+# Decorators
+result = executor.execute("""\
+def double(func):
+    def wrapper(*args, **kwargs):
+        return func(*args, **kwargs) * 2
+    return wrapper
+
+@double
+def add(a, b):
+    return a + b
+
+print(add(3, 4))
+""")
+# 14
+```
+
+### Multilingual Comprehensions (French)
+
+```python
+from multilingualprogramming import ProgramExecutor
+
+result = ProgramExecutor(language="fr").execute("""\
+soit résultat = [x * 2 pour x dans range(5)]
+afficher(résultat)
+""")
+print(result.output)   # [0, 2, 4, 6, 8]
 ```
 
 ## Examples
