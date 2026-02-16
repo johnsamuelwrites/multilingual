@@ -137,9 +137,9 @@ class KeywordRegistryTestSuite(unittest.TestCase):
         self.assertIn("FUNC_DEF", concepts)
         self.assertIn("PRINT", concepts)
         self.assertIn("RETURN", concepts)
-        # 12 control_flow + 8 definitions + 6 logical + 4 error_handling
-        # + 4 variables + 6 types + 2 io = 42 total
-        self.assertEqual(len(concepts), 42)
+        # 13 control_flow + 8 definitions + 6 logical + 4 error_handling
+        # + 4 variables + 6 types + 2 io = 43 total
+        self.assertEqual(len(concepts), 43)
 
 class KeywordRegistryErrorTestSuite(unittest.TestCase):
     """

@@ -103,3 +103,37 @@ class UnexpectedTokenError(LexerError):
 
     def __init__(self, message, line=None, column=None):
         super().__init__("Unexpected token: " + message, line, column)
+
+
+class ParseError(LexerError):
+    """
+    Base exception for parser errors
+    """
+
+    def __init__(self, message, line=None, column=None):
+        location = ""
+        if line is not None:
+            location = f" at line {line}"
+            if column is not None:
+                location += f", column {column}"
+        # Bypass LexerError.__init__ to set our own prefix
+        self.line = line
+        self.column = column
+        Exception.__init__(self, "Parse error" + location + ": " + message)
+
+
+class SemanticError(Exception):
+    """
+    Exception for semantic analysis errors
+    """
+
+    def __init__(self, message, line=None, column=None):
+        location = ""
+        if line is not None:
+            location = f" at line {line}"
+            if column is not None:
+                location += f", column {column}"
+        self.line = line
+        self.column = column
+        message = "Semantic error" + location + ": " + message
+        super().__init__(message)

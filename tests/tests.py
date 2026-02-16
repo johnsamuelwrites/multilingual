@@ -28,6 +28,24 @@ from tests.mp_datetime_test import (
     MPDatetimeTestSuite,
 )
 from tests.lexer_test import LexerTokenizationTestSuite, LexerBehaviorTestSuite
+from tests.ast_nodes_test import ASTNodeConstructionTestSuite
+from tests.parser_test import (
+    ParserExpressionTestSuite,
+    ParserStatementTestSuite,
+    ParserCompoundTestSuite,
+    ParserMultilingualTestSuite,
+    ParserErrorTestSuite,
+)
+from tests.semantic_analyzer_test import (
+    SemanticScopeTestSuite,
+    SemanticConstTestSuite,
+    SemanticControlFlowTestSuite,
+    SemanticDefinitionTestSuite,
+    SemanticMultilingualErrorTestSuite,
+    SymbolTableTestSuite,
+)
+from tests.ast_printer_test import ASTPrinterTestSuite
+from tests.error_messages_test import ErrorMessageRegistryTestSuite
 
 if __name__ == "__main__":
     mp_numeral_tests = MPNumeralTestSuite()
@@ -46,6 +64,20 @@ if __name__ == "__main__":
     mp_datetime_tests = MPDatetimeTestSuite()
     lexer_tokenization_tests = LexerTokenizationTestSuite()
     lexer_behavior_tests = LexerBehaviorTestSuite()
+    ast_node_tests = ASTNodeConstructionTestSuite()
+    parser_expression_tests = ParserExpressionTestSuite()
+    parser_statement_tests = ParserStatementTestSuite()
+    parser_compound_tests = ParserCompoundTestSuite()
+    parser_multilingual_tests = ParserMultilingualTestSuite()
+    parser_error_tests = ParserErrorTestSuite()
+    semantic_scope_tests = SemanticScopeTestSuite()
+    semantic_const_tests = SemanticConstTestSuite()
+    semantic_control_flow_tests = SemanticControlFlowTestSuite()
+    semantic_definition_tests = SemanticDefinitionTestSuite()
+    semantic_multilingual_error_tests = SemanticMultilingualErrorTestSuite()
+    symbol_table_tests = SymbolTableTestSuite()
+    ast_printer_tests = ASTPrinterTestSuite()
+    error_messages_tests = ErrorMessageRegistryTestSuite()
     tests = unittest.TestSuite(
         [
             mp_numeral_tests,
@@ -64,6 +96,20 @@ if __name__ == "__main__":
             mp_datetime_tests,
             lexer_tokenization_tests,
             lexer_behavior_tests,
+            ast_node_tests,
+            parser_expression_tests,
+            parser_statement_tests,
+            parser_compound_tests,
+            parser_multilingual_tests,
+            parser_error_tests,
+            semantic_scope_tests,
+            semantic_const_tests,
+            semantic_control_flow_tests,
+            semantic_definition_tests,
+            semantic_multilingual_error_tests,
+            symbol_table_tests,
+            ast_printer_tests,
+            error_messages_tests,
         ]
     )
     unittest.main()

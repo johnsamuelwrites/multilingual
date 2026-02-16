@@ -20,6 +20,12 @@ from multilingualprogramming.datetime.mp_datetime import MPDatetime
 from multilingualprogramming.lexer.lexer import Lexer
 from multilingualprogramming.lexer.token import Token
 from multilingualprogramming.lexer.token_types import TokenType
+from multilingualprogramming.parser.parser import Parser
+from multilingualprogramming.parser.ast_printer import ASTPrinter
+from multilingualprogramming.parser.semantic_analyzer import (
+    Symbol, Scope, SymbolTable, SemanticAnalyzer,
+)
+from multilingualprogramming.parser.error_messages import ErrorMessageRegistry
 
 __all__ = [
     "MPNumeral",
@@ -36,4 +42,11 @@ __all__ = [
     "Lexer",
     "Token",
     "TokenType",
+    "Parser",
+    "ASTPrinter",
+    "Symbol",
+    "Scope",
+    "SymbolTable",
+    "SemanticAnalyzer",
+    "ErrorMessageRegistry",
 ]

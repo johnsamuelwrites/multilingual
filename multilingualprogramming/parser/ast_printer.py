@@ -1,0 +1,394 @@
+#
+# SPDX-FileCopyrightText: 2024 John Samuel <johnsamuelwrites@gmail.com>
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+
+"""AST pretty-printer for debugging and visualization."""
+
+
+class ASTPrinter:
+    """Pretty-prints an AST as indented text."""
+
+    def __init__(self, indent_str="  "):
+        self.indent_str = indent_str
+        self._depth = 0
+        self._lines = []
+
+    def print(self, node):
+        """Generate a pretty-printed string of the AST."""
+        self._depth = 0
+        self._lines = []
+        node.accept(self)
+        return "\n".join(self._lines)
+
+    def _emit(self, text):
+        """Add a line at the current indentation level."""
+        self._lines.append(self.indent_str * self._depth + text)
+
+    def _indent(self):
+        self._depth += 1
+
+    def _dedent(self):
+        self._depth -= 1
+
+    def _visit_body(self, body):
+        """Visit a list of statements."""
+        self._indent()
+        for stmt in body:
+            stmt.accept(self)
+        self._dedent()
+
+    # ------------------------------------------------------------------
+    # Visitors
+    # ------------------------------------------------------------------
+
+    def visit_Program(self, node):
+        self._emit("Program")
+        self._visit_body(node.body)
+
+    def visit_NumeralLiteral(self, node):
+        self._emit(f"NumeralLiteral {node.value!r}")
+
+    def visit_StringLiteral(self, node):
+        self._emit(f"StringLiteral {node.value!r}")
+
+    def visit_DateLiteral(self, node):
+        self._emit(f"DateLiteral {node.value!r}")
+
+    def visit_BooleanLiteral(self, node):
+        self._emit(f"BooleanLiteral {node.value}")
+
+    def visit_NoneLiteral(self, _node):
+        self._emit("NoneLiteral")
+
+    def visit_ListLiteral(self, node):
+        self._emit("ListLiteral")
+        self._indent()
+        for elem in node.elements:
+            elem.accept(self)
+        self._dedent()
+
+    def visit_DictLiteral(self, node):
+        self._emit("DictLiteral")
+        self._indent()
+        for key, value in node.pairs:
+            self._emit("pair:")
+            self._indent()
+            key.accept(self)
+            value.accept(self)
+            self._dedent()
+        self._dedent()
+
+    def visit_Identifier(self, node):
+        self._emit(f"Identifier {node.name!r}")
+
+    def visit_BinaryOp(self, node):
+        self._emit(f"BinaryOp {node.op!r}")
+        self._indent()
+        node.left.accept(self)
+        node.right.accept(self)
+        self._dedent()
+
+    def visit_UnaryOp(self, node):
+        self._emit(f"UnaryOp {node.op!r}")
+        self._indent()
+        node.operand.accept(self)
+        self._dedent()
+
+    def visit_BooleanOp(self, node):
+        self._emit(f"BooleanOp {node.op!r}")
+        self._indent()
+        for val in node.values:
+            val.accept(self)
+        self._dedent()
+
+    def visit_CompareOp(self, node):
+        self._emit("CompareOp")
+        self._indent()
+        node.left.accept(self)
+        for op, right in node.comparators:
+            self._emit(f"op: {op!r}")
+            right.accept(self)
+        self._dedent()
+
+    def visit_CallExpr(self, node):
+        self._emit("CallExpr")
+        self._indent()
+        self._emit("func:")
+        self._indent()
+        node.func.accept(self)
+        self._dedent()
+        if node.args:
+            self._emit("args:")
+            self._indent()
+            for arg in node.args:
+                arg.accept(self)
+            self._dedent()
+        if node.keywords:
+            self._emit("keywords:")
+            self._indent()
+            for name, val in node.keywords:
+                self._emit(f"{name}=")
+                self._indent()
+                val.accept(self)
+                self._dedent()
+            self._dedent()
+        self._dedent()
+
+    def visit_AttributeAccess(self, node):
+        self._emit(f"AttributeAccess .{node.attr!r}")
+        self._indent()
+        node.obj.accept(self)
+        self._dedent()
+
+    def visit_IndexAccess(self, node):
+        self._emit("IndexAccess")
+        self._indent()
+        node.obj.accept(self)
+        self._emit("index:")
+        self._indent()
+        node.index.accept(self)
+        self._dedent()
+        self._dedent()
+
+    def visit_LambdaExpr(self, node):
+        self._emit(f"LambdaExpr params={node.params!r}")
+        self._indent()
+        node.body.accept(self)
+        self._dedent()
+
+    def visit_YieldExpr(self, node):
+        self._emit("YieldExpr")
+        if node.value:
+            self._indent()
+            node.value.accept(self)
+            self._dedent()
+
+    def visit_ConditionalExpr(self, node):
+        self._emit("ConditionalExpr")
+        self._indent()
+        self._emit("condition:")
+        self._indent()
+        node.condition.accept(self)
+        self._dedent()
+        self._emit("true:")
+        self._indent()
+        node.true_expr.accept(self)
+        self._dedent()
+        self._emit("false:")
+        self._indent()
+        node.false_expr.accept(self)
+        self._dedent()
+        self._dedent()
+
+    def visit_VariableDeclaration(self, node):
+        kind = "const" if node.is_const else "let"
+        self._emit(f"VariableDeclaration ({kind}) {node.name!r}")
+        self._indent()
+        node.value.accept(self)
+        self._dedent()
+
+    def visit_Assignment(self, node):
+        self._emit(f"Assignment op={node.op!r}")
+        self._indent()
+        self._emit("target:")
+        self._indent()
+        node.target.accept(self)
+        self._dedent()
+        self._emit("value:")
+        self._indent()
+        node.value.accept(self)
+        self._dedent()
+        self._dedent()
+
+    def visit_ExpressionStatement(self, node):
+        self._emit("ExpressionStatement")
+        self._indent()
+        node.expression.accept(self)
+        self._dedent()
+
+    def visit_PassStatement(self, _node):
+        self._emit("PassStatement")
+
+    def visit_ReturnStatement(self, node):
+        self._emit("ReturnStatement")
+        if node.value:
+            self._indent()
+            node.value.accept(self)
+            self._dedent()
+
+    def visit_BreakStatement(self, _node):
+        self._emit("BreakStatement")
+
+    def visit_ContinueStatement(self, _node):
+        self._emit("ContinueStatement")
+
+    def visit_RaiseStatement(self, node):
+        self._emit("RaiseStatement")
+        if node.value:
+            self._indent()
+            node.value.accept(self)
+            self._dedent()
+
+    def visit_GlobalStatement(self, node):
+        self._emit(f"GlobalStatement {node.names!r}")
+
+    def visit_LocalStatement(self, node):
+        self._emit(f"LocalStatement {node.names!r}")
+
+    def visit_YieldStatement(self, node):
+        self._emit("YieldStatement")
+        if node.value:
+            self._indent()
+            node.value.accept(self)
+            self._dedent()
+
+    def visit_IfStatement(self, node):
+        self._emit("IfStatement")
+        self._indent()
+        self._emit("condition:")
+        self._indent()
+        node.condition.accept(self)
+        self._dedent()
+        self._emit("body:")
+        self._visit_body(node.body)
+        for elif_cond, elif_body in node.elif_clauses:
+            self._emit("elif:")
+            self._indent()
+            elif_cond.accept(self)
+            self._dedent()
+            self._emit("elif_body:")
+            self._visit_body(elif_body)
+        if node.else_body:
+            self._emit("else:")
+            self._visit_body(node.else_body)
+        self._dedent()
+
+    def visit_WhileLoop(self, node):
+        self._emit("WhileLoop")
+        self._indent()
+        self._emit("condition:")
+        self._indent()
+        node.condition.accept(self)
+        self._dedent()
+        self._emit("body:")
+        self._visit_body(node.body)
+        self._dedent()
+
+    def visit_ForLoop(self, node):
+        self._emit("ForLoop")
+        self._indent()
+        self._emit("target:")
+        self._indent()
+        node.target.accept(self)
+        self._dedent()
+        self._emit("iterable:")
+        self._indent()
+        node.iterable.accept(self)
+        self._dedent()
+        self._emit("body:")
+        self._visit_body(node.body)
+        self._dedent()
+
+    def visit_FunctionDef(self, node):
+        self._emit(f"FunctionDef name={node.name!r}")
+        self._indent()
+        self._emit(f"params: {node.params!r}")
+        self._emit("body:")
+        self._visit_body(node.body)
+        self._dedent()
+
+    def visit_ClassDef(self, node):
+        self._emit(f"ClassDef name={node.name!r}")
+        self._indent()
+        if node.bases:
+            self._emit("bases:")
+            self._indent()
+            for base in node.bases:
+                base.accept(self)
+            self._dedent()
+        self._emit("body:")
+        self._visit_body(node.body)
+        self._dedent()
+
+    def visit_TryStatement(self, node):
+        self._emit("TryStatement")
+        self._indent()
+        self._emit("body:")
+        self._visit_body(node.body)
+        for handler in node.handlers:
+            handler.accept(self)
+        if node.finally_body:
+            self._emit("finally:")
+            self._visit_body(node.finally_body)
+        self._dedent()
+
+    def visit_ExceptHandler(self, node):
+        parts = ["ExceptHandler"]
+        if node.exc_type:
+            parts.append(f"type={node.exc_type.name!r}")
+        if node.name:
+            parts.append(f"as={node.name!r}")
+        self._emit(" ".join(parts))
+        self._indent()
+        for stmt in node.body:
+            stmt.accept(self)
+        self._dedent()
+
+    def visit_MatchStatement(self, node):
+        self._emit("MatchStatement")
+        self._indent()
+        self._emit("subject:")
+        self._indent()
+        node.subject.accept(self)
+        self._dedent()
+        for case in node.cases:
+            case.accept(self)
+        self._dedent()
+
+    def visit_CaseClause(self, node):
+        if node.is_default:
+            self._emit("DefaultClause")
+        else:
+            self._emit("CaseClause")
+            self._indent()
+            self._emit("pattern:")
+            self._indent()
+            node.pattern.accept(self)
+            self._dedent()
+            self._dedent()
+        self._indent()
+        for stmt in node.body:
+            stmt.accept(self)
+        self._dedent()
+
+    def visit_WithStatement(self, node):
+        self._emit(f"WithStatement as={node.name!r}")
+        self._indent()
+        self._emit("context:")
+        self._indent()
+        node.context_expr.accept(self)
+        self._dedent()
+        self._emit("body:")
+        self._visit_body(node.body)
+        self._dedent()
+
+    def visit_ImportStatement(self, node):
+        parts = [f"ImportStatement module={node.module!r}"]
+        if node.alias:
+            parts.append(f"as={node.alias!r}")
+        self._emit(" ".join(parts))
+
+    def visit_FromImportStatement(self, node):
+        self._emit(f"FromImportStatement module={node.module!r}")
+        self._indent()
+        for name, alias in node.names:
+            if alias:
+                self._emit(f"{name} as {alias}")
+            else:
+                self._emit(name)
+        self._dedent()
+
+    def generic_visit(self, node):
+        self._emit(f"{type(node).__name__}")
