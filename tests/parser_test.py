@@ -389,7 +389,9 @@ class ParserCompoundTestSuite(unittest.TestCase):
         prog = _parse(source, language="en")
         stmt = prog.body[0]
         self.assertIsInstance(stmt, FunctionDef)
-        self.assertEqual(stmt.params, ["a", "b"])
+        self.assertEqual(len(stmt.params), 2)
+        self.assertEqual(stmt.params[0].name, "a")
+        self.assertEqual(stmt.params[1].name, "b")
 
     def test_parse_class_def_no_bases(self):
         source = "class Foo:\n    pass\n"

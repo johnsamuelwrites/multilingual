@@ -31,7 +31,7 @@ UNICODE_OPERATORS = {
     "\u2192": "->",  # →
 }
 
-DELIMITERS = set("()[]{},:;.")
+DELIMITERS = set("()[]{},:;.@")
 # Unicode delimiter alternatives
 UNICODE_DELIMITERS = {
     "\uff08": "(", "\uff09": ")",  # fullwidth parens
@@ -146,6 +146,17 @@ class Lexer:
                 char = self.reader.peek()
                 if char in ("\n", "#"):
                     continue
+
+            # F-string literals: f"..." or f'...'
+            if char in ('f', 'F') and self.reader.peek_ahead(1) in ('"', "'"):
+                self._read_fstring()
+                continue
+
+            # String literals (check triple-quoted first)
+            if char in ('"', "'") and self.reader.peek_ahead(1) == char \
+                    and self.reader.peek_ahead(2) == char:
+                self._read_triple_string(char)
+                continue
 
             # String literals
             if char in STRING_PAIRS:
@@ -319,6 +330,64 @@ class Lexer:
                     return
 
         self.tokens.append(Token(TokenType.IDENTIFIER, text, line, col))
+
+    def _read_fstring(self):
+        """Read an f-string literal: f"text {expr} text"."""
+        line, col = self.reader.line, self.reader.column
+        self.reader.advance()  # consume 'f'
+        quote_char = self.reader.advance()  # consume opening quote
+        text = ""
+        while not self.reader.is_at_end():
+            char = self.reader.peek()
+            if char == quote_char:
+                self.reader.advance()
+                self.tokens.append(Token(
+                    TokenType.FSTRING, text, line, col
+                ))
+                return
+            if char == "\\" and quote_char in ('"', "'"):
+                self.reader.advance()
+                next_char = self.reader.advance()
+                text += "\\" + next_char
+            else:
+                text += self.reader.advance()
+
+        raise UnexpectedTokenError(
+            "Unterminated f-string literal",
+            line, col
+        )
+
+    def _read_triple_string(self, quote_char):
+        """Read a triple-quoted string literal (\"\"\"...\"\"\" or '''...''')."""
+        line, col = self.reader.line, self.reader.column
+        # Consume the three opening quotes
+        self.reader.advance()
+        self.reader.advance()
+        self.reader.advance()
+        text = ""
+        while not self.reader.is_at_end():
+            char = self.reader.peek()
+            if char == quote_char and self.reader.peek_ahead(1) == quote_char \
+                    and self.reader.peek_ahead(2) == quote_char:
+                # Consume the three closing quotes
+                self.reader.advance()
+                self.reader.advance()
+                self.reader.advance()
+                self.tokens.append(Token(
+                    TokenType.STRING, text, line, col
+                ))
+                return
+            if char == "\\" and quote_char in ('"', "'"):
+                self.reader.advance()  # consume backslash
+                next_char = self.reader.advance()
+                text += "\\" + next_char
+            else:
+                text += self.reader.advance()
+
+        raise UnexpectedTokenError(
+            "Unterminated triple-quoted string literal",
+            line, col
+        )
 
     def _read_string(self, open_char):
         """Read a string literal."""

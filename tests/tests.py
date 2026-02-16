@@ -60,6 +60,16 @@ from tests.executor_test import (
 )
 from tests.runtime_builtins_test import RuntimeBuiltinsTestSuite
 from tests.repl_test import REPLTestSuite, REPLFrenchTestSuite
+from tests.critical_features_test import (
+    TripleQuotedStringTestSuite,
+    SliceSyntaxTestSuite,
+    ParameterSystemTestSuite,
+    TupleUnpackingTestSuite,
+    ComprehensionTestSuite,
+    DecoratorTestSuite,
+    FStringTestSuite,
+    MultilingualCriticalFeaturesTestSuite,
+)
 
 if __name__ == "__main__":
     mp_numeral_tests = MPNumeralTestSuite()
@@ -103,6 +113,14 @@ if __name__ == "__main__":
     runtime_builtins_tests = RuntimeBuiltinsTestSuite()
     repl_tests = REPLTestSuite()
     repl_french_tests = REPLFrenchTestSuite()
+    triple_quote_tests = TripleQuotedStringTestSuite()
+    slice_tests = SliceSyntaxTestSuite()
+    param_tests = ParameterSystemTestSuite()
+    tuple_tests = TupleUnpackingTestSuite()
+    comp_tests = ComprehensionTestSuite()
+    decorator_tests = DecoratorTestSuite()
+    fstring_tests = FStringTestSuite()
+    multilingual_critical_tests = MultilingualCriticalFeaturesTestSuite()
     tests = unittest.TestSuite(
         [
             mp_numeral_tests,
@@ -146,6 +164,14 @@ if __name__ == "__main__":
             runtime_builtins_tests,
             repl_tests,
             repl_french_tests,
+            triple_quote_tests,
+            slice_tests,
+            param_tests,
+            tuple_tests,
+            comp_tests,
+            decorator_tests,
+            fstring_tests,
+            multilingual_critical_tests,
         ]
     )
     unittest.main()

@@ -19,6 +19,9 @@ from multilingualprogramming.parser.ast_nodes import (
     IfStatement, WhileLoop, ForLoop, FunctionDef, ClassDef,
     TryStatement, ExceptHandler, MatchStatement, CaseClause,
     WithStatement, ImportStatement, FromImportStatement,
+    SliceExpr, Parameter, StarredExpr, TupleLiteral,
+    ListComprehension, DictComprehension, GeneratorExpr,
+    FStringLiteral,
 )
 from multilingualprogramming.parser.error_messages import ErrorMessageRegistry
 from multilingualprogramming.exceptions import ParseError
@@ -197,6 +200,10 @@ class Parser:
         self._skip_newlines()
         tok = self._current()
 
+        # Decorators: @expr before def/class
+        if self._match_delimiter("@"):
+            return self._parse_decorated()
+
         if tok.type == TokenType.KEYWORD and tok.concept:
             concept = tok.concept
             if concept in _COMPOUND_CONCEPTS:
@@ -205,6 +212,28 @@ class Parser:
                 return self._parse_simple_statement(concept)
 
         return self._parse_assignment_or_expression()
+
+    def _parse_decorated(self):
+        """Parse decorated function or class definition."""
+        decorators = []
+        while self._match_delimiter("@"):
+            self._advance()  # consume @
+            dec_expr = self._parse_expression()
+            decorators.append(dec_expr)
+            self._skip_newlines()
+
+        # The next statement must be a function or class def
+        tok = self._current()
+        if tok.type == TokenType.KEYWORD and tok.concept == "FUNC_DEF":
+            node = self._parse_function_def()
+            node.decorators = decorators
+            return node
+        if tok.type == TokenType.KEYWORD and tok.concept == "CLASS_DEF":
+            node = self._parse_class_def()
+            node.decorators = decorators
+            return node
+
+        self._error("UNEXPECTED_TOKEN", tok, token=tok.value)
 
     def _parse_compound_statement(self, concept):
         """Parse a compound (block) statement."""
@@ -308,11 +337,34 @@ class Parser:
         """Parse assignment or expression statement."""
         expr = self._parse_expression()
 
+        # Check for comma (tuple unpacking: a, b = ...)
+        if self._match_delimiter(","):
+            elements = [expr]
+            while self._match_delimiter(","):
+                self._advance()
+                # Stop if we hit = after comma (trailing comma)
+                if self._current().type == TokenType.OPERATOR \
+                        and self._current().value == "=":
+                    break
+                elements.append(self._parse_expression())
+            expr = TupleLiteral(elements,
+                                line=expr.line, column=expr.column)
+
         # Check for assignment operators
         tok = self._current()
         if tok.type == TokenType.OPERATOR and tok.value == "=":
             self._advance()
             value = self._parse_expression()
+            # Check for tuple on the right side too
+            if self._match_delimiter(","):
+                right_elements = [value]
+                while self._match_delimiter(","):
+                    self._advance()
+                    if self._at_end() or self._match_type(TokenType.NEWLINE):
+                        break
+                    right_elements.append(self._parse_expression())
+                value = TupleLiteral(right_elements,
+                                     line=value.line, column=value.column)
             return Assignment(
                 expr, value, op="=",
                 line=expr.line, column=expr.column
@@ -370,13 +422,25 @@ class Parser:
         )
 
     def _parse_for_loop(self):
-        """Parse: FOR target IN iterable : block."""
+        """Parse: FOR target[, target2, ...] IN iterable : block."""
         tok = self._advance()  # consume FOR
         target_tok = self._expect_identifier()
         target = Identifier(
             target_tok.value,
             line=target_tok.line, column=target_tok.column
         )
+        # Support tuple unpacking: for a, b in items
+        if self._match_delimiter(","):
+            elements = [target]
+            while self._match_delimiter(","):
+                self._advance()
+                next_tok = self._expect_identifier()
+                elements.append(Identifier(
+                    next_tok.value,
+                    line=next_tok.line, column=next_tok.column
+                ))
+            target = TupleLiteral(elements,
+                                  line=target.line, column=target.column)
         self._expect_concept("IN")
         iterable = self._parse_expression()
         body = self._parse_block()
@@ -436,18 +500,39 @@ class Parser:
 
         params = []
         if not self._match_delimiter(")"):
-            param = self._expect_identifier()
-            params.append(param.value)
+            params.append(self._parse_parameter())
             while self._match_delimiter(","):
                 self._advance()
-                param = self._expect_identifier()
-                params.append(param.value)
+                params.append(self._parse_parameter())
 
         self._expect_delimiter(")")
         body = self._parse_block()
         return FunctionDef(
             name_tok.value, params, body,
             line=tok.line, column=tok.column
+        )
+
+    def _parse_parameter(self):
+        """Parse a single function parameter: [*|**] name [= default]."""
+        is_vararg = False
+        is_kwarg = False
+
+        if self._match_operator("**"):
+            self._advance()
+            is_kwarg = True
+        elif self._match_operator("*"):
+            self._advance()
+            is_vararg = True
+
+        name_tok = self._expect_identifier()
+        default = None
+        if self._match_operator("="):
+            self._advance()
+            default = self._parse_expression()
+
+        return Parameter(
+            name_tok.value, default, is_vararg, is_kwarg,
+            line=name_tok.line, column=name_tok.column
         )
 
     def _parse_class_def(self):
@@ -815,7 +900,7 @@ class Parser:
                 node = self._parse_call(node)
             elif self._match_delimiter("["):
                 tok = self._advance()
-                index = self._parse_expression()
+                index = self._parse_slice_or_index()
                 self._expect_delimiter("]")
                 node = IndexAccess(node, index,
                                    line=tok.line, column=tok.column)
@@ -829,6 +914,40 @@ class Parser:
 
         return node
 
+    def _parse_slice_or_index(self):
+        """Parse index or slice expression inside [].
+
+        Returns a SliceExpr if colons are present, otherwise a normal expression.
+        Handles: [i], [s:e], [s:e:step], [:e], [s:], [::step], [:], [::]
+        """
+        tok = self._current()
+        start = None
+        # Check if we start with a colon (no start expression)
+        if not self._match_delimiter(":"):
+            start = self._parse_expression()
+
+        # If no colon follows, it's a simple index
+        if not self._match_delimiter(":"):
+            return start
+
+        # We have a slice — consume first colon
+        self._advance()
+        stop = None
+        step = None
+
+        # Parse stop (if present and not another colon or ])
+        if not self._match_delimiter("]") and not self._match_delimiter(":"):
+            stop = self._parse_expression()
+
+        # Check for second colon (step)
+        if self._match_delimiter(":"):
+            self._advance()
+            if not self._match_delimiter("]"):
+                step = self._parse_expression()
+
+        return SliceExpr(start, stop, step,
+                         line=tok.line, column=tok.column)
+
     def _parse_call(self, func):
         """Parse function call arguments: (expr, expr, name=expr, ...)."""
         tok = self._advance()  # consume (
@@ -837,6 +956,15 @@ class Parser:
 
         if not self._match_delimiter(")"):
             self._parse_argument(args, keywords)
+            # Check for generator expression: func(expr FOR ...)
+            if len(args) == 1 and not keywords \
+                    and self._match_concept("LOOP_FOR"):
+                gen = self._parse_comprehension_tail(
+                    args[0], tok, "generator"
+                )
+                # _parse_comprehension_tail consumed the closing )
+                return CallExpr(func, [gen], [],
+                                line=tok.line, column=tok.column)
             while self._match_delimiter(","):
                 self._advance()
                 if self._match_delimiter(")"):
@@ -848,7 +976,23 @@ class Parser:
                         line=tok.line, column=tok.column)
 
     def _parse_argument(self, args, keywords):
-        """Parse a single argument (positional or keyword)."""
+        """Parse a single argument (positional, keyword, *args, or **kwargs)."""
+        # Check for **kwargs
+        if self._match_operator("**"):
+            tok = self._advance()
+            value = self._parse_expression()
+            args.append(StarredExpr(value, is_double=True,
+                                    line=tok.line, column=tok.column))
+            return
+
+        # Check for *args
+        if self._match_operator("*"):
+            tok = self._advance()
+            value = self._parse_expression()
+            args.append(StarredExpr(value, is_double=False,
+                                    line=tok.line, column=tok.column))
+            return
+
         # Check for keyword argument: name=value
         if self._match_type(TokenType.IDENTIFIER):
             # Look ahead for '='
@@ -879,6 +1023,11 @@ class Parser:
             self._advance()
             return StringLiteral(tok.value,
                                  line=tok.line, column=tok.column)
+
+        # F-string literal
+        if tok.type == TokenType.FSTRING:
+            self._advance()
+            return self._parse_fstring(tok)
 
         # Date literal
         if tok.type == TokenType.DATE_LITERAL:
@@ -931,10 +1080,20 @@ class Parser:
             if concept == "YIELD":
                 return self._parse_yield_expr()
 
-        # Parenthesized expression
+        # Parenthesized expression or generator expression
         if self._match_delimiter("("):
-            self._advance()
+            open_tok = self._advance()
+            if self._match_delimiter(")"):
+                # Empty tuple ()
+                return TupleLiteral([], line=open_tok.line,
+                                    column=open_tok.column)
             expr = self._parse_expression()
+            # Check for generator expression: (expr FOR ...)
+            if self._match_concept("LOOP_FOR"):
+                result = self._parse_comprehension_tail(
+                    expr, open_tok, "generator"
+                )
+                return result
             self._expect_delimiter(")")
             return expr
 
@@ -947,6 +1106,56 @@ class Parser:
             return self._parse_dict_literal()
 
         self._error("EXPECTED_EXPRESSION", tok, token=tok.value)
+
+    def _parse_fstring(self, tok):
+        """Parse an f-string by extracting {expr} segments from the raw text."""
+        raw = tok.value
+        parts = []
+        i = 0
+        current_text = ""
+        while i < len(raw):
+            ch = raw[i]
+            if ch == "{":
+                if i + 1 < len(raw) and raw[i + 1] == "{":
+                    # Escaped {{ → literal {
+                    current_text += "{"
+                    i += 2
+                    continue
+                # Start of expression — save current text
+                if current_text:
+                    parts.append(current_text)
+                    current_text = ""
+                # Find matching closing }
+                depth = 1
+                i += 1
+                expr_text = ""
+                while i < len(raw) and depth > 0:
+                    if raw[i] == "{":
+                        depth += 1
+                    elif raw[i] == "}":
+                        depth -= 1
+                        if depth == 0:
+                            break
+                    expr_text += raw[i]
+                    i += 1
+                i += 1  # skip closing }
+                # Parse the expression text
+                from multilingualprogramming.lexer.lexer import Lexer
+                sub_lexer = Lexer(expr_text, language=self.source_language)
+                sub_tokens = sub_lexer.tokenize()
+                sub_parser = Parser(sub_tokens, self.source_language)
+                expr_node = sub_parser._parse_expression()
+                parts.append(expr_node)
+            elif ch == "}" and i + 1 < len(raw) and raw[i + 1] == "}":
+                # Escaped }} → literal }
+                current_text += "}"
+                i += 2
+            else:
+                current_text += ch
+                i += 1
+        if current_text:
+            parts.append(current_text)
+        return FStringLiteral(parts, line=tok.line, column=tok.column)
 
     def _parse_lambda(self):
         """Parse: LAMBDA params : expression."""
@@ -976,35 +1185,119 @@ class Parser:
         return YieldExpr(value, line=tok.line, column=tok.column)
 
     def _parse_list_literal(self):
-        """Parse: [ expr, expr, ... ]."""
+        """Parse: [ expr, expr, ... ] or [expr for target in iter [if cond]]."""
         tok = self._advance()  # consume [
-        elements = []
-        if not self._match_delimiter("]"):
+        if self._match_delimiter("]"):
+            self._advance()  # consume ]
+            return ListLiteral([], line=tok.line, column=tok.column)
+
+        first = self._parse_expression()
+
+        # Check for list comprehension: [expr FOR ...]
+        if self._match_concept("LOOP_FOR"):
+            return self._parse_comprehension_tail(
+                first, tok, "list"
+            )
+
+        elements = [first]
+        while self._match_delimiter(","):
+            self._advance()
+            if self._match_delimiter("]"):
+                break
             elements.append(self._parse_expression())
-            while self._match_delimiter(","):
-                self._advance()
-                if self._match_delimiter("]"):
-                    break
-                elements.append(self._parse_expression())
         self._expect_delimiter("]")
         return ListLiteral(elements, line=tok.line, column=tok.column)
 
     def _parse_dict_literal(self):
-        """Parse: { key: value, key: value, ... }."""
+        """Parse: { key: value, ... } or {key: val for target in iter}."""
         tok = self._advance()  # consume {
-        pairs = []
-        if not self._match_delimiter("}"):
+        if self._match_delimiter("}"):
+            self._advance()  # consume }
+            return DictLiteral([], line=tok.line, column=tok.column)
+
+        key = self._parse_expression()
+        self._expect_delimiter(":")
+        value = self._parse_expression()
+
+        # Check for dict comprehension: {k: v FOR ...}
+        if self._match_concept("LOOP_FOR"):
+            return self._parse_dict_comprehension_tail(
+                key, value, tok
+            )
+
+        pairs = [(key, value)]
+        while self._match_delimiter(","):
+            self._advance()
+            if self._match_delimiter("}"):
+                break
             key = self._parse_expression()
             self._expect_delimiter(":")
             value = self._parse_expression()
             pairs.append((key, value))
-            while self._match_delimiter(","):
-                self._advance()
-                if self._match_delimiter("}"):
-                    break
-                key = self._parse_expression()
-                self._expect_delimiter(":")
-                value = self._parse_expression()
-                pairs.append((key, value))
         self._expect_delimiter("}")
         return DictLiteral(pairs, line=tok.line, column=tok.column)
+
+    def _parse_comp_target(self):
+        """Parse a comprehension target: single identifier or tuple (a, b)."""
+        first_tok = self._expect_identifier()
+        target = Identifier(first_tok.value,
+                            line=first_tok.line, column=first_tok.column)
+        if self._match_delimiter(","):
+            elements = [target]
+            while self._match_delimiter(","):
+                self._advance()
+                next_tok = self._expect_identifier()
+                elements.append(Identifier(
+                    next_tok.value,
+                    line=next_tok.line, column=next_tok.column
+                ))
+            target = TupleLiteral(elements,
+                                  line=first_tok.line, column=first_tok.column)
+        return target
+
+    def _parse_comprehension_tail(self, element, tok, kind):
+        """Parse: FOR target IN iterable [IF cond]... and close bracket.
+
+        `element` is the already-parsed element expression.
+        `kind` is 'list' or 'generator'.
+        """
+        self._advance()  # consume FOR keyword
+        target = self._parse_comp_target()
+        self._expect_concept("IN")
+        iterable = self._parse_expression()
+
+        conditions = []
+        while self._match_concept("COND_IF"):
+            self._advance()
+            conditions.append(self._parse_expression())
+
+        if kind == "list":
+            self._expect_delimiter("]")
+            return ListComprehension(
+                element, target, iterable, conditions,
+                line=tok.line, column=tok.column
+            )
+        # generator
+        self._expect_delimiter(")")
+        return GeneratorExpr(
+            element, target, iterable, conditions,
+            line=tok.line, column=tok.column
+        )
+
+    def _parse_dict_comprehension_tail(self, key, value, tok):
+        """Parse: FOR target IN iterable [IF cond]... }."""
+        self._advance()  # consume FOR keyword
+        target = self._parse_comp_target()
+        self._expect_concept("IN")
+        iterable = self._parse_expression()
+
+        conditions = []
+        while self._match_concept("COND_IF"):
+            self._advance()
+            conditions.append(self._parse_expression())
+
+        self._expect_delimiter("}")
+        return DictComprehension(
+            key, value, target, iterable, conditions,
+            line=tok.line, column=tok.column
+        )

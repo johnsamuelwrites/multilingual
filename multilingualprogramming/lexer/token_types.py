@@ -19,6 +19,7 @@ class TokenType(Enum):
     # Literals
     NUMERAL = auto()
     STRING = auto()
+    FSTRING = auto()
     DATE_LITERAL = auto()
 
     # Operators

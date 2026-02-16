@@ -161,11 +161,26 @@ class PythonCodeGenerator:
         self._emit_body(node.body)
 
     def visit_FunctionDef(self, node):
-        params = ", ".join(node.params)
+        # Emit decorators
+        for dec in getattr(node, 'decorators', []):
+            dec_expr = self._expr(dec)
+            self._emit(f"@{dec_expr}")
+        # Build parameter list
+        param_strs = []
+        for param in node.params:
+            if isinstance(param, str):
+                param_strs.append(param)
+            else:
+                param_strs.append(self._expr(param))
+        params = ", ".join(param_strs)
         self._emit(f"def {node.name}({params}):")
         self._emit_body(node.body)
 
     def visit_ClassDef(self, node):
+        # Emit decorators
+        for dec in getattr(node, 'decorators', []):
+            dec_expr = self._expr(dec)
+            self._emit(f"@{dec_expr}")
         if node.bases:
             bases = ", ".join(self._expr(b) for b in node.bases)
             self._emit(f"class {node.name}({bases}):")
@@ -346,7 +361,13 @@ class _ExpressionGenerator:
         return f"{obj}[{index}]"
 
     def visit_LambdaExpr(self, node):
-        params = ", ".join(node.params)
+        param_strs = []
+        for p in node.params:
+            if isinstance(p, str):
+                param_strs.append(p)
+            else:
+                param_strs.append(self._expr(p))
+        params = ", ".join(param_strs)
         body = self._expr(node.body)
         return f"(lambda {params}: {body})"
 
@@ -361,6 +382,78 @@ class _ExpressionGenerator:
         cond = self._expr(node.condition)
         false_expr = self._expr(node.false_expr)
         return f"({true_expr} if {cond} else {false_expr})"
+
+    def visit_SliceExpr(self, node):
+        start = self._expr(node.start) if node.start else ""
+        stop = self._expr(node.stop) if node.stop else ""
+        if node.step is not None:
+            step = self._expr(node.step)
+            return f"{start}:{stop}:{step}"
+        return f"{start}:{stop}"
+
+    def visit_Parameter(self, node):
+        prefix = ""
+        if node.is_kwarg:
+            prefix = "**"
+        elif node.is_vararg:
+            prefix = "*"
+        if node.default:
+            default_expr = self._expr(node.default)
+            return f"{prefix}{node.name}={default_expr}"
+        return f"{prefix}{node.name}"
+
+    def visit_StarredExpr(self, node):
+        val = self._expr(node.value)
+        prefix = "**" if node.is_double else "*"
+        return f"{prefix}{val}"
+
+    def visit_TupleLiteral(self, node):
+        elems = ", ".join(self._expr(e) for e in node.elements)
+        return elems
+
+    def visit_ListComprehension(self, node):
+        elem = self._expr(node.element)
+        target = self._expr(node.target)
+        iterable = self._expr(node.iterable)
+        result = f"[{elem} for {target} in {iterable}"
+        for cond in node.conditions:
+            result += f" if {self._expr(cond)}"
+        result += "]"
+        return result
+
+    def visit_DictComprehension(self, node):
+        key = self._expr(node.key)
+        val = self._expr(node.value)
+        target = self._expr(node.target)
+        iterable = self._expr(node.iterable)
+        result = "{" + f"{key}: {val} for {target} in {iterable}"
+        for cond in node.conditions:
+            result += f" if {self._expr(cond)}"
+        result += "}"
+        return result
+
+    def visit_GeneratorExpr(self, node):
+        elem = self._expr(node.element)
+        target = self._expr(node.target)
+        iterable = self._expr(node.iterable)
+        result = f"({elem} for {target} in {iterable}"
+        for cond in node.conditions:
+            result += f" if {self._expr(cond)}"
+        result += ")"
+        return result
+
+    def visit_FStringLiteral(self, node):
+        result = 'f"'
+        for part in node.parts:
+            if isinstance(part, str):
+                # Escape any double quotes and braces in text
+                escaped = part.replace("\\", "\\\\").replace('"', '\\"')
+                escaped = escaped.replace("{", "{{").replace("}", "}}")
+                result += escaped
+            else:
+                result += "{" + self._expr(part) + "}"
+        result += '"'
+        return result
 
     def generic_visit(self, node):
         raise CodeGenerationError(

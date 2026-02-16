@@ -208,13 +208,36 @@ class SemanticAnalyzer:
         node.obj.accept(self)
         node.index.accept(self)
 
+    def visit_SliceExpr(self, node):
+        if node.start:
+            node.start.accept(self)
+        if node.stop:
+            node.stop.accept(self)
+        if node.step:
+            node.step.accept(self)
+
+    def visit_StarredExpr(self, node):
+        node.value.accept(self)
+
+    def visit_TupleLiteral(self, node):
+        for elem in node.elements:
+            elem.accept(self)
+
     def visit_LambdaExpr(self, node):
         self.symbol_table.enter_scope("lambda", "function")
         self._in_function += 1
         for param in node.params:
-            self.symbol_table.define(
-                param, "parameter", line=node.line, column=node.column
-            )
+            if isinstance(param, str):
+                self.symbol_table.define(
+                    param, "parameter", line=node.line, column=node.column
+                )
+            else:
+                if param.default:
+                    param.default.accept(self)
+                self.symbol_table.define(
+                    param.name, "parameter",
+                    line=param.line, column=param.column
+                )
         node.body.accept(self)
         self._in_function -= 1
         self.symbol_table.exit_scope()
@@ -288,31 +311,55 @@ class SemanticAnalyzer:
 
     def visit_ForLoop(self, node):
         node.iterable.accept(self)
-        self.symbol_table.define(
-            node.target.name, "variable",
-            line=node.target.line, column=node.target.column
-        )
+        self._define_for_target(node.target)
         self._in_loop += 1
         for stmt in node.body:
             stmt.accept(self)
         self._in_loop -= 1
 
+    def _define_for_target(self, target):
+        """Define for-loop target variable(s) in the current scope."""
+        from multilingualprogramming.parser.ast_nodes import TupleLiteral
+        if isinstance(target, TupleLiteral):
+            for elem in target.elements:
+                self._define_for_target(elem)
+        else:
+            self.symbol_table.define(
+                target.name, "variable",
+                line=target.line, column=target.column
+            )
+
     def visit_FunctionDef(self, node):
+        # Visit decorators
+        for dec in getattr(node, 'decorators', []):
+            dec.accept(self)
         self.symbol_table.define(
             node.name, "function", line=node.line, column=node.column
         )
         self.symbol_table.enter_scope(node.name, "function")
         self._in_function += 1
         for param in node.params:
-            self.symbol_table.define(
-                param, "parameter", line=node.line, column=node.column
-            )
+            if isinstance(param, str):
+                self.symbol_table.define(
+                    param, "parameter", line=node.line, column=node.column
+                )
+            else:
+                # Parameter node
+                if param.default:
+                    param.default.accept(self)
+                self.symbol_table.define(
+                    param.name, "parameter",
+                    line=param.line, column=param.column
+                )
         for stmt in node.body:
             stmt.accept(self)
         self._in_function -= 1
         self.symbol_table.exit_scope()
 
     def visit_ClassDef(self, node):
+        # Visit decorators
+        for dec in getattr(node, 'decorators', []):
+            dec.accept(self)
         self.symbol_table.define(
             node.name, "class", line=node.line, column=node.column
         )
@@ -367,6 +414,73 @@ class SemanticAnalyzer:
         for stmt in node.body:
             stmt.accept(self)
         self.symbol_table.exit_scope()
+
+    def visit_ListComprehension(self, node):
+        self.symbol_table.enter_scope("listcomp", "block")
+        node.iterable.accept(self)
+        if isinstance(node.target, str):
+            self.symbol_table.define(
+                node.target, "variable",
+                line=node.line, column=node.column
+            )
+        else:
+            node.target.accept(self)
+            # Define identifier targets
+            self._define_comp_target(node.target, node)
+        node.element.accept(self)
+        for cond in node.conditions:
+            cond.accept(self)
+        self.symbol_table.exit_scope()
+
+    def visit_DictComprehension(self, node):
+        self.symbol_table.enter_scope("dictcomp", "block")
+        node.iterable.accept(self)
+        if isinstance(node.target, str):
+            self.symbol_table.define(
+                node.target, "variable",
+                line=node.line, column=node.column
+            )
+        else:
+            node.target.accept(self)
+            self._define_comp_target(node.target, node)
+        node.key.accept(self)
+        node.value.accept(self)
+        for cond in node.conditions:
+            cond.accept(self)
+        self.symbol_table.exit_scope()
+
+    def visit_GeneratorExpr(self, node):
+        self.symbol_table.enter_scope("genexpr", "block")
+        node.iterable.accept(self)
+        if isinstance(node.target, str):
+            self.symbol_table.define(
+                node.target, "variable",
+                line=node.line, column=node.column
+            )
+        else:
+            node.target.accept(self)
+            self._define_comp_target(node.target, node)
+        node.element.accept(self)
+        for cond in node.conditions:
+            cond.accept(self)
+        self.symbol_table.exit_scope()
+
+    def _define_comp_target(self, target, node):
+        """Define comprehension target variable(s) in current scope."""
+        from multilingualprogramming.parser.ast_nodes import Identifier, TupleLiteral
+        if isinstance(target, Identifier):
+            self.symbol_table.define(
+                target.name, "variable",
+                line=target.line, column=target.column
+            )
+        elif isinstance(target, TupleLiteral):
+            for elem in target.elements:
+                self._define_comp_target(elem, node)
+
+    def visit_FStringLiteral(self, node):
+        for part in node.parts:
+            if not isinstance(part, str):
+                part.accept(self)
 
     def visit_ImportStatement(self, node):
         name = node.alias or node.module

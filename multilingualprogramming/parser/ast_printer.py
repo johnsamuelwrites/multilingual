@@ -292,6 +292,11 @@ class ASTPrinter:
         self._dedent()
 
     def visit_FunctionDef(self, node):
+        for dec in getattr(node, 'decorators', []):
+            self._emit("Decorator")
+            self._indent()
+            dec.accept(self)
+            self._dedent()
         self._emit(f"FunctionDef name={node.name!r}")
         self._indent()
         self._emit(f"params: {node.params!r}")
@@ -300,6 +305,11 @@ class ASTPrinter:
         self._dedent()
 
     def visit_ClassDef(self, node):
+        for dec in getattr(node, 'decorators', []):
+            self._emit("Decorator")
+            self._indent()
+            dec.accept(self)
+            self._dedent()
         self._emit(f"ClassDef name={node.name!r}")
         self._indent()
         if node.bases:
@@ -388,6 +398,141 @@ class ASTPrinter:
                 self._emit(f"{name} as {alias}")
             else:
                 self._emit(name)
+        self._dedent()
+
+    def visit_SliceExpr(self, node):
+        self._emit("SliceExpr")
+        self._indent()
+        if node.start:
+            self._emit("start:")
+            self._indent()
+            node.start.accept(self)
+            self._dedent()
+        if node.stop:
+            self._emit("stop:")
+            self._indent()
+            node.stop.accept(self)
+            self._dedent()
+        if node.step:
+            self._emit("step:")
+            self._indent()
+            node.step.accept(self)
+            self._dedent()
+        self._dedent()
+
+    def visit_Parameter(self, node):
+        parts = [f"Parameter {node.name!r}"]
+        if node.is_vararg:
+            parts.append("*")
+        if node.is_kwarg:
+            parts.append("**")
+        self._emit(" ".join(parts))
+        if node.default:
+            self._indent()
+            self._emit("default:")
+            self._indent()
+            node.default.accept(self)
+            self._dedent()
+            self._dedent()
+
+    def visit_StarredExpr(self, node):
+        prefix = "**" if node.is_double else "*"
+        self._emit(f"StarredExpr {prefix}")
+        self._indent()
+        node.value.accept(self)
+        self._dedent()
+
+    def visit_TupleLiteral(self, node):
+        self._emit("TupleLiteral")
+        self._indent()
+        for elem in node.elements:
+            elem.accept(self)
+        self._dedent()
+
+    def visit_ListComprehension(self, node):
+        self._emit("ListComprehension")
+        self._indent()
+        self._emit("element:")
+        self._indent()
+        node.element.accept(self)
+        self._dedent()
+        self._emit("target:")
+        self._indent()
+        node.target.accept(self)
+        self._dedent()
+        self._emit("iterable:")
+        self._indent()
+        node.iterable.accept(self)
+        self._dedent()
+        if node.conditions:
+            self._emit("conditions:")
+            self._indent()
+            for cond in node.conditions:
+                cond.accept(self)
+            self._dedent()
+        self._dedent()
+
+    def visit_DictComprehension(self, node):
+        self._emit("DictComprehension")
+        self._indent()
+        self._emit("key:")
+        self._indent()
+        node.key.accept(self)
+        self._dedent()
+        self._emit("value:")
+        self._indent()
+        node.value.accept(self)
+        self._dedent()
+        self._emit("target:")
+        self._indent()
+        node.target.accept(self)
+        self._dedent()
+        self._emit("iterable:")
+        self._indent()
+        node.iterable.accept(self)
+        self._dedent()
+        if node.conditions:
+            self._emit("conditions:")
+            self._indent()
+            for cond in node.conditions:
+                cond.accept(self)
+            self._dedent()
+        self._dedent()
+
+    def visit_GeneratorExpr(self, node):
+        self._emit("GeneratorExpr")
+        self._indent()
+        self._emit("element:")
+        self._indent()
+        node.element.accept(self)
+        self._dedent()
+        self._emit("target:")
+        self._indent()
+        node.target.accept(self)
+        self._dedent()
+        self._emit("iterable:")
+        self._indent()
+        node.iterable.accept(self)
+        self._dedent()
+        if node.conditions:
+            self._emit("conditions:")
+            self._indent()
+            for cond in node.conditions:
+                cond.accept(self)
+            self._dedent()
+        self._dedent()
+
+    def visit_FStringLiteral(self, node):
+        self._emit("FStringLiteral")
+        self._indent()
+        for part in node.parts:
+            if isinstance(part, str):
+                self._emit(f"text: {part!r}")
+            else:
+                self._emit("expr:")
+                self._indent()
+                part.accept(self)
+                self._dedent()
         self._dedent()
 
     def generic_visit(self, node):

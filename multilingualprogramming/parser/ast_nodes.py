@@ -327,21 +327,25 @@ class ForLoop(ASTNode):
 class FunctionDef(ASTNode):
     """Function definition: def name(params): body."""
 
-    def __init__(self, name, params, body, line=0, column=0):
+    def __init__(self, name, params, body, decorators=None,
+                 line=0, column=0):
         super().__init__(line, column)
         self.name = name
         self.params = params
         self.body = body
+        self.decorators = decorators or []
 
 
 class ClassDef(ASTNode):
     """Class definition: class Name(bases): body."""
 
-    def __init__(self, name, bases, body, line=0, column=0):
+    def __init__(self, name, bases, body, decorators=None,
+                 line=0, column=0):
         super().__init__(line, column)
         self.name = name
         self.bases = bases
         self.body = body
+        self.decorators = decorators or []
 
 
 class TryStatement(ASTNode):
@@ -417,3 +421,92 @@ class FromImportStatement(ASTNode):
         super().__init__(line, column)
         self.module = module
         self.names = names
+
+
+# ---------------------------------------------------------------------------
+# Extended expression nodes (Phase 3.5)
+# ---------------------------------------------------------------------------
+
+class SliceExpr(ASTNode):
+    """Slice expression: start:stop or start:stop:step."""
+
+    def __init__(self, start=None, stop=None, step=None, line=0, column=0):
+        super().__init__(line, column)
+        self.start = start
+        self.stop = stop
+        self.step = step
+
+
+class Parameter(ASTNode):
+    """Function parameter with optional default, *args, **kwargs."""
+
+    def __init__(self, name, default=None, is_vararg=False,
+                 is_kwarg=False, line=0, column=0):
+        super().__init__(line, column)
+        self.name = name
+        self.default = default
+        self.is_vararg = is_vararg
+        self.is_kwarg = is_kwarg
+
+
+class StarredExpr(ASTNode):
+    """Starred expression in call: *args or **kwargs."""
+
+    def __init__(self, value, is_double=False, line=0, column=0):
+        super().__init__(line, column)
+        self.value = value
+        self.is_double = is_double
+
+
+class TupleLiteral(ASTNode):
+    """Tuple literal or tuple unpacking target: a, b, c."""
+
+    def __init__(self, elements, line=0, column=0):
+        super().__init__(line, column)
+        self.elements = elements
+
+
+class ListComprehension(ASTNode):
+    """List comprehension: [expr for target in iterable if cond]."""
+
+    def __init__(self, element, target, iterable, conditions=None,
+                 line=0, column=0):
+        super().__init__(line, column)
+        self.element = element
+        self.target = target
+        self.iterable = iterable
+        self.conditions = conditions or []
+
+
+class DictComprehension(ASTNode):
+    """Dict comprehension: {key: val for target in iterable if cond}."""
+
+    def __init__(self, key, value, target, iterable, conditions=None,
+                 line=0, column=0):
+        super().__init__(line, column)
+        self.key = key
+        self.value = value
+        self.target = target
+        self.iterable = iterable
+        self.conditions = conditions or []
+
+
+class GeneratorExpr(ASTNode):
+    """Generator expression: (expr for target in iterable if cond)."""
+
+    def __init__(self, element, target, iterable, conditions=None,
+                 line=0, column=0):
+        super().__init__(line, column)
+        self.element = element
+        self.target = target
+        self.iterable = iterable
+        self.conditions = conditions or []
+
+
+class FStringLiteral(ASTNode):
+    """F-string with interpolated expressions: f"text {expr} text"."""
+
+    def __init__(self, parts, line=0, column=0):
+        super().__init__(line, column)
+        # parts: list of (str | ASTNode) alternating text and expressions
+        self.parts = parts
