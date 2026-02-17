@@ -104,3 +104,12 @@ afficher(somme)
 """
         output = self.repl.eval_line(source)
         self.assertEqual(output.strip(), "6")
+
+    def test_french_help_alias_without_colon(self):
+        result = self.repl._handle_command("aide")
+        self.assertTrue(result)
+
+    def test_french_lang_alias_without_colon(self):
+        result = self.repl._handle_command("langue en")
+        self.assertTrue(result)
+        self.assertEqual(self.repl.language, "en")

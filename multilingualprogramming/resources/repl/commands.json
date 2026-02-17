@@ -1,0 +1,149 @@
+﻿{
+  "default_language": "en",
+  "help_titles": {
+    "en": "REPL Commands:",
+    "fr": "Commandes REPL :",
+    "es": "Comandos REPL:",
+    "de": "REPL-Befehle:",
+    "hi": "REPL आदेश:",
+    "ar": "أوامر REPL:",
+    "bn": "REPL কমান্ড:",
+    "ta": "REPL கட்டளைகள்:",
+    "zh": "REPL 命令:",
+    "ja": "REPL コマンド:"
+  },
+  "help_order": ["lang", "python", "reset", "help", "quit"],
+  "commands": {
+    "lang": {
+      "arg_hint": " [XX]",
+      "aliases": {
+        "en": ["lang", "language"],
+        "fr": ["langue"],
+        "es": ["idioma"],
+        "de": ["sprache"],
+        "hi": ["भाषा"],
+        "ar": ["لغة"],
+        "bn": ["ভাষা"],
+        "ta": ["மொழி"],
+        "zh": ["语言"],
+        "ja": ["言語"]
+      },
+      "descriptions": {
+        "en": "Switch language (e.g., :lang fr)",
+        "fr": "Changer la langue (ex. :langue fr)",
+        "es": "Cambiar idioma (ej. :idioma fr)",
+        "de": "Sprache wechseln (z. B. :sprache fr)",
+        "hi": "भाषा बदलें (उदा. :भाषा fr)",
+        "ar": "تبديل اللغة (مثال: :لغة fr)",
+        "bn": "ভাষা পরিবর্তন করুন (যেমন: :ভাষা fr)",
+        "ta": "மொழியை மாற்று (எ.கா. :மொழி fr)",
+        "zh": "切换语言（例如：:语言 fr）",
+        "ja": "言語を切り替え（例: :言語 fr）"
+      }
+    },
+    "python": {
+      "aliases": {
+        "en": ["python"],
+        "fr": ["python"],
+        "es": ["python"],
+        "de": ["python"],
+        "hi": ["python", "पायथन"],
+        "ar": ["python", "بايثون"],
+        "bn": ["python", "পাইথন"],
+        "ta": ["python", "பைதான்"],
+        "zh": ["python"],
+        "ja": ["python"]
+      },
+      "descriptions": {
+        "en": "Toggle showing generated Python",
+        "fr": "Afficher/masquer le Python genere",
+        "es": "Mostrar u ocultar Python generado",
+        "de": "Anzeige des erzeugten Python umschalten",
+        "hi": "जेनरेटेड Python दिखाना/छुपाना",
+        "ar": "تبديل عرض بايثون المولد",
+        "bn": "জেনারেট করা Python দেখানো/লুকানো",
+        "ta": "உருவாக்கப்பட்ட Python காட்டு/மறை",
+        "zh": "切换显示生成的 Python",
+        "ja": "生成された Python の表示を切り替え"
+      }
+    },
+    "reset": {
+      "aliases": {
+        "en": ["reset"],
+        "fr": ["reinitialiser", "réinitialiser"],
+        "es": ["reiniciar"],
+        "de": ["zuruecksetzen"],
+        "hi": ["रीसेट"],
+        "ar": ["اعادةتعيين"],
+        "bn": ["রিসেট"],
+        "ta": ["மீட்டமை"],
+        "zh": ["重置"],
+        "ja": ["リセット"]
+      },
+      "descriptions": {
+        "en": "Clear all variables and state",
+        "fr": "Reinitialiser l'etat de la session",
+        "es": "Limpiar variables y estado",
+        "de": "Variablen und Zustand zurucksetzen",
+        "hi": "सभी वेरिएबल और स्टेट साफ करें",
+        "ar": "مسح المتغيرات وحالة الجلسة",
+        "bn": "সব ভেরিয়েবল ও অবস্থা মুছে ফেলুন",
+        "ta": "அனைத்து மாறிகள் மற்றும் நிலையை நீக்கு",
+        "zh": "清除变量和会话状态",
+        "ja": "変数と状態をクリア"
+      }
+    },
+    "help": {
+      "aliases": {
+        "en": ["help"],
+        "fr": ["aide"],
+        "es": ["ayuda"],
+        "de": ["hilfe"],
+        "hi": ["मदद"],
+        "ar": ["مساعدة"],
+        "bn": ["সাহায্য"],
+        "ta": ["உதவி"],
+        "zh": ["帮助"],
+        "ja": ["ヘルプ"]
+      },
+      "descriptions": {
+        "en": "Show this help",
+        "fr": "Afficher cette aide",
+        "es": "Mostrar esta ayuda",
+        "de": "Diese Hilfe anzeigen",
+        "hi": "यह सहायता दिखाएं",
+        "ar": "عرض هذه المساعدة",
+        "bn": "এই সহায়তা দেখান",
+        "ta": "இந்த உதவியை காட்டு",
+        "zh": "显示帮助",
+        "ja": "このヘルプを表示"
+      }
+    },
+    "quit": {
+      "aliases": {
+        "en": ["quit", "exit", "q"],
+        "fr": ["quitter"],
+        "es": ["salir"],
+        "de": ["beenden"],
+        "hi": ["छोड़ें"],
+        "ar": ["خروج"],
+        "bn": ["প্রস্থান"],
+        "ta": ["வெளியேறு"],
+        "zh": ["退出"],
+        "ja": ["終了"]
+      },
+      "descriptions": {
+        "en": "Exit the REPL",
+        "fr": "Quitter le REPL",
+        "es": "Salir del REPL",
+        "de": "REPL beenden",
+        "hi": "REPL से बाहर निकलें",
+        "ar": "الخروج من REPL",
+        "bn": "REPL থেকে বের হন",
+        "ta": "REPL இலிருந்து வெளியேறு",
+        "zh": "退出 REPL",
+        "ja": "REPL を終了"
+      }
+    }
+  }
+}

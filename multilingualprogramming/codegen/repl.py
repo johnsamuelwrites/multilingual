@@ -14,7 +14,10 @@ and REPL commands.
 """
 
 import io
+import json
+import os
 import sys
+from pathlib import Path
 
 from multilingualprogramming.lexer.lexer import Lexer
 from multilingualprogramming.parser.parser import Parser
@@ -37,6 +40,8 @@ class REPL:
         output = repl.eval_line("print(x)")  # "42\\n"
     """
 
+    _COMMAND_CATALOG = None
+
     def __init__(self, language=None, show_python=False):
         """
         Initialize the REPL.
@@ -50,6 +55,83 @@ class REPL:
         self.show_python = show_python
         self._globals = {}
         self._init_globals()
+
+    @classmethod
+    def _load_command_catalog(cls):
+        """Load command aliases and help text from resources."""
+        if cls._COMMAND_CATALOG is not None:
+            return cls._COMMAND_CATALOG
+
+        path = (
+            Path(__file__).resolve().parent.parent
+            / "resources" / "repl" / "commands.json"
+        )
+        with open(path, "r", encoding="utf-8-sig") as handle:
+            cls._COMMAND_CATALOG = json.load(handle)
+        return cls._COMMAND_CATALOG
+
+    def _language_code(self):
+        """Return normalized active language code."""
+        return (self.language or "en").lower()
+
+    def _aliases_for(self, canonical, lang):
+        """Return ordered aliases for a command in active language."""
+        catalog = self._load_command_catalog()
+        commands = catalog.get("commands", {})
+        default_lang = catalog.get("default_language", "en")
+        meta = commands.get(canonical, {})
+        aliases_by_lang = meta.get("aliases", {})
+
+        aliases = []
+        aliases.extend(aliases_by_lang.get(default_lang, []))
+        if lang != default_lang:
+            aliases.extend(aliases_by_lang.get(lang, []))
+
+        seen = set()
+        ordered = []
+        for alias in aliases:
+            key = alias.casefold()
+            if key not in seen:
+                seen.add(key)
+                ordered.append(alias)
+        return ordered
+
+    def _command_alias_map(self, lang):
+        """Map canonical command names to casefolded aliases."""
+        catalog = self._load_command_catalog()
+        commands = catalog.get("commands", {})
+        result = {}
+        for canonical in commands:
+            aliases = self._aliases_for(canonical, lang)
+            result[canonical] = {
+                canonical.casefold(), *(alias.casefold() for alias in aliases)
+            }
+        return result
+
+    def _print_help(self):
+        """Print localized REPL help from command catalog."""
+        catalog = self._load_command_catalog()
+        lang = self._language_code()
+        default_lang = catalog.get("default_language", "en")
+        commands = catalog.get("commands", {})
+
+        title = catalog.get("help_titles", {}).get(
+            lang,
+            catalog.get("help_titles", {}).get(default_lang, "REPL Commands:"),
+        )
+        order = catalog.get("help_order", list(commands.keys()))
+
+        print(title)
+        for canonical in order:
+            meta = commands.get(canonical, {})
+            aliases = self._aliases_for(canonical, lang)
+            display = aliases[-1] if aliases else canonical
+            arg_hint = meta.get("arg_hint", "")
+            description = meta.get("descriptions", {}).get(
+                lang,
+                meta.get("descriptions", {}).get(default_lang, ""),
+            )
+            print(f"  :{display}{arg_hint}  {description}")
 
     def _init_globals(self):
         """Initialize the execution namespace with builtins."""
@@ -71,16 +153,13 @@ class REPL:
             return ""
 
         try:
-            # Tokenize
             lexer = Lexer(source, language=self.language)
             tokens = lexer.tokenize()
             detected_lang = lexer.language or self.language or "en"
 
-            # Parse
             parser = Parser(tokens, source_language=detected_lang)
             program = parser.parse()
 
-            # Generate Python
             generator = PythonCodeGenerator()
             python_source = generator.generate(program)
 
@@ -103,14 +182,12 @@ class REPL:
         old_stdout = sys.stdout
         try:
             sys.stdout = captured
-            # Try eval first (single expression) for auto-printing
             try:
                 code = compile(python_source, "<repl>", "eval")
                 result = eval(code, self._globals)  # pylint: disable=eval-used
                 if result is not None:
                     print(repr(result))
             except SyntaxError:
-                # Not a single expression — exec as statements
                 code = compile(python_source, "<repl>", "exec")
                 exec(code, self._globals)  # pylint: disable=exec-used
         except Exception as exc:
@@ -129,7 +206,7 @@ class REPL:
             ch = text[i]
             if in_string:
                 if ch == '\\':
-                    i += 1  # skip escaped char
+                    i += 1
                 elif ch == string_char:
                     in_string = False
             else:
@@ -141,20 +218,41 @@ class REPL:
                 elif ch in (')', ']', '}'):
                     count -= 1
                 elif ch == '#':
-                    break  # rest is comment
+                    break
             i += 1
         return count
 
-    def _handle_command(self, line):
-        """Handle REPL commands starting with ':'. Returns True if handled."""
-        parts = line.strip().split(None, 1)
-        cmd = parts[0].lower()
+    def _resolve_command(self, line):
+        """Resolve REPL command aliases to canonical command names."""
+        text = line.strip()
+        if not text:
+            return None, ""
+
+        if text.startswith(":"):
+            text = text[1:].lstrip()
+            if not text:
+                return None, ""
+
+        parts = text.split(None, 1)
+        cmd = parts[0].casefold()
         arg = parts[1] if len(parts) > 1 else ""
 
-        if cmd in (":quit", ":exit", ":q"):
+        alias_map = self._command_alias_map(self._language_code())
+        for canonical, words in alias_map.items():
+            if cmd in words:
+                return canonical, arg
+        return None, ""
+
+    def _handle_command(self, line):
+        """Handle REPL commands. Returns True if handled."""
+        cmd, arg = self._resolve_command(line)
+        if cmd is None:
+            return False
+
+        if cmd == "quit":
             print("Bye!")
             return "exit"
-        if cmd == ":lang":
+        if cmd == "lang":
             if arg:
                 self.language = arg.strip()
                 self._globals.clear()
@@ -163,23 +261,18 @@ class REPL:
             else:
                 print(f"Current language: {self.language or 'auto'}")
             return True
-        if cmd == ":python":
+        if cmd == "python":
             self.show_python = not self.show_python
             state = "on" if self.show_python else "off"
             print(f"Show Python: {state}")
             return True
-        if cmd == ":reset":
+        if cmd == "reset":
             self._globals.clear()
             self._init_globals()
             print("State cleared.")
             return True
-        if cmd == ":help":
-            print("REPL Commands:")
-            print("  :lang [XX]    Switch language (e.g., :lang fr)")
-            print("  :python       Toggle showing generated Python")
-            print("  :reset        Clear all variables and state")
-            print("  :help         Show this help")
-            print("  :quit         Exit the REPL")
+        if cmd == "help":
+            self._print_help()
             return True
         return False
 
@@ -189,12 +282,16 @@ class REPL:
 
         Reads from stdin, supports multi-line blocks (lines ending with ':'),
         bracket continuation, and REPL commands.
-        Exits on Ctrl+D (EOF) or Ctrl+C.
+        Exits on EOF (Ctrl+D on Unix, Ctrl+Z then Enter on Windows) or Ctrl+C.
         """
         lang_label = self.language or "auto"
+        eof_hint = "Ctrl+Z then Enter" if os.name == "nt" else "Ctrl+D"
         print(f"Multilingual Programming REPL v{__version__} "
               f"[language={lang_label}]")
-        print("Type ':help' for commands, ':quit' or Ctrl+D to exit.\n")
+        print(
+            f"Type ':help' for commands. Use ':quit' (or Ctrl+C) to exit. "
+            f"EOF key is terminal-dependent ({eof_hint}).\n"
+        )
 
         while True:
             try:
@@ -203,19 +300,16 @@ class REPL:
                 print("\nBye!")
                 break
 
-            if line.strip() in ("exit", "quit"):
+            if line.strip() in ("exit", "quit", "\x04", "\x1a"):
                 print("Bye!")
                 break
 
-            # Handle REPL commands
-            if line.strip().startswith(":"):
-                result = self._handle_command(line)
-                if result == "exit":
-                    break
-                if result:
-                    continue
+            result = self._handle_command(line)
+            if result == "exit":
+                break
+            if result:
+                continue
 
-            # Multi-line detection: colon at end or open brackets
             open_brackets = self._count_open_brackets(line)
             needs_block = line.rstrip().endswith(":")
 
@@ -227,11 +321,12 @@ class REPL:
                     except (EOFError, KeyboardInterrupt):
                         print()
                         break
+                    if cont.strip() in ("\x04", "\x1a"):
+                        print("Bye!")
+                        return
                     block_lines.append(cont)
                     open_brackets += self._count_open_brackets(cont)
 
-                    # End block: empty line when in block mode (colon),
-                    # or all brackets closed
                     if needs_block and cont.strip() == "":
                         break
                     if not needs_block and open_brackets <= 0:
