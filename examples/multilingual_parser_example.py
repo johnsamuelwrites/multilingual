@@ -25,9 +25,9 @@ def build_factorial_source(registry, language):
     )
 
 
-registry = KeywordRegistry()
-LANGUAGES = registry.get_supported_languages()
-PROGRAMS = {lang: build_factorial_source(registry, lang) for lang in LANGUAGES}
+keyword_registry = KeywordRegistry()
+LANGUAGES = keyword_registry.get_supported_languages()
+PROGRAMS = {lang: build_factorial_source(keyword_registry, lang) for lang in LANGUAGES}
 
 printer = ASTPrinter()
 

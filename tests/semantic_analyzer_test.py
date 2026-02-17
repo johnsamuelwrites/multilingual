@@ -173,6 +173,7 @@ class SemanticMultilingualErrorTestSuite(unittest.TestCase):
         self.assertIn("boucle", str(errors[0]).lower())
 
     def test_error_message_chinese(self):
+        """Chinese break usage produces a localized semantic error."""
         errors, _ = _analyze("\u7ec8\u6b62\n", language="zh")
         # '终止' is Chinese for 'break'
         self.assertTrue(len(errors) > 0)
@@ -182,6 +183,7 @@ class SymbolTableTestSuite(unittest.TestCase):
     """Tests for the SymbolTable class directly."""
 
     def test_define_and_lookup(self):
+        """A defined symbol is retrievable by lookup."""
         st = SymbolTable()
         st.define("x", "variable")
         sym = st.lookup("x")
@@ -189,10 +191,12 @@ class SymbolTableTestSuite(unittest.TestCase):
         self.assertEqual(sym.name, "x")
 
     def test_lookup_not_found(self):
+        """Lookup returns None for unknown symbols."""
         st = SymbolTable()
         self.assertIsNone(st.lookup("missing"))
 
     def test_nested_scope_lookup(self):
+        """Outer-scope symbols are visible from nested scopes."""
         st = SymbolTable()
         st.define("x", "variable")
         st.enter_scope("func", "function")
@@ -200,6 +204,7 @@ class SymbolTableTestSuite(unittest.TestCase):
         self.assertIsNotNone(sym)
 
     def test_local_lookup(self):
+        """Local lookup does not include parent-scope symbols."""
         st = SymbolTable()
         st.define("x", "variable")
         st.enter_scope("func", "function")

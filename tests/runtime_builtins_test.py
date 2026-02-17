@@ -9,6 +9,7 @@
 import unittest
 
 from multilingualprogramming.codegen.runtime_builtins import RuntimeBuiltins
+from multilingualprogramming.keyword.keyword_registry import KeywordRegistry
 
 
 class RuntimeBuiltinsTestSuite(unittest.TestCase):
@@ -37,7 +38,6 @@ class RuntimeBuiltinsTestSuite(unittest.TestCase):
     def test_hindi_namespace_has_print_keyword(self):
         ns = RuntimeBuiltins("hi").namespace()
         # Hindi keyword for PRINT
-        from multilingualprogramming.keyword.keyword_registry import KeywordRegistry
         registry = KeywordRegistry()
         hi_print = registry.get_keyword("PRINT", "hi")
         self.assertIn(hi_print, ns)
@@ -83,7 +83,6 @@ class RuntimeBuiltinsTestSuite(unittest.TestCase):
     def test_french_type_keywords(self):
         """French type keywords should map to Python types."""
         ns = RuntimeBuiltins("fr").namespace()
-        from multilingualprogramming.keyword.keyword_registry import KeywordRegistry
         registry = KeywordRegistry()
         fr_int = registry.get_keyword("TYPE_INT", "fr")
         self.assertIn(fr_int, ns)

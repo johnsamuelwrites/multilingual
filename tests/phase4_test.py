@@ -12,6 +12,8 @@ from multilingualprogramming import (
     Lexer, Parser, PythonCodeGenerator,
     ProgramExecutor, REPL,
 )
+import multilingualprogramming.__main__ as main_module
+from multilingualprogramming.__main__ import cmd_compile, cmd_run
 from multilingualprogramming.parser.ast_nodes import (
     ConditionalExpr, CompareOp, AssertStatement,
     ChainedAssignment, Assignment,
@@ -290,15 +292,12 @@ class CLITestSuite(unittest.TestCase):
     """Test CLI entry point module."""
 
     def test_main_module_importable(self):
-        import multilingualprogramming.__main__ as m
-        self.assertTrue(hasattr(m, "main"))
+        self.assertTrue(hasattr(main_module, "main"))
 
     def test_cmd_compile_function_exists(self):
-        from multilingualprogramming.__main__ import cmd_compile
         self.assertTrue(callable(cmd_compile))
 
     def test_cmd_run_function_exists(self):
-        from multilingualprogramming.__main__ import cmd_run
         self.assertTrue(callable(cmd_run))
 
 

@@ -11,15 +11,14 @@ import unittest
 from multilingualprogramming.lexer.lexer import Lexer
 from multilingualprogramming.parser.parser import Parser
 from multilingualprogramming.parser.ast_nodes import (
-    Program, FunctionDef, ClassDef, Assignment, ExpressionStatement,
-    ForLoop, ListLiteral, DictLiteral, IndexAccess, CallExpr,
-    SliceExpr, Parameter, StarredExpr, TupleLiteral,
+    FunctionDef, ClassDef, Assignment, ExpressionStatement,
+    ForLoop, IndexAccess, CallExpr, SliceExpr, Parameter, TupleLiteral,
     ListComprehension, DictComprehension, GeneratorExpr,
-    FStringLiteral, StringLiteral, Identifier, NumeralLiteral,
+    FStringLiteral, StringLiteral, Identifier,
 )
 from multilingualprogramming.codegen.python_generator import PythonCodeGenerator
 from multilingualprogramming.codegen.executor import ProgramExecutor
-from multilingualprogramming.parser.semantic_analyzer import SemanticAnalyzer
+from multilingualprogramming.keyword.keyword_registry import KeywordRegistry
 
 
 def _parse(source, language="en"):
@@ -313,7 +312,13 @@ class TupleUnpackingTestSuite(unittest.TestCase):
         self.assertIsInstance(stmt.target, TupleLiteral)
 
     def test_execute_for_tuple_unpacking(self):
-        source = "let items = [[1, 2], [3, 4], [5, 6]]\nlet total = 0\nfor a, b in items:\n    total = total + a + b\nprint(total)\n"
+        source = (
+            "let items = [[1, 2], [3, 4], [5, 6]]\n"
+            "let total = 0\n"
+            "for a, b in items:\n"
+            "    total = total + a + b\n"
+            "print(total)\n"
+        )
         result = _execute(source)
         self.assertTrue(result.success)
         self.assertEqual(result.output.strip(), "21")
@@ -409,9 +414,9 @@ class ComprehensionTestSuite(unittest.TestCase):
         self.assertEqual(result.output.strip(), "30")
 
     def test_execute_nested_comp(self):
-        source = "let flat = [x for row in [[1, 2], [3, 4]] for x in row]\nprint(flat)\n"
+        _source = "let flat = [x for row in [[1, 2], [3, 4]] for x in row]\nprint(flat)\n"
         # Note: nested for clauses are not supported yet; this tests single-level
-        pass  # Skip for now
+        self.skipTest("Nested for clauses are not supported yet.")
 
 
 # ======================================================================
@@ -541,7 +546,6 @@ class MultilingualCriticalFeaturesTestSuite(unittest.TestCase):
     """Tests for critical features across multiple languages."""
 
     def test_french_list_comprehension(self):
-        from multilingualprogramming.keyword.keyword_registry import KeywordRegistry
         reg = KeywordRegistry()
         kw_for = reg.get_keyword("LOOP_FOR", "fr")
         kw_in = reg.get_keyword("IN", "fr")
@@ -553,7 +557,6 @@ class MultilingualCriticalFeaturesTestSuite(unittest.TestCase):
         self.assertEqual(result.output.strip(), "[0, 2, 4, 6, 8]")
 
     def test_french_default_params(self):
-        from multilingualprogramming.keyword.keyword_registry import KeywordRegistry
         reg = KeywordRegistry()
         kw_def = reg.get_keyword("FUNC_DEF", "fr")
         kw_return = reg.get_keyword("RETURN", "fr")
@@ -564,7 +567,6 @@ class MultilingualCriticalFeaturesTestSuite(unittest.TestCase):
         self.assertEqual(result.output.strip(), "10")
 
     def test_french_slice(self):
-        from multilingualprogramming.keyword.keyword_registry import KeywordRegistry
         reg = KeywordRegistry()
         kw_let = reg.get_keyword("LET", "fr")
         kw_print = reg.get_keyword("PRINT", "fr")
@@ -574,9 +576,7 @@ class MultilingualCriticalFeaturesTestSuite(unittest.TestCase):
         self.assertEqual(result.output.strip(), "[2, 3]")
 
     def test_hindi_tuple_unpacking(self):
-        from multilingualprogramming.keyword.keyword_registry import KeywordRegistry
         reg = KeywordRegistry()
-        kw_let = reg.get_keyword("LET", "hi")
         kw_print = reg.get_keyword("PRINT", "hi")
         source = f"a, b = 1, 2\n{kw_print}(a + b)\n"
         result = _execute(source, language="hi")

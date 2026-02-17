@@ -6,6 +6,7 @@
 
 """Semantic analyzer for the multilingual programming language AST."""
 
+from multilingualprogramming.parser.ast_nodes import Identifier, TupleLiteral
 from multilingualprogramming.parser.error_messages import ErrorMessageRegistry
 from multilingualprogramming.exceptions import SemanticError
 
@@ -139,7 +140,6 @@ class SemanticAnalyzer:
     def visit_Assignment(self, node):
         node.value.accept(self)
         # Tuple unpacking: define targets instead of looking them up
-        from multilingualprogramming.parser.ast_nodes import TupleLiteral, Identifier
         if isinstance(node.target, TupleLiteral):
             self._define_assignment_target(node.target)
         else:
@@ -153,7 +153,6 @@ class SemanticAnalyzer:
 
     def _define_assignment_target(self, target):
         """Define variables in a tuple unpacking assignment target."""
-        from multilingualprogramming.parser.ast_nodes import TupleLiteral, Identifier
         if isinstance(target, Identifier):
             existing = self.symbol_table.lookup(target.name)
             if existing is None:
@@ -304,7 +303,6 @@ class SemanticAnalyzer:
 
     def visit_ChainedAssignment(self, node):
         node.value.accept(self)
-        from multilingualprogramming.parser.ast_nodes import TupleLiteral, Identifier
         for target in node.targets:
             if isinstance(target, Identifier):
                 existing = self.symbol_table.lookup(target.name)
@@ -361,7 +359,6 @@ class SemanticAnalyzer:
 
     def _define_for_target(self, target):
         """Define for-loop target variable(s) in the current scope."""
-        from multilingualprogramming.parser.ast_nodes import TupleLiteral
         if isinstance(target, TupleLiteral):
             for elem in target.elements:
                 self._define_for_target(elem)
@@ -505,7 +502,6 @@ class SemanticAnalyzer:
 
     def _define_comp_target(self, target, node):
         """Define comprehension target variable(s) in current scope."""
-        from multilingualprogramming.parser.ast_nodes import Identifier, TupleLiteral
         if isinstance(target, Identifier):
             self.symbol_table.define(
                 target.name, "variable",
@@ -534,4 +530,5 @@ class SemanticAnalyzer:
             )
 
     def generic_visit(self, _node):
-        pass
+        """Ignore unsupported nodes during semantic traversal."""
+        return None

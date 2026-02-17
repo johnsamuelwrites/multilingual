@@ -6,6 +6,9 @@
 
 """Recursive-descent parser for the multilingual programming language."""
 
+from typing import NoReturn
+
+from multilingualprogramming.lexer.lexer import Lexer
 from multilingualprogramming.lexer.token_types import TokenType
 from multilingualprogramming.parser.ast_nodes import (
     Program, NumeralLiteral, StringLiteral, DateLiteral,
@@ -177,7 +180,7 @@ class Parser:
         while self._current().type in (TokenType.NEWLINE, TokenType.COMMENT):
             self._advance()
 
-    def _error(self, message_key, err_token, **kwargs):
+    def _error(self, message_key, err_token, **kwargs) -> NoReturn:
         """Raise a ParseError with a multilingual message."""
         kwargs.setdefault("line", err_token.line)
         kwargs.setdefault("column", err_token.column)
@@ -185,6 +188,10 @@ class Parser:
             message_key, self.source_language, **kwargs
         )
         raise ParseError(msg, err_token.line, err_token.column)
+
+    def parse_expression_fragment(self):
+        """Parse and return a single expression from the current token stream."""
+        return self._parse_expression()
 
     # ------------------------------------------------------------------
     # Top-level entry point
@@ -1218,11 +1225,10 @@ class Parser:
                     i += 1
                 i += 1  # skip closing }
                 # Parse the expression text
-                from multilingualprogramming.lexer.lexer import Lexer
                 sub_lexer = Lexer(expr_text, language=self.source_language)
                 sub_tokens = sub_lexer.tokenize()
                 sub_parser = Parser(sub_tokens, self.source_language)
-                expr_node = sub_parser._parse_expression()
+                expr_node = sub_parser.parse_expression_fragment()
                 parts.append(expr_node)
             elif ch == "}" and i + 1 < len(raw) and raw[i + 1] == "}":
                 # Escaped }} → literal }

@@ -13,11 +13,11 @@ across interactions, expression auto-printing, bracket-aware continuation,
 and REPL commands.
 """
 
+import io
 import sys
 
 from multilingualprogramming.lexer.lexer import Lexer
 from multilingualprogramming.parser.parser import Parser
-from multilingualprogramming.parser.semantic_analyzer import SemanticAnalyzer
 from multilingualprogramming.codegen.python_generator import PythonCodeGenerator
 from multilingualprogramming.codegen.runtime_builtins import RuntimeBuiltins
 from multilingualprogramming.version import __version__
@@ -99,7 +99,6 @@ class REPL:
 
         For single expressions, auto-prints the result (like Python REPL).
         """
-        import io
         captured = io.StringIO()
         old_stdout = sys.stdout
         try:
@@ -155,7 +154,7 @@ class REPL:
         if cmd in (":quit", ":exit", ":q"):
             print("Bye!")
             return "exit"
-        elif cmd == ":lang":
+        if cmd == ":lang":
             if arg:
                 self.language = arg.strip()
                 self._globals.clear()
@@ -164,17 +163,17 @@ class REPL:
             else:
                 print(f"Current language: {self.language or 'auto'}")
             return True
-        elif cmd == ":python":
+        if cmd == ":python":
             self.show_python = not self.show_python
             state = "on" if self.show_python else "off"
             print(f"Show Python: {state}")
             return True
-        elif cmd == ":reset":
+        if cmd == ":reset":
             self._globals.clear()
             self._init_globals()
             print("State cleared.")
             return True
-        elif cmd == ":help":
+        if cmd == ":help":
             print("REPL Commands:")
             print("  :lang [XX]    Switch language (e.g., :lang fr)")
             print("  :python       Toggle showing generated Python")

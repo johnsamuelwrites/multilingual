@@ -23,11 +23,11 @@ def build_sum_program(registry, language):
     )
 
 
-registry = KeywordRegistry()
+keyword_registry = KeywordRegistry()
 
 print("=== Execute in all 10 pilot languages ===")
-for lang in registry.get_supported_languages():
-    source = build_sum_program(registry, lang)
+for lang in keyword_registry.get_supported_languages():
+    source = build_sum_program(keyword_registry, lang)
     result = ProgramExecutor(language=lang).execute(source)
     output = result.output.strip()
     print(f"{lang}: success={result.success}, output={output!r}")

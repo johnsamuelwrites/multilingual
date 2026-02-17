@@ -8,13 +8,12 @@
 
 import unittest
 from multilingualprogramming.parser.ast_nodes import (
-    ASTNode, Program, NumeralLiteral, StringLiteral, DateLiteral,
+    Program, NumeralLiteral, StringLiteral, DateLiteral,
     BooleanLiteral, NoneLiteral, ListLiteral, DictLiteral,
     Identifier, BinaryOp, UnaryOp, BooleanOp, CompareOp,
-    CallExpr, AttributeAccess, IndexAccess, LambdaExpr, YieldExpr,
+    CallExpr, AttributeAccess, IndexAccess, LambdaExpr,
     VariableDeclaration, Assignment, ExpressionStatement,
-    PassStatement, ReturnStatement, BreakStatement, ContinueStatement,
-    RaiseStatement, GlobalStatement, LocalStatement,
+    PassStatement, ReturnStatement, BreakStatement,
     IfStatement, WhileLoop, ForLoop, FunctionDef, ClassDef,
     TryStatement, ExceptHandler, MatchStatement, CaseClause,
     WithStatement, ImportStatement, FromImportStatement,
@@ -203,13 +202,17 @@ class ASTNodeConstructionTestSuite(unittest.TestCase):
         """Test that accept() dispatches to the correct visitor method."""
 
         class TestVisitor:
+            """Visitor used to verify accept() dispatch."""
+
             def __init__(self):
                 self.visited = None
 
             def visit_Identifier(self, node):
+                """Record specialized visitor calls."""
                 self.visited = node.name
 
             def generic_visit(self, _node):
+                """Record fallback visitor calls."""
                 self.visited = "generic"
 
         visitor = TestVisitor()
@@ -221,10 +224,13 @@ class ASTNodeConstructionTestSuite(unittest.TestCase):
         """Test that accept() falls back to generic_visit."""
 
         class TestVisitor:
+            """Visitor with only a generic fallback."""
+
             def __init__(self):
                 self.visited = None
 
             def generic_visit(self, _node):
+                """Record fallback visitor calls."""
                 self.visited = "generic"
 
         visitor = TestVisitor()

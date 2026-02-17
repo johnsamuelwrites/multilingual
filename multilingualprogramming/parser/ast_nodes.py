@@ -72,9 +72,6 @@ class BooleanLiteral(ASTNode):
 class NoneLiteral(ASTNode):
     """NONE keyword as a literal value."""
 
-    def __init__(self, line=0, column=0):
-        super().__init__(line, column)
-
 
 class ListLiteral(ASTNode):
     """List literal [a, b, c]."""
@@ -231,9 +228,6 @@ class ExpressionStatement(ASTNode):
 class PassStatement(ASTNode):
     """Pass/no-op statement."""
 
-    def __init__(self, line=0, column=0):
-        super().__init__(line, column)
-
 
 class ReturnStatement(ASTNode):
     """Return statement: return value."""
@@ -246,15 +240,9 @@ class ReturnStatement(ASTNode):
 class BreakStatement(ASTNode):
     """Break statement."""
 
-    def __init__(self, line=0, column=0):
-        super().__init__(line, column)
-
 
 class ContinueStatement(ASTNode):
     """Continue statement."""
-
-    def __init__(self, line=0, column=0):
-        super().__init__(line, column)
 
 
 class RaiseStatement(ASTNode):

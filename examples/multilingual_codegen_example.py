@@ -33,12 +33,12 @@ def build_source(registry, language):
     )
 
 
-registry = KeywordRegistry()
+keyword_registry = KeywordRegistry()
 generator = PythonCodeGenerator()
 
 print("=== Code generation in all 10 pilot languages ===")
-for lang in registry.get_supported_languages():
-    source = build_source(registry, lang)
+for lang in keyword_registry.get_supported_languages():
+    source = build_source(keyword_registry, lang)
     tokens = Lexer(source, language=lang).tokenize()
     tree = Parser(tokens, source_language=lang).parse()
     python_code = generator.generate(tree)

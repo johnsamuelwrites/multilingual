@@ -40,12 +40,12 @@ def build_invalid_source(registry, language):
     return f"{kw_break}\n"
 
 
-registry = KeywordRegistry()
+keyword_registry = KeywordRegistry()
 
 print("=== Semantic analysis in all 10 pilot languages ===")
-for lang in registry.get_supported_languages():
-    ok_source = build_valid_source(registry, lang)
-    bad_source = build_invalid_source(registry, lang)
+for lang in keyword_registry.get_supported_languages():
+    ok_source = build_valid_source(keyword_registry, lang)
+    bad_source = build_invalid_source(keyword_registry, lang)
 
     ok_errors = analyze(ok_source, lang)
     bad_errors = analyze(bad_source, lang)

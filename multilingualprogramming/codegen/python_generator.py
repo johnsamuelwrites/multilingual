@@ -262,6 +262,7 @@ class PythonCodeGenerator:
         self._emit(f"from {node.module} import {names}")
 
     def generic_visit(self, node):
+        """Raise when statement node code generation is not implemented."""
         self._error(
             f"Unsupported AST node type: {type(node).__name__}", node
         )
@@ -469,6 +470,7 @@ class _ExpressionGenerator:
         return result
 
     def generic_visit(self, node):
+        """Raise when expression node code generation is not implemented."""
         raise CodeGenerationError(
             f"Unsupported expression node: {type(node).__name__}",
             node.line, node.column

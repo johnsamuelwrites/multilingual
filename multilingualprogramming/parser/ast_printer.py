@@ -565,4 +565,5 @@ class ASTPrinter:
         self._dedent()
 
     def generic_visit(self, node):
+        """Fallback rendering for nodes without a specialized visitor."""
         self._emit(f"{type(node).__name__}")

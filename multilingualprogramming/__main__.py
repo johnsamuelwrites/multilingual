@@ -17,12 +17,16 @@ Usage:
 import argparse
 import sys
 
+from multilingualprogramming.codegen.executor import ProgramExecutor
+from multilingualprogramming.codegen.python_generator import PythonCodeGenerator
+from multilingualprogramming.codegen.repl import REPL
+from multilingualprogramming.lexer.lexer import Lexer
+from multilingualprogramming.parser.parser import Parser
 from multilingualprogramming.version import __version__
 
 
 def cmd_run(args):
     """Execute a multilingual source file."""
-    from multilingualprogramming.codegen.executor import ProgramExecutor
 
     try:
         with open(args.file, encoding="utf-8") as f:
@@ -48,17 +52,12 @@ def cmd_run(args):
 
 def cmd_repl(args):
     """Start the interactive REPL."""
-    from multilingualprogramming.codegen.repl import REPL
-
     repl = REPL(language=args.lang, show_python=args.show_python)
     repl.run()
 
 
 def cmd_compile(args):
     """Compile a source file and print the generated Python."""
-    from multilingualprogramming.lexer.lexer import Lexer
-    from multilingualprogramming.parser.parser import Parser
-    from multilingualprogramming.codegen.python_generator import PythonCodeGenerator
 
     try:
         with open(args.file, encoding="utf-8") as f:
@@ -84,6 +83,7 @@ def cmd_compile(args):
 
 
 def main():
+    """Run the CLI entry point and dispatch subcommands."""
     parser = argparse.ArgumentParser(
         prog="multilingual",
         description="Multilingual Programming Language CLI",
