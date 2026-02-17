@@ -9,7 +9,8 @@ Interactive REPL (Read-Eval-Print Loop) for the multilingual programming
 language.
 
 Supports line-by-line and multi-line (block) input, persistent state
-across interactions, and optional display of generated Python source.
+across interactions, expression auto-printing, bracket-aware continuation,
+and REPL commands.
 """
 
 import sys
@@ -66,7 +67,6 @@ class REPL:
         Returns:
             Captured stdout output as a string, or error message.
         """
-        import io
         if not source.strip():
             return ""
 
@@ -95,32 +95,107 @@ class REPL:
             return f"Error: {exc}\n"
 
     def _exec(self, python_source):
-        """Execute generated Python and return captured output."""
+        """Execute generated Python and return captured output.
+
+        For single expressions, auto-prints the result (like Python REPL).
+        """
         import io
         captured = io.StringIO()
         old_stdout = sys.stdout
         try:
             sys.stdout = captured
-            code = compile(python_source, "<repl>", "exec")
-            exec(code, self._globals)  # pylint: disable=exec-used
+            # Try eval first (single expression) for auto-printing
+            try:
+                code = compile(python_source, "<repl>", "eval")
+                result = eval(code, self._globals)  # pylint: disable=eval-used
+                if result is not None:
+                    print(repr(result))
+            except SyntaxError:
+                # Not a single expression — exec as statements
+                code = compile(python_source, "<repl>", "exec")
+                exec(code, self._globals)  # pylint: disable=exec-used
         except Exception as exc:
             captured.write(f"Error: {exc}\n")
         finally:
             sys.stdout = old_stdout
         return captured.getvalue()
 
+    def _count_open_brackets(self, text):
+        """Count net open brackets in text."""
+        count = 0
+        in_string = False
+        string_char = None
+        i = 0
+        while i < len(text):
+            ch = text[i]
+            if in_string:
+                if ch == '\\':
+                    i += 1  # skip escaped char
+                elif ch == string_char:
+                    in_string = False
+            else:
+                if ch in ('"', "'"):
+                    in_string = True
+                    string_char = ch
+                elif ch in ('(', '[', '{'):
+                    count += 1
+                elif ch in (')', ']', '}'):
+                    count -= 1
+                elif ch == '#':
+                    break  # rest is comment
+            i += 1
+        return count
+
+    def _handle_command(self, line):
+        """Handle REPL commands starting with ':'. Returns True if handled."""
+        parts = line.strip().split(None, 1)
+        cmd = parts[0].lower()
+        arg = parts[1] if len(parts) > 1 else ""
+
+        if cmd in (":quit", ":exit", ":q"):
+            print("Bye!")
+            return "exit"
+        elif cmd == ":lang":
+            if arg:
+                self.language = arg.strip()
+                self._globals.clear()
+                self._init_globals()
+                print(f"Language switched to: {self.language}")
+            else:
+                print(f"Current language: {self.language or 'auto'}")
+            return True
+        elif cmd == ":python":
+            self.show_python = not self.show_python
+            state = "on" if self.show_python else "off"
+            print(f"Show Python: {state}")
+            return True
+        elif cmd == ":reset":
+            self._globals.clear()
+            self._init_globals()
+            print("State cleared.")
+            return True
+        elif cmd == ":help":
+            print("REPL Commands:")
+            print("  :lang [XX]    Switch language (e.g., :lang fr)")
+            print("  :python       Toggle showing generated Python")
+            print("  :reset        Clear all variables and state")
+            print("  :help         Show this help")
+            print("  :quit         Exit the REPL")
+            return True
+        return False
+
     def run(self):
         """
         Start the interactive REPL loop.
 
         Reads from stdin, supports multi-line blocks (lines ending with ':'),
-        and exits on Ctrl+D (EOF) or Ctrl+C.
+        bracket continuation, and REPL commands.
+        Exits on Ctrl+D (EOF) or Ctrl+C.
         """
         lang_label = self.language or "auto"
         print(f"Multilingual Programming REPL v{__version__} "
               f"[language={lang_label}]")
-        print("Type 'exit' or Ctrl+D to quit. "
-              "End block headers with ':' then indent.\n")
+        print("Type ':help' for commands, ':quit' or Ctrl+D to exit.\n")
 
         while True:
             try:
@@ -133,8 +208,19 @@ class REPL:
                 print("Bye!")
                 break
 
-            # Check for multi-line block (line ends with ':')
-            if line.rstrip().endswith(":"):
+            # Handle REPL commands
+            if line.strip().startswith(":"):
+                result = self._handle_command(line)
+                if result == "exit":
+                    break
+                if result:
+                    continue
+
+            # Multi-line detection: colon at end or open brackets
+            open_brackets = self._count_open_brackets(line)
+            needs_block = line.rstrip().endswith(":")
+
+            if needs_block or open_brackets > 0:
                 block_lines = [line]
                 while True:
                     try:
@@ -142,9 +228,15 @@ class REPL:
                     except (EOFError, KeyboardInterrupt):
                         print()
                         break
-                    if cont.strip() == "":
-                        break
                     block_lines.append(cont)
+                    open_brackets += self._count_open_brackets(cont)
+
+                    # End block: empty line when in block mode (colon),
+                    # or all brackets closed
+                    if needs_block and cont.strip() == "":
+                        break
+                    if not needs_block and open_brackets <= 0:
+                        break
                 source = "\n".join(block_lines) + "\n"
             else:
                 source = line + "\n"

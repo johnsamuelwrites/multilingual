@@ -120,6 +120,19 @@ class PythonCodeGenerator:
         else:
             self._emit("raise")
 
+    def visit_AssertStatement(self, node):
+        test = self._expr(node.test)
+        if node.msg:
+            msg = self._expr(node.msg)
+            self._emit(f"assert {test}, {msg}")
+        else:
+            self._emit(f"assert {test}")
+
+    def visit_ChainedAssignment(self, node):
+        targets = " = ".join(self._expr(t) for t in node.targets)
+        value = self._expr(node.value)
+        self._emit(f"{targets} = {value}")
+
     def visit_GlobalStatement(self, node):
         names = ", ".join(node.names)
         self._emit(f"global {names}")

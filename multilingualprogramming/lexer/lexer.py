@@ -19,6 +19,7 @@ SINGLE_OPERATORS = set("+-*/%<>=!&|^~")
 MULTI_OPERATORS = {
     "**", "//", "==", "!=", "<=", ">=", "<<", ">>",
     "+=", "-=", "*=", "/=", "->",
+    "**=", "//=", "%=", "&=", "|=", "^=", "<<=", ">>=",
 }
 # Unicode operator alternatives
 UNICODE_OPERATORS = {
@@ -441,10 +442,19 @@ class Lexer:
         line, col = self.reader.line, self.reader.column
         char = self.reader.advance()
 
-        # Check for two-character operators
+        # Check for three-character operators first (e.g., **=, //=, <<=, >>=)
         if not self.reader.is_at_end():
             two_char = char + self.reader.peek()
             if two_char in MULTI_OPERATORS:
+                peek2 = self.reader.peek_ahead(1)
+                three_char = two_char + peek2 if peek2 else ""
+                if len(three_char) == 3 and three_char in MULTI_OPERATORS:
+                    self.reader.advance()  # consume second char
+                    self.reader.advance()  # consume third char
+                    self.tokens.append(Token(
+                        TokenType.OPERATOR, three_char, line, col
+                    ))
+                    return
                 self.reader.advance()
                 self.tokens.append(Token(
                     TokenType.OPERATOR, two_char, line, col

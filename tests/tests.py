@@ -70,6 +70,16 @@ from tests.critical_features_test import (
     FStringTestSuite,
     MultilingualCriticalFeaturesTestSuite,
 )
+from tests.phase4_test import (
+    AugmentedAssignmentTestSuite,
+    MembershipIdentityTestSuite,
+    TernaryExpressionTestSuite,
+    AssertStatementTestSuite,
+    ChainedAssignmentTestSuite,
+    CLITestSuite,
+    REPLImprovementsTestSuite,
+    MultilingualPhase4TestSuite,
+)
 
 if __name__ == "__main__":
     mp_numeral_tests = MPNumeralTestSuite()
@@ -121,6 +131,14 @@ if __name__ == "__main__":
     decorator_tests = DecoratorTestSuite()
     fstring_tests = FStringTestSuite()
     multilingual_critical_tests = MultilingualCriticalFeaturesTestSuite()
+    augmented_assign_tests = AugmentedAssignmentTestSuite()
+    membership_identity_tests = MembershipIdentityTestSuite()
+    ternary_tests = TernaryExpressionTestSuite()
+    assert_tests = AssertStatementTestSuite()
+    chained_assign_tests = ChainedAssignmentTestSuite()
+    cli_tests = CLITestSuite()
+    repl_improvements_tests = REPLImprovementsTestSuite()
+    multilingual_phase4_tests = MultilingualPhase4TestSuite()
     tests = unittest.TestSuite(
         [
             mp_numeral_tests,
@@ -172,6 +190,14 @@ if __name__ == "__main__":
             decorator_tests,
             fstring_tests,
             multilingual_critical_tests,
+            augmented_assign_tests,
+            membership_identity_tests,
+            ternary_tests,
+            assert_tests,
+            chained_assign_tests,
+            cli_tests,
+            repl_improvements_tests,
+            multilingual_phase4_tests,
         ]
     )
     unittest.main()

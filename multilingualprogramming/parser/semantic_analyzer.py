@@ -297,6 +297,27 @@ class SemanticAnalyzer:
         if node.value:
             node.value.accept(self)
 
+    def visit_AssertStatement(self, node):
+        node.test.accept(self)
+        if node.msg:
+            node.msg.accept(self)
+
+    def visit_ChainedAssignment(self, node):
+        node.value.accept(self)
+        from multilingualprogramming.parser.ast_nodes import TupleLiteral, Identifier
+        for target in node.targets:
+            if isinstance(target, Identifier):
+                existing = self.symbol_table.lookup(target.name)
+                if existing is None:
+                    self.symbol_table.define(
+                        target.name, "variable",
+                        line=target.line, column=target.column
+                    )
+            elif isinstance(target, TupleLiteral):
+                self._define_assignment_target(target)
+            else:
+                target.accept(self)
+
     def visit_GlobalStatement(self, _node):
         pass
 

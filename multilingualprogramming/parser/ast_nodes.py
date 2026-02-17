@@ -510,3 +510,21 @@ class FStringLiteral(ASTNode):
         super().__init__(line, column)
         # parts: list of (str | ASTNode) alternating text and expressions
         self.parts = parts
+
+
+class AssertStatement(ASTNode):
+    """Assert statement: assert test [, msg]."""
+
+    def __init__(self, test, msg=None, line=0, column=0):
+        super().__init__(line, column)
+        self.test = test
+        self.msg = msg
+
+
+class ChainedAssignment(ASTNode):
+    """Chained assignment: a = b = c = value."""
+
+    def __init__(self, targets, value, line=0, column=0):
+        super().__init__(line, column)
+        self.targets = targets
+        self.value = value

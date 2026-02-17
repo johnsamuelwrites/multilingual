@@ -231,6 +231,34 @@ class ASTPrinter:
             node.value.accept(self)
             self._dedent()
 
+    def visit_AssertStatement(self, node):
+        self._emit("AssertStatement")
+        self._indent()
+        self._emit("test:")
+        self._indent()
+        node.test.accept(self)
+        self._dedent()
+        if node.msg:
+            self._emit("msg:")
+            self._indent()
+            node.msg.accept(self)
+            self._dedent()
+        self._dedent()
+
+    def visit_ChainedAssignment(self, node):
+        self._emit("ChainedAssignment")
+        self._indent()
+        self._emit("targets:")
+        self._indent()
+        for target in node.targets:
+            target.accept(self)
+        self._dedent()
+        self._emit("value:")
+        self._indent()
+        node.value.accept(self)
+        self._dedent()
+        self._dedent()
+
     def visit_GlobalStatement(self, node):
         self._emit(f"GlobalStatement {node.names!r}")
 

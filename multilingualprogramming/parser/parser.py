@@ -11,7 +11,7 @@ from multilingualprogramming.parser.ast_nodes import (
     Program, NumeralLiteral, StringLiteral, DateLiteral,
     BooleanLiteral, NoneLiteral, ListLiteral, DictLiteral,
     Identifier, BinaryOp, UnaryOp, BooleanOp, CompareOp,
-    CallExpr, AttributeAccess, IndexAccess,
+    CallExpr, AttributeAccess, IndexAccess, ConditionalExpr,
     LambdaExpr, YieldExpr,
     VariableDeclaration, Assignment, ExpressionStatement,
     PassStatement, ReturnStatement, BreakStatement, ContinueStatement,
@@ -21,7 +21,7 @@ from multilingualprogramming.parser.ast_nodes import (
     WithStatement, ImportStatement, FromImportStatement,
     SliceExpr, Parameter, StarredExpr, TupleLiteral,
     ListComprehension, DictComprehension, GeneratorExpr,
-    FStringLiteral,
+    FStringLiteral, AssertStatement, ChainedAssignment,
 )
 from multilingualprogramming.parser.error_messages import ErrorMessageRegistry
 from multilingualprogramming.exceptions import ParseError
@@ -36,7 +36,7 @@ _COMPOUND_CONCEPTS = {
 _SIMPLE_CONCEPTS = {
     "LET", "CONST", "RETURN", "YIELD", "RAISE",
     "LOOP_BREAK", "LOOP_CONTINUE", "PASS",
-    "GLOBAL", "LOCAL", "IMPORT", "FROM",
+    "GLOBAL", "LOCAL", "IMPORT", "FROM", "ASSERT",
 }
 
 # Concepts treated as identifiers when appearing in expressions
@@ -47,7 +47,10 @@ _TYPE_CONCEPTS = {
 }
 
 # Augmented assignment operators
-_AUGMENTED_OPS = {"+=", "-=", "*=", "/="}
+_AUGMENTED_OPS = {
+    "+=", "-=", "*=", "/=",
+    "**=", "//=", "%=", "&=", "|=", "^=", "<<=", ">>=",
+}
 
 # Comparison operators
 _COMPARISON_OPS = {"==", "!=", "<", ">", "<=", ">="}
@@ -92,6 +95,14 @@ class Parser:
         """Check if current token is a KEYWORD with the given concept."""
         tok = self._current()
         return tok.type == TokenType.KEYWORD and tok.concept == concept
+
+    def _peek_concept(self, concept):
+        """Check if next token (pos+1) is a KEYWORD with the given concept."""
+        idx = self.pos + 1
+        if idx < len(self.tokens):
+            tok = self.tokens[idx]
+            return tok.type == TokenType.KEYWORD and tok.concept == concept
+        return False
 
     def _match_operator(self, op):
         """Check if current token is an OPERATOR with the given value."""
@@ -282,6 +293,8 @@ class Parser:
             return self._parse_import_statement()
         if concept == "FROM":
             return self._parse_from_import_statement()
+        if concept == "ASSERT":
+            return self._parse_assert_statement()
         self._error("UNEXPECTED_TOKEN", self._current(),
                      token=self._current().value)
 
@@ -365,6 +378,20 @@ class Parser:
                     right_elements.append(self._parse_expression())
                 value = TupleLiteral(right_elements,
                                      line=value.line, column=value.column)
+            # Check for chained assignment (a = b = c = 0)
+            if self._current().type == TokenType.OPERATOR \
+                    and self._current().value == "=":
+                targets = [expr, value]
+                while self._current().type == TokenType.OPERATOR \
+                        and self._current().value == "=":
+                    self._advance()
+                    value = self._parse_expression()
+                    targets.append(value)
+                final_value = targets.pop()
+                return ChainedAssignment(
+                    targets, final_value,
+                    line=expr.line, column=expr.column
+                )
             return Assignment(
                 expr, value, op="=",
                 line=expr.line, column=expr.column
@@ -724,6 +751,16 @@ class Parser:
             value = self._parse_expression()
         return RaiseStatement(value, line=tok.line, column=tok.column)
 
+    def _parse_assert_statement(self):
+        """Parse: ASSERT test [, msg]."""
+        tok = self._advance()  # consume ASSERT
+        test = self._parse_expression()
+        msg = None
+        if self._match_delimiter(","):
+            self._advance()
+            msg = self._parse_expression()
+        return AssertStatement(test, msg, line=tok.line, column=tok.column)
+
     def _parse_break_statement(self):
         """Parse: BREAK."""
         tok = self._advance()
@@ -763,7 +800,23 @@ class Parser:
 
     def _parse_expression(self):
         """Parse an expression (top level)."""
-        return self._parse_or_expression()
+        return self._parse_conditional_expression()
+
+    def _parse_conditional_expression(self):
+        """Parse: or_expr [IF or_expr ELSE conditional_expr]."""
+        true_expr = self._parse_or_expression()
+        if self._match_concept("COND_IF"):
+            tok = self._advance()
+            condition = self._parse_or_expression()
+            if not self._match_concept("COND_ELSE"):
+                self._error("EXPECTED_EXPRESSION", self._current())
+            self._advance()
+            false_expr = self._parse_conditional_expression()
+            return ConditionalExpr(
+                condition, true_expr, false_expr,
+                line=tok.line, column=tok.column
+            )
+        return true_expr
 
     def _parse_or_expression(self):
         """Parse: and_expr (OR and_expr)*."""
@@ -796,14 +849,39 @@ class Parser:
         return self._parse_comparison()
 
     def _parse_comparison(self):
-        """Parse: bitwise_or (comp_op bitwise_or)*  (chained)."""
+        """Parse: bitwise_or (comp_op bitwise_or)*  (chained).
+
+        Supports standard operators (==, !=, <, >, <=, >=) plus
+        keyword operators: in, not in, is, is not.
+        """
         left = self._parse_bitwise_or()
         comparators = []
-        while self._current().type == TokenType.OPERATOR \
-                and self._current().value in _COMPARISON_OPS:
-            op = self._advance().value
-            right = self._parse_bitwise_or()
-            comparators.append((op, right))
+        while True:
+            if self._current().type == TokenType.OPERATOR \
+                    and self._current().value in _COMPARISON_OPS:
+                op = self._advance().value
+                right = self._parse_bitwise_or()
+                comparators.append((op, right))
+            elif self._match_concept("IN"):
+                self._advance()
+                right = self._parse_bitwise_or()
+                comparators.append(("in", right))
+            elif self._match_concept("NOT") and self._peek_concept("IN"):
+                self._advance()  # consume NOT
+                self._advance()  # consume IN
+                right = self._parse_bitwise_or()
+                comparators.append(("not in", right))
+            elif self._match_concept("IS"):
+                self._advance()
+                if self._match_concept("NOT"):
+                    self._advance()
+                    right = self._parse_bitwise_or()
+                    comparators.append(("is not", right))
+                else:
+                    right = self._parse_bitwise_or()
+                    comparators.append(("is", right))
+            else:
+                break
         if not comparators:
             return left
         return CompareOp(left, comparators, line=left.line, column=left.column)
@@ -1260,16 +1338,18 @@ class Parser:
 
         `element` is the already-parsed element expression.
         `kind` is 'list' or 'generator'.
+        Uses _parse_or_expression for iterable/conditions to avoid
+        consuming the comprehension 'if' as a ternary operator.
         """
         self._advance()  # consume FOR keyword
         target = self._parse_comp_target()
         self._expect_concept("IN")
-        iterable = self._parse_expression()
+        iterable = self._parse_or_expression()
 
         conditions = []
         while self._match_concept("COND_IF"):
             self._advance()
-            conditions.append(self._parse_expression())
+            conditions.append(self._parse_or_expression())
 
         if kind == "list":
             self._expect_delimiter("]")
@@ -1289,12 +1369,12 @@ class Parser:
         self._advance()  # consume FOR keyword
         target = self._parse_comp_target()
         self._expect_concept("IN")
-        iterable = self._parse_expression()
+        iterable = self._parse_or_expression()
 
         conditions = []
         while self._match_concept("COND_IF"):
             self._advance()
-            conditions.append(self._parse_expression())
+            conditions.append(self._parse_or_expression())
 
         self._expect_delimiter("}")
         return DictComprehension(
