@@ -16,65 +16,58 @@ pip install .
 
 ### 2. Use the REPL (interactive mode)
 
+Start REPL:
+
 ```bash
-# Start REPL
+# 1) Default mode (English keywords)
 python -m multilingualprogramming repl
 
-# Start REPL with a language
+# 2) French mode
 python -m multilingualprogramming repl --lang fr
 
-# Start REPL and show generated Python
+# Optional: show generated Python while executing
 python -m multilingualprogramming repl --show-python
 ```
 
-Inside the REPL:
+Inside the REPL, type code and press Enter to execute.
 
-- `:help` show commands
-- `:lang <code>` switch language
-- `:python` toggle generated Python display
-- `:reset` clear session state
-- `:quit` exit
-
-French REPL example:
+Default mode example (English):
 
 ```text
-soit somme = 0
-pour i dans intervalle(4):
-    somme = somme + i
-afficher(somme)
+>>> let total = 0
+>>> for i in range(4):
+...     total = total + i
+...
+>>> print(total)
+6
 ```
+
+French mode example:
+
+```text
+>>> soit somme = 0
+>>> pour i dans intervalle(4):
+...     somme = somme + i
+...
+>>> afficher(somme)
+6
+```
+
+REPL commands:
+
+- `:help` show commands
+- `:language <code>` switch language
+- `:python` toggle generated Python display
+- `:reset` clear session state
+- `:kw [XX]` show language keywords
+- `:ops [XX]` show operators and symbols
+- `:q` exit
 
 Note: selected universal built-ins (for example `range`, `len`, `sum`) support localized aliases while keeping the universal names available.
 
-### 3. Execute a program
+### 3. Execute and inspect programs
 
-```python
-from multilingualprogramming import ProgramExecutor
-
-result = ProgramExecutor(language="en").execute("""\
-def add(a, b):
-    return a + b
-print(add(2, 3))
-""")
-
-print(result.success)  # True
-print(result.output)   # 5
-```
-
-### 4. Parse and inspect AST
-
-```python
-from multilingualprogramming import Lexer, Parser, ASTPrinter
-
-source = """\
-def square(x):
-    return x * x
-"""
-
-tokens = Lexer(source, language="en").tokenize()
-ast = Parser(tokens, source_language="en").parse()
-print(ASTPrinter().print(ast))
-```
+Execution/transpilation examples and AST parsing examples are in [USAGE.md](USAGE.md).
 
 ## What You Can Use
 
@@ -89,27 +82,14 @@ Supported pilot languages: English, French, Spanish, German, Italian, Portuguese
 
 ## Run Examples
 
-```bash
-python -m examples.arithmetic
-python -m examples.numeral_extended
-python -m examples.keywords
-python -m examples.datetime_example
-python -m examples.lexer_example
-python -m examples.parser_example
-python -m examples.ast_example
-python -m examples.multilingual_parser_example
-python -m examples.codegen_example
-python -m examples.multilingual_codegen_example
-python -m examples.semantic_example
-python -m examples.executor_example
-```
+See [USAGE.md](USAGE.md) for the complete runnable examples list.
 
 ## Documentation
 
-- Usage guide: `USAGE.md`
-- Examples guide: `examples/README.md`
-- Detailed reference: `docs/README.md`
-- Language onboarding guide: `docs/language_onboarding.md`
+- Usage guide: [USAGE.md](USAGE.md)
+- Examples guide: [examples/README.md](examples/README.md)
+- Detailed reference: [docs/README.md](docs/README.md)
+- Language onboarding guide: [docs/language_onboarding.md](docs/language_onboarding.md)
 
 ## Development
 

@@ -143,10 +143,12 @@ python -m multilingualprogramming repl --show-python
 REPL commands:
 
 - `:help`
-- `:lang <code>`
+- `:language <code>`
 - `:python`
 - `:reset`
-- `:quit`
+- `:kw [XX]`
+- `:ops [XX]`
+- `:q`
 
 ## REPL Language Smoke Tests
 
@@ -340,7 +342,7 @@ imprimir(soma)
 
 Runnable examples are documented in:
 
-- `examples/README.md`
+- [examples/README.md](../examples/README.md)
 
 Run all examples from repository root:
 
@@ -368,10 +370,10 @@ python -m pylint $(git ls-files '*.py')
 
 ## Related Docs
 
-- Project quick start: `../README.md`
-- Usage snippets: `../USAGE.md`
-- Examples guide: `../examples/README.md`
-- Language onboarding: `language_onboarding.md`
+- Project quick start: [README.md](../README.md)
+- Usage snippets: [USAGE.md](../USAGE.md)
+- Examples guide: [examples/README.md](../examples/README.md)
+- Language onboarding: [language_onboarding.md](language_onboarding.md)
 
 ## License
 
