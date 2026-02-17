@@ -1,8 +1,15 @@
-# multilingualprogramming
+# multilingual
+Not yet another programming language. A multilingual one.
 
-A Python framework for multilingual programming: write source code using keywords and numerals from multiple human languages while keeping one common semantic model.
+> **One programming model. Many human languages.**  
+> Write code in your language while keeping a shared semantic core.
 
-Current version: `0.3.0`
+## Why Multilingual
+
+- **Language-inclusive syntax**: Use localized keywords and built-in aliases (for example, `intervalle`, `rango`, `intervallo`).
+- **Single execution pipeline**: Same flow for every language: lexer -> parser -> semantic checks -> Python codegen -> runtime.
+- **Data-driven extensibility**: Add languages by updating registries/resources, not by rewriting parser/codegen logic.
+- **REPL-first experience**: Start quickly, switch languages live, inspect keywords/operators from inside REPL.
 
 ## Quick Start
 
