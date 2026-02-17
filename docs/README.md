@@ -148,6 +148,185 @@ REPL commands:
 - `:reset`
 - `:quit`
 
+## REPL Language Smoke Tests
+
+Use these two snippets to quickly validate each language in REPL.
+
+Snippet A (variables + print):
+
+```text
+<LET> x = 2
+<LET> y = 3
+<PRINT>(x + y)
+```
+
+Snippet B (for loop):
+
+```text
+<LET> total = 0
+<FOR> i <IN> range(4):
+    total = total + i
+<PRINT>(total)
+```
+
+Language-specific forms:
+
+### English (`en`)
+
+```text
+let x = 2
+let y = 3
+print(x + y)
+
+let total = 0
+for i in range(4):
+    total = total + i
+print(total)
+```
+
+### French (`fr`)
+
+```text
+soit x = 2
+soit y = 3
+afficher(x + y)
+
+soit somme = 0
+pour i dans range(4):
+    somme = somme + i
+afficher(somme)
+```
+
+### Spanish (`es`)
+
+```text
+sea x = 2
+sea y = 3
+imprimir(x + y)
+
+sea suma = 0
+para i en range(4):
+    suma = suma + i
+imprimir(suma)
+```
+
+### German (`de`)
+
+```text
+sei x = 2
+sei y = 3
+ausgeben(x + y)
+
+sei summe = 0
+für i in range(4):
+    summe = summe + i
+ausgeben(summe)
+```
+
+### Italian (`it`)
+
+```text
+sia x = 2
+sia y = 3
+stampa(x + y)
+
+sia totale = 0
+per i in range(4):
+    totale = totale + i
+stampa(totale)
+```
+
+### Portuguese (`pt`)
+
+```text
+seja x = 2
+seja y = 3
+imprimir(x + y)
+
+seja soma = 0
+para i em range(4):
+    soma = soma + i
+imprimir(soma)
+```
+
+### Hindi (`hi`)
+
+```text
+मान x = 2
+मान y = 3
+छापो(x + y)
+
+मान योग = 0
+के_लिए i में range(4):
+    योग = योग + i
+छापो(योग)
+```
+
+### Arabic (`ar`)
+
+```text
+ليكن x = 2
+ليكن y = 3
+اطبع(x + y)
+
+ليكن المجموع = 0
+لكل i في range(4):
+    المجموع = المجموع + i
+اطبع(المجموع)
+```
+
+### Bengali (`bn`)
+
+```text
+ধরি x = 2
+ধরি y = 3
+ছাপাও(x + y)
+
+ধরি মোট = 0
+জন্য i মধ্যে range(4):
+    মোট = মোট + i
+ছাপাও(মোট)
+```
+
+### Tamil (`ta`)
+
+```text
+இருக்கட்டும் x = 2
+இருக்கட்டும் y = 3
+அச்சிடு(x + y)
+
+இருக்கட்டும் மொத்தம் = 0
+ஒவ்வொரு i இல் range(4):
+    மொத்தம் = மொத்தம் + i
+அச்சிடு(மொத்தம்)
+```
+
+### Chinese (`zh`)
+
+```text
+令 x = 2
+令 y = 3
+打印(x + y)
+
+令 总计 = 0
+对于 i 里 range(4):
+    总计 = 总计 + i
+打印(总计)
+```
+
+### Japanese (`ja`)
+
+```text
+変数 x = 2
+変数 y = 3
+表示(x + y)
+
+変数 合計 = 0
+毎 i 中 range(4):
+    合計 = 合計 + i
+表示(合計)
+```
+
 ## Examples
 
 Runnable examples are documented in:

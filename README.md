@@ -35,6 +35,14 @@ Inside the REPL:
 - `:reset` clear session state
 - `:quit` exit
 
+French REPL example:
+
+```text
+soit x = 21
+soit y = 21
+afficher(x + y)
+```
+
 ### 3. Execute a program
 
 ```python
