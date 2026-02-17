@@ -117,6 +117,15 @@ class RuntimeBuiltins:
         "False": False,
         "None":  None,
     }
+    # Common alternate built-in spellings used in tests and examples.
+    _LANGUAGE_BUILTIN_ALIASES = {
+        "hi": {
+            "प्रिंट": print,
+        },
+        "ar": {
+            "طباعة": print,
+        },
+    }
 
     def __init__(self, source_language="en"):
         self._language = source_language
@@ -139,6 +148,7 @@ class RuntimeBuiltins:
                 ns[keyword] = builtin_obj
             except Exception:
                 pass  # Skip if concept not found for this language
+        ns.update(self._LANGUAGE_BUILTIN_ALIASES.get(self._language, {}))
 
         return ns
 
@@ -158,5 +168,6 @@ class RuntimeBuiltins:
                     ns[keyword] = builtin_obj
                 except Exception:
                     pass
+            ns.update(cls._LANGUAGE_BUILTIN_ALIASES.get(lang, {}))
 
         return ns

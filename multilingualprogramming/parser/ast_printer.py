@@ -6,6 +6,7 @@
 
 """AST pretty-printer for debugging and visualization."""
 
+# pylint: disable=duplicate-code
 
 class ASTPrinter:
     """Pretty-prints an AST as indented text."""

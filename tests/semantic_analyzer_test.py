@@ -10,7 +10,7 @@ import unittest
 from multilingualprogramming.lexer.lexer import Lexer
 from multilingualprogramming.parser.parser import Parser
 from multilingualprogramming.parser.semantic_analyzer import (
-    Symbol, Scope, SymbolTable, SemanticAnalyzer,
+    Symbol, SymbolTable, SemanticAnalyzer,
 )
 
 
@@ -206,6 +206,7 @@ class SymbolTableTestSuite(unittest.TestCase):
         self.assertIsNone(st.lookup_local("x"))
 
     def test_exit_scope(self):
+        """Symbols from an exited scope are no longer visible."""
         st = SymbolTable()
         st.enter_scope("func", "function")
         st.define("y", "variable")
@@ -213,6 +214,7 @@ class SymbolTableTestSuite(unittest.TestCase):
         self.assertIsNone(st.lookup("y"))
 
     def test_symbol_repr(self):
+        """The Symbol repr includes key metadata fields."""
         sym = Symbol("x", "variable", is_const=True, data_type="int")
         self.assertIn("x", repr(sym))
         self.assertIn("const=True", repr(sym))
