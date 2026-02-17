@@ -64,7 +64,10 @@ class ErrorMessageRegistryTestSuite(unittest.TestCase):
         self.assertIn("Invalid syntax", msg)
 
     def test_all_messages_have_all_languages(self):
-        languages = ["en", "fr", "es", "de", "hi", "ar", "bn", "ta", "zh", "ja"]
+        languages = [
+            "en", "fr", "es", "de", "it", "pt",
+            "hi", "ar", "bn", "ta", "zh", "ja"
+        ]
         keys = self.registry.get_supported_keys()
         for key in keys:
             for lang in languages:

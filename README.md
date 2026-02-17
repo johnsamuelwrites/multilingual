@@ -74,7 +74,7 @@ print(ASTPrinter().print(ast))
 - Frontend: `Lexer`, `Parser`, AST nodes, `SemanticAnalyzer`
 - Runtime: `PythonCodeGenerator`, `RuntimeBuiltins`, `ProgramExecutor`, `REPL`
 
-Supported pilot languages: English, French, Spanish, German, Hindi, Arabic, Bengali, Tamil, Chinese (Simplified), Japanese.
+Supported pilot languages: English, French, Spanish, German, Italian, Portuguese, Hindi, Arabic, Bengali, Tamil, Chinese (Simplified), Japanese.
 
 ## Run Examples
 
@@ -98,6 +98,7 @@ python -m examples.executor_example
 - Usage guide: `USAGE.md`
 - Examples guide: `examples/README.md`
 - Detailed reference: `docs/README.md`
+- Language onboarding guide: `docs/language_onboarding.md`
 
 ## Development
 

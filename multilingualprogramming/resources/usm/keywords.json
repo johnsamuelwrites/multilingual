@@ -1,7 +1,20 @@
 {
   "version": "1.0",
   "description": "Universal Semantic Model - Keyword mappings for multilingual programming",
-  "languages": ["en", "fr", "es", "de", "hi", "ar", "bn", "ta", "zh", "ja"],
+  "languages": [
+    "en",
+    "fr",
+    "es",
+    "de",
+    "hi",
+    "ar",
+    "bn",
+    "ta",
+    "zh",
+    "ja",
+    "it",
+    "pt"
+  ],
   "categories": {
     "control_flow": {
       "COND_IF": {
@@ -14,7 +27,9 @@
         "bn": "যদি",
         "ta": "என்றால்",
         "zh": "如果",
-        "ja": "もし"
+        "ja": "もし",
+        "it": "se",
+        "pt": "se"
       },
       "COND_ELSE": {
         "en": "else",
@@ -26,7 +41,9 @@
         "bn": "নাহলে",
         "ta": "இல்லை",
         "zh": "否则",
-        "ja": "でなければ"
+        "ja": "でなければ",
+        "it": "altrimenti",
+        "pt": "senao"
       },
       "COND_ELIF": {
         "en": "elif",
@@ -38,7 +55,9 @@
         "bn": "নাহলে_যদি",
         "ta": "இல்லையென்றால்",
         "zh": "否则如果",
-        "ja": "でなければもし"
+        "ja": "でなければもし",
+        "it": "altrimentise",
+        "pt": "senaose"
       },
       "LOOP_WHILE": {
         "en": "while",
@@ -50,7 +69,9 @@
         "bn": "যতক্ষণ",
         "ta": "வரை",
         "zh": "当",
-        "ja": "間"
+        "ja": "間",
+        "it": "mentre",
+        "pt": "enquanto"
       },
       "LOOP_FOR": {
         "en": "for",
@@ -62,7 +83,9 @@
         "bn": "জন্য",
         "ta": "ஒவ்வொரு",
         "zh": "对于",
-        "ja": "毎"
+        "ja": "毎",
+        "it": "per",
+        "pt": "para"
       },
       "LOOP_BREAK": {
         "en": "break",
@@ -74,7 +97,9 @@
         "bn": "থামো",
         "ta": "நிறுத்து",
         "zh": "终止",
-        "ja": "中断"
+        "ja": "中断",
+        "it": "interrompi",
+        "pt": "interromper"
       },
       "LOOP_CONTINUE": {
         "en": "continue",
@@ -86,7 +111,9 @@
         "bn": "চালাও",
         "ta": "தொடர்",
         "zh": "继续",
-        "ja": "続行"
+        "ja": "続行",
+        "it": "continua",
+        "pt": "continuar"
       },
       "MATCH": {
         "en": "match",
@@ -98,7 +125,9 @@
         "bn": "মিলাও",
         "ta": "பொருத்து",
         "zh": "匹配",
-        "ja": "照合"
+        "ja": "照合",
+        "it": "confronta",
+        "pt": "corresponder"
       },
       "CASE": {
         "en": "case",
@@ -110,7 +139,9 @@
         "bn": "ক্ষেত্র",
         "ta": "நிலை",
         "zh": "情况",
-        "ja": "場合"
+        "ja": "場合",
+        "it": "caso",
+        "pt": "caso"
       },
       "DEFAULT": {
         "en": "default",
@@ -122,7 +153,9 @@
         "bn": "পূর্বনির্ধারিত",
         "ta": "இயல்பு",
         "zh": "默认",
-        "ja": "既定"
+        "ja": "既定",
+        "it": "predefinito",
+        "pt": "padrao"
       },
       "PASS": {
         "en": "pass",
@@ -134,7 +167,9 @@
         "bn": "ছাড়ো",
         "ta": "தாண்டு",
         "zh": "过",
-        "ja": "パス"
+        "ja": "パス",
+        "it": "passa",
+        "pt": "passar"
       },
       "WITH": {
         "en": "with",
@@ -146,7 +181,9 @@
         "bn": "সাথে",
         "ta": "உடன்",
         "zh": "使用",
-        "ja": "付き"
+        "ja": "付き",
+        "it": "con",
+        "pt": "com"
       },
       "IN": {
         "en": "in",
@@ -158,7 +195,9 @@
         "bn": "মধ্যে",
         "ta": "இல்",
         "zh": "里",
-        "ja": "中"
+        "ja": "中",
+        "it": "in",
+        "pt": "em"
       },
       "ASSERT": {
         "en": "assert",
@@ -170,7 +209,9 @@
         "bn": "নিশ্চিত",
         "ta": "உறுதி",
         "zh": "断言",
-        "ja": "断言"
+        "ja": "断言",
+        "it": "asserisci",
+        "pt": "afirmar"
       }
     },
     "definitions": {
@@ -184,7 +225,9 @@
         "bn": "সংজ্ঞা",
         "ta": "வரையறு",
         "zh": "函数",
-        "ja": "関数"
+        "ja": "関数",
+        "it": "definisci",
+        "pt": "definir"
       },
       "CLASS_DEF": {
         "en": "class",
@@ -196,7 +239,9 @@
         "bn": "শ্রেণি",
         "ta": "வகுப்பு",
         "zh": "类",
-        "ja": "クラス"
+        "ja": "クラス",
+        "it": "classe",
+        "pt": "classe"
       },
       "RETURN": {
         "en": "return",
@@ -208,7 +253,9 @@
         "bn": "ফেরত",
         "ta": "திருப்பு",
         "zh": "返回",
-        "ja": "戻る"
+        "ja": "戻る",
+        "it": "ritorna",
+        "pt": "retornar"
       },
       "YIELD": {
         "en": "yield",
@@ -220,7 +267,9 @@
         "bn": "উৎপন্ন",
         "ta": "விளை",
         "zh": "产出",
-        "ja": "生成"
+        "ja": "生成",
+        "it": "produci",
+        "pt": "produzir"
       },
       "IMPORT": {
         "en": "import",
@@ -232,7 +281,9 @@
         "bn": "আমদানি",
         "ta": "இறக்கு",
         "zh": "导入",
-        "ja": "取込"
+        "ja": "取込",
+        "it": "importa",
+        "pt": "importar"
       },
       "FROM": {
         "en": "from",
@@ -244,7 +295,9 @@
         "bn": "থেকে",
         "ta": "இருந்து",
         "zh": "从",
-        "ja": "から"
+        "ja": "から",
+        "it": "da",
+        "pt": "de"
       },
       "AS": {
         "en": "as",
@@ -256,7 +309,9 @@
         "bn": "হিসাবে",
         "ta": "ஆக",
         "zh": "作为",
-        "ja": "として"
+        "ja": "として",
+        "it": "come",
+        "pt": "como"
       },
       "LAMBDA": {
         "en": "lambda",
@@ -268,7 +323,9 @@
         "bn": "ল্যাম্বডা",
         "ta": "லாம்டா",
         "zh": "匿名",
-        "ja": "ラムダ"
+        "ja": "ラムダ",
+        "it": "lambda",
+        "pt": "lambda"
       }
     },
     "logical": {
@@ -282,7 +339,9 @@
         "bn": "এবং",
         "ta": "மற்றும்",
         "zh": "且",
-        "ja": "かつ"
+        "ja": "かつ",
+        "it": "e",
+        "pt": "e"
       },
       "OR": {
         "en": "or",
@@ -294,7 +353,9 @@
         "bn": "অথবা",
         "ta": "அல்லது",
         "zh": "或",
-        "ja": "または"
+        "ja": "または",
+        "it": "o",
+        "pt": "ou"
       },
       "NOT": {
         "en": "not",
@@ -306,7 +367,9 @@
         "bn": "না",
         "ta": "இல்லை",
         "zh": "非",
-        "ja": "ない"
+        "ja": "ない",
+        "it": "non",
+        "pt": "nao"
       },
       "TRUE": {
         "en": "True",
@@ -318,7 +381,9 @@
         "bn": "সত্য",
         "ta": "உண்மை",
         "zh": "真",
-        "ja": "真"
+        "ja": "真",
+        "it": "Vero",
+        "pt": "Verdadeiro"
       },
       "FALSE": {
         "en": "False",
@@ -330,7 +395,9 @@
         "bn": "মিথ্যা",
         "ta": "பொய்",
         "zh": "假",
-        "ja": "偽"
+        "ja": "偽",
+        "it": "Falso",
+        "pt": "Falso"
       },
       "NONE": {
         "en": "None",
@@ -342,7 +409,9 @@
         "bn": "কিছুনা",
         "ta": "ஒன்றுமில்லை",
         "zh": "空",
-        "ja": "なし"
+        "ja": "なし",
+        "it": "Nessuno",
+        "pt": "Nenhum"
       },
       "IS": {
         "en": "is",
@@ -354,7 +423,9 @@
         "bn": "হলো",
         "ta": "ஆகும்",
         "zh": "是",
-        "ja": "は"
+        "ja": "は",
+        "it": "?",
+        "pt": "?"
       }
     },
     "error_handling": {
@@ -368,7 +439,9 @@
         "bn": "চেষ্টা",
         "ta": "முயற்சி",
         "zh": "尝试",
-        "ja": "試行"
+        "ja": "試行",
+        "it": "prova",
+        "pt": "tentar"
       },
       "EXCEPT": {
         "en": "except",
@@ -380,7 +453,9 @@
         "bn": "ব্যতিক্রম",
         "ta": "விதிவிலக்கு",
         "zh": "除了",
-        "ja": "例外"
+        "ja": "例外",
+        "it": "eccetto",
+        "pt": "exceto"
       },
       "FINALLY": {
         "en": "finally",
@@ -392,7 +467,9 @@
         "bn": "অবশেষে",
         "ta": "இறுதியாக",
         "zh": "最终",
-        "ja": "最後に"
+        "ja": "最後に",
+        "it": "infine",
+        "pt": "finalmente"
       },
       "RAISE": {
         "en": "raise",
@@ -404,7 +481,9 @@
         "bn": "তোলো",
         "ta": "எழுப்பு",
         "zh": "抛出",
-        "ja": "発生"
+        "ja": "発生",
+        "it": "solleva",
+        "pt": "lancar"
       }
     },
     "variables": {
@@ -418,7 +497,9 @@
         "bn": "বিশ্বব্যাপী",
         "ta": "உலகளாவிய",
         "zh": "全局",
-        "ja": "大域"
+        "ja": "大域",
+        "it": "globale",
+        "pt": "global"
       },
       "LOCAL": {
         "en": "local",
@@ -430,7 +511,9 @@
         "bn": "স্থানীয়",
         "ta": "உள்ளூர்",
         "zh": "局部",
-        "ja": "局所"
+        "ja": "局所",
+        "it": "locale",
+        "pt": "local"
       },
       "CONST": {
         "en": "const",
@@ -442,7 +525,9 @@
         "bn": "ধ্রুব",
         "ta": "மாறிலி",
         "zh": "常量",
-        "ja": "定数"
+        "ja": "定数",
+        "it": "costante",
+        "pt": "constante"
       },
       "LET": {
         "en": "let",
@@ -454,7 +539,9 @@
         "bn": "ধরি",
         "ta": "இருக்கட்டும்",
         "zh": "令",
-        "ja": "変数"
+        "ja": "変数",
+        "it": "sia",
+        "pt": "seja"
       }
     },
     "types": {
@@ -468,7 +555,9 @@
         "bn": "পূর্ণসংখ্যা",
         "ta": "முழு",
         "zh": "整数",
-        "ja": "整数"
+        "ja": "整数",
+        "it": "intero",
+        "pt": "inteiro"
       },
       "TYPE_FLOAT": {
         "en": "float",
@@ -480,7 +569,9 @@
         "bn": "দশমিক",
         "ta": "மிதவை",
         "zh": "浮点",
-        "ja": "浮動小数"
+        "ja": "浮動小数",
+        "it": "decimale",
+        "pt": "flutuante"
       },
       "TYPE_STR": {
         "en": "str",
@@ -492,7 +583,9 @@
         "bn": "পাঠ্য",
         "ta": "சரம்",
         "zh": "字符串",
-        "ja": "文字列"
+        "ja": "文字列",
+        "it": "stringa",
+        "pt": "cadeia"
       },
       "TYPE_BOOL": {
         "en": "bool",
@@ -504,7 +597,9 @@
         "bn": "বুলিয়ান",
         "ta": "பூலியன்",
         "zh": "布尔",
-        "ja": "真偽"
+        "ja": "真偽",
+        "it": "booleano",
+        "pt": "booleano"
       },
       "TYPE_LIST": {
         "en": "list",
@@ -516,7 +611,9 @@
         "bn": "তালিকা",
         "ta": "பட்டியல்",
         "zh": "列表",
-        "ja": "リスト"
+        "ja": "リスト",
+        "it": "lista",
+        "pt": "lista"
       },
       "TYPE_DICT": {
         "en": "dict",
@@ -528,7 +625,9 @@
         "bn": "অভিধান",
         "ta": "அகராதி",
         "zh": "字典",
-        "ja": "辞書"
+        "ja": "辞書",
+        "it": "dizionario",
+        "pt": "dicionario"
       }
     },
     "io": {
@@ -542,7 +641,9 @@
         "bn": "ছাপাও",
         "ta": "அச்சிடு",
         "zh": "打印",
-        "ja": "表示"
+        "ja": "表示",
+        "it": "stampa",
+        "pt": "imprimir"
       },
       "INPUT": {
         "en": "input",
@@ -554,7 +655,9 @@
         "bn": "ইনপুট",
         "ta": "உள்ளீடு",
         "zh": "输入",
-        "ja": "入力"
+        "ja": "入力",
+        "it": "inserisci",
+        "pt": "entrada"
       }
     }
   }

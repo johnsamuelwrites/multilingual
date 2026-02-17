@@ -300,6 +300,30 @@ ausgeben(addiere(5, 3))
         self.assertEqual(result.output.strip(), "15")
 
 
+    def test_italian_program(self):
+        source = """\
+definisci somma(a, b):
+    ritorna a + b
+
+stampa(somma(4, 9))
+"""
+        executor = ProgramExecutor(language="it")
+        result = executor.execute(source)
+        self.assertTrue(result.success, result.errors)
+        self.assertEqual(result.output.strip(), "13")
+
+    def test_portuguese_program(self):
+        source = """\
+definir soma(a, b):
+    retornar a + b
+
+imprimir(soma(5, 8))
+"""
+        executor = ProgramExecutor(language="pt")
+        result = executor.execute(source)
+        self.assertTrue(result.success, result.errors)
+        self.assertEqual(result.output.strip(), "13")
+
 class ExecutorTranspileTestSuite(unittest.TestCase):
     """Test the transpile-only mode."""
 

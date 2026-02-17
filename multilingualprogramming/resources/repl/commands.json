@@ -1,4 +1,4 @@
-﻿{
+{
   "default_language": "en",
   "help_titles": {
     "en": "REPL Commands:",
@@ -10,7 +10,9 @@
     "bn": "REPL কমান্ড:",
     "ta": "REPL கட்டளைகள்:",
     "zh": "REPL 命令:",
-    "ja": "REPL コマンド:"
+    "ja": "REPL コマンド:",
+    "it": "Comandi REPL:",
+    "pt": "Comandos REPL:"
   },
   "messages": {
     "keywords_title": {
@@ -23,7 +25,9 @@
       "bn": "কীওয়ার্ড [{lang}] ({count}):",
       "ta": "முக்கிய சொற்கள் [{lang}] ({count}):",
       "zh": "关键字 [{lang}] ({count}):",
-      "ja": "キーワード [{lang}] ({count}):"
+      "ja": "キーワード [{lang}] ({count}):",
+      "it": "Parole chiave [{lang}] ({count}):",
+      "pt": "Palavras-chave [{lang}] ({count}):"
     },
     "symbols_title": {
       "en": "Operators and symbols [{lang}]:",
@@ -35,7 +39,9 @@
       "bn": "অপারেটর ও প্রতীক [{lang}]:",
       "ta": "செயலிகள் மற்றும் குறியீடுகள் [{lang}]:",
       "zh": "运算符和符号 [{lang}]:",
-      "ja": "演算子と記号 [{lang}]:"
+      "ja": "演算子と記号 [{lang}]:",
+      "it": "Operatori e simboli [{lang}]:",
+      "pt": "Operadores e s?mbolos [{lang}]:"
     },
     "unsupported_language": {
       "en": "Unsupported language: {lang}",
@@ -47,24 +53,61 @@
       "bn": "অসমর্থিত ভাষা: {lang}",
       "ta": "ஆதரிக்கப்படாத மொழி: {lang}",
       "zh": "不支持的语言：{lang}",
-      "ja": "未対応の言語: {lang}"
+      "ja": "未対応の言語: {lang}",
+      "it": "Lingua non supportata: {lang}",
+      "pt": "Idioma n?o suportado: {lang}"
     }
   },
-  "help_order": ["lang", "python", "reset", "keywords", "symbols", "help", "quit"],
+  "help_order": [
+    "lang",
+    "python",
+    "reset",
+    "keywords",
+    "symbols",
+    "help",
+    "quit"
+  ],
   "commands": {
     "lang": {
       "arg_hint": " [XX]",
       "aliases": {
-        "en": ["lang", "language"],
-        "fr": ["langue"],
-        "es": ["idioma"],
-        "de": ["sprache"],
-        "hi": ["भाषा"],
-        "ar": ["لغة"],
-        "bn": ["ভাষা"],
-        "ta": ["மொழி"],
-        "zh": ["语言"],
-        "ja": ["言語"]
+        "en": [
+          "lang",
+          "language"
+        ],
+        "fr": [
+          "langue"
+        ],
+        "es": [
+          "idioma"
+        ],
+        "de": [
+          "sprache"
+        ],
+        "hi": [
+          "भाषा"
+        ],
+        "ar": [
+          "لغة"
+        ],
+        "bn": [
+          "ভাষা"
+        ],
+        "ta": [
+          "மொழி"
+        ],
+        "zh": [
+          "语言"
+        ],
+        "ja": [
+          "言語"
+        ],
+        "it": [
+          "lingua"
+        ],
+        "pt": [
+          "idioma"
+        ]
       },
       "descriptions": {
         "en": "Switch language (e.g., :lang fr)",
@@ -76,21 +119,53 @@
         "bn": "ভাষা পরিবর্তন করুন (যেমন: :ভাষা fr)",
         "ta": "மொழியை மாற்று (எ.கா. :மொழி fr)",
         "zh": "切换语言（例如：:语言 fr）",
-        "ja": "言語を切り替え（例: :言語 fr）"
+        "ja": "言語を切り替え（例: :言語 fr）",
+        "it": "Cambia lingua (es.: :lingua fr)",
+        "pt": "Mudar idioma (ex.: :idioma fr)"
       }
     },
     "python": {
       "aliases": {
-        "en": ["python"],
-        "fr": ["python"],
-        "es": ["python"],
-        "de": ["python"],
-        "hi": ["python", "पायथन"],
-        "ar": ["python", "بايثون"],
-        "bn": ["python", "পাইথন"],
-        "ta": ["python", "பைதான்"],
-        "zh": ["python"],
-        "ja": ["python"]
+        "en": [
+          "python"
+        ],
+        "fr": [
+          "python"
+        ],
+        "es": [
+          "python"
+        ],
+        "de": [
+          "python"
+        ],
+        "hi": [
+          "python",
+          "पायथन"
+        ],
+        "ar": [
+          "python",
+          "بايثون"
+        ],
+        "bn": [
+          "python",
+          "পাইথন"
+        ],
+        "ta": [
+          "python",
+          "பைதான்"
+        ],
+        "zh": [
+          "python"
+        ],
+        "ja": [
+          "python"
+        ],
+        "it": [
+          "python"
+        ],
+        "pt": [
+          "python"
+        ]
       },
       "descriptions": {
         "en": "Toggle showing generated Python",
@@ -102,21 +177,50 @@
         "bn": "জেনারেট করা Python দেখানো/লুকানো",
         "ta": "உருவாக்கப்பட்ட Python காட்டு/மறை",
         "zh": "切换显示生成的 Python",
-        "ja": "生成された Python の表示を切り替え"
+        "ja": "生成された Python の表示を切り替え",
+        "it": "Mostra/nascondi Python generato",
+        "pt": "Mostrar/ocultar Python gerado"
       }
     },
     "reset": {
       "aliases": {
-        "en": ["reset"],
-        "fr": ["reinitialiser", "réinitialiser"],
-        "es": ["reiniciar"],
-        "de": ["zuruecksetzen"],
-        "hi": ["रीसेट"],
-        "ar": ["اعادةتعيين"],
-        "bn": ["রিসেট"],
-        "ta": ["மீட்டமை"],
-        "zh": ["重置"],
-        "ja": ["リセット"]
+        "en": [
+          "reset"
+        ],
+        "fr": [
+          "reinitialiser",
+          "réinitialiser"
+        ],
+        "es": [
+          "reiniciar"
+        ],
+        "de": [
+          "zuruecksetzen"
+        ],
+        "hi": [
+          "रीसेट"
+        ],
+        "ar": [
+          "اعادةتعيين"
+        ],
+        "bn": [
+          "রিসেট"
+        ],
+        "ta": [
+          "மீட்டமை"
+        ],
+        "zh": [
+          "重置"
+        ],
+        "ja": [
+          "リセット"
+        ],
+        "it": [
+          "reimposta"
+        ],
+        "pt": [
+          "reiniciar"
+        ]
       },
       "descriptions": {
         "en": "Clear all variables and state",
@@ -128,21 +232,49 @@
         "bn": "সব ভেরিয়েবল ও অবস্থা মুছে ফেলুন",
         "ta": "அனைத்து மாறிகள் மற்றும் நிலையை நீக்கு",
         "zh": "清除变量和会话状态",
-        "ja": "変数と状態をクリア"
+        "ja": "変数と状態をクリア",
+        "it": "Cancella variabili e stato",
+        "pt": "Limpar vari?veis e estado"
       }
     },
     "help": {
       "aliases": {
-        "en": ["help"],
-        "fr": ["aide"],
-        "es": ["ayuda"],
-        "de": ["hilfe"],
-        "hi": ["मदद"],
-        "ar": ["مساعدة"],
-        "bn": ["সাহায্য"],
-        "ta": ["உதவி"],
-        "zh": ["帮助"],
-        "ja": ["ヘルプ"]
+        "en": [
+          "help"
+        ],
+        "fr": [
+          "aide"
+        ],
+        "es": [
+          "ayuda"
+        ],
+        "de": [
+          "hilfe"
+        ],
+        "hi": [
+          "मदद"
+        ],
+        "ar": [
+          "مساعدة"
+        ],
+        "bn": [
+          "সাহায্য"
+        ],
+        "ta": [
+          "உதவி"
+        ],
+        "zh": [
+          "帮助"
+        ],
+        "ja": [
+          "ヘルプ"
+        ],
+        "it": [
+          "aiuto"
+        ],
+        "pt": [
+          "ajuda"
+        ]
       },
       "descriptions": {
         "en": "Show this help",
@@ -154,22 +286,55 @@
         "bn": "এই সহায়তা দেখান",
         "ta": "இந்த உதவியை காட்டு",
         "zh": "显示帮助",
-        "ja": "このヘルプを表示"
+        "ja": "このヘルプを表示",
+        "it": "Mostra questo aiuto",
+        "pt": "Mostrar esta ajuda"
       }
     },
     "keywords": {
       "arg_hint": " [XX]",
       "aliases": {
-        "en": ["keywords", "kw"],
-        "fr": ["motscles", "mots-cles", "motsclés", "mots-clés"],
-        "es": ["palabrasclave"],
-        "de": ["schlusselwoerter", "schluesselwoerter"],
-        "hi": ["कीवर्ड"],
-        "ar": ["كلماتمفتاحية"],
-        "bn": ["কীওয়ার্ড"],
-        "ta": ["முக்கியசொற்கள்"],
-        "zh": ["关键字"],
-        "ja": ["キーワード"]
+        "en": [
+          "keywords",
+          "kw"
+        ],
+        "fr": [
+          "motscles",
+          "mots-cles",
+          "motsclés",
+          "mots-clés"
+        ],
+        "es": [
+          "palabrasclave"
+        ],
+        "de": [
+          "schlusselwoerter",
+          "schluesselwoerter"
+        ],
+        "hi": [
+          "कीवर्ड"
+        ],
+        "ar": [
+          "كلماتمفتاحية"
+        ],
+        "bn": [
+          "কীওয়ার্ড"
+        ],
+        "ta": [
+          "முக்கியசொற்கள்"
+        ],
+        "zh": [
+          "关键字"
+        ],
+        "ja": [
+          "キーワード"
+        ],
+        "it": [
+          "parolechiave"
+        ],
+        "pt": [
+          "palavraschave"
+        ]
       },
       "descriptions": {
         "en": "Show language keywords (e.g., :keywords fr)",
@@ -181,22 +346,60 @@
         "bn": "ভাষার কীওয়ার্ড দেখান (যেমন: :কীওয়ার্ড fr)",
         "ta": "மொழியின் முக்கிய சொற்களை காட்டு (எ.கா.: :முக்கியசொற்கள் fr)",
         "zh": "显示语言关键字（例如：:关键字 fr）",
-        "ja": "言語キーワードを表示（例: :キーワード fr）"
+        "ja": "言語キーワードを表示（例: :キーワード fr）",
+        "it": "Mostra parole chiave della lingua (es.: :parolechiave fr)",
+        "pt": "Mostrar palavras-chave do idioma (ex.: :palavraschave fr)"
       }
     },
     "symbols": {
       "arg_hint": " [XX]",
       "aliases": {
-        "en": ["symbols", "operators", "ops"],
-        "fr": ["symboles", "operateurs", "opérateurs"],
-        "es": ["simbolos", "operadores"],
-        "de": ["symbole", "operatoren"],
-        "hi": ["प्रतीक"],
-        "ar": ["رموز"],
-        "bn": ["প্রতীক"],
-        "ta": ["குறியீடுகள்"],
-        "zh": ["符号", "运算符"],
-        "ja": ["記号", "演算子"]
+        "en": [
+          "symbols",
+          "operators",
+          "ops"
+        ],
+        "fr": [
+          "symboles",
+          "operateurs",
+          "opérateurs"
+        ],
+        "es": [
+          "simbolos",
+          "operadores"
+        ],
+        "de": [
+          "symbole",
+          "operatoren"
+        ],
+        "hi": [
+          "प्रतीक"
+        ],
+        "ar": [
+          "رموز"
+        ],
+        "bn": [
+          "প্রতীক"
+        ],
+        "ta": [
+          "குறியீடுகள்"
+        ],
+        "zh": [
+          "符号",
+          "运算符"
+        ],
+        "ja": [
+          "記号",
+          "演算子"
+        ],
+        "it": [
+          "simboli",
+          "operatori"
+        ],
+        "pt": [
+          "simbolos",
+          "operadores"
+        ]
       },
       "descriptions": {
         "en": "Show operators and symbols (e.g., :symbols fr)",
@@ -208,21 +411,51 @@
         "bn": "অপারেটর ও প্রতীক দেখান (যেমন: :প্রতীক fr)",
         "ta": "செயலிகள் மற்றும் குறியீடுகளை காட்டு (எ.கா.: :குறியீடுகள் fr)",
         "zh": "显示运算符和符号（例如：:符号 fr）",
-        "ja": "演算子と記号を表示（例: :記号 fr）"
+        "ja": "演算子と記号を表示（例: :記号 fr）",
+        "it": "Mostra operatori e simboli (es.: :simboli fr)",
+        "pt": "Mostrar operadores e s?mbolos (ex.: :simbolos fr)"
       }
     },
     "quit": {
       "aliases": {
-        "en": ["quit", "exit", "q"],
-        "fr": ["quitter"],
-        "es": ["salir"],
-        "de": ["beenden"],
-        "hi": ["छोड़ें"],
-        "ar": ["خروج"],
-        "bn": ["প্রস্থান"],
-        "ta": ["வெளியேறு"],
-        "zh": ["退出"],
-        "ja": ["終了"]
+        "en": [
+          "quit",
+          "exit",
+          "q"
+        ],
+        "fr": [
+          "quitter"
+        ],
+        "es": [
+          "salir"
+        ],
+        "de": [
+          "beenden"
+        ],
+        "hi": [
+          "छोड़ें"
+        ],
+        "ar": [
+          "خروج"
+        ],
+        "bn": [
+          "প্রস্থান"
+        ],
+        "ta": [
+          "வெளியேறு"
+        ],
+        "zh": [
+          "退出"
+        ],
+        "ja": [
+          "終了"
+        ],
+        "it": [
+          "esci"
+        ],
+        "pt": [
+          "sair"
+        ]
       },
       "descriptions": {
         "en": "Exit the REPL",
@@ -234,7 +467,9 @@
         "bn": "REPL থেকে বের হন",
         "ta": "REPL இலிருந்து வெளியேறு",
         "zh": "退出 REPL",
-        "ja": "REPL を終了"
+        "ja": "REPL を終了",
+        "it": "Esci dal REPL",
+        "pt": "Sair do REPL"
       }
     }
   }

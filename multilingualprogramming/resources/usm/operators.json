@@ -3,113 +3,454 @@
   "description": "Operator mappings including Unicode mathematical alternatives",
   "arithmetic": {
     "ADD": {
-      "symbols": ["+"],
-      "unicode_alt": ["\uff0b"],
-      "description": {"en": "addition", "fr": "addition", "hi": "जोड़", "ar": "جمع", "zh": "加"}
+      "symbols": [
+        "+"
+      ],
+      "unicode_alt": [
+        "＋"
+      ],
+      "description": {
+        "en": "addition",
+        "fr": "addition",
+        "hi": "जोड़",
+        "ar": "جمع",
+        "zh": "加",
+        "it": "addition",
+        "pt": "addition"
+      }
     },
     "SUBTRACT": {
-      "symbols": ["-"],
-      "unicode_alt": ["\u2212", "\uff0d"],
-      "description": {"en": "subtraction", "fr": "soustraction", "hi": "घटाव", "ar": "طرح", "zh": "减"}
+      "symbols": [
+        "-"
+      ],
+      "unicode_alt": [
+        "−",
+        "－"
+      ],
+      "description": {
+        "en": "subtraction",
+        "fr": "soustraction",
+        "hi": "घटाव",
+        "ar": "طرح",
+        "zh": "减",
+        "it": "subtraction",
+        "pt": "subtraction"
+      }
     },
     "MULTIPLY": {
-      "symbols": ["*"],
-      "unicode_alt": ["\u00d7", "\u22c5", "\uff0a"],
-      "description": {"en": "multiplication", "fr": "multiplication", "hi": "गुणा", "ar": "ضرب", "zh": "乘"}
+      "symbols": [
+        "*"
+      ],
+      "unicode_alt": [
+        "×",
+        "⋅",
+        "＊"
+      ],
+      "description": {
+        "en": "multiplication",
+        "fr": "multiplication",
+        "hi": "गुणा",
+        "ar": "ضرب",
+        "zh": "乘",
+        "it": "multiplication",
+        "pt": "multiplication"
+      }
     },
     "DIVIDE": {
-      "symbols": ["/"],
-      "unicode_alt": ["\u00f7", "\uff0f"],
-      "description": {"en": "division", "fr": "division", "hi": "भाग", "ar": "قسمة", "zh": "除"}
+      "symbols": [
+        "/"
+      ],
+      "unicode_alt": [
+        "÷",
+        "／"
+      ],
+      "description": {
+        "en": "division",
+        "fr": "division",
+        "hi": "भाग",
+        "ar": "قسمة",
+        "zh": "除",
+        "it": "division",
+        "pt": "division"
+      }
     },
     "FLOOR_DIVIDE": {
-      "symbols": ["//"],
+      "symbols": [
+        "//"
+      ],
       "unicode_alt": [],
-      "description": {"en": "floor division", "fr": "division entière", "hi": "पूर्णांक_भाग", "ar": "قسمة_صحيحة", "zh": "整除"}
+      "description": {
+        "en": "floor division",
+        "fr": "division entière",
+        "hi": "पूर्णांक_भाग",
+        "ar": "قسمة_صحيحة",
+        "zh": "整除",
+        "it": "floor division",
+        "pt": "floor division"
+      }
     },
     "MODULUS": {
-      "symbols": ["%"],
-      "unicode_alt": ["\uff05"],
-      "description": {"en": "modulus", "fr": "modulo", "hi": "शेष", "ar": "باقي", "zh": "取余"}
+      "symbols": [
+        "%"
+      ],
+      "unicode_alt": [
+        "％"
+      ],
+      "description": {
+        "en": "modulus",
+        "fr": "modulo",
+        "hi": "शेष",
+        "ar": "باقي",
+        "zh": "取余",
+        "it": "modulus",
+        "pt": "modulus"
+      }
     },
     "POWER": {
-      "symbols": ["**"],
+      "symbols": [
+        "**"
+      ],
       "unicode_alt": [],
-      "description": {"en": "exponentiation", "fr": "puissance", "hi": "घात", "ar": "أس", "zh": "幂"}
+      "description": {
+        "en": "exponentiation",
+        "fr": "puissance",
+        "hi": "घात",
+        "ar": "أس",
+        "zh": "幂",
+        "it": "exponentiation",
+        "pt": "exponentiation"
+      }
     }
   },
   "comparison": {
     "EQUAL": {
-      "symbols": ["=="],
-      "unicode_alt": ["\uff1d\uff1d"],
-      "description": {"en": "equal to", "fr": "égal à", "hi": "बराबर", "ar": "يساوي", "zh": "等于"}
+      "symbols": [
+        "=="
+      ],
+      "unicode_alt": [
+        "＝＝"
+      ],
+      "description": {
+        "en": "equal to",
+        "fr": "égal à",
+        "hi": "बराबर",
+        "ar": "يساوي",
+        "zh": "等于",
+        "it": "equal to",
+        "pt": "equal to"
+      }
     },
     "NOT_EQUAL": {
-      "symbols": ["!="],
-      "unicode_alt": ["\u2260"],
-      "description": {"en": "not equal to", "fr": "différent de", "hi": "बराबर_नहीं", "ar": "لا_يساوي", "zh": "不等于"}
+      "symbols": [
+        "!="
+      ],
+      "unicode_alt": [
+        "≠"
+      ],
+      "description": {
+        "en": "not equal to",
+        "fr": "différent de",
+        "hi": "बराबर_नहीं",
+        "ar": "لا_يساوي",
+        "zh": "不等于",
+        "it": "not equal to",
+        "pt": "not equal to"
+      }
     },
     "LESS_THAN": {
-      "symbols": ["<"],
-      "unicode_alt": ["\uff1c"],
-      "description": {"en": "less than", "fr": "inférieur à", "hi": "से_कम", "ar": "أقل_من", "zh": "小于"}
+      "symbols": [
+        "<"
+      ],
+      "unicode_alt": [
+        "＜"
+      ],
+      "description": {
+        "en": "less than",
+        "fr": "inférieur à",
+        "hi": "से_कम",
+        "ar": "أقل_من",
+        "zh": "小于",
+        "it": "less than",
+        "pt": "less than"
+      }
     },
     "GREATER_THAN": {
-      "symbols": [">"],
-      "unicode_alt": ["\uff1e"],
-      "description": {"en": "greater than", "fr": "supérieur à", "hi": "से_अधिक", "ar": "أكبر_من", "zh": "大于"}
+      "symbols": [
+        ">"
+      ],
+      "unicode_alt": [
+        "＞"
+      ],
+      "description": {
+        "en": "greater than",
+        "fr": "supérieur à",
+        "hi": "से_अधिक",
+        "ar": "أكبر_من",
+        "zh": "大于",
+        "it": "greater than",
+        "pt": "greater than"
+      }
     },
     "LESS_EQUAL": {
-      "symbols": ["<="],
-      "unicode_alt": ["\u2264"],
-      "description": {"en": "less than or equal", "fr": "inférieur ou égal", "hi": "से_कम_या_बराबर", "ar": "أقل_أو_يساوي", "zh": "小于等于"}
+      "symbols": [
+        "<="
+      ],
+      "unicode_alt": [
+        "≤"
+      ],
+      "description": {
+        "en": "less than or equal",
+        "fr": "inférieur ou égal",
+        "hi": "से_कम_या_बराबर",
+        "ar": "أقل_أو_يساوي",
+        "zh": "小于等于",
+        "it": "less than or equal",
+        "pt": "less than or equal"
+      }
     },
     "GREATER_EQUAL": {
-      "symbols": [">="],
-      "unicode_alt": ["\u2265"],
-      "description": {"en": "greater than or equal", "fr": "supérieur ou égal", "hi": "से_अधिक_या_बराबर", "ar": "أكبر_أو_يساوي", "zh": "大于等于"}
+      "symbols": [
+        ">="
+      ],
+      "unicode_alt": [
+        "≥"
+      ],
+      "description": {
+        "en": "greater than or equal",
+        "fr": "supérieur ou égal",
+        "hi": "से_अधिक_या_बराबर",
+        "ar": "أكبر_أو_يساوي",
+        "zh": "大于等于",
+        "it": "greater than or equal",
+        "pt": "greater than or equal"
+      }
     }
   },
   "assignment": {
     "ASSIGN": {
-      "symbols": ["="],
-      "unicode_alt": ["\uff1d"],
-      "description": {"en": "assignment", "fr": "affectation", "hi": "निर्धारण", "ar": "تعيين", "zh": "赋值"}
+      "symbols": [
+        "="
+      ],
+      "unicode_alt": [
+        "＝"
+      ],
+      "description": {
+        "en": "assignment",
+        "fr": "affectation",
+        "hi": "निर्धारण",
+        "ar": "تعيين",
+        "zh": "赋值",
+        "it": "assignment",
+        "pt": "assignment"
+      }
     },
-    "ADD_ASSIGN": {"symbols": ["+="], "unicode_alt": []},
-    "SUB_ASSIGN": {"symbols": ["-="], "unicode_alt": []},
-    "MUL_ASSIGN": {"symbols": ["*="], "unicode_alt": []},
-    "DIV_ASSIGN": {"symbols": ["/="], "unicode_alt": []}
+    "ADD_ASSIGN": {
+      "symbols": [
+        "+="
+      ],
+      "unicode_alt": []
+    },
+    "SUB_ASSIGN": {
+      "symbols": [
+        "-="
+      ],
+      "unicode_alt": []
+    },
+    "MUL_ASSIGN": {
+      "symbols": [
+        "*="
+      ],
+      "unicode_alt": []
+    },
+    "DIV_ASSIGN": {
+      "symbols": [
+        "/="
+      ],
+      "unicode_alt": []
+    }
   },
   "bitwise": {
-    "BIT_AND": {"symbols": ["&"], "unicode_alt": []},
-    "BIT_OR": {"symbols": ["|"], "unicode_alt": []},
-    "BIT_XOR": {"symbols": ["^"], "unicode_alt": []},
-    "BIT_NOT": {"symbols": ["~"], "unicode_alt": []},
-    "LEFT_SHIFT": {"symbols": ["<<"], "unicode_alt": ["\u226a"]},
-    "RIGHT_SHIFT": {"symbols": [">>"], "unicode_alt": ["\u226b"]}
+    "BIT_AND": {
+      "symbols": [
+        "&"
+      ],
+      "unicode_alt": []
+    },
+    "BIT_OR": {
+      "symbols": [
+        "|"
+      ],
+      "unicode_alt": []
+    },
+    "BIT_XOR": {
+      "symbols": [
+        "^"
+      ],
+      "unicode_alt": []
+    },
+    "BIT_NOT": {
+      "symbols": [
+        "~"
+      ],
+      "unicode_alt": []
+    },
+    "LEFT_SHIFT": {
+      "symbols": [
+        "<<"
+      ],
+      "unicode_alt": [
+        "≪"
+      ]
+    },
+    "RIGHT_SHIFT": {
+      "symbols": [
+        ">>"
+      ],
+      "unicode_alt": [
+        "≫"
+      ]
+    }
   },
   "delimiters": {
-    "LPAREN": {"symbols": ["("], "unicode_alt": ["\uff08"]},
-    "RPAREN": {"symbols": [")"], "unicode_alt": ["\uff09"]},
-    "LBRACKET": {"symbols": ["["], "unicode_alt": ["\uff3b"]},
-    "RBRACKET": {"symbols": ["]"], "unicode_alt": ["\uff3d"]},
-    "LBRACE": {"symbols": ["{"], "unicode_alt": ["\uff5b"]},
-    "RBRACE": {"symbols": ["}"], "unicode_alt": ["\uff5d"]},
-    "COMMA": {"symbols": [","], "unicode_alt": ["\uff0c", "\u060c"]},
-    "COLON": {"symbols": [":"], "unicode_alt": ["\uff1a"]},
-    "SEMICOLON": {"symbols": [";"], "unicode_alt": ["\uff1b", "\u061b"]},
-    "DOT": {"symbols": ["."], "unicode_alt": ["\uff0e"]},
-    "ARROW": {"symbols": ["->"], "unicode_alt": ["\u2192"]},
-    "DATE_OPEN": {"symbols": ["\u3014"], "unicode_alt": []},
-    "DATE_CLOSE": {"symbols": ["\u3015"], "unicode_alt": []}
+    "LPAREN": {
+      "symbols": [
+        "("
+      ],
+      "unicode_alt": [
+        "（"
+      ]
+    },
+    "RPAREN": {
+      "symbols": [
+        ")"
+      ],
+      "unicode_alt": [
+        "）"
+      ]
+    },
+    "LBRACKET": {
+      "symbols": [
+        "["
+      ],
+      "unicode_alt": [
+        "［"
+      ]
+    },
+    "RBRACKET": {
+      "symbols": [
+        "]"
+      ],
+      "unicode_alt": [
+        "］"
+      ]
+    },
+    "LBRACE": {
+      "symbols": [
+        "{"
+      ],
+      "unicode_alt": [
+        "｛"
+      ]
+    },
+    "RBRACE": {
+      "symbols": [
+        "}"
+      ],
+      "unicode_alt": [
+        "｝"
+      ]
+    },
+    "COMMA": {
+      "symbols": [
+        ","
+      ],
+      "unicode_alt": [
+        "，",
+        "،"
+      ]
+    },
+    "COLON": {
+      "symbols": [
+        ":"
+      ],
+      "unicode_alt": [
+        "："
+      ]
+    },
+    "SEMICOLON": {
+      "symbols": [
+        ";"
+      ],
+      "unicode_alt": [
+        "；",
+        "؛"
+      ]
+    },
+    "DOT": {
+      "symbols": [
+        "."
+      ],
+      "unicode_alt": [
+        "．"
+      ]
+    },
+    "ARROW": {
+      "symbols": [
+        "->"
+      ],
+      "unicode_alt": [
+        "→"
+      ]
+    },
+    "DATE_OPEN": {
+      "symbols": [
+        "〔"
+      ],
+      "unicode_alt": []
+    },
+    "DATE_CLOSE": {
+      "symbols": [
+        "〕"
+      ],
+      "unicode_alt": []
+    }
   },
   "string_delimiters": {
-    "DOUBLE_QUOTE": {"pairs": ["\"", "\""]},
-    "SINGLE_QUOTE": {"pairs": ["'", "'"]},
-    "CJK_CORNER": {"pairs": ["\u300c", "\u300d"]},
-    "GUILLEMET": {"pairs": ["\u00ab", "\u00bb"]},
-    "SMART_DOUBLE": {"pairs": ["\u201c", "\u201d"]},
-    "SMART_SINGLE": {"pairs": ["\u2018", "\u2019"]}
+    "DOUBLE_QUOTE": {
+      "pairs": [
+        "\"",
+        "\""
+      ]
+    },
+    "SINGLE_QUOTE": {
+      "pairs": [
+        "'",
+        "'"
+      ]
+    },
+    "CJK_CORNER": {
+      "pairs": [
+        "「",
+        "」"
+      ]
+    },
+    "GUILLEMET": {
+      "pairs": [
+        "«",
+        "»"
+      ]
+    },
+    "SMART_DOUBLE": {
+      "pairs": [
+        "“",
+        "”"
+      ]
+    },
+    "SMART_SINGLE": {
+      "pairs": [
+        "‘",
+        "’"
+      ]
+    }
   }
 }

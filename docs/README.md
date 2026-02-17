@@ -14,6 +14,8 @@ Current version: `0.3.0`
 - French
 - Spanish
 - German
+- Italian
+- Portuguese
 - Hindi
 - Arabic
 - Bengali
@@ -181,6 +183,7 @@ python -m pylint $(git ls-files '*.py')
 - Project quick start: `../README.md`
 - Usage snippets: `../USAGE.md`
 - Examples guide: `../examples/README.md`
+- Language onboarding: `language_onboarding.md`
 
 ## License
 

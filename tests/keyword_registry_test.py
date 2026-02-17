@@ -32,9 +32,11 @@ class KeywordRegistryTestSuite(unittest.TestCase):
         languages = self.registry.get_supported_languages()
         self.assertIn("en", languages)
         self.assertIn("fr", languages)
+        self.assertIn("it", languages)
+        self.assertIn("pt", languages)
         self.assertIn("hi", languages)
         self.assertIn("ar", languages)
-        self.assertEqual(len(languages), 10)
+        self.assertEqual(len(languages), 12)
 
     def test_get_keyword_english(self):
         """Test forward lookup for English keywords."""
@@ -76,6 +78,18 @@ class KeywordRegistryTestSuite(unittest.TestCase):
         self.assertEqual(self.registry.get_keyword("COND_IF", "ja"), "もし")
         self.assertEqual(self.registry.get_keyword("FUNC_DEF", "ja"), "関数")
         self.assertEqual(self.registry.get_keyword("CLASS_DEF", "ja"), "クラス")
+
+    def test_get_keyword_italian(self):
+        """Test forward lookup for Italian keywords."""
+        self.assertEqual(self.registry.get_keyword("COND_IF", "it"), "se")
+        self.assertEqual(self.registry.get_keyword("LOOP_FOR", "it"), "per")
+        self.assertEqual(self.registry.get_keyword("PRINT", "it"), "stampa")
+
+    def test_get_keyword_portuguese(self):
+        """Test forward lookup for Portuguese keywords."""
+        self.assertEqual(self.registry.get_keyword("COND_IF", "pt"), "se")
+        self.assertEqual(self.registry.get_keyword("LOOP_WHILE", "pt"), "enquanto")
+        self.assertEqual(self.registry.get_keyword("PRINT", "pt"), "imprimir")
 
     def test_reverse_lookup_english(self):
         """Test reverse lookup: keyword -> concept for English."""
