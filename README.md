@@ -38,10 +38,13 @@ Inside the REPL:
 French REPL example:
 
 ```text
-soit x = 21
-soit y = 21
-afficher(x + y)
+soit somme = 0
+pour i dans intervalle(4):
+    somme = somme + i
+afficher(somme)
 ```
+
+Note: selected universal built-ins (for example `range`, `len`, `sum`) support localized aliases while keeping the universal names available.
 
 ### 3. Execute a program
 

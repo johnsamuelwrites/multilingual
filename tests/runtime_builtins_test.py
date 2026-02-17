@@ -43,6 +43,25 @@ class RuntimeBuiltinsTestSuite(unittest.TestCase):
         self.assertIn(hi_print, ns)
         self.assertIs(ns[hi_print], print)
 
+    def test_french_range_alias(self):
+        ns = RuntimeBuiltins("fr").namespace()
+        self.assertIn("intervalle", ns)
+        self.assertIs(ns["intervalle"], range)
+        self.assertIn("range", ns)
+        self.assertIs(ns["range"], range)
+
+    def test_portuguese_len_alias(self):
+        ns = RuntimeBuiltins("pt").namespace()
+        self.assertIn("comprimento", ns)
+        self.assertIs(ns["comprimento"], len)
+        self.assertIn("len", ns)
+        self.assertIs(ns["len"], len)
+
+    def test_hindi_print_alias(self):
+        ns = RuntimeBuiltins("hi").namespace()
+        self.assertIn("प्रिंट", ns)
+        self.assertIs(ns["प्रिंट"], print)
+
     def test_namespace_has_universal_builtins(self):
         ns = RuntimeBuiltins("en").namespace()
         # Check several universal builtins
@@ -95,6 +114,9 @@ class RuntimeBuiltinsTestSuite(unittest.TestCase):
         self.assertIn("print", ns)
         # Should have French keywords
         self.assertIn("afficher", ns)
+        # Should include localized built-in aliases
+        self.assertIn("intervallo", ns)
+        self.assertIn("intervalo", ns)
         # Universal builtins
         self.assertIn("len", ns)
         self.assertIn("range", ns)

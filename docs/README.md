@@ -164,9 +164,18 @@ Snippet B (for loop):
 
 ```text
 <LET> total = 0
-<FOR> i <IN> range(4):
+<FOR> i <IN> <RANGE_ALIAS>(4):
     total = total + i
 <PRINT>(total)
+```
+
+Built-in aliases are also available for selected universal functions.
+Both the universal name and localized alias work. Example (French):
+
+```text
+afficher(intervalle(4))
+afficher(longueur([10, 20, 30]))
+afficher(somme([1, 2, 3]))
 ```
 
 Language-specific forms:
@@ -192,7 +201,7 @@ soit y = 3
 afficher(x + y)
 
 soit somme = 0
-pour i dans range(4):
+pour i dans intervalle(4):
     somme = somme + i
 afficher(somme)
 ```
@@ -205,7 +214,7 @@ sea y = 3
 imprimir(x + y)
 
 sea suma = 0
-para i en range(4):
+para i en rango(4):
     suma = suma + i
 imprimir(suma)
 ```
@@ -218,7 +227,7 @@ sei y = 3
 ausgeben(x + y)
 
 sei summe = 0
-für i in range(4):
+für i in bereich(4):
     summe = summe + i
 ausgeben(summe)
 ```
@@ -231,7 +240,7 @@ sia y = 3
 stampa(x + y)
 
 sia totale = 0
-per i in range(4):
+per i in intervallo(4):
     totale = totale + i
 stampa(totale)
 ```
@@ -244,7 +253,7 @@ seja y = 3
 imprimir(x + y)
 
 seja soma = 0
-para i em range(4):
+para i em intervalo(4):
     soma = soma + i
 imprimir(soma)
 ```
@@ -257,7 +266,7 @@ imprimir(soma)
 छापो(x + y)
 
 मान योग = 0
-के_लिए i में range(4):
+के_लिए i में परास(4):
     योग = योग + i
 छापो(योग)
 ```
@@ -270,7 +279,7 @@ imprimir(soma)
 اطبع(x + y)
 
 ليكن المجموع = 0
-لكل i في range(4):
+لكل i في مدى(4):
     المجموع = المجموع + i
 اطبع(المجموع)
 ```
@@ -283,7 +292,7 @@ imprimir(soma)
 ছাপাও(x + y)
 
 ধরি মোট = 0
-জন্য i মধ্যে range(4):
+জন্য i মধ্যে পরিসর(4):
     মোট = মোট + i
 ছাপাও(মোট)
 ```
@@ -296,7 +305,7 @@ imprimir(soma)
 அச்சிடு(x + y)
 
 இருக்கட்டும் மொத்தம் = 0
-ஒவ்வொரு i இல் range(4):
+ஒவ்வொரு i இல் வரம்பு(4):
     மொத்தம் = மொத்தம் + i
 அச்சிடு(மொத்தம்)
 ```
@@ -309,7 +318,7 @@ imprimir(soma)
 打印(x + y)
 
 令 总计 = 0
-对于 i 里 range(4):
+对于 i 里 范围(4):
     总计 = 总计 + i
 打印(总计)
 ```
@@ -322,7 +331,7 @@ imprimir(soma)
 表示(x + y)
 
 変数 合計 = 0
-毎 i 中 range(4):
+毎 i 中 範囲(4):
     合計 = 合計 + i
 表示(合計)
 ```

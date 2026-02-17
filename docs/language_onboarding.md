@@ -66,7 +66,19 @@ Why:
 
 - REPL `:symbols` uses these descriptions when present; otherwise it falls back to English.
 
-## 5. Add Tests
+## 5. Add Built-in Aliases (Optional)
+
+File: `multilingualprogramming/resources/usm/builtins_aliases.json`
+
+Add localized aliases for selected universal builtins (for example `range`, `len`, `sum`).
+The universal English built-in name remains available; aliases are additive.
+
+Why:
+
+- `RuntimeBuiltins` loads this file dynamically.
+- Users can write either universal names or localized aliases in programs/REPL.
+
+## 6. Add Tests
 
 Minimum recommended tests:
 
@@ -77,10 +89,12 @@ Minimum recommended tests:
  - one end-to-end program using new language keywords (`ProgramExecutor`)
 3. `tests/error_messages_test.py`
  - new language included in "all messages have all languages" coverage
+4. `tests/runtime_builtins_test.py`
+ - localized aliases map to the expected Python built-ins
 
 This validates lexer -> parser -> semantic -> codegen/runtime in one path.
 
-## 6. Update Documentation
+## 7. Update Documentation
 
 At minimum:
 

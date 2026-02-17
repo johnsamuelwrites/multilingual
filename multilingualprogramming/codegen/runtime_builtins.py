@@ -12,6 +12,9 @@ the execution environment so that multilingual identifiers (e.g., the
 Hindi word for "print") resolve to Python built-ins.
 """
 
+import json
+from pathlib import Path
+
 from multilingualprogramming.keyword.keyword_registry import KeywordRegistry
 
 
@@ -34,102 +37,122 @@ class RuntimeBuiltins:
 
     # Mapping from USM concept ID to the Python built-in object
     _CONCEPT_TO_BUILTIN = {
-        "PRINT":      print,
-        "INPUT":      input,
-        "TYPE_INT":   int,
+        "PRINT": print,
+        "INPUT": input,
+        "TYPE_INT": int,
         "TYPE_FLOAT": float,
-        "TYPE_STR":   str,
-        "TYPE_BOOL":  bool,
-        "TYPE_LIST":  list,
-        "TYPE_DICT":  dict,
+        "TYPE_STR": str,
+        "TYPE_BOOL": bool,
+        "TYPE_LIST": list,
+        "TYPE_DICT": dict,
     }
 
     # Additional Python built-ins available in every language
     _UNIVERSAL_BUILTINS = {
-        "len":       len,
-        "range":     range,
-        "abs":       abs,
-        "min":       min,
-        "max":       max,
-        "sum":       sum,
-        "sorted":    sorted,
-        "reversed":  reversed,
+        "len": len,
+        "range": range,
+        "abs": abs,
+        "min": min,
+        "max": max,
+        "sum": sum,
+        "sorted": sorted,
+        "reversed": reversed,
         "enumerate": enumerate,
-        "zip":       zip,
-        "map":       map,
-        "filter":    filter,
+        "zip": zip,
+        "map": map,
+        "filter": filter,
         "isinstance": isinstance,
-        "type":      type,
-        "hasattr":   hasattr,
-        "getattr":   getattr,
-        "setattr":   setattr,
-        "repr":      repr,
-        "round":     round,
-        "open":      open,
-        "iter":      iter,
-        "next":      next,
-        "any":       any,
-        "all":       all,
-        "chr":       chr,
-        "ord":       ord,
-        "hex":       hex,
-        "oct":       oct,
-        "bin":       bin,
-        "id":        id,
-        "hash":      hash,
-        "callable":  callable,
-        "dir":       dir,
-        "vars":      vars,
-        "super":     super,
-        "property":  property,
+        "type": type,
+        "hasattr": hasattr,
+        "getattr": getattr,
+        "setattr": setattr,
+        "repr": repr,
+        "round": round,
+        "open": open,
+        "iter": iter,
+        "next": next,
+        "any": any,
+        "all": all,
+        "chr": chr,
+        "ord": ord,
+        "hex": hex,
+        "oct": oct,
+        "bin": bin,
+        "id": id,
+        "hash": hash,
+        "callable": callable,
+        "dir": dir,
+        "vars": vars,
+        "super": super,
+        "property": property,
         "staticmethod": staticmethod,
-        "classmethod":  classmethod,
-        "print":     print,
-        "input":     input,
-        "int":       int,
-        "float":     float,
-        "str":       str,
-        "bool":      bool,
-        "list":      list,
-        "dict":      dict,
-        "set":       set,
-        "tuple":     tuple,
+        "classmethod": classmethod,
+        "print": print,
+        "input": input,
+        "int": int,
+        "float": float,
+        "str": str,
+        "bool": bool,
+        "list": list,
+        "dict": dict,
+        "set": set,
+        "tuple": tuple,
         "frozenset": frozenset,
-        "bytes":     bytes,
+        "bytes": bytes,
         "bytearray": bytearray,
         "memoryview": memoryview,
-        "object":    object,
+        "object": object,
         "Exception": Exception,
         "ValueError": ValueError,
-        "TypeError":  TypeError,
-        "KeyError":   KeyError,
+        "TypeError": TypeError,
+        "KeyError": KeyError,
         "IndexError": IndexError,
         "AttributeError": AttributeError,
-        "RuntimeError":   RuntimeError,
-        "StopIteration":  StopIteration,
+        "RuntimeError": RuntimeError,
+        "StopIteration": StopIteration,
         "ZeroDivisionError": ZeroDivisionError,
         "FileNotFoundError": FileNotFoundError,
-        "IOError":    IOError,
-        "OSError":    OSError,
+        "IOError": IOError,
+        "OSError": OSError,
         "ImportError": ImportError,
         "NotImplementedError": NotImplementedError,
-        "True":  True,
+        "True": True,
         "False": False,
-        "None":  None,
+        "None": None,
     }
-    # Common alternate built-in spellings used in tests and examples.
-    _LANGUAGE_BUILTIN_ALIASES = {
-        "hi": {
-            "प्रिंट": print,
-        },
-        "ar": {
-            "طباعة": print,
-        },
-    }
+
+    _BUILTIN_ALIAS_CATALOG = None
 
     def __init__(self, source_language="en"):
         self._language = source_language
         self._registry = KeywordRegistry()
+
+    @classmethod
+    def _load_builtin_alias_catalog(cls):
+        """Load localized built-in aliases from resources."""
+        if cls._BUILTIN_ALIAS_CATALOG is not None:
+            return cls._BUILTIN_ALIAS_CATALOG
+
+        path = (
+            Path(__file__).resolve().parent.parent
+            / "resources" / "usm" / "builtins_aliases.json"
+        )
+        with open(path, "r", encoding="utf-8-sig") as handle:
+            cls._BUILTIN_ALIAS_CATALOG = json.load(handle)
+        return cls._BUILTIN_ALIAS_CATALOG
+
+    @classmethod
+    def _localized_builtin_aliases(cls, language):
+        """Return alias->builtin map for a given language."""
+        catalog = cls._load_builtin_alias_catalog()
+        aliases = {}
+        for canonical, by_language in catalog.get("aliases", {}).items():
+            builtin_obj = cls._UNIVERSAL_BUILTINS.get(canonical)
+            if builtin_obj is None or not isinstance(by_language, dict):
+                continue
+            for alias in by_language.get(language, []):
+                aliases[alias] = builtin_obj
+        return aliases
 
     def namespace(self):
         """
@@ -148,7 +171,7 @@ class RuntimeBuiltins:
                 ns[keyword] = builtin_obj
             except Exception:
                 pass  # Skip if concept not found for this language
-        ns.update(self._LANGUAGE_BUILTIN_ALIASES.get(self._language, {}))
+        ns.update(self._localized_builtin_aliases(self._language))
 
         return ns
 
@@ -168,6 +191,6 @@ class RuntimeBuiltins:
                     ns[keyword] = builtin_obj
                 except Exception:
                     pass
-            ns.update(cls._LANGUAGE_BUILTIN_ALIASES.get(lang, {}))
+            ns.update(cls._localized_builtin_aliases(lang))
 
         return ns
