@@ -12,7 +12,45 @@
     "zh": "REPL 命令:",
     "ja": "REPL コマンド:"
   },
-  "help_order": ["lang", "python", "reset", "help", "quit"],
+  "messages": {
+    "keywords_title": {
+      "en": "Keywords [{lang}] ({count}):",
+      "fr": "Mots-cles [{lang}] ({count}) :",
+      "es": "Palabras clave [{lang}] ({count}):",
+      "de": "Schlusselworter [{lang}] ({count}):",
+      "hi": "कीवर्ड [{lang}] ({count}):",
+      "ar": "الكلمات المفتاحية [{lang}] ({count}):",
+      "bn": "কীওয়ার্ড [{lang}] ({count}):",
+      "ta": "முக்கிய சொற்கள் [{lang}] ({count}):",
+      "zh": "关键字 [{lang}] ({count}):",
+      "ja": "キーワード [{lang}] ({count}):"
+    },
+    "symbols_title": {
+      "en": "Operators and symbols [{lang}]:",
+      "fr": "Operateurs et symboles [{lang}] :",
+      "es": "Operadores y simbolos [{lang}]:",
+      "de": "Operatoren und Symbole [{lang}]:",
+      "hi": "ऑपरेटर और प्रतीक [{lang}]:",
+      "ar": "العوامل والرموز [{lang}]:",
+      "bn": "অপারেটর ও প্রতীক [{lang}]:",
+      "ta": "செயலிகள் மற்றும் குறியீடுகள் [{lang}]:",
+      "zh": "运算符和符号 [{lang}]:",
+      "ja": "演算子と記号 [{lang}]:"
+    },
+    "unsupported_language": {
+      "en": "Unsupported language: {lang}",
+      "fr": "Langue non prise en charge : {lang}",
+      "es": "Idioma no compatible: {lang}",
+      "de": "Nicht unterstutzte Sprache: {lang}",
+      "hi": "असमर्थित भाषा: {lang}",
+      "ar": "لغة غير مدعومة: {lang}",
+      "bn": "অসমর্থিত ভাষা: {lang}",
+      "ta": "ஆதரிக்கப்படாத மொழி: {lang}",
+      "zh": "不支持的语言：{lang}",
+      "ja": "未対応の言語: {lang}"
+    }
+  },
+  "help_order": ["lang", "python", "reset", "keywords", "symbols", "help", "quit"],
   "commands": {
     "lang": {
       "arg_hint": " [XX]",
@@ -117,6 +155,60 @@
         "ta": "இந்த உதவியை காட்டு",
         "zh": "显示帮助",
         "ja": "このヘルプを表示"
+      }
+    },
+    "keywords": {
+      "arg_hint": " [XX]",
+      "aliases": {
+        "en": ["keywords", "kw"],
+        "fr": ["motscles", "mots-cles", "motsclés", "mots-clés"],
+        "es": ["palabrasclave"],
+        "de": ["schlusselwoerter", "schluesselwoerter"],
+        "hi": ["कीवर्ड"],
+        "ar": ["كلماتمفتاحية"],
+        "bn": ["কীওয়ার্ড"],
+        "ta": ["முக்கியசொற்கள்"],
+        "zh": ["关键字"],
+        "ja": ["キーワード"]
+      },
+      "descriptions": {
+        "en": "Show language keywords (e.g., :keywords fr)",
+        "fr": "Afficher les mots-cles d'une langue (ex. :mots-cles fr)",
+        "es": "Mostrar palabras clave del idioma (ej.: :palabrasclave fr)",
+        "de": "Schlusselworter einer Sprache anzeigen (z. B. :schlusselwoerter fr)",
+        "hi": "भाषा के कीवर्ड दिखाएं (उदा.: :कीवर्ड fr)",
+        "ar": "اعرض الكلمات المفتاحية للغة (مثال: :كلماتمفتاحية fr)",
+        "bn": "ভাষার কীওয়ার্ড দেখান (যেমন: :কীওয়ার্ড fr)",
+        "ta": "மொழியின் முக்கிய சொற்களை காட்டு (எ.கா.: :முக்கியசொற்கள் fr)",
+        "zh": "显示语言关键字（例如：:关键字 fr）",
+        "ja": "言語キーワードを表示（例: :キーワード fr）"
+      }
+    },
+    "symbols": {
+      "arg_hint": " [XX]",
+      "aliases": {
+        "en": ["symbols", "operators", "ops"],
+        "fr": ["symboles", "operateurs", "opérateurs"],
+        "es": ["simbolos", "operadores"],
+        "de": ["symbole", "operatoren"],
+        "hi": ["प्रतीक"],
+        "ar": ["رموز"],
+        "bn": ["প্রতীক"],
+        "ta": ["குறியீடுகள்"],
+        "zh": ["符号", "运算符"],
+        "ja": ["記号", "演算子"]
+      },
+      "descriptions": {
+        "en": "Show operators and symbols (e.g., :symbols fr)",
+        "fr": "Afficher les operateurs et symboles (ex. :symboles fr)",
+        "es": "Mostrar operadores y simbolos (ej.: :simbolos fr)",
+        "de": "Operatoren und Symbole anzeigen (z. B. :operatoren fr)",
+        "hi": "ऑपरेटर और प्रतीक दिखाएं (उदा.: :प्रतीक fr)",
+        "ar": "اعرض العوامل والرموز (مثال: :رموز fr)",
+        "bn": "অপারেটর ও প্রতীক দেখান (যেমন: :প্রতীক fr)",
+        "ta": "செயலிகள் மற்றும் குறியீடுகளை காட்டு (எ.கா.: :குறியீடுகள் fr)",
+        "zh": "显示运算符和符号（例如：:符号 fr）",
+        "ja": "演算子と記号を表示（例: :記号 fr）"
       }
     },
     "quit": {

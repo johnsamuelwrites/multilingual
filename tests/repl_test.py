@@ -6,7 +6,9 @@
 
 """Tests for the interactive REPL."""
 
+import io
 import unittest
+from contextlib import redirect_stdout
 
 from multilingualprogramming.codegen.repl import REPL
 
@@ -113,3 +115,52 @@ afficher(somme)
         result = self.repl._handle_command("langue en")
         self.assertTrue(result)
         self.assertEqual(self.repl.language, "en")
+
+    def test_keywords_command_french_alias(self):
+        stream = io.StringIO()
+        with redirect_stdout(stream):
+            result = self.repl._handle_command("mots-cles")
+
+        self.assertTrue(result)
+        output = stream.getvalue()
+        self.assertIn("Mots-cles [fr]", output)
+        self.assertIn("pour -> LOOP_FOR", output)
+
+    def test_keywords_command_language_override(self):
+        stream = io.StringIO()
+        with redirect_stdout(stream):
+            result = self.repl._handle_command(":keywords en")
+
+        self.assertTrue(result)
+        output = stream.getvalue()
+        self.assertIn("Mots-cles [en]", output)
+        self.assertIn("for -> LOOP_FOR", output)
+
+    def test_symbols_command(self):
+        stream = io.StringIO()
+        with redirect_stdout(stream):
+            result = self.repl._handle_command(":symboles fr")
+
+        self.assertTrue(result)
+        output = stream.getvalue()
+        self.assertIn("Operateurs et symboles [fr]", output)
+        self.assertIn("arithmetic:", output)
+        self.assertIn("ADD: +", output)
+
+    def test_keywords_unsupported_language(self):
+        stream = io.StringIO()
+        with redirect_stdout(stream):
+            result = self.repl._handle_command(":keywords xx")
+
+        self.assertTrue(result)
+        self.assertIn("Langue non prise en charge : xx", stream.getvalue())
+
+    def test_symbols_command_spanish_localization(self):
+        repl = REPL(language="es")
+        stream = io.StringIO()
+        with redirect_stdout(stream):
+            result = repl._handle_command(":operadores es")
+
+        self.assertTrue(result)
+        output = stream.getvalue()
+        self.assertIn("Operadores y simbolos [es]:", output)

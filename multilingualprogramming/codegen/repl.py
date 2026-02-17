@@ -20,9 +20,11 @@ import sys
 from pathlib import Path
 
 from multilingualprogramming.lexer.lexer import Lexer
+from multilingualprogramming.keyword.keyword_registry import KeywordRegistry
 from multilingualprogramming.parser.parser import Parser
 from multilingualprogramming.codegen.python_generator import PythonCodeGenerator
 from multilingualprogramming.codegen.runtime_builtins import RuntimeBuiltins
+from multilingualprogramming.exceptions import UnsupportedLanguageError
 from multilingualprogramming.version import __version__
 
 
@@ -41,6 +43,7 @@ class REPL:
     """
 
     _COMMAND_CATALOG = None
+    _OPERATOR_CATALOG = None
 
     def __init__(self, language=None, show_python=False):
         """
@@ -74,6 +77,20 @@ class REPL:
         """Return normalized active language code."""
         return (self.language or "en").lower()
 
+    @classmethod
+    def _load_operator_catalog(cls):
+        """Load operator and symbol metadata from resources."""
+        if cls._OPERATOR_CATALOG is not None:
+            return cls._OPERATOR_CATALOG
+
+        path = (
+            Path(__file__).resolve().parent.parent
+            / "resources" / "usm" / "operators.json"
+        )
+        with open(path, "r", encoding="utf-8-sig") as handle:
+            cls._OPERATOR_CATALOG = json.load(handle)
+        return cls._OPERATOR_CATALOG
+
     def _aliases_for(self, canonical, lang):
         """Return ordered aliases for a command in active language."""
         catalog = self._load_command_catalog()
@@ -95,6 +112,17 @@ class REPL:
                 seen.add(key)
                 ordered.append(alias)
         return ordered
+
+    def _message(self, key, ui_lang, **kwargs):
+        """Get localized REPL message template from command catalog."""
+        catalog = self._load_command_catalog()
+        default_lang = catalog.get("default_language", "en")
+        messages = catalog.get("messages", {})
+        template = messages.get(key, {}).get(
+            ui_lang,
+            messages.get(key, {}).get(default_lang, ""),
+        )
+        return template.format(**kwargs) if template else ""
 
     def _command_alias_map(self, lang):
         """Map canonical command names to casefolded aliases."""
@@ -132,6 +160,72 @@ class REPL:
                 meta.get("descriptions", {}).get(default_lang, ""),
             )
             print(f"  :{display}{arg_hint}  {description}")
+
+    def _resolve_listing_language(self, arg):
+        """Resolve and validate the language used for keyword/symbol listings."""
+        lang = arg.strip().lower() if arg.strip() else self._language_code()
+        registry = KeywordRegistry()
+        registry.check_language(lang)
+        return lang
+
+    def _print_keywords(self, arg):
+        """Print available keywords for a given language."""
+        active_lang = self._language_code()
+        try:
+            lang = self._resolve_listing_language(arg)
+        except UnsupportedLanguageError:
+            label = arg.strip() or self._language_code()
+            print(self._message("unsupported_language", active_lang, lang=label))
+            return
+
+        keywords = KeywordRegistry().get_all_keywords(lang)
+        print(self._message("keywords_title", active_lang, lang=lang, count=len(keywords)))
+        for concept_id, keyword in sorted(
+            keywords.items(),
+            key=lambda item: (item[1].casefold(), item[0]),
+        ):
+            print(f"  {keyword} -> {concept_id}")
+
+    def _print_symbols(self, arg):
+        """Print available operator and symbol mappings."""
+        active_lang = self._language_code()
+        try:
+            lang = self._resolve_listing_language(arg)
+        except UnsupportedLanguageError:
+            label = arg.strip() or self._language_code()
+            print(self._message("unsupported_language", active_lang, lang=label))
+            return
+
+        catalog = self._load_operator_catalog()
+        default_lang = catalog.get("default_language", "en")
+        print(self._message("symbols_title", active_lang, lang=lang))
+        for category, operators in catalog.items():
+            if not isinstance(operators, dict):
+                continue
+            print(f"{category}:")
+            for name, meta in operators.items():
+                if not isinstance(meta, dict):
+                    continue
+                symbols = meta.get("symbols", [])
+                unicode_alt = meta.get("unicode_alt", [])
+                pairs = meta.get("pairs", [])
+                if pairs:
+                    primary = f"{pairs[0]} {pairs[1]}"
+                elif symbols:
+                    primary = ", ".join(symbols)
+                else:
+                    primary = ""
+
+                line = f"  {name}: {primary}"
+                if unicode_alt:
+                    line += f" | alt: {', '.join(unicode_alt)}"
+
+                descriptions = meta.get("description", {})
+                if isinstance(descriptions, dict):
+                    desc = descriptions.get(lang, descriptions.get(default_lang))
+                    if desc:
+                        line += f" ({desc})"
+                print(line)
 
     def _init_globals(self):
         """Initialize the execution namespace with builtins."""
@@ -273,6 +367,12 @@ class REPL:
             return True
         if cmd == "help":
             self._print_help()
+            return True
+        if cmd == "keywords":
+            self._print_keywords(arg)
+            return True
+        if cmd == "symbols":
+            self._print_symbols(arg)
             return True
         return False
 
