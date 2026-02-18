@@ -76,6 +76,19 @@ print(total)
         output = self.repl.eval_line(source)
         self.assertEqual(output.strip(), "10")
 
+    def test_continuation_state_detects_unclosed_triple_string(self):
+        count, has_unclosed_string = self.repl._continuation_state(
+            'let s = """Ligne 1'
+        )
+        self.assertEqual(count, 0)
+        self.assertTrue(has_unclosed_string)
+
+    def test_continuation_state_closes_triple_string(self):
+        text = 'let s = """Ligne 1\nLigne 2"""'
+        count, has_unclosed_string = self.repl._continuation_state(text)
+        self.assertEqual(count, 0)
+        self.assertFalse(has_unclosed_string)
+
 
 class REPLFrenchTestSuite(unittest.TestCase):
     """Test the REPL with French language."""
@@ -106,6 +119,24 @@ afficher(somme)
 """
         output = self.repl.eval_line(source)
         self.assertEqual(output.strip(), "6")
+
+    def test_french_function_type_annotations(self):
+        self.repl.eval_line("""\
+déf saluer(nom: chaine) -> chaine:
+    retour f"Bonjour {nom}"
+
+""")
+        output = self.repl.eval_line('afficher(saluer("Nina"))\n')
+        self.assertEqual(output.strip(), "Bonjour Nina")
+
+    def test_french_type_keyword_as_parameter_name(self):
+        self.repl.eval_line("""\
+déf moyenne(liste):
+    retour somme(liste) / longueur(liste)
+
+""")
+        output = self.repl.eval_line("afficher(moyenne([2, 4]))\n")
+        self.assertEqual(output.strip(), "3.0")
 
     def test_french_help_alias_without_colon(self):
         result = self.repl._handle_command("aide")

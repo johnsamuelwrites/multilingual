@@ -79,8 +79,8 @@ Sortie attendue: `10`
 ### Fonctions
 
 ```text
-fonction carre(x):
-    retourner x * x
+déf carre(x):
+    retour x * x
 
 afficher(carre(6))
 ```
@@ -113,12 +113,12 @@ Le pipeline prend en charge:
 
 ```text
 classe Compteur:
-    fonction __init__(soi, depart):
+    déf __init__(soi, depart):
         soi.valeur = depart
 
-    fonction incrementer(soi):
+    déf incrementer(soi):
         soi.valeur = soi.valeur + 1
-        retourner soi.valeur
+        retour soi.valeur
 
 soit c = Compteur(10)
 afficher(c.incrementer())
@@ -149,7 +149,7 @@ Sortie attendue: `test ok` (sinon erreur d'assertion si la condition est fausse)
 - affectations chainees (exemple):
 
 ```text
-soit a = b = c = 7
+a = b = c = 7
 afficher(a, b, c)
 ```
 Sortie attendue: `7 7 7`
@@ -166,7 +166,7 @@ Sortie attendue: `4 9`
 - parametres par defaut, `*args`, `**kwargs` (exemple):
 
 ```text
-fonction decrire(nom, role="developpeur", *competences, **meta):
+déf decrire(nom, role="developpeur", *competences, **meta):
     afficher("Nom:", nom)
     afficher("Role:", role)
     afficher("Competences:", competences)
@@ -183,15 +183,15 @@ Sortie attendue (exemple):
 - decorateurs (exemple):
 
 ```text
-fonction tracer(fn):
-    fonction wrapper(*args, **kwargs):
+déf tracer(fn):
+    déf wrapper(*args, **kwargs):
         afficher("appel de", fn.__name__)
-        retourner fn(*args, **kwargs)
-    retourner wrapper
+        retour fn(*args, **kwargs)
+    retour wrapper
 
 @tracer
-fonction addition(a, b):
-    retourner a + b
+déf addition(a, b):
+    retour a + b
 
 afficher(addition(2, 5))
 ```
@@ -228,10 +228,11 @@ Sortie attendue:
 ```text
 soit age: entier = 42
 
-def saluer(nom: chaine) -> chaine:
-    retourner f"Bonjour {nom}"
+déf saluer(nom: chaine) -> chaine:
+    retour f"Bonjour {nom}"
 ```
 Sortie attendue (exemple): `Bonjour Alice` pour `afficher(saluer("Alice"))`.
+Note: les deux formes `chaine` et `chaîne` sont acceptees.
 
 - litteraux d'ensemble (`set`):
 
@@ -241,13 +242,15 @@ afficher(uniques)
 ```
 Sortie attendue: un ensemble contenant `1, 2, 3` (ordre non garanti).
 
-- `with` avec plusieurs gestionnaires de contexte:
+- `avec` avec plusieurs gestionnaires de contexte:
 
 ```text
-with ouvrir("a.txt") as a, ouvrir("b.txt") as b:
-    afficher(a.lire(), b.lire())
+avec open("a.txt") comme a, open("b.txt") comme b:
+    afficher(a.read(), b.read())
 ```
 Sortie attendue: contenu des deux fichiers, avec fermeture des deux contextes.
+Note: certains built-ins et methodes Python restent sous leur nom universel
+(par exemple `open`, `read`).
 
 - depliage de dictionnaires:
 
@@ -273,9 +276,17 @@ Sortie attendue: `255 63 10 0.0015`.
 - programmation asynchrone (`async` / `await`):
 
 ```text
-asynchrone def lire(url: chaine) -> chaine:
-    retourner attendre telecharger(url)
+importer asyncio
+
+asynchrone déf telecharger(url: chaine) -> chaine:
+    retour f"contenu simulé pour {url}"
+
+asynchrone déf lire(url: chaine) -> chaine:
+    retour attendre telecharger(url)
+
+afficher(asyncio.run(lire("https://exemple.fr")))
 ```
+Sortie attendue: `contenu simulé pour https://exemple.fr`.
 Note: `attendre` (`await`) est valide uniquement dans une fonction asynchrone.
 
 - operateur walrus (`:=`):
@@ -348,8 +359,8 @@ Autres modules utiles:
 soit base = [1, 2, 3, 4, 5]
 soit pairs = [x pour x dans base si x % 2 == 0]
 
-fonction moyenne(liste):
-    retourner somme(liste) / longueur(liste)
+déf moyenne(liste):
+    retour somme(liste) / longueur(liste)
 
 si longueur(pairs) > 0:
     afficher("Pairs:", pairs)

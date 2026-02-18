@@ -290,30 +290,62 @@ class REPL:
             sys.stdout = old_stdout
         return captured.getvalue()
 
-    def _count_open_brackets(self, text):
-        """Count net open brackets in text."""
+    def _continuation_state(self, text):
+        """Return (open_brackets, has_unclosed_string) for continuation."""
         count = 0
-        in_string = False
         string_char = None
+        is_triple = False
         i = 0
         while i < len(text):
             ch = text[i]
-            if in_string:
-                if ch == '\\':
+
+            if string_char is not None:
+                if is_triple:
+                    if text[i:i+3] == string_char * 3:
+                        string_char = None
+                        is_triple = False
+                        i += 3
+                        continue
+                else:
+                    if ch == '\\':
+                        i += 2
+                        continue
+                    if ch == string_char:
+                        string_char = None
+                        i += 1
+                        continue
+                i += 1
+                continue
+
+            if ch == '#':
+                # Comment until end of line (outside strings)
+                while i < len(text) and text[i] != '\n':
                     i += 1
-                elif ch == string_char:
-                    in_string = False
-            else:
-                if ch in ('"', "'"):
-                    in_string = True
+                continue
+
+            if ch in ('"', "'"):
+                if text[i:i+3] == ch * 3:
                     string_char = ch
-                elif ch in ('(', '[', '{'):
-                    count += 1
-                elif ch in (')', ']', '}'):
-                    count -= 1
-                elif ch == '#':
-                    break
+                    is_triple = True
+                    i += 3
+                    continue
+                string_char = ch
+                is_triple = False
+                i += 1
+                continue
+
+            if ch in ('(', '[', '{'):
+                count += 1
+            elif ch in (')', ']', '}'):
+                count -= 1
+
             i += 1
+
+        return count, string_char is not None
+
+    def _count_open_brackets(self, text):
+        """Count net open brackets in text."""
+        count, _has_unclosed_string = self._continuation_state(text)
         return count
 
     def _resolve_command(self, line):
@@ -410,10 +442,10 @@ class REPL:
             if result:
                 continue
 
-            open_brackets = self._count_open_brackets(line)
+            open_brackets, has_unclosed_string = self._continuation_state(line)
             needs_block = line.rstrip().endswith(":")
 
-            if needs_block or open_brackets > 0:
+            if needs_block or open_brackets > 0 or has_unclosed_string:
                 block_lines = [line]
                 while True:
                     try:
@@ -425,11 +457,16 @@ class REPL:
                         print("Bye!")
                         return
                     block_lines.append(cont)
-                    open_brackets += self._count_open_brackets(cont)
+                    full_text = "\n".join(block_lines)
+                    open_brackets, has_unclosed_string = (
+                        self._continuation_state(full_text)
+                    )
 
-                    if needs_block and cont.strip() == "":
+                    if needs_block and cont.strip() == "" \
+                            and open_brackets <= 0 and not has_unclosed_string:
                         break
-                    if not needs_block and open_brackets <= 0:
+                    if not needs_block and open_brackets <= 0 \
+                            and not has_unclosed_string:
                         break
                 source = "\n".join(block_lines) + "\n"
             else:

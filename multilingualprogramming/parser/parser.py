@@ -48,6 +48,14 @@ _TYPE_CONCEPTS = {
     "TYPE_INT", "TYPE_FLOAT", "TYPE_STR",
     "TYPE_BOOL", "TYPE_LIST", "TYPE_DICT",
 }
+_TYPE_CONCEPT_TO_PYTHON = {
+    "TYPE_INT": "int",
+    "TYPE_FLOAT": "float",
+    "TYPE_STR": "str",
+    "TYPE_BOOL": "bool",
+    "TYPE_LIST": "list",
+    "TYPE_DICT": "dict",
+}
 
 # Augmented assignment operators
 _AUGMENTED_OPS = {
@@ -168,6 +176,12 @@ class Parser:
         """Consume an IDENTIFIER token; raise otherwise."""
         tok = self._current()
         if tok.type == TokenType.IDENTIFIER:
+            return self._advance()
+        # Allow keyword tokens that are also valid callable/type names
+        # to be used in identifier positions (e.g. French: "liste").
+        if tok.type == TokenType.KEYWORD and tok.concept in (
+            _CALLABLE_CONCEPTS | _TYPE_CONCEPTS
+        ):
             return self._advance()
         self._error("EXPECTED_IDENTIFIER", tok, token=tok.value)
 
@@ -348,15 +362,67 @@ class Parser:
     # ------------------------------------------------------------------
 
     def _parse_let_declaration(self):
-        """Parse: LET name = expression."""
+        """Parse LET declaration, including tuple/chained assignment forms."""
         tok = self._advance()  # consume LET
-        name_tok = self._expect_identifier()
+        first_tok = self._expect_identifier()
+        target = Identifier(
+            first_tok.value,
+            line=first_tok.line, column=first_tok.column
+        )
+
+        # Annotated LET: let x: T = value
+        if self._match_delimiter(":"):
+            self._advance()
+            annotation = self._parse_annotation_expression()
+            self._expect_operator("=")
+            value = self._parse_expression()
+            return AnnAssignment(
+                target, annotation, value,
+                line=tok.line, column=tok.column
+            )
+
+        if self._match_delimiter(","):
+            elements = [target]
+            while self._match_delimiter(","):
+                self._advance()
+                next_tok = self._expect_identifier()
+                elements.append(Identifier(
+                    next_tok.value,
+                    line=next_tok.line, column=next_tok.column
+                ))
+            target = TupleLiteral(elements, line=tok.line, column=tok.column)
+
         self._expect_operator("=")
         value = self._parse_expression()
-        return VariableDeclaration(
-            name_tok.value, value, is_const=False,
-            line=tok.line, column=tok.column
-        )
+
+        # Tuple on right side: let a, b = x, y
+        if self._match_delimiter(","):
+            right_elements = [value]
+            while self._match_delimiter(","):
+                self._advance()
+                if self._at_end() or self._match_type(TokenType.NEWLINE):
+                    break
+                right_elements.append(self._parse_expression())
+            value = TupleLiteral(right_elements, line=tok.line, column=tok.column)
+
+        # Chained assignment: let a = b = c = 7
+        if self._match_operator("="):
+            targets = [target, value]
+            while self._match_operator("="):
+                self._advance()
+                value = self._parse_expression()
+                targets.append(value)
+            final_value = targets.pop()
+            return ChainedAssignment(targets, final_value,
+                                     line=tok.line, column=tok.column)
+
+        if isinstance(target, Identifier):
+            return VariableDeclaration(
+                target.name, value, is_const=False,
+                line=tok.line, column=tok.column
+            )
+        return Assignment(target, value, op="=",
+                          line=tok.line, column=tok.column)
 
     def _parse_const_declaration(self):
         """Parse: CONST name = expression."""
@@ -376,7 +442,7 @@ class Parser:
         # Annotated assignment: name: type [= value]
         if isinstance(expr, Identifier) and self._match_delimiter(":"):
             tok = self._advance()  # consume :
-            annotation = self._parse_expression()
+            annotation = self._parse_annotation_expression()
             value = None
             if self._match_operator("="):
                 self._advance()
@@ -572,7 +638,7 @@ class Parser:
         return_annotation = None
         if self._match_operator("->"):
             self._advance()
-            return_annotation = self._parse_expression()
+            return_annotation = self._parse_annotation_expression()
         body = self._parse_block()
         line = async_tok.line if async_tok else tok.line
         column = async_tok.column if async_tok else tok.column
@@ -599,7 +665,7 @@ class Parser:
         annotation = None
         if self._match_delimiter(":"):
             self._advance()
-            annotation = self._parse_expression()
+            annotation = self._parse_annotation_expression()
         default = None
         if self._match_operator("="):
             self._advance()
@@ -702,7 +768,7 @@ class Parser:
 
         body = self._parse_block()
         return WithStatement(
-            items, body,
+            items, body=body,
             line=tok.line, column=tok.column
         )
 
@@ -854,6 +920,17 @@ class Parser:
     def _parse_expression(self):
         """Parse an expression (top level)."""
         return self._parse_named_expression()
+
+    def _parse_annotation_expression(self):
+        """Parse an annotation expression with localized type keyword mapping."""
+        tok = self._current()
+        if tok.type == TokenType.KEYWORD and tok.concept in _TYPE_CONCEPTS:
+            self._advance()
+            return Identifier(
+                _TYPE_CONCEPT_TO_PYTHON[tok.concept],
+                line=tok.line, column=tok.column
+            )
+        return self._parse_expression()
 
     def _parse_named_expression(self):
         """Parse assignment expression: conditional_expr [:= expression]."""
@@ -1099,6 +1176,7 @@ class Parser:
         tok = self._advance()  # consume (
         args = []
         keywords = []
+        self._skip_newlines()
 
         if not self._match_delimiter(")"):
             self._parse_argument(args, keywords)
@@ -1113,10 +1191,13 @@ class Parser:
                                 line=tok.line, column=tok.column)
             while self._match_delimiter(","):
                 self._advance()
+                self._skip_newlines()
                 if self._match_delimiter(")"):
                     break
                 self._parse_argument(args, keywords)
+                self._skip_newlines()
 
+        self._skip_newlines()
         self._expect_delimiter(")")
         return CallExpr(func, args, keywords,
                         line=tok.line, column=tok.column)
@@ -1240,6 +1321,17 @@ class Parser:
                     expr, open_tok, "generator"
                 )
                 return result
+            # Tuple literal: (a, b, c)
+            if self._match_delimiter(","):
+                elements = [expr]
+                while self._match_delimiter(","):
+                    self._advance()
+                    if self._match_delimiter(")"):
+                        break
+                    elements.append(self._parse_expression())
+                self._expect_delimiter(")")
+                return TupleLiteral(elements, line=open_tok.line,
+                                    column=open_tok.column)
             self._expect_delimiter(")")
             return expr
 

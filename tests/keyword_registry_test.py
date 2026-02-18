@@ -144,6 +144,13 @@ class KeywordRegistryTestSuite(unittest.TestCase):
         self.assertIn("PRINT", en_keywords)
         self.assertEqual(en_keywords["PRINT"], "print")
 
+    def test_keyword_aliases_supported(self):
+        """Alias forms should resolve to the same concept."""
+        self.assertEqual(self.registry.get_concept("chaine", "fr"), "TYPE_STR")
+        self.assertEqual(self.registry.get_concept("chaîne", "fr"), "TYPE_STR")
+        # get_keyword returns the canonical/primary form
+        self.assertEqual(self.registry.get_keyword("TYPE_STR", "fr"), "chaine")
+
     def test_get_all_concept_ids(self):
         """Test getting all concept IDs."""
         concepts = self.registry.get_all_concept_ids()

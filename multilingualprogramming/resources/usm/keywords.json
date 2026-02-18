@@ -603,7 +603,7 @@
       },
       "TYPE_STR": {
         "en": "str",
-        "fr": "chaîne",
+        "fr": ["chaine", "chaîne"],
         "es": "cadena",
         "de": "zeichenkette",
         "hi": "शब्द",

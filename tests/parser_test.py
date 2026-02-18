@@ -19,6 +19,7 @@ from multilingualprogramming.parser.ast_nodes import (
     RaiseStatement, GlobalStatement, YieldStatement,
     IfStatement, WhileLoop, ForLoop, FunctionDef, ClassDef,
     TryStatement, ExceptHandler, MatchStatement, AwaitExpr, NamedExpr,
+    ChainedAssignment, TupleLiteral,
     WithStatement, ImportStatement, FromImportStatement,
 )
 from multilingualprogramming.exceptions import ParseError
@@ -81,6 +82,12 @@ class ParserExpressionTestSuite(unittest.TestCase):
         prog = _parse("(42)\n")
         stmt = prog.body[0]
         self.assertIsInstance(stmt.expression, NumeralLiteral)
+
+    def test_parse_parenthesized_tuple(self):
+        prog = _parse("(4, 9)\n")
+        stmt = prog.body[0]
+        self.assertIsInstance(stmt.expression, TupleLiteral)
+        self.assertEqual(len(stmt.expression.elements), 2)
 
     def test_parse_list_literal_empty(self):
         prog = _parse("[]\n")
@@ -231,6 +238,12 @@ class ParserExpressionTestSuite(unittest.TestCase):
         self.assertIsInstance(expr, CallExpr)
         self.assertEqual(len(expr.args), 2)
 
+    def test_parse_function_call_multiline_closing_paren(self):
+        prog = _parse("print(1\n)\n", language="en")
+        expr = prog.body[0].expression
+        self.assertIsInstance(expr, CallExpr)
+        self.assertEqual(len(expr.args), 1)
+
     def test_parse_index_access(self):
         prog = _parse("arr[0]\n")
         expr = prog.body[0].expression
@@ -282,6 +295,17 @@ class ParserStatementTestSuite(unittest.TestCase):
         self.assertIsInstance(stmt, VariableDeclaration)
         self.assertEqual(stmt.name, "x")
         self.assertFalse(stmt.is_const)
+
+    def test_parse_let_chained_assignment(self):
+        prog = _parse("let a = b = c = 7\n", language="en")
+        stmt = prog.body[0]
+        self.assertIsInstance(stmt, ChainedAssignment)
+
+    def test_parse_let_annotated_assignment(self):
+        prog = _parse("let age: int = 42\n", language="en")
+        stmt = prog.body[0]
+        self.assertIsInstance(stmt, AnnAssignment)
+        self.assertEqual(stmt.target.name, "age")
 
     def test_parse_const_declaration(self):
         prog = _parse("const PI = 3.14\n", language="en")
@@ -567,6 +591,29 @@ class ParserMultilingualTestSuite(unittest.TestCase):
         stmt = prog.body[0]
         self.assertIsInstance(stmt, IfStatement)
         self.assertIsNotNone(stmt.else_body)
+
+    def test_parse_french_type_annotation_keyword(self):
+        source = "déf saluer(nom: chaine) -> chaine:\n    retour nom\n"
+        prog = _parse(source, language="fr")
+        stmt = prog.body[0]
+        self.assertIsInstance(stmt, FunctionDef)
+        self.assertEqual(stmt.params[0].annotation.name, "str")
+        self.assertEqual(stmt.return_annotation.name, "str")
+
+    def test_parse_french_type_annotation_keyword_accented(self):
+        source = "déf saluer(nom: chaîne) -> chaîne:\n    retour nom\n"
+        prog = _parse(source, language="fr")
+        stmt = prog.body[0]
+        self.assertIsInstance(stmt, FunctionDef)
+        self.assertEqual(stmt.params[0].annotation.name, "str")
+        self.assertEqual(stmt.return_annotation.name, "str")
+
+    def test_parse_french_parameter_named_like_type_keyword(self):
+        source = "déf moyenne(liste):\n    retour somme(liste) / longueur(liste)\n"
+        prog = _parse(source, language="fr")
+        stmt = prog.body[0]
+        self.assertIsInstance(stmt, FunctionDef)
+        self.assertEqual(stmt.params[0].name, "liste")
 
     def test_parse_hindi_while_loop(self):
         source = "\u091c\u092c\u0924\u0915 x:\n    \u0930\u094b\u0915\u094b\n"

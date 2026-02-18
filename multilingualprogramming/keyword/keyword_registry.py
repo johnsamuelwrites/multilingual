@@ -47,9 +47,9 @@ class KeywordRegistry:
         with open(keywords_path, "r", encoding="utf-8") as f:
             KeywordRegistry._data = json.load(f)
 
-        # Build reverse index: {language: {keyword_string: concept_id}}
+        # Build reverse index: {language: {keyword_string: [concept_id, ...]}}
         self._reverse_index = {}
-        # Build flat concept map: {concept_id: {language: keyword}}
+        # Build flat concept map: {concept_id: {language: keyword | [keywords]}}
         self._concept_map = {}
         data = cast(dict[str, Any] | None, KeywordRegistry._data)
         if data is None:
@@ -58,12 +58,18 @@ class KeywordRegistry:
         for category_concepts in data["categories"].values():
             for concept_id, translations in category_concepts.items():
                 self._concept_map[concept_id] = translations
-                for lang, keyword in translations.items():
+                for lang, keyword_value in translations.items():
                     if lang not in self._reverse_index:
                         self._reverse_index[lang] = {}
-                    if keyword not in self._reverse_index[lang]:
-                        self._reverse_index[lang][keyword] = []
-                    self._reverse_index[lang][keyword].append(concept_id)
+                    keywords = (
+                        keyword_value
+                        if isinstance(keyword_value, list)
+                        else [keyword_value]
+                    )
+                    for keyword in keywords:
+                        if keyword not in self._reverse_index[lang]:
+                            self._reverse_index[lang][keyword] = []
+                        self._reverse_index[lang][keyword].append(concept_id)
 
     def _check_language(self, language):
         """Raise UnsupportedLanguageError if language is not in the registry."""
@@ -100,7 +106,10 @@ class KeywordRegistry:
             raise UnsupportedLanguageError(
                 f"{language} (not available for concept {concept_id})"
             )
-        return translations[language]
+        keyword_value = translations[language]
+        if isinstance(keyword_value, list):
+            return keyword_value[0]
+        return keyword_value
 
     def get_concept(self, keyword, language):
         """
@@ -170,7 +179,11 @@ class KeywordRegistry:
         result = {}
         for concept_id, translations in self._concept_map.items():
             if language in translations:
-                result[concept_id] = translations[language]
+                keyword_value = translations[language]
+                if isinstance(keyword_value, list):
+                    result[concept_id] = keyword_value[0]
+                else:
+                    result[concept_id] = keyword_value
         return result
 
     def get_supported_languages(self):
