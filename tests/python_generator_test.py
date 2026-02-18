@@ -10,11 +10,12 @@ import unittest
 
 from multilingualprogramming.parser.ast_nodes import (
     Program, NumeralLiteral, StringLiteral, BooleanLiteral,
-    NoneLiteral, ListLiteral, DictLiteral, DateLiteral,
+    NoneLiteral, ListLiteral, DictLiteral, SetLiteral, DictUnpackEntry,
+    DateLiteral,
     Identifier, BinaryOp, UnaryOp, BooleanOp, CompareOp,
     CallExpr, AttributeAccess, IndexAccess, LambdaExpr,
-    ConditionalExpr,
-    VariableDeclaration, Assignment, ExpressionStatement,
+    AwaitExpr, NamedExpr, ConditionalExpr,
+    VariableDeclaration, Assignment, AnnAssignment, ExpressionStatement,
     PassStatement, ReturnStatement, BreakStatement, ContinueStatement,
     RaiseStatement, GlobalStatement, LocalStatement,
     IfStatement, WhileLoop, ForLoop, FunctionDef, ClassDef,
@@ -80,6 +81,22 @@ class PythonGeneratorExpressionTestSuite(unittest.TestCase):
             ])
         )
         self.assertEqual(result, "{'a': 1}")
+
+    def test_dict_literal_with_unpack(self):
+        result = self._gen_expr(
+            DictLiteral([
+                DictUnpackEntry(Identifier("d1")),
+                (StringLiteral("a"), NumeralLiteral("1")),
+                DictUnpackEntry(Identifier("d2")),
+            ])
+        )
+        self.assertEqual(result, "{**d1, 'a': 1, **d2}")
+
+    def test_set_literal(self):
+        result = self._gen_expr(
+            SetLiteral([NumeralLiteral("1"), NumeralLiteral("2")])
+        )
+        self.assertEqual(result, "{1, 2}")
 
     def test_date_literal(self):
         result = self._gen_expr(DateLiteral("2024-01-15"))
@@ -172,6 +189,18 @@ class PythonGeneratorExpressionTestSuite(unittest.TestCase):
         )
         self.assertEqual(result, "(1 if cond else 0)")
 
+    def test_named_expr(self):
+        result = self._gen_expr(
+            NamedExpr(Identifier("x"), NumeralLiteral("5"))
+        )
+        self.assertEqual(result, "(x := 5)")
+
+    def test_await_expr(self):
+        result = self._gen_expr(
+            AwaitExpr(CallExpr(Identifier("f"), []))
+        )
+        self.assertEqual(result, "(await f())")
+
     def test_unary_bitwise_not(self):
         result = self._gen_expr(UnaryOp("~", Identifier("x")))
         self.assertEqual(result, "(~x)")
@@ -203,6 +232,12 @@ class PythonGeneratorStatementTestSuite(unittest.TestCase):
             Assignment(Identifier("x"), NumeralLiteral("5"))
         )
         self.assertEqual(result, "x = 5")
+
+    def test_annotated_assignment(self):
+        result = self._gen(
+            AnnAssignment(Identifier("x"), Identifier("int"), NumeralLiteral("5"))
+        )
+        self.assertEqual(result, "x: int = 5")
 
     def test_augmented_assignment(self):
         result = self._gen(
@@ -353,6 +388,18 @@ class PythonGeneratorCompoundTestSuite(unittest.TestCase):
         )
         self.assertIn("def add(a, b):", result)
         self.assertIn("    return (a + b)", result)
+
+    def test_async_function_def_with_return_annotation(self):
+        result = self._gen(
+            FunctionDef(
+                "fetch",
+                ["url"],
+                [ReturnStatement(AwaitExpr(CallExpr(Identifier("get"), [Identifier("url")])))],
+                return_annotation=Identifier("str"),
+                is_async=True,
+            )
+        )
+        self.assertIn("async def fetch(url) -> str:", result)
 
     def test_class_def(self):
         result = self._gen(

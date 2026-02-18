@@ -12,11 +12,11 @@ from multilingualprogramming.lexer.lexer import Lexer
 from multilingualprogramming.lexer.token_types import TokenType
 from multilingualprogramming.parser.ast_nodes import (
     Program, NumeralLiteral, StringLiteral, DateLiteral,
-    BooleanLiteral, NoneLiteral, ListLiteral, DictLiteral,
+    BooleanLiteral, NoneLiteral, ListLiteral, DictLiteral, SetLiteral,
     Identifier, BinaryOp, UnaryOp, BooleanOp, CompareOp,
     CallExpr, AttributeAccess, IndexAccess, ConditionalExpr,
-    LambdaExpr, YieldExpr,
-    VariableDeclaration, Assignment, ExpressionStatement,
+    LambdaExpr, YieldExpr, AwaitExpr, NamedExpr,
+    VariableDeclaration, Assignment, AnnAssignment, ExpressionStatement,
     PassStatement, ReturnStatement, BreakStatement, ContinueStatement,
     RaiseStatement, GlobalStatement, LocalStatement, YieldStatement,
     IfStatement, WhileLoop, ForLoop, FunctionDef, ClassDef,
@@ -24,7 +24,7 @@ from multilingualprogramming.parser.ast_nodes import (
     WithStatement, ImportStatement, FromImportStatement,
     SliceExpr, Parameter, StarredExpr, TupleLiteral,
     ListComprehension, DictComprehension, GeneratorExpr,
-    FStringLiteral, AssertStatement, ChainedAssignment,
+    FStringLiteral, AssertStatement, ChainedAssignment, DictUnpackEntry,
 )
 from multilingualprogramming.parser.error_messages import ErrorMessageRegistry
 from multilingualprogramming.exceptions import ParseError
@@ -222,6 +222,9 @@ class Parser:
         if self._match_delimiter("@"):
             return self._parse_decorated()
 
+        if tok.type == TokenType.KEYWORD and tok.concept == "ASYNC":
+            return self._parse_async_statement()
+
         if tok.type == TokenType.KEYWORD and tok.concept:
             concept = tok.concept
             if concept in _COMPOUND_CONCEPTS:
@@ -230,6 +233,14 @@ class Parser:
                 return self._parse_simple_statement(concept)
 
         return self._parse_assignment_or_expression()
+
+    def _parse_async_statement(self):
+        """Parse async-prefixed compound statements."""
+        tok = self._advance()  # consume ASYNC
+        if self._match_concept("FUNC_DEF"):
+            return self._parse_function_def(is_async=True, async_tok=tok)
+        self._error("UNEXPECTED_TOKEN", self._current(),
+                    token=self._current().value)
 
     def _parse_decorated(self):
         """Parse decorated function or class definition."""
@@ -246,6 +257,11 @@ class Parser:
             node = self._parse_function_def()
             node.decorators = decorators
             return node
+        if tok.type == TokenType.KEYWORD and tok.concept == "ASYNC":
+            node = self._parse_async_statement()
+            if isinstance(node, FunctionDef):
+                node.decorators = decorators
+                return node
         if tok.type == TokenType.KEYWORD and tok.concept == "CLASS_DEF":
             node = self._parse_class_def()
             node.decorators = decorators
@@ -356,6 +372,19 @@ class Parser:
     def _parse_assignment_or_expression(self):
         """Parse assignment or expression statement."""
         expr = self._parse_expression()
+
+        # Annotated assignment: name: type [= value]
+        if isinstance(expr, Identifier) and self._match_delimiter(":"):
+            tok = self._advance()  # consume :
+            annotation = self._parse_expression()
+            value = None
+            if self._match_operator("="):
+                self._advance()
+                value = self._parse_expression()
+            return AnnAssignment(
+                expr, annotation, value,
+                line=tok.line, column=tok.column
+            )
 
         # Check for comma (tuple unpacking: a, b = ...)
         if self._match_delimiter(","):
@@ -526,7 +555,7 @@ class Parser:
     # Definitions
     # ------------------------------------------------------------------
 
-    def _parse_function_def(self):
+    def _parse_function_def(self, is_async=False, async_tok=None):
         """Parse: FUNC_DEF name ( params ) : block."""
         tok = self._advance()  # consume FUNC_DEF
         name_tok = self._expect_identifier()
@@ -540,14 +569,22 @@ class Parser:
                 params.append(self._parse_parameter())
 
         self._expect_delimiter(")")
+        return_annotation = None
+        if self._match_operator("->"):
+            self._advance()
+            return_annotation = self._parse_expression()
         body = self._parse_block()
+        line = async_tok.line if async_tok else tok.line
+        column = async_tok.column if async_tok else tok.column
         return FunctionDef(
             name_tok.value, params, body,
-            line=tok.line, column=tok.column
+            return_annotation=return_annotation,
+            is_async=is_async,
+            line=line, column=column
         )
 
     def _parse_parameter(self):
-        """Parse a single function parameter: [*|**] name [= default]."""
+        """Parse a single function parameter: [*|**] name [: type] [= default]."""
         is_vararg = False
         is_kwarg = False
 
@@ -559,13 +596,17 @@ class Parser:
             is_vararg = True
 
         name_tok = self._expect_identifier()
+        annotation = None
+        if self._match_delimiter(":"):
+            self._advance()
+            annotation = self._parse_expression()
         default = None
         if self._match_operator("="):
             self._advance()
             default = self._parse_expression()
 
         return Parameter(
-            name_tok.value, default, is_vararg, is_kwarg,
+            name_tok.value, default, is_vararg, is_kwarg, annotation,
             line=name_tok.line, column=name_tok.column
         )
 
@@ -644,19 +685,24 @@ class Parser:
     # ------------------------------------------------------------------
 
     def _parse_with_statement(self):
-        """Parse: WITH expression [AS name] : block."""
+        """Parse: WITH expression [AS name] (, expression [AS name])* : block."""
         tok = self._advance()  # consume WITH
-        context_expr = self._parse_expression()
-
-        name = None
-        if self._match_concept("AS"):
+        items = []
+        while True:
+            context_expr = self._parse_expression()
+            name = None
+            if self._match_concept("AS"):
+                self._advance()
+                name_tok = self._expect_identifier()
+                name = name_tok.value
+            items.append((context_expr, name))
+            if not self._match_delimiter(","):
+                break
             self._advance()
-            name_tok = self._expect_identifier()
-            name = name_tok.value
 
         body = self._parse_block()
         return WithStatement(
-            context_expr, name, body,
+            items, body,
             line=tok.line, column=tok.column
         )
 
@@ -807,7 +853,18 @@ class Parser:
 
     def _parse_expression(self):
         """Parse an expression (top level)."""
-        return self._parse_conditional_expression()
+        return self._parse_named_expression()
+
+    def _parse_named_expression(self):
+        """Parse assignment expression: conditional_expr [:= expression]."""
+        left = self._parse_conditional_expression()
+        if self._match_operator(":="):
+            tok = self._advance()
+            if not isinstance(left, Identifier):
+                self._error("UNEXPECTED_TOKEN", tok, token=tok.value)
+            value = self._parse_expression()
+            return NamedExpr(left, value, line=tok.line, column=tok.column)
+        return left
 
     def _parse_conditional_expression(self):
         """Parse: or_expr [IF or_expr ELSE conditional_expr]."""
@@ -957,7 +1014,11 @@ class Parser:
         return left
 
     def _parse_unary(self):
-        """Parse: (- | + | ~) unary | power."""
+        """Parse: AWAIT unary | (- | + | ~) unary | power."""
+        if self._match_concept("AWAIT"):
+            tok = self._advance()
+            value = self._parse_unary()
+            return AwaitExpr(value, line=tok.line, column=tok.column)
         if self._current().type == TokenType.OPERATOR \
                 and self._current().value in ("-", "+", "~"):
             tok = self._advance()
@@ -1186,9 +1247,9 @@ class Parser:
         if self._match_delimiter("["):
             return self._parse_list_literal()
 
-        # Dict literal
+        # Dict / set literal
         if self._match_delimiter("{"):
-            return self._parse_dict_literal()
+            return self._parse_brace_literal()
 
         self._error("EXPECTED_EXPRESSION", tok, token=tok.value)
 
@@ -1292,34 +1353,73 @@ class Parser:
         self._expect_delimiter("]")
         return ListLiteral(elements, line=tok.line, column=tok.column)
 
-    def _parse_dict_literal(self):
-        """Parse: { key: value, ... } or {key: val for target in iter}."""
+    def _parse_brace_literal(self):
+        """Parse dict or set literal, including dict unpacking."""
         tok = self._advance()  # consume {
         if self._match_delimiter("}"):
             self._advance()  # consume }
             return DictLiteral([], line=tok.line, column=tok.column)
 
-        key = self._parse_expression()
-        self._expect_delimiter(":")
-        value = self._parse_expression()
+        # Dict unpack at start
+        if self._match_operator("**"):
+            entries = [self._parse_dict_unpack_entry()]
+            while self._match_delimiter(","):
+                self._advance()
+                if self._match_delimiter("}"):
+                    break
+                if self._match_operator("**"):
+                    entries.append(self._parse_dict_unpack_entry())
+                else:
+                    key = self._parse_expression()
+                    self._expect_delimiter(":")
+                    value = self._parse_expression()
+                    entries.append((key, value))
+            self._expect_delimiter("}")
+            return DictLiteral(entries, line=tok.line, column=tok.column)
 
-        # Check for dict comprehension: {k: v FOR ...}
-        if self._match_concept("LOOP_FOR"):
-            return self._parse_dict_comprehension_tail(
-                key, value, tok
-            )
+        first = self._parse_expression()
 
-        pairs = [(key, value)]
+        # Dict literal/comprehension
+        if self._match_delimiter(":"):
+            self._advance()
+            value = self._parse_expression()
+
+            # Check for dict comprehension: {k: v FOR ...}
+            if self._match_concept("LOOP_FOR"):
+                return self._parse_dict_comprehension_tail(
+                    first, value, tok
+                )
+
+            entries = [(first, value)]
+            while self._match_delimiter(","):
+                self._advance()
+                if self._match_delimiter("}"):
+                    break
+                if self._match_operator("**"):
+                    entries.append(self._parse_dict_unpack_entry())
+                    continue
+                key = self._parse_expression()
+                self._expect_delimiter(":")
+                value = self._parse_expression()
+                entries.append((key, value))
+            self._expect_delimiter("}")
+            return DictLiteral(entries, line=tok.line, column=tok.column)
+
+        # Set literal
+        elements = [first]
         while self._match_delimiter(","):
             self._advance()
             if self._match_delimiter("}"):
                 break
-            key = self._parse_expression()
-            self._expect_delimiter(":")
-            value = self._parse_expression()
-            pairs.append((key, value))
+            elements.append(self._parse_expression())
         self._expect_delimiter("}")
-        return DictLiteral(pairs, line=tok.line, column=tok.column)
+        return SetLiteral(elements, line=tok.line, column=tok.column)
+
+    def _parse_dict_unpack_entry(self):
+        """Parse a dict unpack element: **expr."""
+        tok = self._advance()  # consume **
+        value = self._parse_expression()
+        return DictUnpackEntry(value, line=tok.line, column=tok.column)
 
     def _parse_comp_target(self):
         """Parse a comprehension target: single identifier or tuple (a, b)."""

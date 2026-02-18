@@ -104,6 +104,7 @@ class SemanticAnalyzer:
         self.errors = []
         self._in_loop = 0
         self._in_function = 0
+        self._in_async_function = 0
         self._error_registry = ErrorMessageRegistry()
 
     def analyze(self, program):
@@ -114,6 +115,8 @@ class SemanticAnalyzer:
 
     def _report(self, message_key, node, **kwargs):
         """Record a semantic error."""
+        kwargs.setdefault("line", node.line)
+        kwargs.setdefault("column", node.column)
         msg = self._error_registry.format(
             message_key, self.source_language, **kwargs
         )
@@ -150,6 +153,21 @@ class SemanticAnalyzer:
             if sym and sym.is_const:
                 self._report("CONST_REASSIGNMENT", node,
                              name=node.target.name)
+
+    def visit_AnnAssignment(self, node):
+        if node.annotation:
+            node.annotation.accept(self)
+        if node.value:
+            node.value.accept(self)
+        if isinstance(node.target, Identifier):
+            existing = self.symbol_table.lookup(node.target.name)
+            if existing is None:
+                self.symbol_table.define(
+                    node.target.name, "variable",
+                    line=node.target.line, column=node.target.column
+                )
+        else:
+            node.target.accept(self)
 
     def _define_assignment_target(self, target):
         """Define variables in a tuple unpacking assignment target."""
@@ -194,9 +212,20 @@ class SemanticAnalyzer:
             elem.accept(self)
 
     def visit_DictLiteral(self, node):
-        for key, value in node.pairs:
-            key.accept(self)
-            value.accept(self)
+        for entry in node.entries:
+            if isinstance(entry, tuple):
+                key, value = entry
+                key.accept(self)
+                value.accept(self)
+            else:
+                entry.accept(self)
+
+    def visit_SetLiteral(self, node):
+        for elem in node.elements:
+            elem.accept(self)
+
+    def visit_DictUnpackEntry(self, node):
+        node.value.accept(self)
 
     def visit_BinaryOp(self, node):
         node.left.accept(self)
@@ -267,6 +296,23 @@ class SemanticAnalyzer:
             self._report("YIELD_OUTSIDE_FUNCTION", node)
         if node.value:
             node.value.accept(self)
+
+    def visit_AwaitExpr(self, node):
+        if self._in_async_function == 0:
+            self._report("UNEXPECTED_TOKEN", node, token="await")
+        node.value.accept(self)
+
+    def visit_NamedExpr(self, node):
+        node.value.accept(self)
+        if isinstance(node.target, Identifier):
+            existing = self.symbol_table.lookup(node.target.name)
+            if existing is None:
+                self.symbol_table.define(
+                    node.target.name, "variable",
+                    line=node.target.line, column=node.target.column
+                )
+        else:
+            node.target.accept(self)
 
     def visit_ConditionalExpr(self, node):
         node.condition.accept(self)
@@ -377,6 +423,8 @@ class SemanticAnalyzer:
         )
         self.symbol_table.enter_scope(node.name, "function")
         self._in_function += 1
+        if getattr(node, "is_async", False):
+            self._in_async_function += 1
         for param in node.params:
             if isinstance(param, str):
                 self.symbol_table.define(
@@ -384,14 +432,20 @@ class SemanticAnalyzer:
                 )
             else:
                 # Parameter node
+                if getattr(param, "annotation", None):
+                    param.annotation.accept(self)
                 if param.default:
                     param.default.accept(self)
                 self.symbol_table.define(
                     param.name, "parameter",
                     line=param.line, column=param.column
                 )
+        if getattr(node, "return_annotation", None):
+            node.return_annotation.accept(self)
         for stmt in node.body:
             stmt.accept(self)
+        if getattr(node, "is_async", False):
+            self._in_async_function -= 1
         self._in_function -= 1
         self.symbol_table.exit_scope()
 
@@ -443,13 +497,15 @@ class SemanticAnalyzer:
             stmt.accept(self)
 
     def visit_WithStatement(self, node):
-        node.context_expr.accept(self)
+        for context_expr, _name in node.items:
+            context_expr.accept(self)
         self.symbol_table.enter_scope("with", "block")
-        if node.name:
-            self.symbol_table.define(
-                node.name, "variable",
-                line=node.line, column=node.column
-            )
+        for _context_expr, name in node.items:
+            if name:
+                self.symbol_table.define(
+                    name, "variable",
+                    line=node.line, column=node.column
+                )
         for stmt in node.body:
             stmt.accept(self)
         self.symbol_table.exit_scope()

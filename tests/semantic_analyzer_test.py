@@ -129,6 +129,18 @@ class SemanticControlFlowTestSuite(unittest.TestCase):
         errors, _ = _analyze(source)
         self.assertEqual(len(errors), 0)
 
+    def test_await_outside_async_function_error(self):
+        source = "def f():\n    return await g()\n"
+        errors, _ = _analyze(source)
+        self.assertTrue(any("await" in str(e).lower() for e in errors))
+
+    def test_await_inside_async_function(self):
+        source = "async def f():\n    return await g()\n"
+        errors, _ = _analyze(source)
+        # g is undefined, but await itself should be valid
+        await_errors = [e for e in errors if "await" in str(e).lower()]
+        self.assertEqual(len(await_errors), 0)
+
 
 class SemanticDefinitionTestSuite(unittest.TestCase):
     """Tests for definition handling."""

@@ -267,6 +267,12 @@
         "/="
       ],
       "unicode_alt": []
+    },
+    "WALRUS": {
+      "symbols": [
+        ":="
+      ],
+      "unicode_alt": []
     }
   },
   "bitwise": {

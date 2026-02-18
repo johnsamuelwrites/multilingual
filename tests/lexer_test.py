@@ -125,6 +125,34 @@ class LexerTokenizationTestSuite(LexerTestBase):
         self.assertEqual(tokens[0].type, TokenType.NUMERAL)
         self.assertEqual(tokens[0].value, "3.14")
 
+    def test_numeral_hex_literal(self):
+        source = "0xFF"
+        lexer = Lexer(source)
+        tokens = lexer.tokenize()
+        self.assertEqual(tokens[0].type, TokenType.NUMERAL)
+        self.assertEqual(tokens[0].value, "0xFF")
+
+    def test_numeral_octal_literal(self):
+        source = "0o77"
+        lexer = Lexer(source)
+        tokens = lexer.tokenize()
+        self.assertEqual(tokens[0].type, TokenType.NUMERAL)
+        self.assertEqual(tokens[0].value, "0o77")
+
+    def test_numeral_binary_literal(self):
+        source = "0b1011"
+        lexer = Lexer(source)
+        tokens = lexer.tokenize()
+        self.assertEqual(tokens[0].type, TokenType.NUMERAL)
+        self.assertEqual(tokens[0].value, "0b1011")
+
+    def test_numeral_scientific_notation(self):
+        source = "1.5e-3"
+        lexer = Lexer(source)
+        tokens = lexer.tokenize()
+        self.assertEqual(tokens[0].type, TokenType.NUMERAL)
+        self.assertEqual(tokens[0].value, "1.5e-3")
+
     def test_string_double_quote(self):
         """Test tokenizing double-quoted strings."""
         source = '"hello world"'
@@ -181,6 +209,14 @@ class LexerTokenizationTestSuite(LexerTestBase):
         ops = [t for t in tokens if t.type == TokenType.OPERATOR]
         self.assertEqual(ops[0].value, "==")
         self.assertEqual(ops[1].value, "!=")
+
+    def test_operator_walrus(self):
+        source = "x := 1"
+        lexer = Lexer(source)
+        tokens = lexer.tokenize()
+        ops = [t for t in tokens if t.type == TokenType.OPERATOR]
+        self.assertEqual(len(ops), 1)
+        self.assertEqual(ops[0].value, ":=")
 
     def test_operator_unicode_multiply(self):
         """Test Unicode multiplication sign ×."""

@@ -93,6 +93,15 @@ class PythonCodeGenerator:
         val = self._expr(node.value)
         self._emit(f"{target} {node.op} {val}")
 
+    def visit_AnnAssignment(self, node):
+        target = self._expr(node.target)
+        annotation = self._expr(node.annotation)
+        if node.value is None:
+            self._emit(f"{target}: {annotation}")
+        else:
+            val = self._expr(node.value)
+            self._emit(f"{target}: {annotation} = {val}")
+
     def visit_ExpressionStatement(self, node):
         expr = self._expr(node.expression)
         self._emit(expr)
@@ -186,7 +195,11 @@ class PythonCodeGenerator:
             else:
                 param_strs.append(self._expr(param))
         params = ", ".join(param_strs)
-        self._emit(f"def {node.name}({params}):")
+        prefix = "async " if getattr(node, "is_async", False) else ""
+        ret_ann = ""
+        if getattr(node, "return_annotation", None) is not None:
+            ret_ann = f" -> {self._expr(node.return_annotation)}"
+        self._emit(f"{prefix}def {node.name}({params}){ret_ann}:")
         self._emit_body(node.body)
 
     def visit_ClassDef(self, node):
@@ -238,11 +251,14 @@ class PythonCodeGenerator:
         self._emit_body(node.body)
 
     def visit_WithStatement(self, node):
-        ctx = self._expr(node.context_expr)
-        if node.name:
-            self._emit(f"with {ctx} as {node.name}:")
-        else:
-            self._emit(f"with {ctx}:")
+        parts = []
+        for ctx_expr, name in node.items:
+            ctx = self._expr(ctx_expr)
+            if name:
+                parts.append(f"{ctx} as {name}")
+            else:
+                parts.append(ctx)
+        self._emit(f"with {', '.join(parts)}:")
         self._emit_body(node.body)
 
     def visit_ImportStatement(self, node):
@@ -291,6 +307,10 @@ class _ExpressionGenerator:
         except Exception:
             # If MPNumeral can't parse it, try as a raw Python number
             try:
+                if isinstance(raw_value, str) and raw_value.lower().startswith(
+                    ("0x", "0o", "0b")
+                ):
+                    return str(int(raw_value, 0))
                 val = int(raw_value)
                 return str(val)
             except ValueError:
@@ -323,10 +343,21 @@ class _ExpressionGenerator:
         return f"[{elems}]"
 
     def visit_DictLiteral(self, node):
-        pairs = ", ".join(
-            f"{self._expr(k)}: {self._expr(v)}" for k, v in node.pairs
-        )
-        return "{" + pairs + "}"
+        parts = []
+        for entry in node.entries:
+            if isinstance(entry, tuple):
+                key, value = entry
+                parts.append(f"{self._expr(key)}: {self._expr(value)}")
+            else:
+                parts.append(self._expr(entry))
+        return "{" + ", ".join(parts) + "}"
+
+    def visit_SetLiteral(self, node):
+        elems = ", ".join(self._expr(e) for e in node.elements)
+        return "{" + elems + "}"
+
+    def visit_DictUnpackEntry(self, node):
+        return f"**{self._expr(node.value)}"
 
     # -- Expressions --
 
@@ -391,6 +422,15 @@ class _ExpressionGenerator:
             return f"(yield {val})"
         return "(yield)"
 
+    def visit_AwaitExpr(self, node):
+        val = self._expr(node.value)
+        return f"(await {val})"
+
+    def visit_NamedExpr(self, node):
+        target = self._expr(node.target)
+        value = self._expr(node.value)
+        return f"({target} := {value})"
+
     def visit_ConditionalExpr(self, node):
         true_expr = self._expr(node.true_expr)
         cond = self._expr(node.condition)
@@ -411,10 +451,13 @@ class _ExpressionGenerator:
             prefix = "**"
         elif node.is_vararg:
             prefix = "*"
+        annotation = ""
+        if getattr(node, "annotation", None):
+            annotation = f": {self._expr(node.annotation)}"
         if node.default:
             default_expr = self._expr(node.default)
-            return f"{prefix}{node.name}={default_expr}"
-        return f"{prefix}{node.name}"
+            return f"{prefix}{node.name}{annotation}={default_expr}"
+        return f"{prefix}{node.name}{annotation}"
 
     def visit_StarredExpr(self, node):
         val = self._expr(node.value)

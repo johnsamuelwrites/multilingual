@@ -73,12 +73,32 @@ class ASTPrinter:
     def visit_DictLiteral(self, node):
         self._emit("DictLiteral")
         self._indent()
-        for key, value in node.pairs:
-            self._emit("pair:")
-            self._indent()
-            key.accept(self)
-            value.accept(self)
-            self._dedent()
+        for entry in node.entries:
+            if isinstance(entry, tuple):
+                key, value = entry
+                self._emit("pair:")
+                self._indent()
+                key.accept(self)
+                value.accept(self)
+                self._dedent()
+            else:
+                self._emit("unpack:")
+                self._indent()
+                entry.accept(self)
+                self._dedent()
+        self._dedent()
+
+    def visit_SetLiteral(self, node):
+        self._emit("SetLiteral")
+        self._indent()
+        for elem in node.elements:
+            elem.accept(self)
+        self._dedent()
+
+    def visit_DictUnpackEntry(self, node):
+        self._emit("DictUnpackEntry")
+        self._indent()
+        node.value.accept(self)
         self._dedent()
 
     def visit_Identifier(self, node):
@@ -166,6 +186,25 @@ class ASTPrinter:
             node.value.accept(self)
             self._dedent()
 
+    def visit_AwaitExpr(self, node):
+        self._emit("AwaitExpr")
+        self._indent()
+        node.value.accept(self)
+        self._dedent()
+
+    def visit_NamedExpr(self, node):
+        self._emit("NamedExpr")
+        self._indent()
+        self._emit("target:")
+        self._indent()
+        node.target.accept(self)
+        self._dedent()
+        self._emit("value:")
+        self._indent()
+        node.value.accept(self)
+        self._dedent()
+        self._dedent()
+
     def visit_ConditionalExpr(self, node):
         self._emit("ConditionalExpr")
         self._indent()
@@ -201,6 +240,24 @@ class ASTPrinter:
         self._indent()
         node.value.accept(self)
         self._dedent()
+        self._dedent()
+
+    def visit_AnnAssignment(self, node):
+        self._emit("AnnAssignment")
+        self._indent()
+        self._emit("target:")
+        self._indent()
+        node.target.accept(self)
+        self._dedent()
+        self._emit("annotation:")
+        self._indent()
+        node.annotation.accept(self)
+        self._dedent()
+        if node.value:
+            self._emit("value:")
+            self._indent()
+            node.value.accept(self)
+            self._dedent()
         self._dedent()
 
     def visit_ExpressionStatement(self, node):
@@ -326,9 +383,16 @@ class ASTPrinter:
             self._indent()
             dec.accept(self)
             self._dedent()
-        self._emit(f"FunctionDef name={node.name!r}")
+        self._emit(
+            f"FunctionDef name={node.name!r} async={getattr(node, 'is_async', False)}"
+        )
         self._indent()
         self._emit(f"params: {node.params!r}")
+        if getattr(node, "return_annotation", None):
+            self._emit("returns:")
+            self._indent()
+            node.return_annotation.accept(self)
+            self._dedent()
         self._emit("body:")
         self._visit_body(node.body)
         self._dedent()
@@ -403,11 +467,15 @@ class ASTPrinter:
         self._dedent()
 
     def visit_WithStatement(self, node):
-        self._emit(f"WithStatement as={node.name!r}")
+        self._emit("WithStatement")
         self._indent()
-        self._emit("context:")
+        self._emit("items:")
         self._indent()
-        node.context_expr.accept(self)
+        for context_expr, name in node.items:
+            self._emit(f"item as={name!r}")
+            self._indent()
+            context_expr.accept(self)
+            self._dedent()
         self._dedent()
         self._emit("body:")
         self._visit_body(node.body)
@@ -456,12 +524,20 @@ class ASTPrinter:
         if node.is_kwarg:
             parts.append("**")
         self._emit(" ".join(parts))
-        if node.default:
+        if node.annotation or node.default:
             self._indent()
+            if node.annotation:
+                self._emit("annotation:")
+                self._indent()
+                node.annotation.accept(self)
+                self._dedent()
             self._emit("default:")
-            self._indent()
-            node.default.accept(self)
-            self._dedent()
+            if node.default:
+                self._indent()
+                node.default.accept(self)
+                self._dedent()
+            else:
+                self._emit("None")
             self._dedent()
 
     def visit_StarredExpr(self, node):

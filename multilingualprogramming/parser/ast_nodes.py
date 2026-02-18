@@ -84,9 +84,30 @@ class ListLiteral(ASTNode):
 class DictLiteral(ASTNode):
     """Dict literal {key: value, ...}."""
 
-    def __init__(self, pairs, line=0, column=0):
+    def __init__(self, entries, line=0, column=0):
         super().__init__(line, column)
-        self.pairs = pairs
+        self.entries = entries
+        # Backward compatibility for code that expects key/value pairs only.
+        self.pairs = [
+            entry for entry in entries
+            if isinstance(entry, tuple) and len(entry) == 2
+        ]
+
+
+class SetLiteral(ASTNode):
+    """Set literal {a, b, c}."""
+
+    def __init__(self, elements, line=0, column=0):
+        super().__init__(line, column)
+        self.elements = elements
+
+
+class DictUnpackEntry(ASTNode):
+    """Dictionary unpacking entry: **expr."""
+
+    def __init__(self, value, line=0, column=0):
+        super().__init__(line, column)
+        self.value = value
 
 
 # ---------------------------------------------------------------------------
@@ -183,6 +204,23 @@ class YieldExpr(ASTNode):
         self.value = value
 
 
+class AwaitExpr(ASTNode):
+    """Await expression: await value."""
+
+    def __init__(self, value, line=0, column=0):
+        super().__init__(line, column)
+        self.value = value
+
+
+class NamedExpr(ASTNode):
+    """Named expression (walrus): target := value."""
+
+    def __init__(self, target, value, line=0, column=0):
+        super().__init__(line, column)
+        self.target = target
+        self.value = value
+
+
 class ConditionalExpr(ASTNode):
     """Ternary conditional: true_expr if condition else false_expr."""
 
@@ -215,6 +253,16 @@ class Assignment(ASTNode):
         self.target = target
         self.value = value
         self.op = op
+
+
+class AnnAssignment(ASTNode):
+    """Annotated assignment: x: T [= value]."""
+
+    def __init__(self, target, annotation, value=None, line=0, column=0):
+        super().__init__(line, column)
+        self.target = target
+        self.annotation = annotation
+        self.value = value
 
 
 class ExpressionStatement(ASTNode):
@@ -316,12 +364,14 @@ class FunctionDef(ASTNode):
     """Function definition: def name(params): body."""
 
     def __init__(self, name, params, body, decorators=None,
-                 line=0, column=0):
+                 return_annotation=None, is_async=False, line=0, column=0):
         super().__init__(line, column)
         self.name = name
         self.params = params
         self.body = body
         self.decorators = decorators or []
+        self.return_annotation = return_annotation
+        self.is_async = is_async
 
 
 class ClassDef(ASTNode):
@@ -379,13 +429,17 @@ class CaseClause(ASTNode):
 
 
 class WithStatement(ASTNode):
-    """With statement: with expr as name: body."""
+    """With statement: with expr as name, ...: body."""
 
-    def __init__(self, context_expr, name=None, body=None,
-                 line=0, column=0):
+    def __init__(self, items, name=None, body=None, line=0, column=0):
         super().__init__(line, column)
-        self.context_expr = context_expr
-        self.name = name
+        # Backward compatibility: WithStatement(expr, name=..., body=...)
+        if not isinstance(items, list):
+            items = [(items, name)]
+        self.items = items
+        # Backward compatibility with old single-item attributes.
+        self.context_expr = items[0][0] if items else None
+        self.name = items[0][1] if items else None
         self.body = body or []
 
 
@@ -429,12 +483,13 @@ class Parameter(ASTNode):
     """Function parameter with optional default, *args, **kwargs."""
 
     def __init__(self, name, default=None, is_vararg=False,
-                 is_kwarg=False, line=0, column=0):
+                 is_kwarg=False, annotation=None, line=0, column=0):
         super().__init__(line, column)
         self.name = name
         self.default = default
         self.is_vararg = is_vararg
         self.is_kwarg = is_kwarg
+        self.annotation = annotation
 
 
 class StarredExpr(ASTNode):

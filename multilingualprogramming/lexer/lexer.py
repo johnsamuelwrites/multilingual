@@ -6,7 +6,9 @@
 
 """Multilingual lexer that tokenizes mixed-script source code."""
 
+import json
 import unicodedata
+from pathlib import Path
 from multilingualprogramming.lexer.token_types import TokenType
 from multilingualprogramming.lexer.token import Token
 from multilingualprogramming.lexer.source_reader import SourceReader
@@ -15,14 +17,14 @@ from multilingualprogramming.exceptions import UnexpectedTokenError
 
 
 # Operator characters and multi-character operators
-SINGLE_OPERATORS = set("+-*/%<>=!&|^~")
-MULTI_OPERATORS = {
+_DEFAULT_SINGLE_OPERATORS = set("+-*/%<>=!&|^~")
+_DEFAULT_MULTI_OPERATORS = {
     "**", "//", "==", "!=", "<=", ">=", "<<", ">>",
-    "+=", "-=", "*=", "/=", "->",
+    "+=", "-=", "*=", "/=", "->", ":=",
     "**=", "//=", "%=", "&=", "|=", "^=", "<<=", ">>=",
 }
 # Unicode operator alternatives
-UNICODE_OPERATORS = {
+_DEFAULT_UNICODE_OPERATORS = {
     "\u00d7": "*",   # ×
     "\u00f7": "/",   # ÷
     "\u2212": "-",   # −
@@ -32,9 +34,9 @@ UNICODE_OPERATORS = {
     "\u2192": "->",  # →
 }
 
-DELIMITERS = set("()[]{},:;.@")
+_DEFAULT_DELIMITERS = set("()[]{},:;.@")
 # Unicode delimiter alternatives
-UNICODE_DELIMITERS = {
+_DEFAULT_UNICODE_DELIMITERS = {
     "\uff08": "(", "\uff09": ")",  # fullwidth parens
     "\uff3b": "[", "\uff3d": "]",  # fullwidth brackets
     "\uff5b": "{", "\uff5d": "}",  # fullwidth braces
@@ -56,6 +58,68 @@ STRING_PAIRS = {
 # Date literal delimiters
 DATE_OPEN = "\u3014"   # 〔
 DATE_CLOSE = "\u3015"  # 〕
+
+
+def _load_operator_config():
+    """Load operator and delimiter tables from operators.json."""
+    single_ops = set(_DEFAULT_SINGLE_OPERATORS)
+    multi_ops = set(_DEFAULT_MULTI_OPERATORS)
+    unicode_ops = dict(_DEFAULT_UNICODE_OPERATORS)
+    delimiters = set(_DEFAULT_DELIMITERS)
+    unicode_delims = dict(_DEFAULT_UNICODE_DELIMITERS)
+    date_open = DATE_OPEN
+    date_close = DATE_CLOSE
+
+    config_path = (
+        Path(__file__).resolve().parent.parent
+        / "resources" / "usm" / "operators.json"
+    )
+    try:
+        with open(config_path, "r", encoding="utf-8-sig") as handle:
+            data = json.load(handle)
+    except Exception:
+        return single_ops, multi_ops, unicode_ops, delimiters, unicode_delims,             date_open, date_close
+
+    for section in ("arithmetic", "comparison", "assignment", "bitwise"):
+        entries = data.get(section, {})
+        for meta in entries.values():
+            symbols = meta.get("symbols", [])
+            if not symbols:
+                continue
+            canonical = symbols[0]
+            for symbol in symbols:
+                if len(symbol) > 1:
+                    multi_ops.add(symbol)
+                else:
+                    single_ops.add(symbol)
+            for alt in meta.get("unicode_alt", []):
+                unicode_ops[alt] = canonical
+
+    for name, meta in data.get("delimiters", {}).items():
+        symbols = meta.get("symbols", [])
+        if not symbols:
+            continue
+        canonical = symbols[0]
+        if name == "ARROW":
+            multi_ops.add(canonical)
+            for alt in meta.get("unicode_alt", []):
+                unicode_ops[alt] = canonical
+            continue
+        if name == "DATE_OPEN":
+            date_open = canonical
+            continue
+        if name == "DATE_CLOSE":
+            date_close = canonical
+            continue
+        delimiters.add(canonical)
+        for alt in meta.get("unicode_alt", []):
+            unicode_delims[alt] = canonical
+
+    return single_ops, multi_ops, unicode_ops, delimiters, unicode_delims,         date_open, date_close
+
+
+(SINGLE_OPERATORS, MULTI_OPERATORS, UNICODE_OPERATORS, DELIMITERS,
+ UNICODE_DELIMITERS, DATE_OPEN, DATE_CLOSE) = _load_operator_config()
 
 
 def _is_identifier_start(char):
@@ -84,6 +148,11 @@ def _is_digit(char):
     if not char:
         return False
     return unicodedata.category(char) == "Nd"
+
+
+def _is_hex_digit(char):
+    """Check if a character is an ASCII hexadecimal digit."""
+    return char.isdigit() or char.lower() in "abcdef"
 
 
 # pylint: disable=too-few-public-methods
@@ -194,6 +263,16 @@ class Lexer:
                 self._read_operator()
                 continue
 
+            # Walrus operator uses ':' prefix, which is also a delimiter.
+            if char == ":" and self.reader.peek_ahead(1) == "=":
+                line, col = self.reader.line, self.reader.column
+                self.reader.advance()
+                self.reader.advance()
+                self.tokens.append(Token(
+                    TokenType.OPERATOR, ":=", line, col
+                ))
+                continue
+
             # Delimiters (Unicode)
             if char in UNICODE_DELIMITERS:
                 line, col = self.reader.line, self.reader.column
@@ -289,15 +368,65 @@ class Lexer:
                 self.tokens.append(Token(TokenType.DEDENT, "", line, col))
 
     def _read_numeral(self):
-        """Read a numeral token (Unicode digits)."""
+        """Read numeral token (decimal, base-prefixed, scientific)."""
         line, col = self.reader.line, self.reader.column
-        text = ""
+        text = self.reader.advance()  # first digit already confirmed
+
+        # Base-prefixed numerals: 0x..., 0o..., 0b...
+        if text == "0" and not self.reader.is_at_end():
+            prefix = self.reader.peek()
+            if prefix.lower() in ("x", "o", "b"):
+                text += self.reader.advance()
+                while not self.reader.is_at_end():
+                    char = self.reader.peek()
+                    valid = False
+                    if prefix.lower() == "x":
+                        valid = _is_hex_digit(char) or char == "_"
+                    elif prefix.lower() == "o":
+                        valid = char in "01234567_"
+                    elif prefix.lower() == "b":
+                        valid = char in "01_"
+                    if not valid:
+                        break
+                    text += self.reader.advance()
+                self.tokens.append(Token(TokenType.NUMERAL, text, line, col))
+                return
+
+        # Decimal and float part
         while not self.reader.is_at_end():
             char = self.reader.peek()
-            if _is_digit(char) or char == ".":
+            if _is_digit(char) or char == "_":
                 text += self.reader.advance()
             else:
                 break
+
+        # Fractional part
+        if not self.reader.is_at_end() and self.reader.peek() == ".":
+            text += self.reader.advance()
+            while not self.reader.is_at_end():
+                char = self.reader.peek()
+                if _is_digit(char) or char == "_":
+                    text += self.reader.advance()
+                else:
+                    break
+
+        # Scientific notation (ASCII e/E)
+        if not self.reader.is_at_end() and self.reader.peek() in ("e", "E"):
+            exp = self.reader.peek()
+            sign = self.reader.peek_ahead(1)
+            first_digit = self.reader.peek_ahead(2) if sign in ("+", "-") \
+                else sign
+            if first_digit and _is_digit(first_digit):
+                text += self.reader.advance()  # e/E
+                if sign in ("+", "-"):
+                    text += self.reader.advance()
+                while not self.reader.is_at_end():
+                    char = self.reader.peek()
+                    if _is_digit(char) or char == "_":
+                        text += self.reader.advance()
+                    else:
+                        break
+
         self.tokens.append(Token(TokenType.NUMERAL, text, line, col))
 
     def _read_identifier_or_keyword(self):

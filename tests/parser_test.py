@@ -11,14 +11,14 @@ from multilingualprogramming.lexer.lexer import Lexer
 from multilingualprogramming.parser.parser import Parser
 from multilingualprogramming.parser.ast_nodes import (
     NumeralLiteral, StringLiteral, DateLiteral,
-    BooleanLiteral, NoneLiteral, ListLiteral, DictLiteral,
-    Identifier, BinaryOp, UnaryOp, BooleanOp, CompareOp,
+    BooleanLiteral, NoneLiteral, ListLiteral, DictLiteral, SetLiteral,
+    DictUnpackEntry, Identifier, BinaryOp, UnaryOp, BooleanOp, CompareOp,
     CallExpr, AttributeAccess, IndexAccess, LambdaExpr,
-    VariableDeclaration, Assignment, ExpressionStatement,
+    VariableDeclaration, Assignment, AnnAssignment, ExpressionStatement,
     PassStatement, ReturnStatement, BreakStatement, ContinueStatement,
     RaiseStatement, GlobalStatement, YieldStatement,
     IfStatement, WhileLoop, ForLoop, FunctionDef, ClassDef,
-    TryStatement, ExceptHandler, MatchStatement,
+    TryStatement, ExceptHandler, MatchStatement, AwaitExpr, NamedExpr,
     WithStatement, ImportStatement, FromImportStatement,
 )
 from multilingualprogramming.exceptions import ParseError
@@ -105,6 +105,20 @@ class ParserExpressionTestSuite(unittest.TestCase):
         stmt = prog.body[0]
         self.assertIsInstance(stmt.expression, DictLiteral)
         self.assertEqual(len(stmt.expression.pairs), 2)
+
+    def test_parse_set_literal(self):
+        prog = _parse("{1, 2, 3}\n")
+        stmt = prog.body[0]
+        self.assertIsInstance(stmt.expression, SetLiteral)
+        self.assertEqual(len(stmt.expression.elements), 3)
+
+    def test_parse_dict_unpacking(self):
+        prog = _parse("{**d1, 'x': 1, **d2}\n")
+        stmt = prog.body[0]
+        self.assertIsInstance(stmt.expression, DictLiteral)
+        self.assertEqual(len(stmt.expression.entries), 3)
+        self.assertIsInstance(stmt.expression.entries[0], DictUnpackEntry)
+        self.assertIsInstance(stmt.expression.entries[2], DictUnpackEntry)
 
     def test_parse_addition(self):
         prog = _parse("1 + 2\n")
@@ -240,6 +254,17 @@ class ParserExpressionTestSuite(unittest.TestCase):
         self.assertIsInstance(expr, LambdaExpr)
         self.assertEqual(expr.params, ["x"])
 
+    def test_parse_await_expression(self):
+        prog = _parse("await f()\n", language="en")
+        expr = prog.body[0].expression
+        self.assertIsInstance(expr, AwaitExpr)
+
+    def test_parse_walrus_expression(self):
+        prog = _parse("(x := 5)\n", language="en")
+        expr = prog.body[0].expression
+        self.assertIsInstance(expr, NamedExpr)
+        self.assertEqual(expr.target.name, "x")
+
     def test_parse_print_as_identifier(self):
         prog = _parse('print("hello")\n', language="en")
         expr = prog.body[0].expression
@@ -269,6 +294,12 @@ class ParserStatementTestSuite(unittest.TestCase):
         stmt = prog.body[0]
         self.assertIsInstance(stmt, Assignment)
         self.assertEqual(stmt.op, "=")
+
+    def test_parse_annotated_assignment(self):
+        prog = _parse("x: int = 10\n", language="en")
+        stmt = prog.body[0]
+        self.assertIsInstance(stmt, AnnAssignment)
+        self.assertEqual(stmt.target.name, "x")
 
     def test_parse_augmented_assignment_add(self):
         prog = _parse("x += 1\n")
@@ -393,6 +424,22 @@ class ParserCompoundTestSuite(unittest.TestCase):
         self.assertEqual(stmt.params[0].name, "a")
         self.assertEqual(stmt.params[1].name, "b")
 
+    def test_parse_function_def_with_annotations(self):
+        source = "def f(a: int, b: str) -> str:\n    return b\n"
+        prog = _parse(source, language="en")
+        stmt = prog.body[0]
+        self.assertIsInstance(stmt, FunctionDef)
+        self.assertIsNotNone(stmt.return_annotation)
+        self.assertIsNotNone(stmt.params[0].annotation)
+        self.assertIsNotNone(stmt.params[1].annotation)
+
+    def test_parse_async_function_def(self):
+        source = "async def f(x):\n    return await g(x)\n"
+        prog = _parse(source, language="en")
+        stmt = prog.body[0]
+        self.assertIsInstance(stmt, FunctionDef)
+        self.assertTrue(stmt.is_async)
+
     def test_parse_class_def_no_bases(self):
         source = "class Foo:\n    pass\n"
         prog = _parse(source, language="en")
@@ -460,6 +507,13 @@ class ParserCompoundTestSuite(unittest.TestCase):
         prog = _parse(source, language="en")
         stmt = prog.body[0]
         self.assertEqual(stmt.name, "x")
+
+    def test_parse_with_multiple_contexts(self):
+        source = "with a() as x, b() as y:\n    pass\n"
+        prog = _parse(source, language="en")
+        stmt = prog.body[0]
+        self.assertIsInstance(stmt, WithStatement)
+        self.assertEqual(len(stmt.items), 2)
 
     def test_parse_import_simple(self):
         source = "import os\n"

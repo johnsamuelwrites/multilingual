@@ -85,6 +85,17 @@ Execution/transpilation examples and AST parsing examples are in [USAGE.md](USAG
 - Frontend: `Lexer`, `Parser`, AST nodes, `SemanticAnalyzer`
 - Runtime: `PythonCodeGenerator`, `RuntimeBuiltins`, `ProgramExecutor`, `REPL`
 
+Additional syntax now supported:
+
+- Type annotations (`x: int`, `def f(x: int) -> str`)
+- Set literals (`{1, 2, 3}`)
+- Multiple context managers (`with A() as a, B() as b`)
+- Dictionary unpacking (`{**d1, **d2}`)
+- Hex/oct/bin literals (`0xFF`, `0o77`, `0b101`)
+- Scientific notation (`1.5e-3`)
+- Async/await (`async def`, `await ...`)
+- Walrus operator (`:=`)
+
 Supported pilot languages: English, French, Spanish, German, Italian, Portuguese, Hindi, Arabic, Bengali, Tamil, Chinese (Simplified), Japanese.
 
 ## Run Examples

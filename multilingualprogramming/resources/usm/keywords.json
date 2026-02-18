@@ -326,6 +326,34 @@
         "ja": "ラムダ",
         "it": "lambda",
         "pt": "lambda"
+      },
+      "ASYNC": {
+        "en": "async",
+        "fr": "asynchrone",
+        "es": "asincrono",
+        "de": "asynchron",
+        "hi": "asink",
+        "ar": "async",
+        "bn": "asink",
+        "ta": "async",
+        "zh": "async",
+        "ja": "async",
+        "it": "asincrono",
+        "pt": "assincrono"
+      },
+      "AWAIT": {
+        "en": "await",
+        "fr": "attendre",
+        "es": "esperar",
+        "de": "erwarten",
+        "hi": "pratiksha",
+        "ar": "await",
+        "bn": "opekkha",
+        "ta": "kaththiru",
+        "zh": "await",
+        "ja": "await",
+        "it": "attendi",
+        "pt": "aguarde"
       }
     },
     "logical": {
