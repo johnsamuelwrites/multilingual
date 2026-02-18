@@ -1,6 +1,51 @@
-## Running Examples
+﻿## Narrative `.ml` Examples
 
-All examples are runnable as modules from the repository root.
+This folder includes semantically equivalent source programs in different
+human languages. They are designed to show the core project idea quickly.
+
+## 1. Arithmetic Equivalence
+
+- English: `examples/arithmetics_en.ml`
+- French: `examples/arithmetics_fr.ml`
+
+Run:
+
+```bash
+python -m multilingualprogramming run examples/arithmetics_en.ml --lang en
+python -m multilingualprogramming run examples/arithmetics_fr.ml --lang fr
+```
+
+## 2. Simple CLI Tool
+
+Small realistic example: collect user input and compute invoice total.
+
+- English: `examples/cli_tool_en.ml`
+- French: `examples/cli_tool_fr.ml`
+
+Run:
+
+```bash
+python -m multilingualprogramming run examples/cli_tool_en.ml --lang en
+python -m multilingualprogramming run examples/cli_tool_fr.ml --lang fr
+```
+
+## 3. Tiny Data Processing Script
+
+Small realistic example: filter data and compute average.
+
+- English: `examples/data_processing_en.ml`
+- French: `examples/data_processing_fr.ml`
+
+Run:
+
+```bash
+python -m multilingualprogramming run examples/data_processing_en.ml --lang en
+python -m multilingualprogramming run examples/data_processing_fr.ml --lang fr
+```
+
+## Python Module Examples
+
+The original Python-module examples are still available:
 
 ```bash
 python -m examples.arithmetic
@@ -16,30 +61,3 @@ python -m examples.multilingual_codegen_example
 python -m examples.semantic_example
 python -m examples.executor_example
 ```
-
-## Example Overview
-
-### Phase 1 — Foundation
-
-- `examples/arithmetic.py`: base numeral operations with Roman and Unicode numerals.
-- `examples/numeral_extended.py`: complex numbers, fractions, conversion, and scientific notation.
-- `examples/keywords.py`: keyword lookups and language detection.
-- `examples/datetime_example.py`: multilingual date/time parsing and formatting.
-- `examples/lexer_example.py`: tokenization using multilingual keywords and Unicode operators.
-
-### Phase 2 — Parser & Semantic Analysis
-
-- `examples/parser_example.py`: full pipeline from source code to tokens to AST with pretty-printing.
-- `examples/ast_example.py`: programmatic AST construction (building a factorial function as AST nodes).
-- `examples/multilingual_parser_example.py`: the same factorial function parsed in all 10 pilot languages.
-- `examples/semantic_example.py`: semantic analysis in all 10 pilot languages with both valid and invalid programs.
-
-### Phase 3 — Code Generation & Runtime
-
-- `examples/codegen_example.py`: code generation from multilingual AST to Python source, with numeral conversion.
-- `examples/multilingual_codegen_example.py`: equivalent source transpiled to Python in all 10 pilot languages.
-- `examples/executor_example.py`: execute equivalent programs in all 10 pilot languages through the full pipeline.
-
-### Phase 3.5 — Critical Language Features
-
-Phase 3.5 features (slices, comprehensions, default parameters, *args/**kwargs, tuple unpacking, decorators, f-strings, triple-quoted strings) are exercised through the existing Phase 3 examples and the test suite (`tests/critical_features_test.py`). These features work across all 10 pilot languages.
