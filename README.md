@@ -23,6 +23,8 @@ Not yet another programming language. A multilingual one.
 
 ## Quick Start
 
+Source files for this language use the `.ml` extension (for example: `hello.ml`).
+
 ### 1. Install
 
 ```bash
@@ -100,6 +102,26 @@ Note: selected universal built-ins (for example `range`, `len`, `sum`) support l
 
 Execution/transpilation examples and AST parsing examples are in [USAGE.md](USAGE.md).
 
+### 5. Run A `.ml` Source File
+
+Create a file, for example `hello.ml`:
+
+```text
+print("Hello world")
+```
+
+Run it:
+
+```bash
+python -m multilingualprogramming run hello.ml
+```
+
+Optional (force language instead of auto-detect):
+
+```bash
+python -m multilingualprogramming run hello.ml --lang fr
+```
+
 ## Roadmap (Short)
 
 - v0 (today): toy-but-working interpreter/transpiler, multiple languages, core constructs, REPL, and a tested end-to-end pipeline.
@@ -129,7 +151,28 @@ Supported pilot languages: English, French, Spanish, German, Italian, Portuguese
 
 ## Run Examples
 
-See [USAGE.md](USAGE.md) for the complete runnable examples list.
+See [examples/README.md](examples/README.md) for narrative `.ml` examples
+(English/French equivalents) and runnable commands.
+
+### Semantic Equivalence (English vs French)
+
+These two snippets are semantically equivalent:
+
+English (`examples/arithmetics_en.ml`):
+
+```text
+let a = 10
+let b = 3
+print("a + b =", a + b)
+```
+
+French (`examples/arithmetics_fr.ml`):
+
+```text
+soit a = 10
+soit b = 3
+afficher("a + b =", a + b)
+```
 
 ## Documentation
 

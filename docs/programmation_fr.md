@@ -15,6 +15,8 @@ Concretement:
 
 ## 2. Installation et demarrage rapide
 
+Les fichiers source du langage utilisent l'extension `.ml` (par exemple `bonjour.ml`).
+
 Depuis la racine du projet:
 
 ```bash
@@ -44,6 +46,16 @@ Afficher aussi le Python genere:
 
 ```bash
 python -m multilingualprogramming repl --lang fr --show-python
+```
+
+Executer un fichier source (ex. `bonjour.ml`):
+
+```text
+afficher("Bonjour le monde")
+```
+
+```bash
+python -m multilingualprogramming run bonjour.ml --lang fr
 ```
 
 ## 3. Capacites principales du langage
