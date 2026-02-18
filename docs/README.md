@@ -373,6 +373,7 @@ python -m pylint $(git ls-files '*.py')
 - Project quick start: [README.md](../README.md)
 - Usage snippets: [USAGE.md](../USAGE.md)
 - Examples guide: [examples/README.md](../examples/README.md)
+- French programming guide: [programmation_fr.md](programmation_fr.md)
 - Language onboarding: [language_onboarding.md](language_onboarding.md)
 
 ## License

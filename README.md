@@ -96,6 +96,7 @@ See [USAGE.md](USAGE.md) for the complete runnable examples list.
 - Usage guide: [USAGE.md](USAGE.md)
 - Examples guide: [examples/README.md](examples/README.md)
 - Detailed reference: [docs/README.md](docs/README.md)
+- Guide complet en francais: [docs/programmation_fr.md](docs/programmation_fr.md)
 - Language onboarding guide: [docs/language_onboarding.md](docs/language_onboarding.md)
 
 ## Development
