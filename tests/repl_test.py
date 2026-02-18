@@ -77,7 +77,7 @@ print(total)
         self.assertEqual(output.strip(), "10")
 
     def test_continuation_state_detects_unclosed_triple_string(self):
-        count, has_unclosed_string = self.repl._continuation_state(
+        count, has_unclosed_string = self.repl.continuation_state(
             'let s = """Ligne 1'
         )
         self.assertEqual(count, 0)
@@ -85,7 +85,7 @@ print(total)
 
     def test_continuation_state_closes_triple_string(self):
         text = 'let s = """Ligne 1\nLigne 2"""'
-        count, has_unclosed_string = self.repl._continuation_state(text)
+        count, has_unclosed_string = self.repl.continuation_state(text)
         self.assertEqual(count, 0)
         self.assertFalse(has_unclosed_string)
 

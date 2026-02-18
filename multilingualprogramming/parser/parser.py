@@ -1235,7 +1235,7 @@ class Parser:
 
         args.append(self._parse_expression())
 
-    def _parse_atom(self):
+    def _parse_atom(self):  # pylint: disable=too-many-branches
         """Parse atomic expressions: literals, identifiers, parenthesized."""
         tok = self._current()
 

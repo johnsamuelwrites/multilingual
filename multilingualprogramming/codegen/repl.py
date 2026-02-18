@@ -343,6 +343,10 @@ class REPL:
 
         return count, string_char is not None
 
+    def continuation_state(self, text):
+        """Public wrapper for continuation-state inspection."""
+        return self._continuation_state(text)
+
     def _count_open_brackets(self, text):
         """Count net open brackets in text."""
         count, _has_unclosed_string = self._continuation_state(text)
