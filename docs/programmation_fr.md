@@ -23,6 +23,17 @@ pip install -r requirements.txt
 pip install .
 ```
 
+### Exemples "Hello world" multilingues
+
+```text
+# Anglais
+print("Hello world")
+
+# Francais
+afficher("Bonjour le monde")
+
+```
+
 Lancer le REPL en francais:
 
 ```bash

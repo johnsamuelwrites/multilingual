@@ -21,7 +21,18 @@ pip install -r requirements.txt
 pip install .
 ```
 
-### 2. Use the REPL (interactive mode)
+### 2. Hello World In Multiple Languages
+
+```text
+# English
+print("Hello world")
+
+# French
+afficher("Bonjour le monde")
+
+```
+
+### 3. Use the REPL (interactive mode)
 
 Start REPL:
 
@@ -72,7 +83,7 @@ REPL commands:
 
 Note: selected universal built-ins (for example `range`, `len`, `sum`) support localized aliases while keeping the universal names available.
 
-### 3. Execute and inspect programs
+### 4. Execute and inspect programs
 
 Execution/transpilation examples and AST parsing examples are in [USAGE.md](USAGE.md).
 
