@@ -139,6 +139,7 @@ See [USAGE.md](USAGE.md) for the complete runnable examples list.
 - Design overview: [docs/design.md](docs/design.md)
 - Guide complet en francais: [docs/programmation_fr.md](docs/programmation_fr.md)
 - Language onboarding guide: [docs/language_onboarding.md](docs/language_onboarding.md)
+- Contribution guide: [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ## Development
 
