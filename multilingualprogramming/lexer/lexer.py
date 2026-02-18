@@ -3,9 +3,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
-
 """Multilingual lexer that tokenizes mixed-script source code."""
-
 import json
 import unicodedata
 from pathlib import Path
@@ -14,8 +12,6 @@ from multilingualprogramming.lexer.token import Token
 from multilingualprogramming.lexer.source_reader import SourceReader
 from multilingualprogramming.keyword.keyword_registry import KeywordRegistry
 from multilingualprogramming.exceptions import UnexpectedTokenError
-
-
 # Operator characters and multi-character operators
 _DEFAULT_SINGLE_OPERATORS = set("+-*/%<>=!&|^~")
 _DEFAULT_MULTI_OPERATORS = {
@@ -33,7 +29,6 @@ _DEFAULT_UNICODE_OPERATORS = {
     "\u2265": ">=",  # ≥
     "\u2192": "->",  # →
 }
-
 _DEFAULT_DELIMITERS = set("()[]{},:;.@")
 # Unicode delimiter alternatives
 _DEFAULT_UNICODE_DELIMITERS = {
@@ -44,7 +39,6 @@ _DEFAULT_UNICODE_DELIMITERS = {
     "\uff1a": ":",                  # fullwidth colon
     "\uff1b": ";", "\u061b": ";",  # fullwidth/Arabic semicolon
 }
-
 # String delimiter pairs: (open, close)
 STRING_PAIRS = {
     '"': '"',
@@ -54,12 +48,9 @@ STRING_PAIRS = {
     "\u201c": "\u201d",  # "" smart double quotes
     "\u2018": "\u2019",  # '' smart single quotes
 }
-
 # Date literal delimiters
 DATE_OPEN = "\u3014"   # 〔
 DATE_CLOSE = "\u3015"  # 〕
-
-
 def _load_operator_config():
     """Load operator and delimiter tables from operators.json."""
     single_ops = set(_DEFAULT_SINGLE_OPERATORS)
@@ -69,7 +60,6 @@ def _load_operator_config():
     unicode_delims = dict(_DEFAULT_UNICODE_DELIMITERS)
     date_open = DATE_OPEN
     date_close = DATE_CLOSE
-
     config_path = (
         Path(__file__).resolve().parent.parent
         / "resources" / "usm" / "operators.json"
@@ -78,8 +68,10 @@ def _load_operator_config():
         with open(config_path, "r", encoding="utf-8-sig") as handle:
             data = json.load(handle)
     except Exception:
-        return single_ops, multi_ops, unicode_ops, delimiters, unicode_delims,             date_open, date_close
-
+        return (
+            single_ops, multi_ops, unicode_ops,
+            delimiters, unicode_delims, date_open, date_close,
+        )
     for section in ("arithmetic", "comparison", "assignment", "bitwise"):
         entries = data.get(section, {})
         for meta in entries.values():
@@ -94,7 +86,6 @@ def _load_operator_config():
                     single_ops.add(symbol)
             for alt in meta.get("unicode_alt", []):
                 unicode_ops[alt] = canonical
-
     for name, meta in data.get("delimiters", {}).items():
         symbols = meta.get("symbols", [])
         if not symbols:
@@ -114,14 +105,12 @@ def _load_operator_config():
         delimiters.add(canonical)
         for alt in meta.get("unicode_alt", []):
             unicode_delims[alt] = canonical
-
-    return single_ops, multi_ops, unicode_ops, delimiters, unicode_delims,         date_open, date_close
-
-
+    return (
+        single_ops, multi_ops, unicode_ops,
+        delimiters, unicode_delims, date_open, date_close,
+    )
 (SINGLE_OPERATORS, MULTI_OPERATORS, UNICODE_OPERATORS, DELIMITERS,
  UNICODE_DELIMITERS, DATE_OPEN, DATE_CLOSE) = _load_operator_config()
-
-
 def _is_identifier_start(char):
     """Check if a character can start an identifier."""
     if not char:
@@ -130,8 +119,6 @@ def _is_identifier_start(char):
     # Lu=uppercase, Ll=lowercase, Lt=titlecase, Lm=modifier, Lo=other letter
     # Mn=nonspacing mark (e.g., Devanagari vowel signs that start conjuncts)
     return cat.startswith("L") or cat in ("Mn", "Mc") or char == "_"
-
-
 def _is_identifier_part(char):
     """Check if a character can be part of an identifier."""
     if not char:
@@ -141,34 +128,25 @@ def _is_identifier_part(char):
     # needed for Devanagari, Arabic, and other complex scripts
     return (cat.startswith("L") or cat == "Nd"
             or cat in ("Mn", "Mc") or char == "_")
-
-
 def _is_digit(char):
     """Check if a character is a Unicode decimal digit."""
     if not char:
         return False
     return unicodedata.category(char) == "Nd"
-
-
 def _is_hex_digit(char):
     """Check if a character is an ASCII hexadecimal digit."""
     return char.isdigit() or char.lower() in "abcdef"
-
-
 # pylint: disable=too-few-public-methods
 class Lexer:
     """
     Tokenizes multilingual source code.
-
     Recognizes keywords in any of the 10 pilot languages,
     Unicode identifiers, multilingual numerals, multilingual
     string literals, and operators (including Unicode alternatives).
     """
-
     def __init__(self, source, language=None):
         """
         Initialize the lexer.
-
         Parameters:
             source (str): Source code to tokenize
             language (str): If given, only this language's keywords
@@ -181,12 +159,10 @@ class Lexer:
         self._indent_stack = [0]
         self._at_line_start = True
         self._detected_keywords = []
-
     # pylint: disable=too-many-branches,too-many-statements
     def tokenize(self):
         """
         Tokenize the entire source string.
-
         Returns:
             list[Token]: List of tokens
         """
@@ -194,19 +170,15 @@ class Lexer:
             self._skip_spaces()
             if self.reader.is_at_end():
                 break
-
             char = self.reader.peek()
-
             # Newline
             if char == "\n":
                 self._read_newline()
                 continue
-
             # Comment
             if char == "#":
                 self._read_comment()
                 continue
-
             # Handle indentation at start of line
             if self._at_line_start:
                 self._handle_indentation()
@@ -216,38 +188,31 @@ class Lexer:
                 char = self.reader.peek()
                 if char in ("\n", "#"):
                     continue
-
             # F-string literals: f"..." or f'...'
             if char in ('f', 'F') and self.reader.peek_ahead(1) in ('"', "'"):
                 self._read_fstring()
                 continue
-
             # String literals (check triple-quoted first)
             if char in ('"', "'") and self.reader.peek_ahead(1) == char \
                     and self.reader.peek_ahead(2) == char:
                 self._read_triple_string(char)
                 continue
-
             # String literals
             if char in STRING_PAIRS:
                 self._read_string(char)
                 continue
-
             # Date literals
             if char == DATE_OPEN:
                 self._read_date_literal()
                 continue
-
             # Numerals (Unicode decimal digits or ASCII digits, or leading -)
             if _is_digit(char):
                 self._read_numeral()
                 continue
-
             # Identifiers and keywords
             if _is_identifier_start(char):
                 self._read_identifier_or_keyword()
                 continue
-
             # Operators (Unicode)
             if char in UNICODE_OPERATORS:
                 line, col = self.reader.line, self.reader.column
@@ -257,12 +222,10 @@ class Lexer:
                     line, col
                 ))
                 continue
-
             # Operators (ASCII)
             if char in SINGLE_OPERATORS:
                 self._read_operator()
                 continue
-
             # Walrus operator uses ':' prefix, which is also a delimiter.
             if char == ":" and self.reader.peek_ahead(1) == "=":
                 line, col = self.reader.line, self.reader.column
@@ -272,7 +235,6 @@ class Lexer:
                     TokenType.OPERATOR, ":=", line, col
                 ))
                 continue
-
             # Delimiters (Unicode)
             if char in UNICODE_DELIMITERS:
                 line, col = self.reader.line, self.reader.column
@@ -282,7 +244,6 @@ class Lexer:
                     line, col
                 ))
                 continue
-
             # Delimiters (ASCII)
             if char in DELIMITERS:
                 line, col = self.reader.line, self.reader.column
@@ -291,50 +252,41 @@ class Lexer:
                     TokenType.DELIMITER, char, line, col
                 ))
                 continue
-
             # Whitespace (spaces/tabs already handled)
             if char in (" ", "\t", "\r"):
                 self.reader.advance()
                 continue
-
             # Unknown character
             raise UnexpectedTokenError(
                 repr(char), self.reader.line, self.reader.column
             )
-
         # Emit remaining DEDENTs
         while len(self._indent_stack) > 1:
             self._indent_stack.pop()
             self.tokens.append(Token(
                 TokenType.DEDENT, "", self.reader.line, self.reader.column
             ))
-
         self.tokens.append(Token(
             TokenType.EOF, "", self.reader.line, self.reader.column
         ))
-
         # Auto-detect language if not set
         if self.language is None and self._detected_keywords:
             self.language = self.registry.detect_language(
                 self._detected_keywords
             )
-
         return self.tokens
-
     def _skip_spaces(self):
         """Skip spaces and tabs (not newlines)."""
         while not self.reader.is_at_end() and self.reader.peek() in (" ", "\t"):
             if self._at_line_start:
                 break  # Don't skip — indentation matters
             self.reader.advance()
-
     def _read_newline(self):
         """Read a newline and emit NEWLINE token."""
         line, col = self.reader.line, self.reader.column
         self.reader.advance()
         self.tokens.append(Token(TokenType.NEWLINE, "\\n", line, col))
         self._at_line_start = True
-
     def _read_comment(self):
         """Read a comment (# to end of line)."""
         line, col = self.reader.line, self.reader.column
@@ -342,7 +294,6 @@ class Lexer:
         while not self.reader.is_at_end() and self.reader.peek() != "\n":
             text += self.reader.advance()
         self.tokens.append(Token(TokenType.COMMENT, text, line, col))
-
     def _handle_indentation(self):
         """Handle Python-style indentation."""
         line, col = self.reader.line, self.reader.column
@@ -353,11 +304,9 @@ class Lexer:
                 indent += 4  # Tab = 4 spaces
             else:
                 indent += 1
-
         # Skip blank lines and comment-only lines
         if not self.reader.is_at_end() and self.reader.peek() in ("\n", "#"):
             return
-
         current = self._indent_stack[-1]
         if indent > current:
             self._indent_stack.append(indent)
@@ -366,12 +315,10 @@ class Lexer:
             while self._indent_stack and self._indent_stack[-1] > indent:
                 self._indent_stack.pop()
                 self.tokens.append(Token(TokenType.DEDENT, "", line, col))
-
     def _read_numeral(self):
         """Read numeral token (decimal, base-prefixed, scientific)."""
         line, col = self.reader.line, self.reader.column
         text = self.reader.advance()  # first digit already confirmed
-
         # Base-prefixed numerals: 0x..., 0o..., 0b...
         if text == "0" and not self.reader.is_at_end():
             prefix = self.reader.peek()
@@ -391,7 +338,6 @@ class Lexer:
                     text += self.reader.advance()
                 self.tokens.append(Token(TokenType.NUMERAL, text, line, col))
                 return
-
         # Decimal and float part
         while not self.reader.is_at_end():
             char = self.reader.peek()
@@ -399,7 +345,6 @@ class Lexer:
                 text += self.reader.advance()
             else:
                 break
-
         # Fractional part
         if not self.reader.is_at_end() and self.reader.peek() == ".":
             text += self.reader.advance()
@@ -409,10 +354,8 @@ class Lexer:
                     text += self.reader.advance()
                 else:
                     break
-
         # Scientific notation (ASCII e/E)
         if not self.reader.is_at_end() and self.reader.peek() in ("e", "E"):
-            exp = self.reader.peek()
             sign = self.reader.peek_ahead(1)
             first_digit = self.reader.peek_ahead(2) if sign in ("+", "-") \
                 else sign
@@ -426,16 +369,13 @@ class Lexer:
                         text += self.reader.advance()
                     else:
                         break
-
         self.tokens.append(Token(TokenType.NUMERAL, text, line, col))
-
     def _read_identifier_or_keyword(self):
         """Read an identifier or keyword token."""
         line, col = self.reader.line, self.reader.column
         text = ""
         while not self.reader.is_at_end() and _is_identifier_part(self.reader.peek()):
             text += self.reader.advance()
-
         # Check if it's a keyword
         lang = self.language
         if lang is not None:
@@ -458,9 +398,7 @@ class Lexer:
                         concept=concept, language=try_lang
                     ))
                     return
-
         self.tokens.append(Token(TokenType.IDENTIFIER, text, line, col))
-
     def _read_fstring(self):
         """Read an f-string literal: f"text {expr} text"."""
         line, col = self.reader.line, self.reader.column
@@ -481,12 +419,10 @@ class Lexer:
                 text += "\\" + next_char
             else:
                 text += self.reader.advance()
-
         raise UnexpectedTokenError(
             "Unterminated f-string literal",
             line, col
         )
-
     def _read_triple_string(self, quote_char):
         """Read a triple-quoted string literal (\"\"\"...\"\"\" or '''...''')."""
         line, col = self.reader.line, self.reader.column
@@ -513,12 +449,10 @@ class Lexer:
                 text += "\\" + next_char
             else:
                 text += self.reader.advance()
-
         raise UnexpectedTokenError(
             "Unterminated triple-quoted string literal",
             line, col
         )
-
     def _read_string(self, open_char):
         """Read a string literal."""
         line, col = self.reader.line, self.reader.column
@@ -539,13 +473,11 @@ class Lexer:
                 text += "\\" + next_char
             else:
                 text += self.reader.advance()
-
         # Unterminated string
         raise UnexpectedTokenError(
             "Unterminated string literal",
             line, col
         )
-
     def _read_date_literal(self):
         """Read a date literal enclosed in 〔 and 〕."""
         line, col = self.reader.line, self.reader.column
@@ -560,17 +492,14 @@ class Lexer:
                 ))
                 return
             text += self.reader.advance()
-
         raise UnexpectedTokenError(
             "Unterminated date literal",
             line, col
         )
-
     def _read_operator(self):
         """Read an operator token, checking for multi-character operators."""
         line, col = self.reader.line, self.reader.column
         char = self.reader.advance()
-
         # Check for three-character operators first (e.g., **=, //=, <<=, >>=)
         if not self.reader.is_at_end():
             two_char = char + self.reader.peek()
@@ -589,5 +518,4 @@ class Lexer:
                     TokenType.OPERATOR, two_char, line, col
                 ))
                 return
-
         self.tokens.append(Token(TokenType.OPERATOR, char, line, col))

@@ -210,17 +210,70 @@ Sortie attendue:
 `Ligne 2`
 `Ligne 3`
 
-- annotations de type, ensembles, await/async, walrus (exemple):
+### Nouvelles syntaxes (mise a jour)
+
+- annotations de type (variables, parametres, retour):
 
 ```text
-soit x: entier = 255
-soit s = {1, 2, 3}
+soit age: entier = 42
 
-asynchrone fonction lire(url: chaine) -> chaine:
-    retourner attendre telecharger(url)
-
-soit n = (val := 10)
+def saluer(nom: chaine) -> chaine:
+    retourner f"Bonjour {nom}"
 ```
+Sortie attendue (exemple): `Bonjour Alice` pour `afficher(saluer("Alice"))`.
+
+- litteraux d'ensemble (`set`):
+
+```text
+soit uniques = {1, 2, 2, 3}
+afficher(uniques)
+```
+Sortie attendue: un ensemble contenant `1, 2, 3` (ordre non garanti).
+
+- `with` avec plusieurs gestionnaires de contexte:
+
+```text
+with ouvrir("a.txt") as a, ouvrir("b.txt") as b:
+    afficher(a.lire(), b.lire())
+```
+Sortie attendue: contenu des deux fichiers, avec fermeture des deux contextes.
+
+- depliage de dictionnaires:
+
+```text
+soit base = {"langue": "fr", "niveau": "intermediaire"}
+soit extra = {"niveau": "avance", "theme": "tests"}
+soit profil = {**base, **extra}
+afficher(profil)
+```
+Sortie attendue: `{'langue': 'fr', 'niveau': 'avance', 'theme': 'tests'}`.
+
+- litteraux numeriques hex/octal/binaire et notation scientifique:
+
+```text
+soit hexa = 0xFF
+soit octal = 0o77
+soit binaire = 0b1010
+soit petit = 1.5e-3
+afficher(hexa, octal, binaire, petit)
+```
+Sortie attendue: `255 63 10 0.0015`.
+
+- programmation asynchrone (`async` / `await`):
+
+```text
+asynchrone def lire(url: chaine) -> chaine:
+    retourner attendre telecharger(url)
+```
+Note: `attendre` (`await`) est valide uniquement dans une fonction asynchrone.
+
+- operateur walrus (`:=`):
+
+```text
+soit resultat = (n := 10) + 5
+afficher(n, resultat)
+```
+Sortie attendue: `10 15`.
 
 ## 4. Alias francais des built-ins
 
