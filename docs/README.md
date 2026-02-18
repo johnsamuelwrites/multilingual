@@ -371,6 +371,7 @@ python -m pylint $(git ls-files '*.py')
 ## Related Docs
 
 - Project quick start: [README.md](../README.md)
+- Design overview: [design.md](design.md)
 - Usage snippets: [USAGE.md](../USAGE.md)
 - Examples guide: [examples/README.md](../examples/README.md)
 - French programming guide: [programmation_fr.md](programmation_fr.md)

@@ -372,4 +372,5 @@ Sortie attendue:
 
 - Guide usage: [USAGE.md](../USAGE.md)
 - Reference technique: [README docs](README.md)
+- Vue design (architecture + roadmap): [design.md](design.md)
 - Onboarding nouvelles langues: [language_onboarding.md](language_onboarding.md)

@@ -4,6 +4,16 @@ Not yet another programming language. A multilingual one.
 > **One programming model. Many human languages.**  
 > Write code in your language while keeping a shared semantic core.
 
+## Motivation
+
+- Problem: programming is still heavily bound to English-centric syntax and keywords.
+- Idea: keep one semantic core, but expose it through multiple human languages.
+- Today: this is a small but working prototype; you can already write and run programs in English, French, Spanish, and other supported languages.
+
+## Who Is This For?
+
+`multilingual` is for teachers, language enthusiasts, programming-language hobbyists, and people exploring LLM-assisted coding workflows across multiple human languages.
+
 ## Why Multilingual
 
 - **Language-inclusive syntax**: Use localized keywords and built-in aliases (for example, `intervalle`, `rango`, `intervallo`).
@@ -29,6 +39,9 @@ print("Hello world")
 
 # French
 afficher("Bonjour le monde")
+
+# Spanish (another language example)
+imprimir("Hola mundo")
 
 ```
 
@@ -87,6 +100,11 @@ Note: selected universal built-ins (for example `range`, `len`, `sum`) support l
 
 Execution/transpilation examples and AST parsing examples are in [USAGE.md](USAGE.md).
 
+## Roadmap (Short)
+
+- v0 (today): toy-but-working interpreter/transpiler, multiple languages, core constructs, REPL, and a tested end-to-end pipeline.
+- next: better tooling, IDE support, more languages, a clearer formal spec, and potential LLM-assisted code translation workflows.
+
 ## What You Can Use
 
 - Numerals across scripts: `MPNumeral`, `UnicodeNumeral`, `RomanNumeral`
@@ -118,6 +136,7 @@ See [USAGE.md](USAGE.md) for the complete runnable examples list.
 - Usage guide: [USAGE.md](USAGE.md)
 - Examples guide: [examples/README.md](examples/README.md)
 - Detailed reference: [docs/README.md](docs/README.md)
+- Design overview: [docs/design.md](docs/design.md)
 - Guide complet en francais: [docs/programmation_fr.md](docs/programmation_fr.md)
 - Language onboarding guide: [docs/language_onboarding.md](docs/language_onboarding.md)
 
