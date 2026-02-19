@@ -32,6 +32,10 @@ Reject or revise entries when a translation:
 - is a high-frequency homonym with unrelated meaning in code context,
 - creates parser ambiguity with existing operators/tokens.
 
+## Current Baseline
+
+The supported language packs are expected to be ambiguity-free at the registry level. New translation changes should preserve that invariant.
+
 ## False Friends and Cross-Language Safety
 
 - Flag terms that appear similar across languages but differ in meaning.

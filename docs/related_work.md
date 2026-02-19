@@ -32,6 +32,7 @@ Multilingual syntax has precedent. This project does not claim to be first; it f
 - **Concept-driven keyword normalization** before parsing.
 - **Shared parser/codegen across languages** (language growth is data-first).
 - **Runtime interoperability** through Python output and selected builtin aliases.
+- **Focus on compatibility with Python-oriented workflows** instead of replacing the existing ecosystem.
 
 ## Boundaries of the Claim
 

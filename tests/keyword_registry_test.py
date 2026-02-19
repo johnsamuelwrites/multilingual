@@ -229,14 +229,22 @@ class KeywordValidatorTestSuite(unittest.TestCase):
 
     def test_ambiguity_check(self):
         """Test ambiguity detection."""
-        # Most languages should have no ambiguities by design,
-        # but some may (e.g., shared words between concepts)
+        # Validate shape of ambiguity entries returned by the validator.
         registry = KeywordRegistry()
         for lang in registry.get_supported_languages():
             ambiguities = self.validator.validate_no_ambiguity(lang)
-            # Log ambiguities but don't fail — some are expected
             for _, concepts in ambiguities:
                 self.assertGreater(
                     len(concepts), 1,
                     "Ambiguity entry should have >1 concepts"
                 )
+
+    def test_no_legacy_ambiguities_in_supported_languages(self):
+        """Supported language packs should not contain known legacy ambiguities."""
+        registry = KeywordRegistry()
+        for lang in registry.get_supported_languages():
+            ambiguities = self.validator.validate_no_ambiguity(lang)
+            self.assertEqual(
+                ambiguities, [],
+                f"Language '{lang}' has ambiguities: {ambiguities}"
+            )

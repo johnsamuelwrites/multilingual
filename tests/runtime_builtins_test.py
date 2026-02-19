@@ -130,3 +130,19 @@ class RuntimeBuiltinsTestSuite(unittest.TestCase):
                     callable(obj),
                     f"Built-in {name!r} is not callable"
                 )
+
+    def test_canonical_builtin_wins_on_alias_collision(self):
+        """If an alias collides with a canonical builtin name, canonical wins."""
+        original_catalog = RuntimeBuiltins._BUILTIN_ALIAS_CATALOG
+        try:
+            RuntimeBuiltins._BUILTIN_ALIAS_CATALOG = {
+                "aliases": {
+                    "range": {"fr": ["len", "plage_test"]},
+                }
+            }
+            ns = RuntimeBuiltins("fr").namespace()
+            self.assertIs(ns["len"], len)
+            self.assertIn("plage_test", ns)
+            self.assertIs(ns["plage_test"], range)
+        finally:
+            RuntimeBuiltins._BUILTIN_ALIAS_CATALOG = original_catalog

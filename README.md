@@ -34,6 +34,15 @@ Not yet another programming language. A multilingual one.
 - `Is not`: a claim that syntax translation alone solves all onboarding barriers.
 - `Is not`: a replacement for English-heavy ecosystem docs, examples, and tooling (yet).
 
+## Current Limitations
+
+- Localized keywords can still feel unnatural in some languages because grammar/word order is currently shared.
+- Standard library/module APIs mostly stay canonical Python names; localization is focused on keywords and selected builtins.
+
+Details:
+- Word order and naturalness: [docs/word_order_and_naturalness.md](docs/word_order_and_naturalness.md)
+- Stdlib localization boundaries: [docs/stdlib_localization.md](docs/stdlib_localization.md)
+
 ## Quick Start
 
 Source files for this language use the `.ml` extension (for example: `hello.ml`).
@@ -188,6 +197,8 @@ afficher("a + b =", a + b)
 ```
 
 ## Documentation
+
+Use this README for setup and workflow; use `docs/` for design rationale and policy details.
 
 - Usage guide: [USAGE.md](USAGE.md)
 - Examples guide: [examples/README.md](examples/README.md)

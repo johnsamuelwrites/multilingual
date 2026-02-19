@@ -171,7 +171,12 @@ class RuntimeBuiltins:
                 ns[keyword] = builtin_obj
             except Exception:
                 pass  # Skip if concept not found for this language
-        ns.update(self._localized_builtin_aliases(self._language))
+        for alias, builtin_obj in self._localized_builtin_aliases(
+            self._language
+        ).items():
+            # Keep canonical names stable if an alias collides.
+            if alias not in ns:
+                ns[alias] = builtin_obj
 
         return ns
 
@@ -191,6 +196,11 @@ class RuntimeBuiltins:
                     ns[keyword] = builtin_obj
                 except Exception:
                     pass
-            ns.update(cls._localized_builtin_aliases(lang))
+            for alias, builtin_obj in cls._localized_builtin_aliases(
+                lang
+            ).items():
+                # Keep canonical names stable if an alias collides.
+                if alias not in ns:
+                    ns[alias] = builtin_obj
 
         return ns
