@@ -7,6 +7,7 @@
 """Tests for the runtime built-in functions."""
 
 import unittest
+from unittest.mock import patch
 
 from multilingualprogramming.codegen.runtime_builtins import RuntimeBuiltins
 from multilingualprogramming.keyword.keyword_registry import KeywordRegistry
@@ -133,16 +134,16 @@ class RuntimeBuiltinsTestSuite(unittest.TestCase):
 
     def test_canonical_builtin_wins_on_alias_collision(self):
         """If an alias collides with a canonical builtin name, canonical wins."""
-        original_catalog = RuntimeBuiltins._BUILTIN_ALIAS_CATALOG
-        try:
-            RuntimeBuiltins._BUILTIN_ALIAS_CATALOG = {
+        with patch.object(
+            RuntimeBuiltins,
+            "_load_builtin_alias_catalog",
+            return_value={
                 "aliases": {
                     "range": {"fr": ["len", "plage_test"]},
                 }
-            }
+            },
+        ):
             ns = RuntimeBuiltins("fr").namespace()
             self.assertIs(ns["len"], len)
             self.assertIn("plage_test", ns)
             self.assertIs(ns["plage_test"], range)
-        finally:
-            RuntimeBuiltins._BUILTIN_ALIAS_CATALOG = original_catalog
