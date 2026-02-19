@@ -12,6 +12,7 @@ Multilingual syntax has precedent. This project does not claim to be first; it f
 - **Algol 68 localized representations**: historical precedent for localized language surfaces.
 - **Non-English-based programming languages**: broad ecosystem of language-localized and language-native PLs.
 - **Citrine**: community-cited reference point in multilingual or non-English-oriented syntax discussions.
+- **Rouille**: Rust-in-French language project (community-cited example of localized programming syntax).
 - **Excel formulas (localized names)**: mainstream example of localized function names over shared semantics.
 - **Perligata (Lingua::Romana::Perligata)**: notable language experiment demonstrating alternative linguistic surfaces.
 
@@ -44,3 +45,4 @@ The differentiation is architectural, not ideological. This project does not cla
 - [Hedy language](https://www.hedy.org/)
 - [ALGOL 68](https://en.wikipedia.org/wiki/ALGOL_68)
 - [Non-English-based programming languages](https://en.wikipedia.org/wiki/Non-English-based_programming_languages)
+- [Rouille](https://github.com/bnjbvr/rouille)
