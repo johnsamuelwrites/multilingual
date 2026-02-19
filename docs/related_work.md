@@ -38,4 +38,8 @@ Multilingual syntax has precedent. This project does not claim to be first; it f
 The differentiation is architectural, not ideological. This project does not claim that multilingual keywords alone solve documentation, community support, or professional ecosystem access.
 
 ## References
-- [https://www.reddit.com/r/ProgrammingLanguages/comments/1r860hw/multilingual_a_programming_language_with_one/](multilingual: a programming language with one semantic core, many human languages)
+
+- [Reddit discussion thread](https://www.reddit.com/r/ProgrammingLanguages/comments/1r860hw/multilingual_a_programming_language_with_one/)
+- [Hedy language](https://www.hedy.org/)
+- [ALGOL 68](https://en.wikipedia.org/wiki/ALGOL_68)
+- [Non-English-based programming languages](https://en.wikipedia.org/wiki/Non-English-based_programming_languages)
