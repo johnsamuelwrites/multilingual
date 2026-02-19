@@ -144,6 +144,8 @@ class Lexer:
     Unicode identifiers, multilingual numerals, multilingual
     string literals, and operators (including Unicode alternatives).
     """
+    _MAX_KEYWORD_WORDS = 3
+
     def __init__(self, source, language=None):
         """
         Initialize the lexer.
@@ -159,6 +161,26 @@ class Lexer:
         self._indent_stack = [0]
         self._at_line_start = True
         self._detected_keywords = []
+
+    def _reader_state(self):
+        """Snapshot current reader state."""
+        return (self.reader.pos, self.reader.line, self.reader.column)
+
+    def _restore_reader_state(self, state):
+        """Restore a previously saved reader state."""
+        self.reader.pos, self.reader.line, self.reader.column = state
+
+    def _match_keyword(self, text):
+        """Return (concept, language) if text is a keyword, else None."""
+        if self.language is not None:
+            if self.registry.is_keyword(text, self.language):
+                return (self.registry.get_concept(text, self.language), self.language)
+            return None
+
+        for try_lang in self.registry.get_supported_languages():
+            if self.registry.is_keyword(text, try_lang):
+                return (self.registry.get_concept(text, try_lang), try_lang)
+        return None
     # pylint: disable=too-many-branches,too-many-statements
     def tokenize(self):
         """
@@ -376,28 +398,55 @@ class Lexer:
         text = ""
         while not self.reader.is_at_end() and _is_identifier_part(self.reader.peek()):
             text += self.reader.advance()
-        # Check if it's a keyword
-        lang = self.language
-        if lang is not None:
-            if self.registry.is_keyword(text, lang):
-                concept = self.registry.get_concept(text, lang)
-                self._detected_keywords.append(text)
-                self.tokens.append(Token(
-                    TokenType.KEYWORD, text, line, col,
-                    concept=concept, language=lang
-                ))
-                return
-        else:
-            # Try all languages
-            for try_lang in self.registry.get_supported_languages():
-                if self.registry.is_keyword(text, try_lang):
-                    concept = self.registry.get_concept(text, try_lang)
-                    self._detected_keywords.append(text)
-                    self.tokens.append(Token(
-                        TokenType.KEYWORD, text, line, col,
-                        concept=concept, language=try_lang
-                    ))
-                    return
+
+        first_word_end = self._reader_state()
+        words = [text]
+        best_match = None
+
+        initial_match = self._match_keyword(text)
+        if initial_match is not None:
+            best_match = (text, initial_match[0], initial_match[1], first_word_end)
+
+        for _ in range(self._MAX_KEYWORD_WORDS - 1):
+            before_gap = self._reader_state()
+            saw_gap = False
+            while not self.reader.is_at_end() and self.reader.peek() in (" ", "\t"):
+                saw_gap = True
+                self.reader.advance()
+            if (not saw_gap) or self.reader.is_at_end():
+                self._restore_reader_state(before_gap)
+                break
+            if not _is_identifier_start(self.reader.peek()):
+                self._restore_reader_state(before_gap)
+                break
+
+            next_word = ""
+            while (not self.reader.is_at_end()
+                   and _is_identifier_part(self.reader.peek())):
+                next_word += self.reader.advance()
+
+            words.append(next_word)
+            phrase = " ".join(words)
+            phrase_match = self._match_keyword(phrase)
+            if phrase_match is not None:
+                best_match = (
+                    phrase,
+                    phrase_match[0],
+                    phrase_match[1],
+                    self._reader_state(),
+                )
+
+        if best_match is not None:
+            phrase, concept, language, end_state = best_match
+            self._restore_reader_state(end_state)
+            self._detected_keywords.append(phrase)
+            self.tokens.append(Token(
+                TokenType.KEYWORD, phrase, line, col,
+                concept=concept, language=language
+            ))
+            return
+
+        self._restore_reader_state(first_word_end)
         self.tokens.append(Token(TokenType.IDENTIFIER, text, line, col))
     def _read_fstring(self):
         """Read an f-string literal: f"text {expr} text"."""

@@ -78,6 +78,36 @@ class LexerTokenizationTestSuite(LexerTestBase):
         self.assertEqual(len(afficher_tokens), 1)
         self.assertEqual(afficher_tokens[0].concept, "PRINT")
 
+    def test_portuguese_phrase_keywords(self):
+        """Phrase aliases should tokenize as single keyword concepts."""
+        source = "senão se x:\n    passe\npara cada i em lista:\n    imprima(i)\n"
+        lexer = Lexer(source, language="pt")
+        tokens = lexer.tokenize()
+
+        phrase_values = [t.value for t in tokens if t.type == TokenType.KEYWORD]
+        self.assertIn("senão se", phrase_values)
+        self.assertIn("para cada", phrase_values)
+
+        senao_se = [t for t in tokens if t.value == "senão se"][0]
+        para_cada = [t for t in tokens if t.value == "para cada"][0]
+        self.assertEqual(senao_se.concept, "COND_ELIF")
+        self.assertEqual(para_cada.concept, "LOOP_FOR")
+
+    def test_french_phrase_keywords(self):
+        """French phrase aliases should tokenize as single keyword concepts."""
+        source = "sinon si x:\n    passer\npour chaque i dans liste:\n    afficher(i)\n"
+        lexer = Lexer(source, language="fr")
+        tokens = lexer.tokenize()
+
+        phrase_values = [t.value for t in tokens if t.type == TokenType.KEYWORD]
+        self.assertIn("sinon si", phrase_values)
+        self.assertIn("pour chaque", phrase_values)
+
+        sinon_si = [t for t in tokens if t.value == "sinon si"][0]
+        pour_chaque = [t for t in tokens if t.value == "pour chaque"][0]
+        self.assertEqual(sinon_si.concept, "COND_ELIF")
+        self.assertEqual(pour_chaque.concept, "LOOP_FOR")
+
     def test_hindi_keywords(self):
         """Test tokenizing Hindi-keyword code."""
         source = "अगर x > ५:\n    छापो(x)"

@@ -50,7 +50,10 @@
       },
       "COND_ELIF": {
         "en": "elif",
-        "fr": "sinonsi",
+        "fr": [
+          "sinon si",
+          "sinonsi"
+        ],
         "es": "sinosi",
         "de": "sonstwenn",
         "hi": "अन्यथा_अगर",
@@ -62,6 +65,7 @@
         "it": "altrimentise",
         "pt": [
           "senão_se",
+          "senão se",
           "senaose",
           "senao_se"
         ]
@@ -82,7 +86,10 @@
       },
       "LOOP_FOR": {
         "en": "for",
-        "fr": "pour",
+        "fr": [
+          "pour",
+          "pour chaque"
+        ],
         "es": "para",
         "de": "für",
         "hi": "के_लिए",
@@ -92,7 +99,10 @@
         "zh": "对于",
         "ja": "毎",
         "it": "per",
-        "pt": "para"
+        "pt": [
+          "para",
+          "para cada"
+        ]
       },
       "LOOP_BREAK": {
         "en": "break",
@@ -161,7 +171,10 @@
       },
       "DEFAULT": {
         "en": "default",
-        "fr": "défaut",
+        "fr": [
+          "défaut",
+          "defaut"
+        ],
         "es": "predeterminado",
         "de": "standard",
         "hi": "मूलभूत",
@@ -240,7 +253,10 @@
     "definitions": {
       "FUNC_DEF": {
         "en": "def",
-        "fr": "déf",
+        "fr": [
+          "déf",
+          "def"
+        ],
         "es": "def",
         "de": "def",
         "hi": "परिभाषा",
@@ -743,7 +759,12 @@
       },
       "INPUT": {
         "en": "input",
-        "fr": "saisir",
+        "fr": [
+          "saisir",
+          "entrée",
+          "entree",
+          "entrer"
+        ],
         "es": "entrada",
         "de": "eingabe",
         "hi": "इनपुट",
@@ -755,6 +776,7 @@
         "it": "inserisci",
         "pt": [
           "entre",
+          "entre com",
           "entrada"
         ]
       }

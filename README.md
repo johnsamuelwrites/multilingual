@@ -108,6 +108,18 @@ French mode example:
 6
 ```
 
+French phrase aliases are also supported:
+
+```text
+si x:
+    afficher("ok")
+sinon si y:
+    afficher("fallback")
+
+pour chaque i dans intervalle(3):
+    afficher(i)
+```
+
 REPL commands:
 
 - `:help` show commands

@@ -663,6 +663,34 @@ class ParserMultilingualTestSuite(unittest.TestCase):
         stmt = prog.body[0]
         self.assertIsInstance(stmt, VariableDeclaration)
 
+    def test_parse_portuguese_phrase_elif(self):
+        source = "se x:\n    passe\nsenão se y:\n    passe\n"
+        prog = _parse(source, language="pt")
+        stmt = prog.body[0]
+        self.assertIsInstance(stmt, IfStatement)
+        self.assertEqual(len(stmt.elif_clauses), 1)
+
+    def test_parse_portuguese_phrase_for(self):
+        source = "para cada i em itens:\n    passe\n"
+        prog = _parse(source, language="pt")
+        stmt = prog.body[0]
+        self.assertIsInstance(stmt, ForLoop)
+        self.assertEqual(stmt.target.name, "i")
+
+    def test_parse_french_phrase_elif(self):
+        source = "si x:\n    passer\nsinon si y:\n    passer\n"
+        prog = _parse(source, language="fr")
+        stmt = prog.body[0]
+        self.assertIsInstance(stmt, IfStatement)
+        self.assertEqual(len(stmt.elif_clauses), 1)
+
+    def test_parse_french_phrase_for(self):
+        source = "pour chaque i dans items:\n    passer\n"
+        prog = _parse(source, language="fr")
+        stmt = prog.body[0]
+        self.assertIsInstance(stmt, ForLoop)
+        self.assertEqual(stmt.target.name, "i")
+
     def test_parse_same_ast_english_french(self):
         """Same program in English and French produces equivalent AST structure."""
         en_source = "if True:\n    pass\n"

@@ -110,6 +110,14 @@ class KeywordRegistryTestSuite(unittest.TestCase):
 
 
 
+    def test_french_phrase_and_ascii_aliases(self):
+        """French should support phrase aliases and accent fallbacks."""
+        self.assertEqual(self.registry.get_keyword("COND_ELIF", "fr"), "sinon si")
+        self.assertEqual(self.registry.get_concept("sinonsi", "fr"), "COND_ELIF")
+        self.assertEqual(self.registry.get_concept("pour chaque", "fr"), "LOOP_FOR")
+        self.assertEqual(self.registry.get_concept("defaut", "fr"), "DEFAULT")
+        self.assertEqual(self.registry.get_concept("entree", "fr"), "INPUT")
+
     def test_get_keyword_hindi(self):
 
         """Test forward lookup for Hindi keywords."""
