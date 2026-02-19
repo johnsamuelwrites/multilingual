@@ -10,6 +10,12 @@ Not yet another programming language. A multilingual one.
 - Idea: keep one semantic core, but expose it through multiple human languages.
 - Today: this is a small but working prototype; you can already write and run programs in English, French, Spanish, and other supported languages.
 
+## Project Positioning
+
+- This is not a beginner-only teaching DSL.
+- This project targets broad Python-compatible semantics with localized language surfaces.
+- Goal: language-inclusive authoring without fragmenting runtime behavior.
+
 ## Who Is This For?
 
 `multilingual` is for teachers, language enthusiasts, programming-language hobbyists, and people exploring LLM-assisted coding workflows across multiple human languages.
@@ -20,6 +26,13 @@ Not yet another programming language. A multilingual one.
 - **Single execution pipeline**: Same flow for every language: lexer -> parser -> semantic checks -> Python codegen -> runtime.
 - **Data-driven extensibility**: Add languages by updating registries/resources, not by rewriting parser/codegen logic.
 - **REPL-first experience**: Start quickly, switch languages live, inspect keywords/operators from inside REPL.
+
+## What This Is / Is Not
+
+- `Is`: a shared-semantics multilingual programming model.
+- `Is`: a research/prototyping platform for localization-aware language tooling.
+- `Is not`: a claim that syntax translation alone solves all onboarding barriers.
+- `Is not`: a replacement for English-heavy ecosystem docs, examples, and tooling (yet).
 
 ## Quick Start
 
@@ -180,6 +193,10 @@ afficher("a + b =", a + b)
 - Examples guide: [examples/README.md](examples/README.md)
 - Detailed reference: [docs/README.md](docs/README.md)
 - Design overview: [docs/design.md](docs/design.md)
+- Related work and differentiation: [docs/related_work.md](docs/related_work.md)
+- Word order and syntax naturalness notes: [docs/word_order_and_naturalness.md](docs/word_order_and_naturalness.md)
+- Standard library localization strategy: [docs/stdlib_localization.md](docs/stdlib_localization.md)
+- Translation governance guide: [docs/translation_guidelines.md](docs/translation_guidelines.md)
 - Guide complet en francais: [docs/programmation_fr.md](docs/programmation_fr.md)
 - Language onboarding guide: [docs/language_onboarding.md](docs/language_onboarding.md)
 - Contribution guide: [CONTRIBUTING.md](CONTRIBUTING.md)
