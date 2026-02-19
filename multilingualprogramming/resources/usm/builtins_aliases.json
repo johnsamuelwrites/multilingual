@@ -4,86 +4,224 @@
   "description": "Localized aliases for selected universal runtime built-ins",
   "aliases": {
     "range": {
-      "fr": ["intervalle"],
-      "es": ["rango"],
-      "de": ["bereich"],
-      "it": ["intervallo"],
-      "pt": ["intervalo"],
-      "hi": ["परास"],
-      "ar": ["مدى"],
-      "bn": ["পরিসর"],
-      "ta": ["வரம்பு"],
-      "zh": ["范围"],
-      "ja": ["範囲"]
+      "fr": [
+        "intervalle"
+      ],
+      "es": [
+        "rango"
+      ],
+      "de": [
+        "bereich"
+      ],
+      "it": [
+        "intervallo"
+      ],
+      "pt": [
+        "intervalo"
+      ],
+      "hi": [
+        "परास"
+      ],
+      "ar": [
+        "مدى"
+      ],
+      "bn": [
+        "পরিসর"
+      ],
+      "ta": [
+        "வரம்பு"
+      ],
+      "zh": [
+        "范围"
+      ],
+      "ja": [
+        "範囲"
+      ]
     },
     "len": {
-      "fr": ["longueur"],
-      "es": ["longitud"],
-      "de": ["laenge"],
-      "it": ["lunghezza"],
-      "pt": ["comprimento"],
-      "hi": ["लंबाई"],
-      "ar": ["طول"],
-      "bn": ["দৈর্ঘ্য"],
-      "ta": ["நீளம்"],
-      "zh": ["长度"],
-      "ja": ["長さ"]
+      "fr": [
+        "longueur"
+      ],
+      "es": [
+        "longitud"
+      ],
+      "de": [
+        "laenge"
+      ],
+      "it": [
+        "lunghezza"
+      ],
+      "pt": [
+        "comprimento"
+      ],
+      "hi": [
+        "लंबाई"
+      ],
+      "ar": [
+        "طول"
+      ],
+      "bn": [
+        "দৈর্ঘ্য"
+      ],
+      "ta": [
+        "நீளம்"
+      ],
+      "zh": [
+        "长度"
+      ],
+      "ja": [
+        "長さ"
+      ]
     },
     "sum": {
-      "fr": ["somme"],
-      "es": ["suma"],
-      "de": ["summe"],
-      "it": ["somma"],
-      "pt": ["soma"],
-      "hi": ["योग"],
-      "ar": ["مجموع"],
-      "bn": ["যোগফল"],
-      "ta": ["கூட்டுத்தொகை"],
-      "zh": ["总和"],
-      "ja": ["合計"]
+      "fr": [
+        "somme"
+      ],
+      "es": [
+        "suma"
+      ],
+      "de": [
+        "summe"
+      ],
+      "it": [
+        "somma"
+      ],
+      "pt": [
+        "soma"
+      ],
+      "hi": [
+        "योग"
+      ],
+      "ar": [
+        "مجموع"
+      ],
+      "bn": [
+        "যোগফল"
+      ],
+      "ta": [
+        "கூட்டுத்தொகை"
+      ],
+      "zh": [
+        "总和"
+      ],
+      "ja": [
+        "合計"
+      ]
     },
     "abs": {
-      "fr": ["valeurabsolue"],
-      "es": ["valorabsoluto"],
-      "de": ["absolut"],
-      "it": ["assoluto"],
-      "pt": ["absoluto"],
-      "hi": ["निरपेक्ष"],
-      "ar": ["مطلق"],
-      "bn": ["পরম"],
-      "ta": ["முழுமதிப்பு"],
-      "zh": ["绝对值"],
-      "ja": ["絶対値"]
+      "fr": [
+        "valeurabsolue"
+      ],
+      "es": [
+        "valorabsoluto"
+      ],
+      "de": [
+        "absolut"
+      ],
+      "it": [
+        "assoluto"
+      ],
+      "pt": [
+        "absoluto"
+      ],
+      "hi": [
+        "निरपेक्ष"
+      ],
+      "ar": [
+        "مطلق"
+      ],
+      "bn": [
+        "পরম"
+      ],
+      "ta": [
+        "முழுமதிப்பு"
+      ],
+      "zh": [
+        "绝对值"
+      ],
+      "ja": [
+        "絶対値"
+      ]
     },
     "min": {
-      "fr": ["minimum"],
-      "es": ["minimo"],
-      "de": ["minimum"],
-      "it": ["minimo"],
-      "pt": ["minimo"],
-      "hi": ["न्यूनतम"],
-      "ar": ["أدنى"],
-      "bn": ["সর্বনিম্ন"],
-      "ta": ["குறைந்தபட்சம்"],
-      "zh": ["最小值"],
-      "ja": ["最小値"]
+      "fr": [
+        "minimum"
+      ],
+      "es": [
+        "minimo"
+      ],
+      "de": [
+        "minimum"
+      ],
+      "it": [
+        "minimo"
+      ],
+      "pt": [
+        "mínimo",
+        "minimo"
+      ],
+      "hi": [
+        "न्यूनतम"
+      ],
+      "ar": [
+        "أدنى"
+      ],
+      "bn": [
+        "সর্বনিম্ন"
+      ],
+      "ta": [
+        "குறைந்தபட்சம்"
+      ],
+      "zh": [
+        "最小值"
+      ],
+      "ja": [
+        "最小値"
+      ]
     },
     "max": {
-      "fr": ["maximum"],
-      "es": ["maximo"],
-      "de": ["maximum"],
-      "it": ["massimo"],
-      "pt": ["maximo"],
-      "hi": ["अधिकतम"],
-      "ar": ["أقصى"],
-      "bn": ["সর্বোচ্চ"],
-      "ta": ["அதிகபட்சம்"],
-      "zh": ["最大值"],
-      "ja": ["最大値"]
+      "fr": [
+        "maximum"
+      ],
+      "es": [
+        "maximo"
+      ],
+      "de": [
+        "maximum"
+      ],
+      "it": [
+        "massimo"
+      ],
+      "pt": [
+        "máximo",
+        "maximo"
+      ],
+      "hi": [
+        "अधिकतम"
+      ],
+      "ar": [
+        "أقصى"
+      ],
+      "bn": [
+        "সর্বোচ্চ"
+      ],
+      "ta": [
+        "அதிகபட்சம்"
+      ],
+      "zh": [
+        "最大值"
+      ],
+      "ja": [
+        "最大値"
+      ]
     },
     "print": {
-      "hi": ["प्रिंट"],
-      "ar": ["طباعة"]
+      "hi": [
+        "प्रिंट"
+      ],
+      "ar": [
+        "طباعة"
+      ]
     }
   }
 }

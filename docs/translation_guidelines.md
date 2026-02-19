@@ -24,6 +24,12 @@ When both short and full forms exist (for example, `const`-like terms):
 - If usage is split, choose one canonical form and keep the other as an alias only if it is unambiguous.
 - Document the decision rationale in PR notes.
 
+## Diacritics Policy
+
+- Prefer correct diacritics in canonical forms (`senão`, `não`, `padrão`).
+- Keep plain-ASCII fallbacks as compatibility aliases when they are common (`senao`, `nao`, `padrao`).
+- Canonical values should be listed first in `keywords.json`; aliases follow.
+
 ## Collision and Ambiguity Policy
 
 Reject or revise entries when a translation:

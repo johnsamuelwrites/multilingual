@@ -164,11 +164,21 @@ class RuntimeBuiltins:
         """
         ns = dict(self._UNIVERSAL_BUILTINS)
 
-        # Add language-specific mappings
+        # Add language-specific mappings (all variants, not only canonical).
+        concept_map = self._registry.get_concept_map()
         for concept, builtin_obj in self._CONCEPT_TO_BUILTIN.items():
             try:
-                keyword = self._registry.get_keyword(concept, self._language)
-                ns[keyword] = builtin_obj
+                translations = concept_map[concept]
+                keyword_value = translations.get(self._language)
+                if keyword_value is None:
+                    continue
+                keywords = (
+                    keyword_value if isinstance(keyword_value, list)
+                    else [keyword_value]
+                )
+                for keyword in keywords:
+                    if keyword not in ns:
+                        ns[keyword] = builtin_obj
             except Exception:
                 pass  # Skip if concept not found for this language
         for alias, builtin_obj in self._localized_builtin_aliases(
@@ -189,11 +199,21 @@ class RuntimeBuiltins:
         ns = dict(cls._UNIVERSAL_BUILTINS)
         registry = KeywordRegistry()
 
+        concept_map = registry.get_concept_map()
         for lang in registry.get_supported_languages():
             for concept, builtin_obj in cls._CONCEPT_TO_BUILTIN.items():
                 try:
-                    keyword = registry.get_keyword(concept, lang)
-                    ns[keyword] = builtin_obj
+                    translations = concept_map[concept]
+                    keyword_value = translations.get(lang)
+                    if keyword_value is None:
+                        continue
+                    keywords = (
+                        keyword_value if isinstance(keyword_value, list)
+                        else [keyword_value]
+                    )
+                    for keyword in keywords:
+                        if keyword not in ns:
+                            ns[keyword] = builtin_obj
                 except Exception:
                     pass
             for alias, builtin_obj in cls._localized_builtin_aliases(

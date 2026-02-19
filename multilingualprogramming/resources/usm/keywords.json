@@ -43,7 +43,10 @@
         "zh": "否则",
         "ja": "でなければ",
         "it": "altrimenti",
-        "pt": "senao"
+        "pt": [
+          "senão",
+          "senao"
+        ]
       },
       "COND_ELIF": {
         "en": "elif",
@@ -57,7 +60,11 @@
         "zh": "否则如果",
         "ja": "でなければもし",
         "it": "altrimentise",
-        "pt": "senaose"
+        "pt": [
+          "senão_se",
+          "senaose",
+          "senao_se"
+        ]
       },
       "LOOP_WHILE": {
         "en": "while",
@@ -99,7 +106,10 @@
         "zh": "终止",
         "ja": "中断",
         "it": "interrompi",
-        "pt": "interromper"
+        "pt": [
+          "interrompa",
+          "interromper"
+        ]
       },
       "LOOP_CONTINUE": {
         "en": "continue",
@@ -113,7 +123,10 @@
         "zh": "继续",
         "ja": "続行",
         "it": "continua",
-        "pt": "continuar"
+        "pt": [
+          "continue",
+          "continuar"
+        ]
       },
       "MATCH": {
         "en": "match",
@@ -127,7 +140,10 @@
         "zh": "匹配",
         "ja": "照合",
         "it": "confronta",
-        "pt": "corresponder"
+        "pt": [
+          "corresponda",
+          "corresponder"
+        ]
       },
       "CASE": {
         "en": "case",
@@ -155,7 +171,10 @@
         "zh": "默认",
         "ja": "既定",
         "it": "predefinito",
-        "pt": "padrao"
+        "pt": [
+          "padrão",
+          "padrao"
+        ]
       },
       "PASS": {
         "en": "pass",
@@ -169,7 +188,11 @@
         "zh": "过",
         "ja": "パス",
         "it": "passa",
-        "pt": "passar"
+        "pt": [
+          "passe",
+          "passar",
+          "pass"
+        ]
       },
       "WITH": {
         "en": "with",
@@ -227,7 +250,10 @@
         "zh": "函数",
         "ja": "関数",
         "it": "definisci",
-        "pt": "definir"
+        "pt": [
+          "defina",
+          "definir"
+        ]
       },
       "CLASS_DEF": {
         "en": "class",
@@ -255,7 +281,10 @@
         "zh": "返回",
         "ja": "戻る",
         "it": "ritorna",
-        "pt": "retornar"
+        "pt": [
+          "retorne",
+          "retornar"
+        ]
       },
       "YIELD": {
         "en": "yield",
@@ -269,7 +298,10 @@
         "zh": "产出",
         "ja": "生成",
         "it": "produci",
-        "pt": "produzir"
+        "pt": [
+          "produza",
+          "produzir"
+        ]
       },
       "IMPORT": {
         "en": "import",
@@ -283,7 +315,10 @@
         "zh": "导入",
         "ja": "取込",
         "it": "importa",
-        "pt": "importar"
+        "pt": [
+          "importe",
+          "importar"
+        ]
       },
       "FROM": {
         "en": "from",
@@ -339,7 +374,10 @@
         "zh": "async",
         "ja": "async",
         "it": "asincrono",
-        "pt": "assincrono"
+        "pt": [
+          "assíncrono",
+          "assincrono"
+        ]
       },
       "AWAIT": {
         "en": "await",
@@ -397,7 +435,10 @@
         "zh": "非",
         "ja": "ない",
         "it": "non",
-        "pt": "nao"
+        "pt": [
+          "não",
+          "nao"
+        ]
       },
       "TRUE": {
         "en": "True",
@@ -453,7 +494,10 @@
         "zh": "是",
         "ja": "は",
         "it": "?",
-        "pt": "?"
+        "pt": [
+          "é",
+          "eh"
+        ]
       }
     },
     "error_handling": {
@@ -469,7 +513,10 @@
         "zh": "尝试",
         "ja": "試行",
         "it": "prova",
-        "pt": "tentar"
+        "pt": [
+          "tente",
+          "tentar"
+        ]
       },
       "EXCEPT": {
         "en": "except",
@@ -511,7 +558,11 @@
         "zh": "抛出",
         "ja": "発生",
         "it": "solleva",
-        "pt": "lancar"
+        "pt": [
+          "lance",
+          "lançar",
+          "lancar"
+        ]
       }
     },
     "variables": {
@@ -599,7 +650,11 @@
         "zh": "浮点",
         "ja": "浮動小数",
         "it": "decimale",
-        "pt": "flutuante"
+        "pt": [
+          "real",
+          "ponto_flutuante",
+          "flutuante"
+        ]
       },
       "TYPE_STR": {
         "en": "str",
@@ -616,7 +671,10 @@
         "zh": "字符串",
         "ja": "文字列",
         "it": "stringa",
-        "pt": "cadeia"
+        "pt": [
+          "texto",
+          "cadeia"
+        ]
       },
       "TYPE_BOOL": {
         "en": "bool",
@@ -658,7 +716,10 @@
         "zh": "字典",
         "ja": "辞書",
         "it": "dizionario",
-        "pt": "dicionario"
+        "pt": [
+          "dicionário",
+          "dicionario"
+        ]
       }
     },
     "io": {
@@ -674,7 +735,11 @@
         "zh": "打印",
         "ja": "表示",
         "it": "stampa",
-        "pt": "imprimir"
+        "pt": [
+          "imprima",
+          "imprimir",
+          "mostre"
+        ]
       },
       "INPUT": {
         "en": "input",
@@ -688,7 +753,10 @@
         "zh": "输入",
         "ja": "入力",
         "it": "inserisci",
-        "pt": "entrada"
+        "pt": [
+          "entre",
+          "entrada"
+        ]
       }
     }
   }

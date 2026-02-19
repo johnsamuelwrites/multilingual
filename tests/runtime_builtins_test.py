@@ -58,6 +58,32 @@ class RuntimeBuiltinsTestSuite(unittest.TestCase):
         self.assertIn("len", ns)
         self.assertIs(ns["len"], len)
 
+    def test_portuguese_print_canonical_and_aliases(self):
+        """Portuguese canonical print and aliases should all be callable."""
+        ns = RuntimeBuiltins("pt").namespace()
+        self.assertIn("imprima", ns)
+        self.assertIs(ns["imprima"], print)
+        self.assertIn("imprimir", ns)
+        self.assertIs(ns["imprimir"], print)
+        self.assertIn("mostre", ns)
+        self.assertIs(ns["mostre"], print)
+
+    def test_portuguese_type_aliases_in_namespace(self):
+        """All type keyword aliases should resolve at runtime."""
+        ns = RuntimeBuiltins("pt").namespace()
+        self.assertIn("texto", ns)
+        self.assertIs(ns["texto"], str)
+        self.assertIn("cadeia", ns)
+        self.assertIs(ns["cadeia"], str)
+
+    def test_portuguese_diacritic_builtin_aliases(self):
+        """Built-in alias catalog should accept diacritic forms."""
+        ns = RuntimeBuiltins("pt").namespace()
+        self.assertIn("m\u00ednimo", ns)
+        self.assertIs(ns["m\u00ednimo"], min)
+        self.assertIn("m\u00e1ximo", ns)
+        self.assertIs(ns["m\u00e1ximo"], max)
+
     def test_hindi_print_alias(self):
         ns = RuntimeBuiltins("hi").namespace()
         self.assertIn("प्रिंट", ns)
