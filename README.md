@@ -27,6 +27,10 @@ Not yet another programming language. A multilingual one.
 - **Data-driven extensibility**: Add languages by updating registries/resources, not by rewriting parser/codegen logic.
 - **REPL-first experience**: Start quickly, switch languages live, inspect keywords/operators from inside REPL.
 
+### Pipeline Illustration
+
+![Multilingual pipeline with surface normalization](docs/assets/multilingual_pipeline_surface.svg)
+
 ## What This Is / Is Not
 
 - `Is`: a shared-semantics multilingual programming model.
@@ -36,7 +40,8 @@ Not yet another programming language. A multilingual one.
 
 ## Current Limitations
 
-- Localized keywords can still feel unnatural in some languages because grammar/word order is currently shared.
+- Localized keywords can still feel unnatural in some languages because grammar/word order is mostly shared.
+- A small declarative surface-normalization layer now supports selected alternate phrasing patterns, but coverage is still limited.
 - Standard library/module APIs mostly stay canonical Python names; localization is focused on keywords and selected builtins.
 
 Details:
@@ -66,6 +71,9 @@ afficher("Bonjour le monde")
 
 # Spanish (another language example)
 imprimir("Hola mundo")
+
+# Japanese
+表示("こんにちは世界")
 
 ```
 
@@ -187,6 +195,21 @@ Supported pilot languages: English, French, Spanish, German, Italian, Portuguese
 
 See [examples/README.md](examples/README.md) for narrative `.ml` examples
 (English/French equivalents) and runnable commands.
+
+### Japanese Surface Syntax Example
+
+These two files compute the same result (`15`) using canonical and alternate
+surface loop phrasing:
+
+- Surface form: `examples/surface_for_ja.ml`
+- Canonical form: `examples/surface_for_ja_canonical.ml`
+
+Run:
+
+```bash
+python -m multilingualprogramming run examples/surface_for_ja.ml --lang ja
+python -m multilingualprogramming run examples/surface_for_ja_canonical.ml --lang ja
+```
 
 ### Semantic Equivalence (English vs French)
 

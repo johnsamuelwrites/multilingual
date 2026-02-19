@@ -1,0 +1,88 @@
+{
+  "version": "1.0",
+  "description": "Declarative surface syntax normalization patterns",
+  "templates": {
+    "for_iterable_first": [
+      {
+        "kind": "keyword",
+        "concept": "LOOP_FOR"
+      },
+      {
+        "kind": "identifier_slot",
+        "slot": "target"
+      },
+      {
+        "kind": "keyword",
+        "concept": "IN"
+      },
+      {
+        "kind": "expr_slot",
+        "slot": "iterable"
+      },
+      {
+        "kind": "delimiter",
+        "value": ":"
+      }
+    ]
+  },
+  "patterns": [
+    {
+      "name": "ja_for_iterable_first",
+      "language": "ja",
+      "normalize_template": "for_iterable_first",
+      "pattern": [
+        {
+          "kind": "expr",
+          "slot": "iterable"
+        },
+        {
+          "kind": "literal",
+          "value": "内の"
+        },
+        {
+          "kind": "literal",
+          "value": "各"
+        },
+        {
+          "kind": "identifier",
+          "slot": "target"
+        },
+        {
+          "kind": "literal",
+          "value": "に対して"
+        },
+        {
+          "kind": "delimiter",
+          "value": ":"
+        }
+      ]
+    },
+    {
+      "name": "ar_for_iterable_first",
+      "language": "ar",
+      "normalize_template": "for_iterable_first",
+      "pattern": [
+        {
+          "kind": "expr",
+          "slot": "iterable"
+        },
+        {
+          "kind": "literal",
+          "value": "ضمن"
+        },
+        {
+          "kind": "keyword",
+          "concept": "LOOP_FOR"
+        },
+        {
+          "kind": "identifier",
+          "slot": "target"
+        },
+        {
+          "kind": "delimiter",
+          "value": ":"
+        }
+      ]
+    }
+  ]
+}

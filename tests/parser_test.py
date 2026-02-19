@@ -633,11 +633,28 @@ class ParserMultilingualTestSuite(unittest.TestCase):
         stmt = prog.body[0]
         self.assertIsInstance(stmt, ForLoop)
 
+    def test_parse_arabic_iterable_first_for_loop(self):
+        source = "range(4) \u0636\u0645\u0646 \u0644\u0643\u0644 i:\n    \u0645\u0631\u0631\n"
+        prog = _parse(source, language="ar")
+        stmt = prog.body[0]
+        self.assertIsInstance(stmt, ForLoop)
+        self.assertEqual(stmt.target.name, "i")
+
     def test_parse_japanese_class_def(self):
         source = "\u30af\u30e9\u30b9 Foo:\n    \u30d1\u30b9\n"
         prog = _parse(source, language="ja")
         stmt = prog.body[0]
         self.assertIsInstance(stmt, ClassDef)
+
+    def test_parse_japanese_iterable_first_for_loop(self):
+        source = (
+            "\u7bc4\u56f2(4) \u5185\u306e \u5404 i \u306b\u5bfe\u3057\u3066:\n"
+            "    \u30d1\u30b9\n"
+        )
+        prog = _parse(source, language="ja")
+        stmt = prog.body[0]
+        self.assertIsInstance(stmt, ForLoop)
+        self.assertEqual(stmt.target.name, "i")
 
     def test_parse_spanish_try_except(self):
         source = "intentar:\n    pasar\nexcepto:\n    pasar\n"

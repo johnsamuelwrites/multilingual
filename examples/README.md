@@ -43,6 +43,20 @@ python -m multilingualprogramming run examples/data_processing_en.ml --lang en
 python -m multilingualprogramming run examples/data_processing_fr.ml --lang fr
 ```
 
+## 4. Japanese Surface Syntax Example
+
+These two programs compute the same result with different loop phrasing.
+
+- Surface form: `examples/surface_for_ja.ml`
+- Canonical form: `examples/surface_for_ja_canonical.ml`
+
+Run:
+
+```bash
+python -m multilingualprogramming run examples/surface_for_ja.ml --lang ja
+python -m multilingualprogramming run examples/surface_for_ja_canonical.ml --lang ja
+```
+
 ## Python Module Examples
 
 The original Python-module examples are still available:

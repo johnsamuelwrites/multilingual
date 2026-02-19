@@ -27,6 +27,9 @@ from multilingualprogramming.parser.ast_nodes import (
     FStringLiteral, AssertStatement, ChainedAssignment, DictUnpackEntry,
 )
 from multilingualprogramming.parser.error_messages import ErrorMessageRegistry
+from multilingualprogramming.parser.surface_normalizer import (
+    normalize_surface_tokens,
+)
 from multilingualprogramming.exceptions import ParseError
 
 # Concepts that begin compound statements
@@ -76,9 +79,9 @@ class Parser:
     """
 
     def __init__(self, tokens, source_language=None):
-        self.tokens = tokens
-        self.pos = 0
         self.source_language = source_language or "en"
+        self.tokens = normalize_surface_tokens(tokens, self.source_language)
+        self.pos = 0
         self._error_registry = ErrorMessageRegistry()
 
     # ------------------------------------------------------------------

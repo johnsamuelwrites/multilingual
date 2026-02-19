@@ -287,6 +287,30 @@ ausgeben(addiere(5, 3))
         self.assertTrue(result.success, result.errors)
         self.assertEqual(result.output.strip(), "10")
 
+    def test_japanese_iterable_first_surface_for_loop(self):
+        source = (
+            "\u5909\u6570 \u7d50\u679c = 0\n"
+            "\u7bc4\u56f2(5) \u5185\u306e \u5404 i \u306b\u5bfe\u3057\u3066:\n"
+            "    \u7d50\u679c = \u7d50\u679c + i\n"
+            "\u8868\u793a(\u7d50\u679c)\n"
+        )
+        executor = ProgramExecutor(language="ja")
+        result = executor.execute(source)
+        self.assertTrue(result.success, result.errors)
+        self.assertEqual(result.output.strip(), "10")
+
+    def test_arabic_iterable_first_surface_for_loop(self):
+        source = (
+            "\u0644\u064a\u0643\u0646 total = 0\n"
+            "range(5) \u0636\u0645\u0646 \u0644\u0643\u0644 i:\n"
+            "    total = total + i\n"
+            "\u0627\u0637\u0628\u0639(total)\n"
+        )
+        executor = ProgramExecutor(language="ar")
+        result = executor.execute(source)
+        self.assertTrue(result.success, result.errors)
+        self.assertEqual(result.output.strip(), "10")
+
     def test_japanese_program(self):
         source = """\
 関数 足し算(甲, 乙):
