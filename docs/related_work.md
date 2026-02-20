@@ -69,6 +69,7 @@ original surface syntax.
 ## References
 
 - [Reddit discussion thread](https://www.reddit.com/r/ProgrammingLanguages/comments/1r860hw/multilingual_a_programming_language_with_one/)
+- [Reddit r/Compilers thread: How far can you decouple a programming language's surface syntax from its semantic core?](https://www.reddit.com/r/Compilers/comments/1r9q6rt/how_far_can_you_decouple_a_programming_languages/)
 - [Hedy language](https://www.hedy.org/)
 - [ALGOL 68](https://en.wikipedia.org/wiki/ALGOL_68)
 - [Non-English-based programming languages](https://en.wikipedia.org/wiki/Non-English-based_programming_languages)
