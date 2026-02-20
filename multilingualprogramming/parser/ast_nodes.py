@@ -348,34 +348,62 @@ class TupleLiteral(ASTNode):
     def __init__(self, elements, line=0, column=0):
         super().__init__(line, column)
         self.elements = elements
+class ComprehensionClause(ASTNode):
+    """Single comprehension clause: for target in iterable [if cond]..."""
+    def __init__(self, target, iterable, conditions=None, line=0, column=0):
+        super().__init__(line, column)
+        self.target = target
+        self.iterable = iterable
+        self.conditions = conditions or []
 class ListComprehension(ASTNode):
     """List comprehension: [expr for target in iterable if cond]."""
     def __init__(self, element, target, iterable, conditions=None,
-                 line=0, column=0):
+                 clauses=None, line=0, column=0):
         super().__init__(line, column)
         self.element = element
-        self.target = target
-        self.iterable = iterable
-        self.conditions = conditions or []
+        self.clauses = clauses or [
+            ComprehensionClause(
+                target, iterable, conditions or [], line=line, column=column
+            )
+        ]
+        first = self.clauses[0]
+        # Backward compatibility: expose first-clause fields.
+        self.target = first.target
+        self.iterable = first.iterable
+        self.conditions = first.conditions
 class DictComprehension(ASTNode):
     """Dict comprehension: {key: val for target in iterable if cond}."""
     def __init__(self, key, value, target, iterable, conditions=None,
-                 line=0, column=0):
+                 clauses=None, line=0, column=0):
         super().__init__(line, column)
         self.key = key
         self.value = value
-        self.target = target
-        self.iterable = iterable
-        self.conditions = conditions or []
+        self.clauses = clauses or [
+            ComprehensionClause(
+                target, iterable, conditions or [], line=line, column=column
+            )
+        ]
+        first = self.clauses[0]
+        # Backward compatibility: expose first-clause fields.
+        self.target = first.target
+        self.iterable = first.iterable
+        self.conditions = first.conditions
 class GeneratorExpr(ASTNode):
     """Generator expression: (expr for target in iterable if cond)."""
     def __init__(self, element, target, iterable, conditions=None,
-                 line=0, column=0):
+                 clauses=None, line=0, column=0):
         super().__init__(line, column)
         self.element = element
-        self.target = target
-        self.iterable = iterable
-        self.conditions = conditions or []
+        self.clauses = clauses or [
+            ComprehensionClause(
+                target, iterable, conditions or [], line=line, column=column
+            )
+        ]
+        first = self.clauses[0]
+        # Backward compatibility: expose first-clause fields.
+        self.target = first.target
+        self.iterable = first.iterable
+        self.conditions = first.conditions
 class FStringLiteral(ASTNode):
     """F-string with interpolated expressions: f"text {expr} text"."""
     def __init__(self, parts, line=0, column=0):

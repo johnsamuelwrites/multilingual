@@ -298,6 +298,13 @@ class _ExpressionGenerator:
         """Recursively generate an expression string."""
         return node.accept(self)
 
+    def _comprehension_clauses(self, node):
+        """Return comprehension clauses with backward compatibility."""
+        clauses = getattr(node, "clauses", None)
+        if clauses:
+            return clauses
+        return [node]
+
     def _convert_numeral(self, raw_value):
         """Convert a multilingual numeral string to a Python numeric literal."""
         try:
@@ -473,32 +480,38 @@ class _ExpressionGenerator:
 
     def visit_ListComprehension(self, node):
         elem = self._expr(node.element)
-        target = self._expr(node.target)
-        iterable = self._expr(node.iterable)
-        result = f"[{elem} for {target} in {iterable}"
-        for cond in node.conditions:
-            result += f" if {self._expr(cond)}"
+        result = f"[{elem}"
+        for clause in self._comprehension_clauses(node):
+            target = self._expr(clause.target)
+            iterable = self._expr(clause.iterable)
+            result += f" for {target} in {iterable}"
+            for cond in clause.conditions:
+                result += f" if {self._expr(cond)}"
         result += "]"
         return result
 
     def visit_DictComprehension(self, node):
         key = self._expr(node.key)
         val = self._expr(node.value)
-        target = self._expr(node.target)
-        iterable = self._expr(node.iterable)
-        result = "{" + f"{key}: {val} for {target} in {iterable}"
-        for cond in node.conditions:
-            result += f" if {self._expr(cond)}"
+        result = "{" + f"{key}: {val}"
+        for clause in self._comprehension_clauses(node):
+            target = self._expr(clause.target)
+            iterable = self._expr(clause.iterable)
+            result += f" for {target} in {iterable}"
+            for cond in clause.conditions:
+                result += f" if {self._expr(cond)}"
         result += "}"
         return result
 
     def visit_GeneratorExpr(self, node):
         elem = self._expr(node.element)
-        target = self._expr(node.target)
-        iterable = self._expr(node.iterable)
-        result = f"({elem} for {target} in {iterable}"
-        for cond in node.conditions:
-            result += f" if {self._expr(cond)}"
+        result = f"({elem}"
+        for clause in self._comprehension_clauses(node):
+            target = self._expr(clause.target)
+            iterable = self._expr(clause.iterable)
+            result += f" for {target} in {iterable}"
+            for cond in clause.conditions:
+                result += f" if {self._expr(cond)}"
         result += ")"
         return result
 

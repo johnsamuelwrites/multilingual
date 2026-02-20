@@ -356,6 +356,13 @@ class ComprehensionTestSuite(unittest.TestCase):
         self.assertIsInstance(expr, ListComprehension)
         self.assertEqual(len(expr.conditions), 1)
 
+    def test_parse_nested_list_comprehension(self):
+        source = "[x for row in items for x in row]\n"
+        prog = _parse(source)
+        expr = prog.body[0].expression
+        self.assertIsInstance(expr, ListComprehension)
+        self.assertEqual(len(expr.clauses), 2)
+
     def test_parse_dict_comprehension(self):
         source = "{k: v for k, v in items}\n"
         prog = _parse(source)
@@ -388,6 +395,11 @@ class ComprehensionTestSuite(unittest.TestCase):
         self.assertIn("{", result)
         self.assertIn("for", result)
 
+    def test_codegen_nested_list_comprehension(self):
+        source = "[x for row in items for x in row]\n"
+        result = _generate(source)
+        self.assertEqual(result.count(" for "), 2)
+
     def test_execute_list_comprehension(self):
         source = "let result = [x * 2 for x in range(5)]\nprint(result)\n"
         result = _execute(source)
@@ -414,9 +426,10 @@ class ComprehensionTestSuite(unittest.TestCase):
         self.assertEqual(result.output.strip(), "30")
 
     def test_execute_nested_comp(self):
-        _source = "let flat = [x for row in [[1, 2], [3, 4]] for x in row]\nprint(flat)\n"
-        # Note: nested for clauses are not supported yet; this tests single-level
-        self.skipTest("Nested for clauses are not supported yet.")
+        source = "let flat = [x for row in [[1, 2], [3, 4]] for x in row]\nprint(flat)\n"
+        result = _execute(source)
+        self.assertTrue(result.success)
+        self.assertEqual(result.output.strip(), "[1, 2, 3, 4]")
 
 
 # ======================================================================

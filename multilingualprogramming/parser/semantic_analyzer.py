@@ -512,48 +512,51 @@ class SemanticAnalyzer:
 
     def visit_ListComprehension(self, node):
         self.symbol_table.enter_scope("listcomp", "block")
-        node.iterable.accept(self)
-        if isinstance(node.target, str):
-            self.symbol_table.define(
-                node.target, "variable",
-                line=node.line, column=node.column
-            )
-        else:
-            self._define_comp_target(node.target, node)
+        for clause in getattr(node, "clauses", [node]):
+            clause.iterable.accept(self)
+            if isinstance(clause.target, str):
+                self.symbol_table.define(
+                    clause.target, "variable",
+                    line=node.line, column=node.column
+                )
+            else:
+                self._define_comp_target(clause.target, node)
+            for cond in clause.conditions:
+                cond.accept(self)
         node.element.accept(self)
-        for cond in node.conditions:
-            cond.accept(self)
         self.symbol_table.exit_scope()
 
     def visit_DictComprehension(self, node):
         self.symbol_table.enter_scope("dictcomp", "block")
-        node.iterable.accept(self)
-        if isinstance(node.target, str):
-            self.symbol_table.define(
-                node.target, "variable",
-                line=node.line, column=node.column
-            )
-        else:
-            self._define_comp_target(node.target, node)
+        for clause in getattr(node, "clauses", [node]):
+            clause.iterable.accept(self)
+            if isinstance(clause.target, str):
+                self.symbol_table.define(
+                    clause.target, "variable",
+                    line=node.line, column=node.column
+                )
+            else:
+                self._define_comp_target(clause.target, node)
+            for cond in clause.conditions:
+                cond.accept(self)
         node.key.accept(self)
         node.value.accept(self)
-        for cond in node.conditions:
-            cond.accept(self)
         self.symbol_table.exit_scope()
 
     def visit_GeneratorExpr(self, node):
         self.symbol_table.enter_scope("genexpr", "block")
-        node.iterable.accept(self)
-        if isinstance(node.target, str):
-            self.symbol_table.define(
-                node.target, "variable",
-                line=node.line, column=node.column
-            )
-        else:
-            self._define_comp_target(node.target, node)
+        for clause in getattr(node, "clauses", [node]):
+            clause.iterable.accept(self)
+            if isinstance(clause.target, str):
+                self.symbol_table.define(
+                    clause.target, "variable",
+                    line=node.line, column=node.column
+                )
+            else:
+                self._define_comp_target(clause.target, node)
+            for cond in clause.conditions:
+                cond.accept(self)
         node.element.accept(self)
-        for cond in node.conditions:
-            cond.accept(self)
         self.symbol_table.exit_scope()
 
     def _define_comp_target(self, target, node):

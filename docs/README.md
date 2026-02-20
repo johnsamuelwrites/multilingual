@@ -104,12 +104,20 @@ The implementation includes support for:
 - assertions
 - chained assignment
 - slices (`a[1:3]`, `a[::-1]`)
-- comprehensions (list, dict, generator)
+- comprehensions (list, dict, generator), including nested `for` clauses
 - default parameters, `*args`, `**kwargs`
 - tuple unpacking
 - decorators
 - f-strings
 - triple-quoted strings
+
+Example (nested comprehension):
+
+```text
+let rows = [[1, 2], [3, 4]]
+let flat = [x for row in rows for x in row]
+print(flat)  # [1, 2, 3, 4]
+```
 
 ## API Entry Points
 

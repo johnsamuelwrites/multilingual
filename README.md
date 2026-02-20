@@ -185,6 +185,7 @@ python -m multilingualprogramming run hello.ml --lang fr
 Additional syntax now supported:
 
 - Type annotations (`x: int`, `def f(x: int) -> str`)
+- Nested comprehension clauses (`[x for row in rows for x in row]`)
 - Set literals (`{1, 2, 3}`)
 - Multiple context managers (`with A() as a, B() as b`)
 - Dictionary unpacking (`{**d1, **d2}`)

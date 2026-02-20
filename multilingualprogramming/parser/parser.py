@@ -23,6 +23,7 @@ from multilingualprogramming.parser.ast_nodes import (
     TryStatement, ExceptHandler, MatchStatement, CaseClause,
     WithStatement, ImportStatement, FromImportStatement,
     SliceExpr, Parameter, StarredExpr, TupleLiteral,
+    ComprehensionClause,
     ListComprehension, DictComprehension, GeneratorExpr,
     FStringLiteral, AssertStatement, ChainedAssignment, DictUnpackEntry,
 )
@@ -1542,43 +1543,59 @@ class Parser:
         Uses _parse_or_expression for iterable/conditions to avoid
         consuming the comprehension 'if' as a ternary operator.
         """
-        self._advance()  # consume FOR keyword
-        target = self._parse_comp_target()
-        self._expect_concept("IN")
-        iterable = self._parse_or_expression()
-
-        conditions = []
-        while self._match_concept("COND_IF"):
-            self._advance()
-            conditions.append(self._parse_or_expression())
+        clauses = self._parse_comprehension_clauses()
+        first = clauses[0]
 
         if kind == "list":
             self._expect_delimiter("]")
             return ListComprehension(
-                element, target, iterable, conditions,
+                element, first.target, first.iterable, first.conditions,
+                clauses=clauses,
                 line=tok.line, column=tok.column
             )
         # generator
         self._expect_delimiter(")")
         return GeneratorExpr(
-            element, target, iterable, conditions,
+            element, first.target, first.iterable, first.conditions,
+            clauses=clauses,
             line=tok.line, column=tok.column
         )
 
     def _parse_dict_comprehension_tail(self, key, value, tok):
         """Parse: FOR target IN iterable [IF cond]... }."""
-        self._advance()  # consume FOR keyword
-        target = self._parse_comp_target()
-        self._expect_concept("IN")
-        iterable = self._parse_or_expression()
-
-        conditions = []
-        while self._match_concept("COND_IF"):
-            self._advance()
-            conditions.append(self._parse_or_expression())
+        clauses = self._parse_comprehension_clauses()
+        first = clauses[0]
 
         self._expect_delimiter("}")
         return DictComprehension(
-            key, value, target, iterable, conditions,
+            key, value, first.target, first.iterable, first.conditions,
+            clauses=clauses,
             line=tok.line, column=tok.column
         )
+
+    def _parse_comprehension_clauses(self):
+        """Parse one or more comprehension clauses.
+
+        Grammar: (FOR target IN iterable [IF cond]...)+
+        """
+        clauses = []
+        while self._match_concept("LOOP_FOR"):
+            for_tok = self._advance()  # consume FOR keyword
+            target = self._parse_comp_target()
+            self._expect_concept("IN")
+            iterable = self._parse_or_expression()
+
+            conditions = []
+            while self._match_concept("COND_IF"):
+                self._advance()
+                conditions.append(self._parse_or_expression())
+
+            clauses.append(ComprehensionClause(
+                target, iterable, conditions,
+                line=for_tok.line, column=for_tok.column
+            ))
+
+        if not clauses:
+            self._error("UNEXPECTED_TOKEN", self._current(),
+                        token=self._current().value)
+        return clauses
