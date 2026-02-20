@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1280" height="760" viewBox="0 0 1280 760" role="img" aria-labelledby="title desc">
   <title id="title">Multilingual processing pipeline with optional surface normalization</title>
-  <desc id="desc">Diagram showing source code flowing through lexer, optional surface normalizer, parser, semantic analyzer, Python code generator, and runtime execution.</desc>
+  <desc id="desc">Diagram showing source code flowing through lexer, optional surface normalizer, parser, semantic analyzer, Python code generator, and runtime execution, including async and try/except/else support in the shared pipeline.</desc>
   <defs>
     <style>
       .bg { fill: #f7f7f2; }
@@ -28,7 +28,7 @@
   <rect class="bg" x="0" y="0" width="1280" height="760" />
 
   <text class="title" x="40" y="56">How multilingual Works (with Surface Normalization)</text>
-  <text class="subtitle" x="40" y="88">One semantic core, optional language-specific surface rewrites, shared AST and runtime behavior.</text>
+  <text class="subtitle" x="40" y="88">One semantic core, optional language-specific surface rewrites, and shared AST/runtime behavior across languages.</text>
 
   <rect class="box" x="42" y="140" width="220" height="110" />
   <text class="label" x="62" y="176">Source .ml</text>
@@ -46,6 +46,7 @@
   <text class="small" x="602" y="196">resources/usm/surface_patterns.json</text>
   <text class="small" x="602" y="223">Match token patterns</text>
   <text class="small" x="602" y="244">Rewrite to canonical concept order</text>
+  <text class="small" x="602" y="265">Iterable-first pilot rules: ja, ar, es, pt</text>
 
   <rect class="box-core" x="902" y="140" width="220" height="110" />
   <text class="label" x="922" y="176">Parser</text>
@@ -78,12 +79,13 @@
   <text class="small" x="602" y="360">No matching surface rule: pass through unchanged</text>
 
   <rect class="legend" x="42" y="300" width="810" height="282" />
-  <text class="label" x="62" y="336">Concrete Example (Japanese iterable-first loop)</text>
+  <text class="label" x="62" y="336">Concrete Example (Iterable-First Loop Normalization)</text>
 
   <rect class="box" x="62" y="356" width="360" height="200" />
   <text class="small" x="82" y="386">Input surface code</text>
   <text class="small" x="82" y="416">range(4) 内の 各 i に対して:</text>
   <text class="small" x="82" y="438">    合計 = 合計 + i</text>
+  <text class="small" x="82" y="460">Equivalent surface variants exist for ar/es/pt.</text>
 
   <rect class="box-optional" x="462" y="356" width="370" height="200" />
   <text class="small" x="482" y="386">Pattern match captures:</text>
@@ -97,3 +99,5 @@
 
   <text class="small" x="42" y="608">Result: the parser and runtime only see canonical concept order, regardless of surface phrasing.</text>
 </svg>
+
+
