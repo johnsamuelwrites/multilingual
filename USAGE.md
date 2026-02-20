@@ -60,6 +60,18 @@ print(result.success)  # True
 print(result.output)   # 5
 ```
 
+`ProgramExecutor` enables `.ml` module imports automatically during execution.
+
+## Enable `.ml` Imports In Plain Python
+
+```python
+from multilingualprogramming import enable_multilingual_imports
+
+enable_multilingual_imports()
+
+import my_module  # loads my_module.ml when present on sys.path
+```
+
 ## Parse and Inspect AST
 
 ```python

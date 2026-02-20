@@ -14,6 +14,9 @@ from multilingualprogramming.numeral.fraction_numeral import FractionNumeral
 from multilingualprogramming.numeral.numeral_converter import NumeralConverter
 from multilingualprogramming.keyword.keyword_registry import KeywordRegistry
 from multilingualprogramming.keyword.keyword_validator import KeywordValidator
+from multilingualprogramming.keyword.language_pack_validator import (
+    LanguagePackValidator,
+)
 from multilingualprogramming.datetime.mp_date import MPDate
 from multilingualprogramming.datetime.mp_time import MPTime
 from multilingualprogramming.datetime.mp_datetime import MPDatetime
@@ -32,6 +35,9 @@ from multilingualprogramming.codegen.executor import ProgramExecutor, ExecutionR
 from multilingualprogramming.codegen.repl import REPL
 from multilingualprogramming.core.ir import CoreIRProgram
 from multilingualprogramming.core.lowering import lower_to_core_ir
+from multilingualprogramming.imports import (
+    enable_multilingual_imports, disable_multilingual_imports,
+)
 
 __all__ = [
     "MPNumeral",
@@ -42,6 +48,7 @@ __all__ = [
     "NumeralConverter",
     "KeywordRegistry",
     "KeywordValidator",
+    "LanguagePackValidator",
     "MPDate",
     "MPTime",
     "MPDatetime",
@@ -62,4 +69,6 @@ __all__ = [
     "REPL",
     "CoreIRProgram",
     "lower_to_core_ir",
+    "enable_multilingual_imports",
+    "disable_multilingual_imports",
 ]

@@ -14,7 +14,12 @@
       "zh": "意外的标记 '{token}' 在第 {line} 行第 {column} 列",
       "ja": "予期しないトークン '{token}' 行 {line}、列 {column}",
       "it": "Token imprevisto '{token}' alla riga {line}, colonna {column}",
-      "pt": "Token inesperado '{token}' na linha {line}, coluna {column}"
+      "pt": "Token inesperado '{token}' na linha {line}, coluna {column}",
+      "pl": "Nieoczekiwany token '{token}' w linii {line}, kolumnie {column}",
+      "nl": "Onverwachte token '{token}' op regel {line}, kolom {column}",
+      "sv": "Ovantad token '{token}' pa rad {line}, kolumn {column}",
+      "da": "Uventet token '{token}' pa linje {line}, kolonne {column}",
+      "fi": "Odottamaton tokeni '{token}' rivilla {line}, sarakkeessa {column}"
     },
     "EXPECTED_EXPRESSION": {
       "en": "Expected expression, got '{token}'",
@@ -28,7 +33,12 @@
       "zh": "期望表达式，得到 '{token}'",
       "ja": "式が必要ですが、'{token}' が見つかりました",
       "it": "Espressione attesa, trovato '{token}'",
-      "pt": "Express?o esperada, encontrado '{token}'"
+      "pt": "Express?o esperada, encontrado '{token}'",
+      "pl": "Oczekiwano wyrazenia, otrzymano '{token}'",
+      "nl": "Expressie verwacht, kreeg '{token}'",
+      "sv": "Forvantade uttryck, fick '{token}'",
+      "da": "Forventede udtryk, fik '{token}'",
+      "fi": "Lauseke odotettiin, saatiin '{token}'"
     },
     "EXPECTED_COLON": {
       "en": "Expected ':' after {construct}",
@@ -42,7 +52,12 @@
       "zh": "{construct} 后应有 ':'",
       "ja": "{construct} の後に ':' が必要です",
       "it": "Atteso ':' dopo {construct}",
-      "pt": "Esperado ':' ap?s {construct}"
+      "pt": "Esperado ':' ap?s {construct}",
+      "pl": "Oczekiwano ':' po {construct}",
+      "nl": "Verwachtte ':' na {construct}",
+      "sv": "Forvantade ':' efter {construct}",
+      "da": "Forventede ':' efter {construct}",
+      "fi": "Odotettiin ':' kohdan {construct} jalkeen"
     },
     "EXPECTED_INDENT": {
       "en": "Expected indented block",
@@ -56,7 +71,12 @@
       "zh": "期望缩进块",
       "ja": "インデントされたブロックが必要です",
       "it": "Blocco indentato atteso",
-      "pt": "Bloco indentado esperado"
+      "pt": "Bloco indentado esperado",
+      "pl": "Oczekiwano wciecia bloku",
+      "nl": "Ingesprongen blok verwacht",
+      "sv": "Indenterat block forvantades",
+      "da": "Indrykket blok forventet",
+      "fi": "Sisennetty lohko odotettiin"
     },
     "UNDEFINED_NAME": {
       "en": "Name '{name}' is not defined",
@@ -70,7 +90,12 @@
       "zh": "名称 '{name}' 未定义",
       "ja": "名前 '{name}' が定義されていません",
       "it": "Nome '{name}' non definito",
-      "pt": "Nome '{name}' n?o definido"
+      "pt": "Nome '{name}' n?o definido",
+      "pl": "Nazwa '{name}' nie jest zdefiniowana",
+      "nl": "Naam '{name}' is niet gedefinieerd",
+      "sv": "Namnet '{name}' ar inte definierat",
+      "da": "Navnet '{name}' er ikke defineret",
+      "fi": "Nimea '{name}' ei ole maaritelty"
     },
     "CONST_REASSIGNMENT": {
       "en": "Cannot assign to constant '{name}'",
@@ -84,7 +109,12 @@
       "zh": "无法赋值给常量 '{name}'",
       "ja": "定数 '{name}' に代入できません",
       "it": "Impossibile assegnare alla costante '{name}'",
-      "pt": "N?o ? poss?vel atribuir ? constante '{name}'"
+      "pt": "N?o ? poss?vel atribuir ? constante '{name}'",
+      "pl": "Nie mozna przypisac do stalej '{name}'",
+      "nl": "Kan niet toewijzen aan constante '{name}'",
+      "sv": "Kan inte tilldela konstanten '{name}'",
+      "da": "Kan ikke tildele konstanten '{name}'",
+      "fi": "Vakioon '{name}' ei voi sijoittaa uudelleen"
     },
     "BREAK_OUTSIDE_LOOP": {
       "en": "'break' used outside of a loop",
@@ -98,7 +128,12 @@
       "zh": "'break' 在循环外使用",
       "ja": "'break' がループの外で使用されています",
       "it": "'break' usato fuori da un ciclo",
-      "pt": "'break' usado fora de um loop"
+      "pt": "'break' usado fora de um loop",
+      "pl": "'break' uzyto poza petla",
+      "nl": "'break' buiten een lus gebruikt",
+      "sv": "'break' anvands utanfor en loop",
+      "da": "'break' brugt uden for en lokke",
+      "fi": "'break' kaytetty silmukan ulkopuolella"
     },
     "CONTINUE_OUTSIDE_LOOP": {
       "en": "'continue' used outside of a loop",
@@ -112,7 +147,12 @@
       "zh": "'continue' 在循环外使用",
       "ja": "'continue' がループの外で使用されています",
       "it": "'continue' usato fuori da un ciclo",
-      "pt": "'continue' usado fora de um loop"
+      "pt": "'continue' usado fora de um loop",
+      "pl": "'continue' uzyto poza petla",
+      "nl": "'continue' buiten een lus gebruikt",
+      "sv": "'continue' anvands utanfor en loop",
+      "da": "'continue' brugt uden for en lokke",
+      "fi": "'continue' kaytetty silmukan ulkopuolella"
     },
     "RETURN_OUTSIDE_FUNCTION": {
       "en": "'return' used outside of a function",
@@ -126,7 +166,12 @@
       "zh": "'return' 在函数外使用",
       "ja": "'return' が関数の外で使用されています",
       "it": "'return' usato fuori da una funzione",
-      "pt": "'return' usado fora de uma fun??o"
+      "pt": "'return' usado fora de uma fun??o",
+      "pl": "'return' uzyto poza funkcja",
+      "nl": "'return' buiten een functie gebruikt",
+      "sv": "'return' anvands utanfor en funktion",
+      "da": "'return' brugt uden for en funktion",
+      "fi": "'return' kaytetty funktion ulkopuolella"
     },
     "YIELD_OUTSIDE_FUNCTION": {
       "en": "'yield' used outside of a function",
@@ -140,7 +185,12 @@
       "zh": "'yield' 在函数外使用",
       "ja": "'yield' が関数の外で使用されています",
       "it": "'yield' usato fuori da una funzione",
-      "pt": "'yield' usado fora de uma fun??o"
+      "pt": "'yield' usado fora de uma fun??o",
+      "pl": "'yield' uzyto poza funkcja",
+      "nl": "'yield' buiten een functie gebruikt",
+      "sv": "'yield' anvands utanfor en funktion",
+      "da": "'yield' brugt uden for en funktion",
+      "fi": "'yield' kaytetty funktion ulkopuolella"
     },
     "DUPLICATE_DEFINITION": {
       "en": "Name '{name}' is already defined in this scope",
@@ -154,7 +204,12 @@
       "zh": "名称 '{name}' 在此作用域中已定义",
       "ja": "名前 '{name}' はこのスコープで既に定義されています",
       "it": "Il nome '{name}' e gi? definito in questo scope",
-      "pt": "O nome '{name}' j? est? definido neste escopo"
+      "pt": "O nome '{name}' j? est? definido neste escopo",
+      "pl": "Nazwa '{name}' jest juz zdefiniowana w tym zasiegu",
+      "nl": "Naam '{name}' is al gedefinieerd in deze scope",
+      "sv": "Namnet '{name}' ar redan definierat i detta scope",
+      "da": "Navnet '{name}' er allerede defineret i dette scope",
+      "fi": "Nimi '{name}' on jo maaritelty tassa laajuudessa"
     },
     "TYPE_MISMATCH": {
       "en": "Type mismatch: expected {expected}, got {actual}",
@@ -168,7 +223,12 @@
       "zh": "类型不匹配：期望 {expected}，得到 {actual}",
       "ja": "型の不一致: {expected} が必要ですが、{actual} が見つかりました",
       "it": "Incompatibilit? di tipo: atteso {expected}, ottenuto {actual}",
-      "pt": "Incompatibilidade de tipo: esperado {expected}, obtido {actual}"
+      "pt": "Incompatibilidade de tipo: esperado {expected}, obtido {actual}",
+      "pl": "Niezgodnosc typow: oczekiwano {expected}, otrzymano {actual}",
+      "nl": "Typefout: verwacht {expected}, kreeg {actual}",
+      "sv": "Typfel: forvantade {expected}, fick {actual}",
+      "da": "Typefejl: forventede {expected}, fik {actual}",
+      "fi": "Tyyppivirhe: odotettiin {expected}, saatiin {actual}"
     },
     "INVALID_ASSIGNMENT_TARGET": {
       "en": "Cannot assign to {target}",
@@ -182,7 +242,12 @@
       "zh": "无法赋值给 {target}",
       "ja": "{target} に代入できません",
       "it": "Impossibile assegnare a {target}",
-      "pt": "N?o ? poss?vel atribuir a {target}"
+      "pt": "N?o ? poss?vel atribuir a {target}",
+      "pl": "Nie mozna przypisac do {target}",
+      "nl": "Kan niet toewijzen aan {target}",
+      "sv": "Kan inte tilldela till {target}",
+      "da": "Kan ikke tildele til {target}",
+      "fi": "Ei voi sijoittaa kohteeseen {target}"
     },
     "EXPECTED_IDENTIFIER": {
       "en": "Expected identifier, got '{token}'",
@@ -196,7 +261,12 @@
       "zh": "期望标识符，得到 '{token}'",
       "ja": "識別子が必要ですが、'{token}' が見つかりました",
       "it": "Identificatore atteso, trovato '{token}'",
-      "pt": "Identificador esperado, encontrado '{token}'"
+      "pt": "Identificador esperado, encontrado '{token}'",
+      "pl": "Oczekiwano identyfikatora, otrzymano '{token}'",
+      "nl": "Identifier verwacht, kreeg '{token}'",
+      "sv": "Identifierare forvantades, fick '{token}'",
+      "da": "Identifier forventet, fik '{token}'",
+      "fi": "Tunniste odotettiin, saatiin '{token}'"
     },
     "MISMATCHED_DELIMITER": {
       "en": "Expected '{expected}', got '{actual}'",
@@ -210,7 +280,12 @@
       "zh": "期望 '{expected}'，得到 '{actual}'",
       "ja": "'{expected}' が必要ですが、'{actual}' が見つかりました",
       "it": "Atteso '{expected}', trovato '{actual}'",
-      "pt": "Esperado '{expected}', encontrado '{actual}'"
+      "pt": "Esperado '{expected}', encontrado '{actual}'",
+      "pl": "Oczekiwano '{expected}', otrzymano '{actual}'",
+      "nl": "Verwachtte '{expected}', kreeg '{actual}'",
+      "sv": "Forvantade '{expected}', fick '{actual}'",
+      "da": "Forventede '{expected}', fik '{actual}'",
+      "fi": "Odotettiin '{expected}', saatiin '{actual}'"
     },
     "INVALID_SYNTAX": {
       "en": "Invalid syntax",
@@ -224,7 +299,12 @@
       "zh": "无效语法",
       "ja": "無効な構文",
       "it": "Sintassi non valida",
-      "pt": "Sintaxe inv?lida"
+      "pt": "Sintaxe inv?lida",
+      "pl": "Niepoprawna skladnia",
+      "nl": "Ongeldige syntaxis",
+      "sv": "Ogiltig syntax",
+      "da": "Ugyldig syntaks",
+      "fi": "Virheellinen syntaksi"
     }
   }
 }

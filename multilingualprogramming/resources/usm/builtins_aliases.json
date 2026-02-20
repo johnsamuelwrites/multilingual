@@ -36,6 +36,21 @@
       ],
       "ja": [
         "範囲"
+      ],
+      "pl": [
+        "zakres"
+      ],
+      "nl": [
+        "bereik"
+      ],
+      "sv": [
+        "intervall"
+      ],
+      "da": [
+        "interval"
+      ],
+      "fi": [
+        "vali"
       ]
     },
     "len": {
@@ -71,6 +86,21 @@
       ],
       "ja": [
         "長さ"
+      ],
+      "pl": [
+        "dlugosc"
+      ],
+      "nl": [
+        "lengte"
+      ],
+      "sv": [
+        "langd"
+      ],
+      "da": [
+        "laengde"
+      ],
+      "fi": [
+        "pituus"
       ]
     },
     "sum": {
@@ -106,6 +136,21 @@
       ],
       "ja": [
         "合計"
+      ],
+      "pl": [
+        "suma"
+      ],
+      "nl": [
+        "som"
+      ],
+      "sv": [
+        "summa"
+      ],
+      "da": [
+        "sum"
+      ],
+      "fi": [
+        "summa"
       ]
     },
     "abs": {
@@ -141,6 +186,21 @@
       ],
       "ja": [
         "絶対値"
+      ],
+      "pl": [
+        "bezwzgledna"
+      ],
+      "nl": [
+        "absoluut"
+      ],
+      "sv": [
+        "absolut"
+      ],
+      "da": [
+        "absolut"
+      ],
+      "fi": [
+        "itseisarvo"
       ]
     },
     "min": {
@@ -177,6 +237,21 @@
       ],
       "ja": [
         "最小値"
+      ],
+      "pl": [
+        "minimum"
+      ],
+      "nl": [
+        "minimum"
+      ],
+      "sv": [
+        "minimum"
+      ],
+      "da": [
+        "minimum"
+      ],
+      "fi": [
+        "minimi"
       ]
     },
     "max": {
@@ -213,6 +288,21 @@
       ],
       "ja": [
         "最大値"
+      ],
+      "pl": [
+        "maksimum"
+      ],
+      "nl": [
+        "maximum"
+      ],
+      "sv": [
+        "maximum"
+      ],
+      "da": [
+        "maksimum"
+      ],
+      "fi": [
+        "maksimi"
       ]
     },
     "print": {

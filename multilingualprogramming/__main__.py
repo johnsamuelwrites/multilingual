@@ -12,6 +12,8 @@ Usage:
     python -m multilingualprogramming run <file>           # Execute a file
     python -m multilingualprogramming repl [--lang XX]     # Start REPL
     python -m multilingualprogramming compile <file>       # Show generated Python
+    python -m multilingualprogramming smoke --lang fr      # Validate one language pack
+    python -m multilingualprogramming smoke --all          # Validate all language packs
 """
 
 import argparse
@@ -20,6 +22,10 @@ import sys
 from multilingualprogramming.codegen.executor import ProgramExecutor
 from multilingualprogramming.codegen.python_generator import PythonCodeGenerator
 from multilingualprogramming.codegen.repl import REPL
+from multilingualprogramming.keyword.language_pack_validator import (
+    LanguagePackValidator,
+)
+from multilingualprogramming.exceptions import UnsupportedLanguageError
 from multilingualprogramming.lexer.lexer import Lexer
 from multilingualprogramming.parser.parser import Parser
 from multilingualprogramming.version import __version__
@@ -82,6 +88,36 @@ def cmd_compile(args):
     print(python_source)
 
 
+def cmd_smoke(args):
+    """Run language-pack smoke validation checks."""
+    registry_validator = LanguagePackValidator()
+    languages = (
+        sorted(registry_validator.get_supported_languages())
+        if args.all
+        else [args.lang]
+    )
+
+    failed = False
+    for language in languages:
+        try:
+            errors = registry_validator.validate(language)
+        except UnsupportedLanguageError as exc:
+            failed = True
+            print(f"[FAIL] {language}: {exc}", file=sys.stderr)
+            continue
+
+        if errors:
+            failed = True
+            print(f"[FAIL] {language}", file=sys.stderr)
+            for error in errors:
+                print(f"  - {error}", file=sys.stderr)
+        else:
+            print(f"[PASS] {language}")
+
+    if failed:
+        sys.exit(1)
+
+
 def main():
     """Run the CLI entry point and dispatch subcommands."""
     parser = argparse.ArgumentParser(
@@ -124,6 +160,19 @@ def main():
         help="Source language code (e.g., en, fr, hi). Auto-detect if omitted.",
     )
 
+    # smoke subcommand
+    smoke_parser = subparsers.add_parser(
+        "smoke", help="Validate language pack(s)"
+    )
+    smoke_parser.add_argument(
+        "--lang", default="en",
+        help="Language code to validate (default: en)",
+    )
+    smoke_parser.add_argument(
+        "--all", action="store_true",
+        help="Validate all supported languages",
+    )
+
     args = parser.parse_args()
 
     if args.command == "run":
@@ -132,6 +181,8 @@ def main():
         cmd_repl(args)
     elif args.command == "compile":
         cmd_compile(args)
+    elif args.command == "smoke":
+        cmd_smoke(args)
     else:
         # Default: start REPL
         args.lang = None

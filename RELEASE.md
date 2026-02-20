@@ -1,6 +1,30 @@
 # Release Notes
 
-## v0.2.0 (Current)
+## v0.3.0 (Current)
+
+### Frontend Equivalence
+- Added an all-language full-pipeline regression test that starts from one core template, renders per-language keywords, transpiles, and executes for every supported language.
+- Expanded equivalence validation to check deterministic transpiled Python parity across language frontends.
+
+### Cross-Language Imports
+- Added import-hook support for loading `.ml` modules and packages (`__init__.ml`) via Python import machinery.
+- Enabled multilingual imports automatically in executor and REPL runtime paths.
+- Added integration tests for English/French cross-imports, package imports, and manual enable/disable flow.
+
+### Language Coverage
+- Added five new European language packs: Polish (`pl`), Dutch (`nl`), Swedish (`sv`), Danish (`da`), and Finnish (`fi`).
+- Localized keyword mappings, parser/semantic error messages, REPL help/messages/aliases, operator descriptions, and runtime builtin aliases for the new languages.
+- Fixed legacy keyword placeholders surfaced by full-pipeline testing (Italian `IS`, Tamil `NOT`).
+
+### Language Onboarding
+- Added a contributor-ready onboarding checklist/template for new language packs.
+- Added a `multilingual smoke` language-pack validation path and wired it into workflows.
+
+### Tooling and Quality
+- Strengthened CI gates with packaging sanity checks and CLI smoke runs in addition to tests/lint.
+- Added cross-language import examples under `examples/` and updated docs (`README.md`, `USAGE.md`, `examples/README.md`).
+
+## v0.2.0
 
 ### Core Language
 - Added a surface-normalization layer for selected alternate phrasing patterns.

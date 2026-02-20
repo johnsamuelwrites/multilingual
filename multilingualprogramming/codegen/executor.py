@@ -20,6 +20,7 @@ from multilingualprogramming.parser.semantic_analyzer import SemanticAnalyzer
 from multilingualprogramming.codegen.python_generator import PythonCodeGenerator
 from multilingualprogramming.codegen.runtime_builtins import RuntimeBuiltins
 from multilingualprogramming.core.lowering import lower_to_core_ir
+from multilingualprogramming.imports import enable_multilingual_imports
 from multilingualprogramming.exceptions import (
     RuntimeExecutionError,
     CodeGenerationError,
@@ -159,6 +160,8 @@ class ProgramExecutor:
     def _exec_python(self, python_source, language,
                      capture_output, globals_dict):
         """Compile and execute generated Python code."""
+        enable_multilingual_imports()
+
         # Build execution namespace with builtins
         builtins_ns = RuntimeBuiltins(language).namespace()
         exec_globals = dict(builtins_ns)

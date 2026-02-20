@@ -12,7 +12,12 @@
     "zh": "REPL 命令:",
     "ja": "REPL コマンド:",
     "it": "Comandi REPL:",
-    "pt": "Comandos REPL:"
+    "pt": "Comandos REPL:",
+    "pl": "Polecenia REPL:",
+    "nl": "REPL-opdrachten:",
+    "sv": "REPL-kommandon:",
+    "da": "REPL-kommandoer:",
+    "fi": "REPL-komennot:"
   },
   "messages": {
     "keywords_title": {
@@ -27,7 +32,12 @@
       "zh": "关键字 [{lang}] ({count}):",
       "ja": "キーワード [{lang}] ({count}):",
       "it": "Parole chiave [{lang}] ({count}):",
-      "pt": "Palavras-chave [{lang}] ({count}):"
+      "pt": "Palavras-chave [{lang}] ({count}):",
+      "pl": "Slowa kluczowe [{lang}] ({count}):",
+      "nl": "Sleutelwoorden [{lang}] ({count}):",
+      "sv": "Nyckelord [{lang}] ({count}):",
+      "da": "Nogleord [{lang}] ({count}):",
+      "fi": "Avainsanat [{lang}] ({count}):"
     },
     "symbols_title": {
       "en": "Operators and symbols [{lang}]:",
@@ -41,7 +51,12 @@
       "zh": "运算符和符号 [{lang}]:",
       "ja": "演算子と記号 [{lang}]:",
       "it": "Operatori e simboli [{lang}]:",
-      "pt": "Operadores e s?mbolos [{lang}]:"
+      "pt": "Operadores e s?mbolos [{lang}]:",
+      "pl": "Operatory i symbole [{lang}]:",
+      "nl": "Operatoren en symbolen [{lang}]:",
+      "sv": "Operatorer och symboler [{lang}]:",
+      "da": "Operatorer og symboler [{lang}]:",
+      "fi": "Operaattorit ja symbolit [{lang}]:"
     },
     "unsupported_language": {
       "en": "Unsupported language: {lang}",
@@ -55,7 +70,12 @@
       "zh": "不支持的语言：{lang}",
       "ja": "未対応の言語: {lang}",
       "it": "Lingua non supportata: {lang}",
-      "pt": "Idioma n?o suportado: {lang}"
+      "pt": "Idioma n?o suportado: {lang}",
+      "pl": "Nieobslugiwany jezyk: {lang}",
+      "nl": "Niet-ondersteunde taal: {lang}",
+      "sv": "Sprak som inte stods: {lang}",
+      "da": "Ikke-understottet sprog: {lang}",
+      "fi": "Ei tuettu kieli: {lang}"
     }
   },
   "help_order": [
@@ -107,6 +127,21 @@
         ],
         "pt": [
           "idioma"
+        ],
+        "pl": [
+          "jezyk"
+        ],
+        "nl": [
+          "taal"
+        ],
+        "sv": [
+          "sprak"
+        ],
+        "da": [
+          "sprog"
+        ],
+        "fi": [
+          "kieli"
         ]
       },
       "descriptions": {
@@ -121,7 +156,12 @@
         "zh": "切换语言（例如：:语言 fr）",
         "ja": "言語を切り替え（例: :言語 fr）",
         "it": "Cambia lingua (es.: :lingua fr)",
-        "pt": "Mudar idioma (ex.: :idioma fr)"
+        "pt": "Mudar idioma (ex.: :idioma fr)",
+        "pl": "Zmien jezyk (np. :jezyk fr)",
+        "nl": "Wissel taal (bijv. :taal fr)",
+        "sv": "Byt sprak (t.ex. :sprak fr)",
+        "da": "Skift sprog (fx :sprog fr)",
+        "fi": "Vaihda kieli (esim. :kieli fr)"
       }
     },
     "python": {
@@ -165,6 +205,21 @@
         ],
         "pt": [
           "python"
+        ],
+        "pl": [
+          "python"
+        ],
+        "nl": [
+          "python"
+        ],
+        "sv": [
+          "python"
+        ],
+        "da": [
+          "python"
+        ],
+        "fi": [
+          "python"
         ]
       },
       "descriptions": {
@@ -179,7 +234,12 @@
         "zh": "切换显示生成的 Python",
         "ja": "生成された Python の表示を切り替え",
         "it": "Mostra/nascondi Python generato",
-        "pt": "Mostrar/ocultar Python gerado"
+        "pt": "Mostrar/ocultar Python gerado",
+        "pl": "Przelacz podglad wygenerowanego Python",
+        "nl": "Toon/verberg gegenereerde Python",
+        "sv": "Vaxla visning av genererad Python",
+        "da": "Skift visning af genereret Python",
+        "fi": "Nayta/piilota generoitu Python"
       }
     },
     "reset": {
@@ -220,6 +280,21 @@
         ],
         "pt": [
           "reiniciar"
+        ],
+        "pl": [
+          "resetuj"
+        ],
+        "nl": [
+          "reset"
+        ],
+        "sv": [
+          "aterstall"
+        ],
+        "da": [
+          "nulstil"
+        ],
+        "fi": [
+          "nollaa"
         ]
       },
       "descriptions": {
@@ -234,7 +309,12 @@
         "zh": "清除变量和会话状态",
         "ja": "変数と状態をクリア",
         "it": "Cancella variabili e stato",
-        "pt": "Limpar vari?veis e estado"
+        "pt": "Limpar vari?veis e estado",
+        "pl": "Wyczysc stan sesji",
+        "nl": "Wis variabelen en status",
+        "sv": "Rensa variabler och tillstand",
+        "da": "Ryd variabler og tilstand",
+        "fi": "Tyhjenna muuttujat ja tila"
       }
     },
     "help": {
@@ -274,6 +354,21 @@
         ],
         "pt": [
           "ajuda"
+        ],
+        "pl": [
+          "pomoc"
+        ],
+        "nl": [
+          "hulp"
+        ],
+        "sv": [
+          "hjalp"
+        ],
+        "da": [
+          "hjaelp"
+        ],
+        "fi": [
+          "apu"
         ]
       },
       "descriptions": {
@@ -288,7 +383,12 @@
         "zh": "显示帮助",
         "ja": "このヘルプを表示",
         "it": "Mostra questo aiuto",
-        "pt": "Mostrar esta ajuda"
+        "pt": "Mostrar esta ajuda",
+        "pl": "Pokaz pomoc",
+        "nl": "Toon deze help",
+        "sv": "Visa denna hjalp",
+        "da": "Vis denne hjaelp",
+        "fi": "Nayta tama ohje"
       }
     },
     "keywords": {
@@ -334,6 +434,21 @@
         ],
         "pt": [
           "palavraschave"
+        ],
+        "pl": [
+          "slowakluczowe"
+        ],
+        "nl": [
+          "sleutelwoorden"
+        ],
+        "sv": [
+          "nyckelord"
+        ],
+        "da": [
+          "nogleord"
+        ],
+        "fi": [
+          "avainsanat"
         ]
       },
       "descriptions": {
@@ -348,7 +463,12 @@
         "zh": "显示语言关键字（例如：:关键字 fr）",
         "ja": "言語キーワードを表示（例: :キーワード fr）",
         "it": "Mostra parole chiave della lingua (es.: :parolechiave fr)",
-        "pt": "Mostrar palavras-chave do idioma (ex.: :palavraschave fr)"
+        "pt": "Mostrar palavras-chave do idioma (ex.: :palavraschave fr)",
+        "pl": "Pokaz slowa kluczowe jezyka (np. :slowakluczowe fr)",
+        "nl": "Toon taal-sleutelwoorden (bijv. :sleutelwoorden fr)",
+        "sv": "Visa sprakets nyckelord (t.ex. :nyckelord fr)",
+        "da": "Vis sprogets noegleord (fx :nogleord fr)",
+        "fi": "Nayta kielen avainsanat (esim. :avainsanat fr)"
       }
     },
     "symbols": {
@@ -399,6 +519,21 @@
         "pt": [
           "simbolos",
           "operadores"
+        ],
+        "pl": [
+          "symbole"
+        ],
+        "nl": [
+          "symbolen"
+        ],
+        "sv": [
+          "symboler"
+        ],
+        "da": [
+          "symboler"
+        ],
+        "fi": [
+          "symbolit"
         ]
       },
       "descriptions": {
@@ -413,7 +548,12 @@
         "zh": "显示运算符和符号（例如：:符号 fr）",
         "ja": "演算子と記号を表示（例: :記号 fr）",
         "it": "Mostra operatori e simboli (es.: :simboli fr)",
-        "pt": "Mostrar operadores e s?mbolos (ex.: :simbolos fr)"
+        "pt": "Mostrar operadores e s?mbolos (ex.: :simbolos fr)",
+        "pl": "Pokaz operatory i symbole (np. :symbole fr)",
+        "nl": "Toon operatoren en symbolen (bijv. :symbolen fr)",
+        "sv": "Visa operatorer och symboler (t.ex. :symboler fr)",
+        "da": "Vis operatorer og symboler (fx :symboler fr)",
+        "fi": "Nayta operaattorit ja symbolit (esim. :symbolit fr)"
       }
     },
     "quit": {
@@ -455,6 +595,21 @@
         ],
         "pt": [
           "sair"
+        ],
+        "pl": [
+          "wyjdz"
+        ],
+        "nl": [
+          "afsluiten"
+        ],
+        "sv": [
+          "avsluta"
+        ],
+        "da": [
+          "afslut"
+        ],
+        "fi": [
+          "poistu"
         ]
       },
       "descriptions": {
@@ -469,7 +624,12 @@
         "zh": "退出 REPL",
         "ja": "REPL を終了",
         "it": "Esci dal REPL",
-        "pt": "Sair do REPL"
+        "pt": "Sair do REPL",
+        "pl": "Zakoncz REPL",
+        "nl": "Sluit REPL af",
+        "sv": "Avsluta REPL",
+        "da": "Afslut REPL",
+        "fi": "Poistu REPL:sta"
       }
     }
   }

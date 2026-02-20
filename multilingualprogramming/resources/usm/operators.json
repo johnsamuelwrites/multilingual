@@ -16,7 +16,12 @@
         "ar": "جمع",
         "zh": "加",
         "it": "addition",
-        "pt": "addition"
+        "pt": "addition",
+        "pl": "dodawanie",
+        "nl": "optelling",
+        "sv": "addition",
+        "da": "addition",
+        "fi": "yhteenlasku"
       }
     },
     "SUBTRACT": {
@@ -34,7 +39,12 @@
         "ar": "طرح",
         "zh": "减",
         "it": "subtraction",
-        "pt": "subtraction"
+        "pt": "subtraction",
+        "pl": "odejmowanie",
+        "nl": "aftrekking",
+        "sv": "subtraktion",
+        "da": "subtraktion",
+        "fi": "vahennys"
       }
     },
     "MULTIPLY": {
@@ -53,7 +63,12 @@
         "ar": "ضرب",
         "zh": "乘",
         "it": "multiplication",
-        "pt": "multiplication"
+        "pt": "multiplication",
+        "pl": "mnozenie",
+        "nl": "vermenigvuldiging",
+        "sv": "multiplikation",
+        "da": "multiplikation",
+        "fi": "kertolasku"
       }
     },
     "DIVIDE": {
@@ -71,7 +86,12 @@
         "ar": "قسمة",
         "zh": "除",
         "it": "division",
-        "pt": "division"
+        "pt": "division",
+        "pl": "dzielenie",
+        "nl": "deling",
+        "sv": "division",
+        "da": "division",
+        "fi": "jakolasku"
       }
     },
     "FLOOR_DIVIDE": {
@@ -86,7 +106,12 @@
         "ar": "قسمة_صحيحة",
         "zh": "整除",
         "it": "floor division",
-        "pt": "floor division"
+        "pt": "floor division",
+        "pl": "dzielenie_calkowite",
+        "nl": "gehele_deling",
+        "sv": "heltalsdivision",
+        "da": "heltalsdivision",
+        "fi": "kokonaisjako"
       }
     },
     "MODULUS": {
@@ -103,7 +128,12 @@
         "ar": "باقي",
         "zh": "取余",
         "it": "modulus",
-        "pt": "modulus"
+        "pt": "modulus",
+        "pl": "modulo",
+        "nl": "modulo",
+        "sv": "modulo",
+        "da": "modulo",
+        "fi": "jakojaannos"
       }
     },
     "POWER": {
@@ -118,7 +148,12 @@
         "ar": "أس",
         "zh": "幂",
         "it": "exponentiation",
-        "pt": "exponentiation"
+        "pt": "exponentiation",
+        "pl": "potegowanie",
+        "nl": "machtsverheffing",
+        "sv": "potens",
+        "da": "potens",
+        "fi": "potenssi"
       }
     }
   },
@@ -137,7 +172,12 @@
         "ar": "يساوي",
         "zh": "等于",
         "it": "equal to",
-        "pt": "equal to"
+        "pt": "equal to",
+        "pl": "rowne",
+        "nl": "gelijk_aan",
+        "sv": "lika_med",
+        "da": "lig_med",
+        "fi": "yhta_suuri_kuin"
       }
     },
     "NOT_EQUAL": {
@@ -154,7 +194,12 @@
         "ar": "لا_يساوي",
         "zh": "不等于",
         "it": "not equal to",
-        "pt": "not equal to"
+        "pt": "not equal to",
+        "pl": "nierowne",
+        "nl": "niet_gelijk_aan",
+        "sv": "inte_lika_med",
+        "da": "ikke_lig_med",
+        "fi": "eri_suuri_kuin"
       }
     },
     "LESS_THAN": {
@@ -171,7 +216,12 @@
         "ar": "أقل_من",
         "zh": "小于",
         "it": "less than",
-        "pt": "less than"
+        "pt": "less than",
+        "pl": "mniejsze_niz",
+        "nl": "kleiner_dan",
+        "sv": "mindre_an",
+        "da": "mindre_end",
+        "fi": "pienempi_kuin"
       }
     },
     "GREATER_THAN": {
@@ -188,7 +238,12 @@
         "ar": "أكبر_من",
         "zh": "大于",
         "it": "greater than",
-        "pt": "greater than"
+        "pt": "greater than",
+        "pl": "wieksze_niz",
+        "nl": "groter_dan",
+        "sv": "storre_an",
+        "da": "storre_end",
+        "fi": "suurempi_kuin"
       }
     },
     "LESS_EQUAL": {
@@ -205,7 +260,12 @@
         "ar": "أقل_أو_يساوي",
         "zh": "小于等于",
         "it": "less than or equal",
-        "pt": "less than or equal"
+        "pt": "less than or equal",
+        "pl": "mniejsze_lub_rowne",
+        "nl": "kleiner_of_gelijk",
+        "sv": "mindre_eller_lika",
+        "da": "mindre_eller_lig",
+        "fi": "pienempi_tai_yhta_suuri"
       }
     },
     "GREATER_EQUAL": {
@@ -222,7 +282,12 @@
         "ar": "أكبر_أو_يساوي",
         "zh": "大于等于",
         "it": "greater than or equal",
-        "pt": "greater than or equal"
+        "pt": "greater than or equal",
+        "pl": "wieksze_lub_rowne",
+        "nl": "groter_of_gelijk",
+        "sv": "storre_eller_lika",
+        "da": "storre_eller_lig",
+        "fi": "suurempi_tai_yhta_suuri"
       }
     }
   },
@@ -241,7 +306,12 @@
         "ar": "تعيين",
         "zh": "赋值",
         "it": "assignment",
-        "pt": "assignment"
+        "pt": "assignment",
+        "pl": "przypisanie",
+        "nl": "toewijzing",
+        "sv": "tilldelning",
+        "da": "tildeling",
+        "fi": "sijoitus"
       }
     },
     "ADD_ASSIGN": {

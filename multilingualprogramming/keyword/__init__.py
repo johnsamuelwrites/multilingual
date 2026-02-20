@@ -8,3 +8,6 @@
 
 from multilingualprogramming.keyword.keyword_registry import KeywordRegistry
 from multilingualprogramming.keyword.keyword_validator import KeywordValidator
+from multilingualprogramming.keyword.language_pack_validator import (
+    LanguagePackValidator,
+)

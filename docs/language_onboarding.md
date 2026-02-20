@@ -294,3 +294,16 @@ Surface-pattern focused checks:
 ```bash
 python -m pytest -q tests/surface_normalizer_test.py tests/parser_test.py tests/executor_test.py
 ```
+
+Language-pack smoke checks:
+
+```bash
+python -m multilingualprogramming smoke --lang xx
+python -m multilingualprogramming smoke --all
+```
+
+## Starter Checklist Template
+
+Use this template when opening a PR for a new language pack:
+
+- `docs/templates/language_pack_checklist.md`

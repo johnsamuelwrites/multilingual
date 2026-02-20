@@ -168,6 +168,31 @@ Optional (force language instead of auto-detect):
 python -m multilingualprogramming run hello.ml --lang fr
 ```
 
+### 6. Cross-Language Module Imports
+
+You can import `.ml` modules across languages in one program. Example:
+
+`module_fr.ml`:
+
+```text
+soit valeur = 41
+def incremente(x):
+    retour x + 1
+```
+
+`main_en.ml`:
+
+```text
+import module_fr
+print(module_fr.incremente(module_fr.valeur))
+```
+
+Run:
+
+```bash
+python -m multilingualprogramming run main_en.ml --lang en
+```
+
 ## Roadmap (Short)
 
 - v0 (today): toy-but-working interpreter/transpiler, multiple languages, core constructs, REPL, and a tested end-to-end pipeline.
@@ -194,7 +219,7 @@ Additional syntax now supported:
 - Async features (`async def`, `await`, `async for`, `async with`)
 - Walrus operator (`:=`)
 
-Supported pilot languages: English, French, Spanish, German, Italian, Portuguese, Hindi, Arabic, Bengali, Tamil, Chinese (Simplified), Japanese.
+Supported pilot languages: English, French, Spanish, German, Italian, Portuguese, Polish, Dutch, Swedish, Danish, Finnish, Hindi, Arabic, Bengali, Tamil, Chinese (Simplified), Japanese.
 
 ## Run Examples
 

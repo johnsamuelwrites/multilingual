@@ -13,7 +13,12 @@
     "zh",
     "ja",
     "it",
-    "pt"
+    "pt",
+    "pl",
+    "nl",
+    "sv",
+    "da",
+    "fi"
   ],
   "categories": {
     "control_flow": {
@@ -29,7 +34,12 @@
         "zh": "如果",
         "ja": "もし",
         "it": "se",
-        "pt": "se"
+        "pt": "se",
+        "pl": "jesli",
+        "nl": "als",
+        "sv": "om",
+        "da": "hvis",
+        "fi": "jos"
       },
       "COND_ELSE": {
         "en": "else",
@@ -46,7 +56,12 @@
         "pt": [
           "senão",
           "senao"
-        ]
+        ],
+        "pl": "inaczej",
+        "nl": "anders",
+        "sv": "annars",
+        "da": "ellers",
+        "fi": "muuten"
       },
       "COND_ELIF": {
         "en": "elif",
@@ -68,7 +83,12 @@
           "senão se",
           "senaose",
           "senao_se"
-        ]
+        ],
+        "pl": "inaczej_jesli",
+        "nl": "anders_als",
+        "sv": "annars_om",
+        "da": "ellers_hvis",
+        "fi": "muuten_jos"
       },
       "LOOP_WHILE": {
         "en": "while",
@@ -82,7 +102,12 @@
         "zh": "当",
         "ja": "間",
         "it": "mentre",
-        "pt": "enquanto"
+        "pt": "enquanto",
+        "pl": "dopoki",
+        "nl": "terwijl",
+        "sv": "medan",
+        "da": "mens",
+        "fi": "kun"
       },
       "LOOP_FOR": {
         "en": "for",
@@ -102,7 +127,12 @@
         "pt": [
           "para",
           "para cada"
-        ]
+        ],
+        "pl": "dla",
+        "nl": "voor",
+        "sv": "for",
+        "da": "for",
+        "fi": "jokaiselle"
       },
       "LOOP_BREAK": {
         "en": "break",
@@ -119,7 +149,12 @@
         "pt": [
           "interrompa",
           "interromper"
-        ]
+        ],
+        "pl": "przerwij",
+        "nl": "breek",
+        "sv": "bryt",
+        "da": "afbryd",
+        "fi": "keskeyta"
       },
       "LOOP_CONTINUE": {
         "en": "continue",
@@ -136,7 +171,12 @@
         "pt": [
           "continue",
           "continuar"
-        ]
+        ],
+        "pl": "kontynuuj",
+        "nl": "ga_door",
+        "sv": "fortsatt",
+        "da": "fortsaet",
+        "fi": "jatka"
       },
       "MATCH": {
         "en": "match",
@@ -153,7 +193,12 @@
         "pt": [
           "corresponda",
           "corresponder"
-        ]
+        ],
+        "pl": "dopasuj",
+        "nl": "vergelijk",
+        "sv": "matcha",
+        "da": "match",
+        "fi": "taysmatch"
       },
       "CASE": {
         "en": "case",
@@ -167,7 +212,12 @@
         "zh": "情况",
         "ja": "場合",
         "it": "caso",
-        "pt": "caso"
+        "pt": "caso",
+        "pl": "przypadek",
+        "nl": "geval",
+        "sv": "fall",
+        "da": "sag",
+        "fi": "tapaus"
       },
       "DEFAULT": {
         "en": "default",
@@ -187,7 +237,12 @@
         "pt": [
           "padrão",
           "padrao"
-        ]
+        ],
+        "pl": "domyslnie",
+        "nl": "standaard",
+        "sv": "standard",
+        "da": "standard",
+        "fi": "oletus"
       },
       "PASS": {
         "en": "pass",
@@ -205,7 +260,12 @@
           "passe",
           "passar",
           "pass"
-        ]
+        ],
+        "pl": "pomin",
+        "nl": "sla_over",
+        "sv": "passera",
+        "da": "pass",
+        "fi": "ohita"
       },
       "WITH": {
         "en": "with",
@@ -219,7 +279,12 @@
         "zh": "使用",
         "ja": "付き",
         "it": "con",
-        "pt": "com"
+        "pt": "com",
+        "pl": "z",
+        "nl": "met",
+        "sv": "med",
+        "da": "med",
+        "fi": "kanssa"
       },
       "IN": {
         "en": "in",
@@ -233,7 +298,12 @@
         "zh": "里",
         "ja": "中",
         "it": "in",
-        "pt": "em"
+        "pt": "em",
+        "pl": "w",
+        "nl": "in",
+        "sv": "i",
+        "da": "i",
+        "fi": "sisalla"
       },
       "ASSERT": {
         "en": "assert",
@@ -247,7 +317,12 @@
         "zh": "断言",
         "ja": "断言",
         "it": "asserisci",
-        "pt": "afirmar"
+        "pt": "afirmar",
+        "pl": "asercja",
+        "nl": "bevestig",
+        "sv": "pasta",
+        "da": "haevd",
+        "fi": "varmista"
       }
     },
     "definitions": {
@@ -269,7 +344,12 @@
         "pt": [
           "defina",
           "definir"
-        ]
+        ],
+        "pl": "funkcja",
+        "nl": "definieer",
+        "sv": "definiera",
+        "da": "definer",
+        "fi": "maarittele"
       },
       "CLASS_DEF": {
         "en": "class",
@@ -283,7 +363,12 @@
         "zh": "类",
         "ja": "クラス",
         "it": "classe",
-        "pt": "classe"
+        "pt": "classe",
+        "pl": "klasa",
+        "nl": "klasse",
+        "sv": "klass",
+        "da": "klasse",
+        "fi": "luokka"
       },
       "RETURN": {
         "en": "return",
@@ -300,7 +385,12 @@
         "pt": [
           "retorne",
           "retornar"
-        ]
+        ],
+        "pl": "zwroc",
+        "nl": "retourneer",
+        "sv": "retur",
+        "da": "returner",
+        "fi": "palauta"
       },
       "YIELD": {
         "en": "yield",
@@ -317,7 +407,12 @@
         "pt": [
           "produza",
           "produzir"
-        ]
+        ],
+        "pl": "zwroc_wartosc",
+        "nl": "lever",
+        "sv": "ge",
+        "da": "giv",
+        "fi": "tuota"
       },
       "IMPORT": {
         "en": "import",
@@ -334,7 +429,12 @@
         "pt": [
           "importe",
           "importar"
-        ]
+        ],
+        "pl": "importuj",
+        "nl": "importeer",
+        "sv": "importera",
+        "da": "importer",
+        "fi": "tuo"
       },
       "FROM": {
         "en": "from",
@@ -348,7 +448,12 @@
         "zh": "从",
         "ja": "から",
         "it": "da",
-        "pt": "de"
+        "pt": "de",
+        "pl": "zmodulu",
+        "nl": "van",
+        "sv": "fran",
+        "da": "fra",
+        "fi": "kohteesta"
       },
       "AS": {
         "en": "as",
@@ -362,7 +467,12 @@
         "zh": "作为",
         "ja": "として",
         "it": "come",
-        "pt": "como"
+        "pt": "como",
+        "pl": "jako",
+        "nl": "zoals",
+        "sv": "som",
+        "da": "som",
+        "fi": "nimella"
       },
       "LAMBDA": {
         "en": "lambda",
@@ -376,7 +486,12 @@
         "zh": "匿名",
         "ja": "ラムダ",
         "it": "lambda",
-        "pt": "lambda"
+        "pt": "lambda",
+        "pl": "lambda",
+        "nl": "lambda",
+        "sv": "lambda",
+        "da": "lambda",
+        "fi": "lambda"
       },
       "ASYNC": {
         "en": "async",
@@ -393,7 +508,12 @@
         "pt": [
           "assíncrono",
           "assincrono"
-        ]
+        ],
+        "pl": "async",
+        "nl": "async",
+        "sv": "async",
+        "da": "async",
+        "fi": "async"
       },
       "AWAIT": {
         "en": "await",
@@ -407,7 +527,12 @@
         "zh": "await",
         "ja": "await",
         "it": "attendi",
-        "pt": "aguarde"
+        "pt": "aguarde",
+        "pl": "czekaj",
+        "nl": "wacht",
+        "sv": "invanta",
+        "da": "afvent",
+        "fi": "odota"
       }
     },
     "logical": {
@@ -423,7 +548,12 @@
         "zh": "且",
         "ja": "かつ",
         "it": "e",
-        "pt": "e"
+        "pt": "e",
+        "pl": "oraz",
+        "nl": "en",
+        "sv": "och",
+        "da": "og",
+        "fi": "ja"
       },
       "OR": {
         "en": "or",
@@ -437,7 +567,12 @@
         "zh": "或",
         "ja": "または",
         "it": "o",
-        "pt": "ou"
+        "pt": "ou",
+        "pl": "lub",
+        "nl": "of",
+        "sv": "eller",
+        "da": "eller",
+        "fi": "tai"
       },
       "NOT": {
         "en": "not",
@@ -447,14 +582,19 @@
         "hi": "नहीं",
         "ar": "ليس",
         "bn": "না",
-        "ta": "????",
+        "ta": "அல்லை",
         "zh": "非",
         "ja": "ない",
         "it": "non",
         "pt": [
           "não",
           "nao"
-        ]
+        ],
+        "pl": "nie",
+        "nl": "niet",
+        "sv": "inte",
+        "da": "ikke",
+        "fi": "ei"
       },
       "TRUE": {
         "en": "True",
@@ -468,7 +608,12 @@
         "zh": "真",
         "ja": "真",
         "it": "Vero",
-        "pt": "Verdadeiro"
+        "pt": "Verdadeiro",
+        "pl": "Prawda",
+        "nl": "Waar",
+        "sv": "Sant",
+        "da": "Sand",
+        "fi": "Tosi"
       },
       "FALSE": {
         "en": "False",
@@ -482,7 +627,12 @@
         "zh": "假",
         "ja": "偽",
         "it": "Falso",
-        "pt": "Falso"
+        "pt": "Falso",
+        "pl": "Falsz",
+        "nl": "Onwaar",
+        "sv": "Falskt",
+        "da": "Falsk",
+        "fi": "Epatosi"
       },
       "NONE": {
         "en": "None",
@@ -496,7 +646,12 @@
         "zh": "空",
         "ja": "なし",
         "it": "Nessuno",
-        "pt": "Nenhum"
+        "pt": "Nenhum",
+        "pl": "Brak",
+        "nl": "Geen",
+        "sv": "Ingen",
+        "da": "Ingen",
+        "fi": "EiMitaan"
       },
       "IS": {
         "en": "is",
@@ -509,11 +664,16 @@
         "ta": "ஆகும்",
         "zh": "是",
         "ja": "は",
-        "it": "?",
+        "it": "è",
         "pt": [
           "é",
           "eh"
-        ]
+        ],
+        "pl": "jest",
+        "nl": "is",
+        "sv": "ar",
+        "da": "er",
+        "fi": "on"
       }
     },
     "error_handling": {
@@ -532,7 +692,12 @@
         "pt": [
           "tente",
           "tentar"
-        ]
+        ],
+        "pl": "sprobuj",
+        "nl": "probeer",
+        "sv": "forsok",
+        "da": "prov",
+        "fi": "yrita"
       },
       "EXCEPT": {
         "en": "except",
@@ -546,7 +711,12 @@
         "zh": "除了",
         "ja": "例外",
         "it": "eccetto",
-        "pt": "exceto"
+        "pt": "exceto",
+        "pl": "wyjatek",
+        "nl": "behalve",
+        "sv": "utom",
+        "da": "undtagen",
+        "fi": "paitsi"
       },
       "FINALLY": {
         "en": "finally",
@@ -560,7 +730,12 @@
         "zh": "最终",
         "ja": "最後に",
         "it": "infine",
-        "pt": "finalmente"
+        "pt": "finalmente",
+        "pl": "w_koncu",
+        "nl": "eindelijk",
+        "sv": "slutligen",
+        "da": "endelig",
+        "fi": "lopuksi"
       },
       "RAISE": {
         "en": "raise",
@@ -578,7 +753,12 @@
           "lance",
           "lançar",
           "lancar"
-        ]
+        ],
+        "pl": "podnies",
+        "nl": "werp",
+        "sv": "kasta",
+        "da": "kast",
+        "fi": "nosta"
       }
     },
     "variables": {
@@ -594,7 +774,12 @@
         "zh": "全局",
         "ja": "大域",
         "it": "globale",
-        "pt": "global"
+        "pt": "global",
+        "pl": "globalne",
+        "nl": "globaal",
+        "sv": "global",
+        "da": "global",
+        "fi": "globaali"
       },
       "LOCAL": {
         "en": "local",
@@ -608,7 +793,12 @@
         "zh": "局部",
         "ja": "局所",
         "it": "locale",
-        "pt": "local"
+        "pt": "local",
+        "pl": "lokalne",
+        "nl": "lokaal",
+        "sv": "lokal",
+        "da": "lokal",
+        "fi": "paikallinen"
       },
       "CONST": {
         "en": "const",
@@ -622,7 +812,12 @@
         "zh": "常量",
         "ja": "定数",
         "it": "costante",
-        "pt": "constante"
+        "pt": "constante",
+        "pl": "stala",
+        "nl": "constant",
+        "sv": "konstant",
+        "da": "konstant",
+        "fi": "vakio"
       },
       "LET": {
         "en": "let",
@@ -636,7 +831,12 @@
         "zh": "令",
         "ja": "変数",
         "it": "sia",
-        "pt": "seja"
+        "pt": "seja",
+        "pl": "niech",
+        "nl": "laat",
+        "sv": "lat",
+        "da": "lad",
+        "fi": "olkoon"
       }
     },
     "types": {
@@ -652,7 +852,12 @@
         "zh": "整数",
         "ja": "整数",
         "it": "intero",
-        "pt": "inteiro"
+        "pt": "inteiro",
+        "pl": "calkowita",
+        "nl": "geheel",
+        "sv": "heltal",
+        "da": "heltal",
+        "fi": "kokonaisluku"
       },
       "TYPE_FLOAT": {
         "en": "float",
@@ -670,7 +875,12 @@
           "real",
           "ponto_flutuante",
           "flutuante"
-        ]
+        ],
+        "pl": "zmiennoprzecinkowa",
+        "nl": "drijvend",
+        "sv": "flyttal",
+        "da": "flydetal",
+        "fi": "liukuluku"
       },
       "TYPE_STR": {
         "en": "str",
@@ -690,7 +900,12 @@
         "pt": [
           "texto",
           "cadeia"
-        ]
+        ],
+        "pl": "tekst",
+        "nl": "tekenreeks",
+        "sv": "strang",
+        "da": "streng",
+        "fi": "merkkijono"
       },
       "TYPE_BOOL": {
         "en": "bool",
@@ -704,7 +919,12 @@
         "zh": "布尔",
         "ja": "真偽",
         "it": "booleano",
-        "pt": "booleano"
+        "pt": "booleano",
+        "pl": "logiczna",
+        "nl": "booleaans",
+        "sv": "boolesk",
+        "da": "boolsk",
+        "fi": "totuusarvo"
       },
       "TYPE_LIST": {
         "en": "list",
@@ -718,7 +938,12 @@
         "zh": "列表",
         "ja": "リスト",
         "it": "lista",
-        "pt": "lista"
+        "pt": "lista",
+        "pl": "lista",
+        "nl": "lijst",
+        "sv": "lista",
+        "da": "liste",
+        "fi": "lista"
       },
       "TYPE_DICT": {
         "en": "dict",
@@ -735,7 +960,12 @@
         "pt": [
           "dicionário",
           "dicionario"
-        ]
+        ],
+        "pl": "slownik",
+        "nl": "woordenboek",
+        "sv": "ordbok",
+        "da": "ordbog",
+        "fi": "sanakirja"
       }
     },
     "io": {
@@ -755,7 +985,12 @@
           "imprima",
           "imprimir",
           "mostre"
-        ]
+        ],
+        "pl": "drukuj",
+        "nl": "afdrukken",
+        "sv": "skriv",
+        "da": "skriv",
+        "fi": "tulosta"
       },
       "INPUT": {
         "en": "input",
@@ -778,7 +1013,12 @@
           "entre",
           "entre com",
           "entrada"
-        ]
+        ],
+        "pl": "wejscie",
+        "nl": "invoer",
+        "sv": "inmatning",
+        "da": "input",
+        "fi": "syote"
       }
     }
   }

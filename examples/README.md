@@ -75,6 +75,39 @@ python -m multilingualprogramming run examples/surface_for_pt.ml --lang pt
 python -m multilingualprogramming run examples/surface_for_pt_canonical.ml --lang pt
 ```
 
+## 6. Cross-Language Import Examples
+
+These examples import `.ml` modules across languages from a shared package:
+
+- Package initializer: `examples/crosslingual/__init__.ml`
+- French module: `examples/crosslingual/fr_math.ml`
+- English module: `examples/crosslingual/en_text.ml`
+- English main: `examples/cross_import_main_en.ml`
+- French main: `examples/cross_import_main_fr.ml`
+
+Run:
+
+```bash
+python -m multilingualprogramming run examples/cross_import_main_en.ml --lang en
+python -m multilingualprogramming run examples/cross_import_main_fr.ml --lang fr
+```
+
+Expected output:
+
+```text
+crosslingual-imports
+total=42
+```
+
+for the English entry program, and:
+
+```text
+crosslingual-imports
+total=22
+```
+
+for the French entry program.
+
 ## Python Module Examples
 
 The original Python-module examples are still available:

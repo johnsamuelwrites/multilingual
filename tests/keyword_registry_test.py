@@ -74,7 +74,17 @@ class KeywordRegistryTestSuite(unittest.TestCase):
 
         self.assertIn("ar", languages)
 
-        self.assertEqual(len(languages), 12)
+        self.assertIn("pl", languages)
+
+        self.assertIn("nl", languages)
+
+        self.assertIn("sv", languages)
+
+        self.assertIn("da", languages)
+
+        self.assertIn("fi", languages)
+
+        self.assertEqual(len(languages), 17)
 
 
 

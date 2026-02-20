@@ -24,6 +24,7 @@ from multilingualprogramming.keyword.keyword_registry import KeywordRegistry
 from multilingualprogramming.parser.parser import Parser
 from multilingualprogramming.codegen.python_generator import PythonCodeGenerator
 from multilingualprogramming.codegen.runtime_builtins import RuntimeBuiltins
+from multilingualprogramming.imports import enable_multilingual_imports
 from multilingualprogramming.exceptions import UnsupportedLanguageError
 from multilingualprogramming.version import __version__
 
@@ -272,6 +273,8 @@ class REPL:
 
         For single expressions, auto-prints the result (like Python REPL).
         """
+        enable_multilingual_imports()
+
         captured = io.StringIO()
         old_stdout = sys.stdout
         try:

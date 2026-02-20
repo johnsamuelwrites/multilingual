@@ -66,7 +66,8 @@ class ErrorMessageRegistryTestSuite(unittest.TestCase):
     def test_all_messages_have_all_languages(self):
         languages = [
             "en", "fr", "es", "de", "it", "pt",
-            "hi", "ar", "bn", "ta", "zh", "ja"
+            "hi", "ar", "bn", "ta", "zh", "ja",
+            "pl", "nl", "sv", "da", "fi"
         ]
         keys = self.registry.get_supported_keys()
         for key in keys:

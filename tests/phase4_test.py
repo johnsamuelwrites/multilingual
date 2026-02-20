@@ -7,16 +7,21 @@
 """Tests for Phase 4: Language Completeness & CLI."""
 
 import unittest
+from argparse import Namespace
+from unittest.mock import patch
 
 from multilingualprogramming import (
     Lexer, Parser, PythonCodeGenerator,
     ProgramExecutor, REPL,
 )
 import multilingualprogramming.__main__ as main_module
-from multilingualprogramming.__main__ import cmd_compile, cmd_run
+from multilingualprogramming.__main__ import cmd_compile, cmd_run, cmd_smoke
 from multilingualprogramming.parser.ast_nodes import (
     ConditionalExpr, CompareOp, AssertStatement,
     ChainedAssignment, Assignment,
+)
+from multilingualprogramming.keyword.language_pack_validator import (
+    LanguagePackValidator,
 )
 
 
@@ -299,6 +304,39 @@ class CLITestSuite(unittest.TestCase):
 
     def test_cmd_run_function_exists(self):
         self.assertTrue(callable(cmd_run))
+
+    def test_cmd_smoke_function_exists(self):
+        self.assertTrue(callable(cmd_smoke))
+
+    def test_language_pack_validator_en_passes(self):
+        validator = LanguagePackValidator()
+        errors = validator.validate("en")
+        self.assertEqual(errors, [])
+
+    def test_cmd_smoke_single_language_success(self):
+        args = Namespace(lang="en", all=False)
+        cmd_smoke(args)
+
+    def test_cmd_smoke_invalid_language_exits(self):
+        args = Namespace(lang="xx", all=False)
+        with self.assertRaises(SystemExit) as exc:
+            cmd_smoke(args)
+        self.assertEqual(exc.exception.code, 1)
+
+    def test_cmd_smoke_all_languages_success(self):
+        args = Namespace(lang="en", all=True)
+        cmd_smoke(args)
+
+    def test_cmd_smoke_exits_when_a_language_fails(self):
+        args = Namespace(lang="en", all=False)
+        with patch.object(
+            LanguagePackValidator,
+            "validate",
+            return_value=["synthetic failure"],
+        ):
+            with self.assertRaises(SystemExit) as exc:
+                cmd_smoke(args)
+        self.assertEqual(exc.exception.code, 1)
 
 
 # ---------------------------------------------------------------
