@@ -113,7 +113,7 @@ class SemanticAnalyzer:
         program.accept(self)
         return self.errors
 
-    def _validate_parameters(self, params, node):
+    def _validate_parameters(self, params):
         """Validate Python-like parameter ordering and uniqueness."""
         seen_names = set()
         seen_default = False
@@ -317,7 +317,7 @@ class SemanticAnalyzer:
     def visit_LambdaExpr(self, node):
         self.symbol_table.enter_scope("lambda", "function")
         self._in_function += 1
-        self._validate_parameters(node.params, node)
+        self._validate_parameters(node.params)
         for param in node.params:
             if isinstance(param, str):
                 self.symbol_table.define(
@@ -470,7 +470,7 @@ class SemanticAnalyzer:
         self._in_function += 1
         if getattr(node, "is_async", False):
             self._in_async_function += 1
-        self._validate_parameters(node.params, node)
+        self._validate_parameters(node.params)
         for param in node.params:
             if isinstance(param, str):
                 self.symbol_table.define(
