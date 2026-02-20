@@ -1,6 +1,25 @@
 # Release Notes
 
-## v0.1.0 (Current)
+## v0.2.0 (Current)
+
+### Core Language
+- Added a surface-normalization layer for selected alternate phrasing patterns.
+- Expanded frontend equivalence coverage, including iterable-first loop variants.
+- Added support for advanced constructs such as async flows, walrus operator, set literals, and dict unpacking.
+
+### REPL and Execution
+- Improved multilingual REPL usage with language switching and optional generated-Python display.
+- Strengthened end-to-end parity across language frontends targeting one core execution path.
+
+### Documentation and Positioning
+- Refined README project positioning around "one programming model, many human languages."
+- Added focused docs for naturalness, CNL scope, stdlib localization boundaries, and translation governance.
+
+### Quality and Validation
+- Expanded regression and equivalence tests across parser, core IR, runtime, and surface normalization.
+- Updated package metadata and released as `0.2.0`.
+
+## v0.1.0
 
 ### Core Language
 - Expanded supported programming languages to 12: `en`, `fr`, `es`, `de`, `it`, `pt`, `hi`, `ar`, `bn`, `ta`, `zh`, `ja`.
