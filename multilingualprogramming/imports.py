@@ -29,10 +29,12 @@ class _MLLoader(importlib.abc.Loader):
         self._is_package = is_package
 
     def is_package(self, fullname):
+        """Return whether this loader target is a package."""
         del fullname
         return self._is_package
 
     def _build_code_object(self):
+        """Compile multilingual source to a cached Python code object."""
         stat = self.source_path.stat()
         cache_key = str(self.source_path.resolve())
         cache_entry = self._CODE_CACHE.get(cache_key)
@@ -76,6 +78,7 @@ class _MLLoader(importlib.abc.Loader):
         return code_obj, detected_language
 
     def exec_module(self, module):
+        """Execute the transpiled module code in the module namespace."""
         code_obj, language = self._build_code_object()
         for name, builtin_obj in RuntimeBuiltins(language).namespace().items():
             module.__dict__.setdefault(name, builtin_obj)
@@ -110,6 +113,7 @@ class _MLFinder(importlib.abc.MetaPathFinder):
         return None
 
     def find_spec(self, fullname, path=None, target=None):
+        """Find an import spec for modules/packages backed by `.ml` files."""
         del target
         search_paths = path if path is not None else sys.path
         for base in search_paths:

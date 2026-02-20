@@ -108,6 +108,31 @@ total=22
 
 for the French entry program.
 
+## 7. Complete Feature Examples (EN/FR/ES)
+
+These examples use a broad set of supported features in one file:
+
+- imports (`import`, `from ... import ... as ...`)
+- variables, loops (`for`, `while`)
+- functions and classes
+- list comprehensions
+- boolean logic + `assert`
+- `try` / `except` / `finally`
+
+Files:
+
+- English: `examples/complete_features_en.ml`
+- French: `examples/complete_features_fr.ml`
+- Spanish: `examples/complete_features_es.ml`
+
+Run:
+
+```bash
+python -m multilingualprogramming run examples/complete_features_en.ml --lang en
+python -m multilingualprogramming run examples/complete_features_fr.ml --lang fr
+python -m multilingualprogramming run examples/complete_features_es.ml --lang es
+```
+
 ## Python Module Examples
 
 The original Python-module examples are still available:
