@@ -1,43 +1,70 @@
-# Related Work and Differentiation
+# Related Work and Positioning
 
-This document captures major prior art raised by the community and clarifies how `multilingual` is positioned.
+This project is positioned at the intersection of:
 
-## Why This Section Exists
+- multi-frontend compilation into a shared core
+- syntax extensibility and macro-style surface design
+- controlled natural-language-inspired frontend design
 
-Multilingual syntax has precedent. This project does not claim to be first; it focuses on one specific implementation strategy and target.
+It does not claim novelty for the general idea of many languages mapping to one
+core. The contribution is a coordinated multilingual frontend family with
+grammar-sensitive normalization targeting one formal core.
 
-## Notable Prior Work
+## 1) Multi-Frontend Core and IR Work
 
-- **Hedy**: educational language with multilingual keyword support and gradual pedagogy.
-- **Algol 68 localized representations**: historical precedent for localized language surfaces.
-- **Non-English-based programming languages**: broad ecosystem of language-localized and language-native PLs.
-- **Citrine**: community-cited reference point in multilingual or non-English-oriented syntax discussions.
-- **Rouille**: Rust-in-French language project (community-cited example of localized programming syntax).
-- **Excel formulas (localized names)**: mainstream example of localized function names over shared semantics.
-- **Perligata (Lingua::Romana::Perligata)**: notable language experiment demonstrating alternative linguistic surfaces.
+Established systems already map multiple source languages to shared internal
+representations (for example LLVM-style IR ecosystems, GCC internals, and core
+calculi such as lambda calculus/System F in language theory contexts).
 
-## Comparison (High Level)
+Alignment with this project:
 
-| Dimension | Hedy (community reference) | multilingual (this project) |
-|---|---|---|
-| Primary goal | Introductory education | Shared multilingual surface over broader Python semantics |
-| Core model | Level-based simplification | Single semantic pipeline with concept-based keyword mapping |
-| Runtime target | Teaching-focused execution model | Python code generation and execution |
-| Localization unit | Language forms for educational syntax | Concept-to-keyword registry + localized builtin aliases |
-| Intended usage | Classroom onboarding | Experimentation, language tooling, multilingual authoring |
+- many-to-one mapping from surface language to shared core
+- separation of frontend concerns from backend/codegen
 
-## Current Differentiation Claim
+Difference in focus:
 
-`multilingual` currently differentiates on:
+- this project coordinates multiple natural-language-inspired frontend variants
+  within one family, rather than unrelated general-purpose languages.
 
-- **Concept-driven keyword normalization** before parsing.
-- **Shared parser/codegen across languages** (language growth is data-first).
-- **Runtime interoperability** through Python output and selected builtin aliases.
-- **Focus on compatibility with Python-oriented workflows** instead of replacing the existing ecosystem.
+## 2) Syntactic Extensibility and Macro Ecosystems
 
-## Boundaries of the Claim
+Work on pluggable syntax and macro systems demonstrates that one semantic core
+can support many surface forms (for example Racket `#lang`, macro-centric
+language extension work, and syntax-skin style ideas).
 
-The differentiation is architectural, not ideological. This project does not claim that multilingual keywords alone solve documentation, community support, or professional ecosystem access.
+Alignment with this project:
+
+- core-first architecture
+- syntactic variation layered on stable semantics
+
+Difference in focus:
+
+- this project emphasizes multilingual frontends and data-driven language
+  onboarding, not a general macro metaprogramming framework.
+
+## 3) Controlled Language, NLP Boundaries, and Logic
+
+Community feedback correctly highlights that once syntax approaches natural
+language, the hard problems shift from classic parsing to linguistic ambiguity,
+morphology, and intent extraction.
+
+Project stance:
+
+- explicitly controlled subsets per language (CNL-style)
+- declarative and test-backed normalization rules
+- deterministic parsing and forward compilation
+- no claim of full natural-language understanding
+
+## Boundary Clarification
+
+The architecture draws the boundary as:
+
+- Parsing/frontends: `CS_lang -> CoreAST`
+- Core typing boundary: `CoreAST -> CoreIRProgram`
+- Codegen/runtime: `CoreIRProgram -> Python -> execution`
+
+The project deliberately does not promise lossless round-tripping from core to
+original surface syntax.
 
 ## References
 

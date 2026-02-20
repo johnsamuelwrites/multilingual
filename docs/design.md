@@ -3,6 +3,18 @@
 This document explains how `multilingual` works at a design level.
 It is intended for contributors, language-onboarding authors, and curious users.
 
+## Layered Model
+
+The implementation is structured as four explicit layers:
+
+1. Concrete surface syntax (`CS_lang`): language-specific source text.
+2. Shared Core AST: language-agnostic parser output (`ast_nodes.py`).
+3. Typed Core IR container: `CoreIRProgram` (`multilingualprogramming/core/ir.py`).
+4. Python-target lowering/codegen: executable Python generation/runtime.
+
+This makes boundary questions explicit: parsing maps `CS_lang` to Core AST,
+and code generation consumes a typed core object rather than raw frontend text.
+
 ## Core Concepts
 
 ### Values and literals
@@ -70,9 +82,26 @@ The execution pipeline is:
 
 1. `Lexer` tokenizes source and resolves keyword concepts.
 2. `Parser` builds a language-agnostic AST.
-3. `SemanticAnalyzer` checks scope and structural constraints.
-4. `PythonCodeGenerator` emits executable Python.
-5. Runtime/executor runs generated code with multilingual built-in aliases.
+3. `lower_to_core_ir` wraps parser output into `CoreIRProgram`.
+4. `SemanticAnalyzer` checks scope and structural constraints.
+5. `PythonCodeGenerator` emits executable Python.
+6. Runtime/executor runs generated code with multilingual built-in aliases.
+
+## Frontend Contract
+
+Each language is treated as a frontend with a translation function:
+
+`T_lang: CS_lang -> CoreAST`
+
+Current claim is forward-only: all supported frontends are designed as
+semantics-preserving embeddings into the shared core. The project does not
+guarantee lossless round-tripping from core back to original surface form.
+
+See also:
+
+- [core_spec.md](core_spec.md)
+- [frontend_contracts.md](frontend_contracts.md)
+- [cnl_scope.md](cnl_scope.md)
 
 ## Roadmap (Short)
 

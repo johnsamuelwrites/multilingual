@@ -2,18 +2,18 @@
 Not yet another programming language. A multilingual one.
 
 > **One programming model. Many human languages.**  
-> Write code in your language while keeping a shared semantic core.
+> Write code in your language through multilingual frontends targeting one formal core.
 
 ## Motivation
 
 - Problem: programming is still heavily bound to English-centric syntax and keywords.
-- Idea: keep one semantic core, but expose it through multiple human languages.
+- Idea: build multiple language frontends that compile into one typed core representation.
 - Today: this is a small but working prototype; you can already write and run programs in English, French, Spanish, and other supported languages.
 
 ## Project Positioning
 
 - This is not a beginner-only teaching DSL.
-- This project targets broad Python-compatible semantics with localized language surfaces.
+- This project targets broad Python-compatible semantics with localized language frontends.
 - Goal: language-inclusive authoring without fragmenting runtime behavior.
 
 ## Who Is This For?
@@ -23,7 +23,7 @@ Not yet another programming language. A multilingual one.
 ## Why Multilingual
 
 - **Language-inclusive syntax**: Use localized keywords and built-in aliases (for example, `intervalle`, `rango`, `intervallo`).
-- **Single execution pipeline**: Same flow for every language: lexer -> parser -> semantic checks -> Python codegen -> runtime.
+- **Single execution pipeline**: Same flow for every language: lexer -> parser -> core lowering -> semantic checks -> Python codegen -> runtime.
 - **Data-driven extensibility**: Add languages by updating registries/resources, not by rewriting parser/codegen logic.
 - **REPL-first experience**: Start quickly, switch languages live, inspect keywords/operators from inside REPL.
 
@@ -33,20 +33,24 @@ Not yet another programming language. A multilingual one.
 
 ## What This Is / Is Not
 
-- `Is`: a shared-semantics multilingual programming model.
+- `Is`: a multilingual frontend family over one formal core.
 - `Is`: a research/prototyping platform for localization-aware language tooling.
+- `Is`: a forward-compilation model (`surface -> core -> execution`) with no round-trip guarantee.
 - `Is not`: a claim that syntax translation alone solves all onboarding barriers.
+- `Is not`: full natural-language understanding.
 - `Is not`: a replacement for English-heavy ecosystem docs, examples, and tooling (yet).
 
 ## Current Limitations
 
 - Localized keywords can still feel unnatural in some languages because grammar/word order is mostly shared.
 - A small declarative surface-normalization layer now supports selected alternate phrasing patterns, but coverage is still limited.
+- The project supports a controlled subset (CNL-style) per language, not unconstrained natural language.
 - Standard library/module APIs mostly stay canonical Python names; localization is focused on keywords and selected builtins.
 
 Details:
 - Word order and naturalness: [docs/word_order_and_naturalness.md](docs/word_order_and_naturalness.md)
 - Stdlib localization boundaries: [docs/stdlib_localization.md](docs/stdlib_localization.md)
+- Controlled language scope: [docs/cnl_scope.md](docs/cnl_scope.md)
 
 ## Quick Start
 
@@ -167,7 +171,7 @@ python -m multilingualprogramming run hello.ml --lang fr
 ## Roadmap (Short)
 
 - v0 (today): toy-but-working interpreter/transpiler, multiple languages, core constructs, REPL, and a tested end-to-end pipeline.
-- next: better tooling, IDE support, more languages, a clearer formal spec, and potential LLM-assisted code translation workflows.
+- next: better tooling, IDE support, more languages, stronger frontend equivalence tests, and potential LLM-assisted code translation workflows.
 
 ## What You Can Use
 
@@ -240,8 +244,12 @@ Use this README for setup and workflow; use `docs/` for design rationale and pol
 - Detailed reference: [docs/README.md](docs/README.md)
 - Design overview: [docs/design.md](docs/design.md)
 - Related work and differentiation: [docs/related_work.md](docs/related_work.md)
+- Core formalization: [docs/core_spec.md](docs/core_spec.md)
+- Frontend translation contracts: [docs/frontend_contracts.md](docs/frontend_contracts.md)
+- Evaluation plan: [docs/evaluation_plan.md](docs/evaluation_plan.md)
 - Word order and syntax naturalness notes: [docs/word_order_and_naturalness.md](docs/word_order_and_naturalness.md)
 - Standard library localization strategy: [docs/stdlib_localization.md](docs/stdlib_localization.md)
+- Controlled language scope and ambiguity policy: [docs/cnl_scope.md](docs/cnl_scope.md)
 - Translation governance guide: [docs/translation_guidelines.md](docs/translation_guidelines.md)
 - Guide complet en francais: [docs/programmation_fr.md](docs/programmation_fr.md)
 - Language onboarding guide: [docs/language_onboarding.md](docs/language_onboarding.md)

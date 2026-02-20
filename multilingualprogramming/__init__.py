@@ -30,6 +30,8 @@ from multilingualprogramming.codegen.python_generator import PythonCodeGenerator
 from multilingualprogramming.codegen.runtime_builtins import RuntimeBuiltins
 from multilingualprogramming.codegen.executor import ProgramExecutor, ExecutionResult
 from multilingualprogramming.codegen.repl import REPL
+from multilingualprogramming.core.ir import CoreIRProgram
+from multilingualprogramming.core.lowering import lower_to_core_ir
 
 __all__ = [
     "MPNumeral",
@@ -58,4 +60,6 @@ __all__ = [
     "ProgramExecutor",
     "ExecutionResult",
     "REPL",
+    "CoreIRProgram",
+    "lower_to_core_ir",
 ]

@@ -8,6 +8,7 @@
 
 from multilingualprogramming.exceptions import CodeGenerationError
 from multilingualprogramming.numeral.mp_numeral import MPNumeral
+from multilingualprogramming.core.ir import CoreIRProgram
 
 
 class PythonCodeGenerator:
@@ -34,6 +35,8 @@ class PythonCodeGenerator:
 
     def generate(self, node):
         """Generate Python source from the AST root node."""
+        if isinstance(node, CoreIRProgram):
+            node = node.ast
         self._depth = 0
         self._lines = []
         node.accept(self)

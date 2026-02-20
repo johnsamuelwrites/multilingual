@@ -30,7 +30,8 @@ A shared positional structure favors technical consistency over fully native phr
 ## Why Keep This Tradeoff (for now)
 
 - Keeps parser and analyzer complexity manageable.
-- Preserves deterministic round-tripping to a shared AST/Python output.
+- Preserves deterministic forward compilation to a shared core/Python output.
+- Avoids committing to impossible or brittle source round-trip guarantees.
 - Avoids language-specific grammar forks too early.
 
 ## Surface Normalization (Generic Mechanism)

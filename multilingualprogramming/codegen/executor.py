@@ -19,6 +19,7 @@ from multilingualprogramming.parser.parser import Parser
 from multilingualprogramming.parser.semantic_analyzer import SemanticAnalyzer
 from multilingualprogramming.codegen.python_generator import PythonCodeGenerator
 from multilingualprogramming.codegen.runtime_builtins import RuntimeBuiltins
+from multilingualprogramming.core.lowering import lower_to_core_ir
 from multilingualprogramming.exceptions import (
     RuntimeExecutionError,
     CodeGenerationError,
@@ -81,16 +82,11 @@ class ProgramExecutor:
             ExecutionResult with output, generated Python source, and errors.
         """
         try:
-            # Step 1: Tokenize
-            lexer = Lexer(source, language=self.language)
-            tokens = lexer.tokenize()
-            detected_language = lexer.language or self.language or "en"
+            # Step 1-3: Frontend to typed core representation
+            core_program = self.to_core_ir(source)
+            detected_language = core_program.source_language
 
-            # Step 2: Parse
-            parser = Parser(tokens, source_language=detected_language)
-            program = parser.parse()
-
-            # Step 3: Semantic analysis (optional)
+            # Step 4: Semantic analysis (optional)
             if self.check_semantics:
                 analyzer = SemanticAnalyzer(
                     source_language=detected_language
@@ -103,18 +99,18 @@ class ProgramExecutor:
                     analyzer.symbol_table.define(
                         name, "variable", line=0, column=0
                     )
-                semantic_errors = analyzer.analyze(program)
+                semantic_errors = analyzer.analyze(core_program.ast)
                 if semantic_errors:
                     return ExecutionResult(
                         errors=[str(e) for e in semantic_errors],
                         success=False,
                     )
 
-            # Step 4: Generate Python
+            # Step 5: Lowered core to Python
             generator = PythonCodeGenerator()
-            python_source = generator.generate(program)
+            python_source = generator.generate(core_program)
 
-            # Step 5: Execute
+            # Step 6: Execute
             return self._exec_python(
                 python_source, detected_language,
                 capture_output, globals_dict
@@ -144,15 +140,21 @@ class ProgramExecutor:
         Raises:
             Various exceptions on lex/parse/codegen errors.
         """
+        core_program = self.to_core_ir(source)
+        generator = PythonCodeGenerator()
+        return generator.generate(core_program)
+
+    def to_core_ir(self, source):
+        """Compile source into the typed core representation."""
         lexer = Lexer(source, language=self.language)
         tokens = lexer.tokenize()
         detected_language = lexer.language or self.language or "en"
 
         parser = Parser(tokens, source_language=detected_language)
         program = parser.parse()
-
-        generator = PythonCodeGenerator()
-        return generator.generate(program)
+        return lower_to_core_ir(
+            program, detected_language, frontend_name="lexer_parser"
+        )
 
     def _exec_python(self, python_source, language,
                      capture_output, globals_dict):

@@ -2,6 +2,9 @@
 
 This project is designed so new programming languages can be added mainly by updating data files, not parser/codegen logic.
 
+Language onboarding follows a controlled-language policy: add deterministic,
+testable surface forms only. See [cnl_scope.md](cnl_scope.md).
+
 ## Goal
 
 Enable a new language code (for example `xx`) across:
