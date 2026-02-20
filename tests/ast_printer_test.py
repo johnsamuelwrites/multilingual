@@ -72,10 +72,11 @@ class ASTPrinterTestSuite(unittest.TestCase):
         self.assertIn("ListLiteral", output)
 
     def test_print_try_statement(self):
-        source = "try:\n    pass\nexcept:\n    pass\n"
+        source = "try:\n    pass\nexcept:\n    pass\nelse:\n    pass\n"
         output = _print_ast(source)
         self.assertIn("TryStatement", output)
         self.assertIn("ExceptHandler", output)
+        self.assertIn("else:", output)
 
     def test_print_for_loop(self):
         source = "for i in items:\n    pass\n"

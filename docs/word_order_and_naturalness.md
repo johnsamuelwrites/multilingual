@@ -58,8 +58,8 @@ To reduce repetition, canonical rewrites can be shared through named
 This keeps semantics centralized while allowing incremental syntax
 naturalness improvements for any language, including RTL scripts.
 
-Current pilot rules include iterable-first `for` loop headers for Japanese
-and Arabic.
+Current pilot rules include iterable-first `for` loop headers for Japanese,
+Arabic, Spanish, and Portuguese.
 
 ## Future Directions
 

@@ -233,11 +233,12 @@ class WhileLoop(ASTNode):
         self.body = body
 class ForLoop(ASTNode):
     """For loop: for target in iterable: body."""
-    def __init__(self, target, iterable, body, line=0, column=0):
+    def __init__(self, target, iterable, body, is_async=False, line=0, column=0):
         super().__init__(line, column)
         self.target = target
         self.iterable = iterable
         self.body = body
+        self.is_async = is_async
 class FunctionDef(ASTNode):
     """Function definition: def name(params): body."""
     def __init__(self, name, params, body, decorators=None,
@@ -261,12 +262,13 @@ class ClassDef(ASTNode):
         self.body = body
         self.decorators = decorators or []
 class TryStatement(ASTNode):
-    """Try/except/finally block."""
-    def __init__(self, body, handlers=None, finally_body=None,
+    """Try/except/else/finally block."""
+    def __init__(self, body, handlers=None, else_body=None, finally_body=None,
                  line=0, column=0):
         super().__init__(line, column)
         self.body = body
         self.handlers = handlers or []
+        self.else_body = else_body
         self.finally_body = finally_body
 class ExceptHandler(ASTNode):
     """Single except clause: except Type as name: body."""
@@ -292,7 +294,7 @@ class CaseClause(ASTNode):
         self.is_default = is_default
 class WithStatement(ASTNode):
     """With statement: with expr as name, ...: body."""
-    def __init__(self, items, name=None, body=None, line=0, column=0):
+    def __init__(self, items, name=None, body=None, is_async=False, line=0, column=0):
         super().__init__(line, column)
         # Backward compatibility: WithStatement(expr, name=..., body=...)
         if not isinstance(items, list):
@@ -302,6 +304,7 @@ class WithStatement(ASTNode):
         self.context_expr = items[0][0] if items else None
         self.name = items[0][1] if items else None
         self.body = body or []
+        self.is_async = is_async
 # ---------------------------------------------------------------------------
 # Import nodes
 # ---------------------------------------------------------------------------
@@ -374,7 +377,12 @@ class ListComprehension(ASTNode):
 class DictComprehension(ASTNode):
     """Dict comprehension: {key: val for target in iterable if cond}."""
     def __init__(self, key, value, target, iterable, conditions=None,
-                 clauses=None, line=0, column=0):
+                 clauses=None, **kwargs):
+        line = kwargs.pop("line", 0)
+        column = kwargs.pop("column", 0)
+        if kwargs:
+            extra = ", ".join(sorted(kwargs.keys()))
+            raise TypeError(f"Unexpected keyword argument(s): {extra}")
         super().__init__(line, column)
         self.key = key
         self.value = value

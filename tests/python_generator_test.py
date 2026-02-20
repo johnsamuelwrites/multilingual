@@ -383,6 +383,17 @@ class PythonGeneratorCompoundTestSuite(unittest.TestCase):
         self.assertIn("for i in range(10):", result)
         self.assertIn("    print(i)", result)
 
+    def test_async_for_loop(self):
+        result = self._gen(
+            ForLoop(
+                Identifier("i"),
+                CallExpr(Identifier("aiter"), []),
+                [PassStatement()],
+                is_async=True,
+            )
+        )
+        self.assertIn("async for i in aiter():", result)
+
     def test_function_def(self):
         result = self._gen(
             FunctionDef(
@@ -472,6 +483,23 @@ class PythonGeneratorCompoundTestSuite(unittest.TestCase):
         self.assertIn("finally:", result)
         self.assertIn("    cleanup()", result)
 
+    def test_try_except_else(self):
+        result = self._gen(
+            TryStatement(
+                [ExpressionStatement(CallExpr(Identifier("risky"), []))],
+                handlers=[ExceptHandler(body=[PassStatement()])],
+                else_body=[
+                    ExpressionStatement(
+                        CallExpr(Identifier("print"), [StringLiteral("ok")])
+                    )
+                ]
+            )
+        )
+        self.assertIn("try:", result)
+        self.assertIn("except:", result)
+        self.assertIn("else:", result)
+        self.assertIn("    print('ok')", result)
+
     def test_match_statement(self):
         result = self._gen(
             MatchStatement(
@@ -500,6 +528,16 @@ class PythonGeneratorCompoundTestSuite(unittest.TestCase):
         )
         self.assertIn("with open('f.txt') as f:", result)
         self.assertIn("    f.read()", result)
+
+    def test_async_with_statement(self):
+        result = self._gen(
+            WithStatement(
+                [(CallExpr(Identifier("cm"), []), "x")],
+                body=[PassStatement()],
+                is_async=True,
+            )
+        )
+        self.assertIn("async with cm() as x:", result)
 
     def test_empty_body_gets_pass(self):
         result = self._gen(

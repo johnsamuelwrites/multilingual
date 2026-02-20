@@ -141,6 +141,28 @@ class SemanticControlFlowTestSuite(unittest.TestCase):
         await_errors = [e for e in errors if "await" in str(e).lower()]
         self.assertEqual(len(await_errors), 0)
 
+    def test_async_for_outside_async_function_error(self):
+        source = "async for i in xs:\n    pass\n"
+        errors, _ = _analyze(source)
+        self.assertTrue(any("async for" in str(e).lower() for e in errors))
+
+    def test_async_with_outside_async_function_error(self):
+        source = "async with cm() as x:\n    pass\n"
+        errors, _ = _analyze(source)
+        self.assertTrue(any("async with" in str(e).lower() for e in errors))
+
+    def test_async_for_inside_async_function(self):
+        source = "async def f(xs):\n    async for i in xs:\n        pass\n"
+        errors, _ = _analyze(source)
+        async_for_errors = [e for e in errors if "async for" in str(e).lower()]
+        self.assertEqual(len(async_for_errors), 0)
+
+    def test_async_with_inside_async_function(self):
+        source = "async def f(cm):\n    async with cm as x:\n        pass\n"
+        errors, _ = _analyze(source)
+        async_with_errors = [e for e in errors if "async with" in str(e).lower()]
+        self.assertEqual(len(async_with_errors), 0)
+
 
 class SemanticDefinitionTestSuite(unittest.TestCase):
     """Tests for definition handling."""
@@ -168,6 +190,21 @@ class SemanticDefinitionTestSuite(unittest.TestCase):
         i_errors = [e for e in errors if str(e).endswith("'i'") or "'i'" in str(e)]
         self.assertTrue(len(items_errors) > 0)  # items not defined
         self.assertEqual(len(i_errors), 0)  # i is defined by for loop
+
+    def test_non_default_after_default_parameter_error(self):
+        source = "def f(a=1, b):\n    pass\n"
+        errors, _ = _analyze(source)
+        self.assertTrue(any("non-default parameter" in str(e) for e in errors))
+
+    def test_duplicate_parameter_name_error(self):
+        source = "def f(a, a):\n    pass\n"
+        errors, _ = _analyze(source)
+        self.assertTrue(any("already defined" in str(e) for e in errors))
+
+    def test_parameter_after_kwargs_error(self):
+        source = "def f(**kw, x):\n    pass\n"
+        errors, _ = _analyze(source)
+        self.assertTrue(any("after **kwargs" in str(e) for e in errors))
 
 
 class SemanticMultilingualErrorTestSuite(unittest.TestCase):

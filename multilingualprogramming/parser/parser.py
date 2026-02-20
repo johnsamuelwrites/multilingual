@@ -257,6 +257,10 @@ class Parser:
         tok = self._advance()  # consume ASYNC
         if self._match_concept("FUNC_DEF"):
             return self._parse_function_def(is_async=True, async_tok=tok)
+        if self._match_concept("LOOP_FOR"):
+            return self._parse_for_loop(is_async=True, async_tok=tok)
+        if self._match_concept("WITH"):
+            return self._parse_with_statement(is_async=True, async_tok=tok)
         self._error("UNEXPECTED_TOKEN", self._current(),
                     token=self._current().value)
 
@@ -554,7 +558,7 @@ class Parser:
             line=tok.line, column=tok.column
         )
 
-    def _parse_for_loop(self):
+    def _parse_for_loop(self, is_async=False, async_tok=None):
         """Parse: FOR target[, target2, ...] IN iterable : block."""
         tok = self._advance()  # consume FOR
         target_tok = self._expect_identifier()
@@ -577,9 +581,11 @@ class Parser:
         self._expect_concept("IN")
         iterable = self._parse_expression()
         body = self._parse_block()
+        line = async_tok.line if async_tok else tok.line
+        column = async_tok.column if async_tok else tok.column
         return ForLoop(
-            target, iterable, body,
-            line=tok.line, column=tok.column
+            target, iterable, body, is_async=is_async,
+            line=line, column=column
         )
 
     def _parse_match_statement(self):
@@ -706,7 +712,7 @@ class Parser:
     # ------------------------------------------------------------------
 
     def _parse_try_statement(self):
-        """Parse: TRY : block (EXCEPT ...)* [FINALLY ...]."""
+        """Parse: TRY : block (EXCEPT ...)* [ELSE ...] [FINALLY ...]."""
         tok = self._advance()  # consume TRY
         body = self._parse_block()
         self._skip_newlines()
@@ -716,13 +722,22 @@ class Parser:
             handlers.append(self._parse_except_handler())
             self._skip_newlines()
 
+        else_body = None
+        if self._match_concept("COND_ELSE"):
+            if not handlers:
+                self._error("UNEXPECTED_TOKEN", self._current(),
+                            token=self._current().value)
+            self._advance()
+            else_body = self._parse_block()
+            self._skip_newlines()
+
         finally_body = None
         if self._match_concept("FINALLY"):
             self._advance()
             finally_body = self._parse_block()
 
         return TryStatement(
-            body, handlers, finally_body,
+            body, handlers, else_body=else_body, finally_body=finally_body,
             line=tok.line, column=tok.column
         )
 
@@ -754,7 +769,7 @@ class Parser:
     # With statement
     # ------------------------------------------------------------------
 
-    def _parse_with_statement(self):
+    def _parse_with_statement(self, is_async=False, async_tok=None):
         """Parse: WITH expression [AS name] (, expression [AS name])* : block."""
         tok = self._advance()  # consume WITH
         items = []
@@ -771,9 +786,11 @@ class Parser:
             self._advance()
 
         body = self._parse_block()
+        line = async_tok.line if async_tok else tok.line
+        column = async_tok.column if async_tok else tok.column
         return WithStatement(
-            items, body=body,
-            line=tok.line, column=tok.column
+            items, body=body, is_async=is_async,
+            line=line, column=column
         )
 
     # ------------------------------------------------------------------
@@ -1180,12 +1197,18 @@ class Parser:
         tok = self._advance()  # consume (
         args = []
         keywords = []
+        seen_keyword = False
         self._skip_newlines()
 
         if not self._match_delimiter(")"):
-            self._parse_argument(args, keywords)
+            first_kind = self._parse_argument(args, keywords)
+            if first_kind == "keyword":
+                seen_keyword = True
+            elif first_kind == "positional" and seen_keyword:
+                self._error("UNEXPECTED_TOKEN", self._current(),
+                            token="positional argument after keyword argument")
             # Check for generator expression: func(expr FOR ...)
-            if len(args) == 1 and not keywords \
+            if first_kind == "positional" and len(args) == 1 and not keywords \
                     and self._match_concept("LOOP_FOR"):
                 gen = self._parse_comprehension_tail(
                     args[0], tok, "generator"
@@ -1198,7 +1221,12 @@ class Parser:
                 self._skip_newlines()
                 if self._match_delimiter(")"):
                     break
-                self._parse_argument(args, keywords)
+                arg_kind = self._parse_argument(args, keywords)
+                if arg_kind == "keyword":
+                    seen_keyword = True
+                elif arg_kind == "positional" and seen_keyword:
+                    self._error("UNEXPECTED_TOKEN", self._current(),
+                                token="positional argument after keyword argument")
                 self._skip_newlines()
 
         self._skip_newlines()
@@ -1214,7 +1242,7 @@ class Parser:
             value = self._parse_expression()
             args.append(StarredExpr(value, is_double=True,
                                     line=tok.line, column=tok.column))
-            return
+            return "star"
 
         # Check for *args
         if self._match_operator("*"):
@@ -1222,7 +1250,7 @@ class Parser:
             value = self._parse_expression()
             args.append(StarredExpr(value, is_double=False,
                                     line=tok.line, column=tok.column))
-            return
+            return "star"
 
         # Check for keyword argument: name=value
         if self._match_type(TokenType.IDENTIFIER):
@@ -1233,11 +1261,12 @@ class Parser:
                 self._advance()
                 value = self._parse_expression()
                 keywords.append((name_tok.value, value))
-                return
+                return "keyword"
             # Not a keyword arg, restore and parse as expression
             self.pos = save_pos
 
         args.append(self._parse_expression())
+        return "positional"
 
     def _parse_atom(self):  # pylint: disable=too-many-branches
         """Parse atomic expressions: literals, identifiers, parenthesized."""

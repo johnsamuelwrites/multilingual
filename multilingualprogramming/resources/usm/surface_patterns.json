@@ -83,6 +83,52 @@
           "value": ":"
         }
       ]
+    },
+    {
+      "name": "es_for_iterable_first",
+      "language": "es",
+      "normalize_template": "for_iterable_first",
+      "pattern": [
+        {
+          "kind": "expr",
+          "slot": "iterable"
+        },
+        {
+          "kind": "keyword",
+          "concept": "LOOP_FOR"
+        },
+        {
+          "kind": "identifier",
+          "slot": "target"
+        },
+        {
+          "kind": "delimiter",
+          "value": ":"
+        }
+      ]
+    },
+    {
+      "name": "pt_for_iterable_first",
+      "language": "pt",
+      "normalize_template": "for_iterable_first",
+      "pattern": [
+        {
+          "kind": "expr",
+          "slot": "iterable"
+        },
+        {
+          "kind": "keyword",
+          "concept": "LOOP_FOR"
+        },
+        {
+          "kind": "identifier",
+          "slot": "target"
+        },
+        {
+          "kind": "delimiter",
+          "value": ":"
+        }
+      ]
     }
   ]
 }

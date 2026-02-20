@@ -143,8 +143,9 @@ class ASTNodeConstructionTestSuite(unittest.TestCase):
         target = Identifier("i")
         iterable = Identifier("items")
         body = [PassStatement()]
-        node = ForLoop(target, iterable, body)
+        node = ForLoop(target, iterable, body, is_async=True)
         self.assertEqual(node.target.name, "i")
+        self.assertTrue(node.is_async)
 
     def test_function_def(self):
         body = [ReturnStatement(NumeralLiteral("1"))]
@@ -161,8 +162,14 @@ class ASTNodeConstructionTestSuite(unittest.TestCase):
     def test_try_statement(self):
         body = [PassStatement()]
         handler = ExceptHandler(Identifier("Error"), "e", [PassStatement()])
-        node = TryStatement(body, [handler], finally_body=[PassStatement()])
+        node = TryStatement(
+            body,
+            [handler],
+            else_body=[PassStatement()],
+            finally_body=[PassStatement()]
+        )
         self.assertEqual(len(node.handlers), 1)
+        self.assertIsNotNone(node.else_body)
         self.assertIsNotNone(node.finally_body)
 
     def test_match_statement(self):
@@ -175,8 +182,9 @@ class ASTNodeConstructionTestSuite(unittest.TestCase):
 
     def test_with_statement(self):
         ctx = CallExpr(Identifier("open"), [StringLiteral("f.txt")])
-        node = WithStatement(ctx, name="f", body=[PassStatement()])
+        node = WithStatement(ctx, name="f", body=[PassStatement()], is_async=True)
         self.assertEqual(node.name, "f")
+        self.assertTrue(node.is_async)
 
     def test_import_statement(self):
         node = ImportStatement("os", alias="operating_system")

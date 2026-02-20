@@ -78,3 +78,44 @@ print(x + y)
         self.assertTrue(en_result.success, en_result.errors)
         self.assertTrue(fr_result.success, fr_result.errors)
         self.assertEqual(en_result.output, fr_result.output)
+
+    def test_portuguese_surface_and_canonical_map_to_same_ast(self):
+        surface = """\
+seja total = 0
+range(4) para cada i:
+    total = total + i
+imprima(total)
+"""
+        canonical = """\
+seja total = 0
+para cada i em range(4):
+    total = total + i
+imprima(total)
+"""
+        self.assertEqual(
+            _parse_and_print(surface, "pt"),
+            _parse_and_print(canonical, "pt"),
+        )
+
+    def test_try_else_equivalence_english_french(self):
+        english = """\
+try:
+    print("ok")
+except ZeroDivisionError as e:
+    print("caught")
+else:
+    print("else")
+"""
+        french = """\
+essayer:
+    afficher("ok")
+sauf ZeroDivisionError comme e:
+    afficher("caught")
+sinon:
+    afficher("else")
+"""
+        en_result = ProgramExecutor(language="en").execute(english)
+        fr_result = ProgramExecutor(language="fr").execute(french)
+        self.assertTrue(en_result.success, en_result.errors)
+        self.assertTrue(fr_result.success, fr_result.errors)
+        self.assertEqual(en_result.output, fr_result.output)

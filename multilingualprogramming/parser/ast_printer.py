@@ -363,7 +363,7 @@ class ASTPrinter:
         self._dedent()
 
     def visit_ForLoop(self, node):
-        self._emit("ForLoop")
+        self._emit(f"ForLoop async={getattr(node, 'is_async', False)}")
         self._indent()
         self._emit("target:")
         self._indent()
@@ -422,6 +422,9 @@ class ASTPrinter:
         self._visit_body(node.body)
         for handler in node.handlers:
             handler.accept(self)
+        if node.else_body:
+            self._emit("else:")
+            self._visit_body(node.else_body)
         if node.finally_body:
             self._emit("finally:")
             self._visit_body(node.finally_body)
@@ -467,7 +470,7 @@ class ASTPrinter:
         self._dedent()
 
     def visit_WithStatement(self, node):
-        self._emit("WithStatement")
+        self._emit(f"WithStatement async={getattr(node, 'is_async', False)}")
         self._indent()
         self._emit("items:")
         self._indent()

@@ -191,7 +191,7 @@ Additional syntax now supported:
 - Dictionary unpacking (`{**d1, **d2}`)
 - Hex/oct/bin literals (`0xFF`, `0o77`, `0b101`)
 - Scientific notation (`1.5e-3`)
-- Async/await (`async def`, `await ...`)
+- Async features (`async def`, `await`, `async for`, `async with`)
 - Walrus operator (`:=`)
 
 Supported pilot languages: English, French, Spanish, German, Italian, Portuguese, Hindi, Arabic, Bengali, Tamil, Chinese (Simplified), Japanese.
@@ -214,6 +214,24 @@ Run:
 ```bash
 python -m multilingualprogramming run examples/surface_for_ja.ml --lang ja
 python -m multilingualprogramming run examples/surface_for_ja_canonical.ml --lang ja
+```
+
+### Spanish And Portuguese Surface Syntax Examples
+
+These pairs compute the same result using canonical and iterable-first loop phrasing:
+
+- Spanish surface: `examples/surface_for_es.ml`
+- Spanish canonical: `examples/surface_for_es_canonical.ml`
+- Portuguese surface: `examples/surface_for_pt.ml`
+- Portuguese canonical: `examples/surface_for_pt_canonical.ml`
+
+Run:
+
+```bash
+python -m multilingualprogramming run examples/surface_for_es.ml --lang es
+python -m multilingualprogramming run examples/surface_for_es_canonical.ml --lang es
+python -m multilingualprogramming run examples/surface_for_pt.ml --lang pt
+python -m multilingualprogramming run examples/surface_for_pt_canonical.ml --lang pt
 ```
 
 ### Semantic Equivalence (English vs French)

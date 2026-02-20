@@ -464,6 +464,20 @@ class ParserCompoundTestSuite(unittest.TestCase):
         self.assertIsInstance(stmt, FunctionDef)
         self.assertTrue(stmt.is_async)
 
+    def test_parse_async_for_loop(self):
+        source = "async for i in aiter:\n    pass\n"
+        prog = _parse(source, language="en")
+        stmt = prog.body[0]
+        self.assertIsInstance(stmt, ForLoop)
+        self.assertTrue(stmt.is_async)
+
+    def test_parse_async_with_statement(self):
+        source = "async with cm() as x:\n    pass\n"
+        prog = _parse(source, language="en")
+        stmt = prog.body[0]
+        self.assertIsInstance(stmt, WithStatement)
+        self.assertTrue(stmt.is_async)
+
     def test_parse_class_def_no_bases(self):
         source = "class Foo:\n    pass\n"
         prog = _parse(source, language="en")
@@ -498,6 +512,19 @@ class ParserCompoundTestSuite(unittest.TestCase):
         source = "try:\n    pass\nexcept:\n    pass\nfinally:\n    pass\n"
         prog = _parse(source, language="en")
         stmt = prog.body[0]
+        self.assertIsNotNone(stmt.finally_body)
+
+    def test_parse_try_except_else(self):
+        source = "try:\n    pass\nexcept:\n    pass\nelse:\n    pass\n"
+        prog = _parse(source, language="en")
+        stmt = prog.body[0]
+        self.assertIsNotNone(stmt.else_body)
+
+    def test_parse_try_except_else_finally(self):
+        source = "try:\n    pass\nexcept:\n    pass\nelse:\n    pass\nfinally:\n    pass\n"
+        prog = _parse(source, language="en")
+        stmt = prog.body[0]
+        self.assertIsNotNone(stmt.else_body)
         self.assertIsNotNone(stmt.finally_body)
 
     def test_parse_try_finally(self):
@@ -694,6 +721,20 @@ class ParserMultilingualTestSuite(unittest.TestCase):
         self.assertIsInstance(stmt, ForLoop)
         self.assertEqual(stmt.target.name, "i")
 
+    def test_parse_portuguese_iterable_first_for_loop(self):
+        source = "range(4) para cada i:\n    passe\n"
+        prog = _parse(source, language="pt")
+        stmt = prog.body[0]
+        self.assertIsInstance(stmt, ForLoop)
+        self.assertEqual(stmt.target.name, "i")
+
+    def test_parse_spanish_iterable_first_for_loop(self):
+        source = "range(4) para i:\n    pasar\n"
+        prog = _parse(source, language="es")
+        stmt = prog.body[0]
+        self.assertIsInstance(stmt, ForLoop)
+        self.assertEqual(stmt.target.name, "i")
+
     def test_parse_french_phrase_elif(self):
         source = "si x:\n    passer\nsinon si y:\n    passer\n"
         prog = _parse(source, language="fr")
@@ -738,6 +779,14 @@ class ParserErrorTestSuite(unittest.TestCase):
     def test_error_missing_closing_bracket(self):
         with self.assertRaises(ParseError):
             _parse("[1, 2\n", language="en")
+
+    def test_error_positional_after_keyword_argument(self):
+        with self.assertRaises(ParseError):
+            _parse("f(a=1, 2)\n", language="en")
+
+    def test_error_try_else_without_except(self):
+        with self.assertRaises(ParseError):
+            _parse("try:\n    pass\nelse:\n    pass\n", language="en")
 
     def test_error_line_column_in_error(self):
         try:

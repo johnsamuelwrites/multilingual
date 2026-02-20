@@ -163,6 +163,64 @@ except ZeroDivisionError as e:
         self.assertTrue(result.success, result.errors)
         self.assertEqual(result.output.strip(), "caught")
 
+    def test_try_except_else(self):
+        source = """\
+try:
+    print("ok")
+except ZeroDivisionError as e:
+    print("caught")
+else:
+    print("else")
+"""
+        executor = ProgramExecutor(language="en")
+        result = executor.execute(source)
+        self.assertTrue(result.success, result.errors)
+        lines = result.output.strip().split("\n")
+        self.assertEqual(lines, ["ok", "else"])
+
+    def test_async_for_execution(self):
+        source = """\
+import asyncio
+
+async def agen():
+    for i in range(4):
+        yield i
+
+async def main():
+    let total = 0
+    async for i in agen():
+        total = total + i
+    return total
+
+print(asyncio.run(main()))
+"""
+        executor = ProgramExecutor(language="en")
+        result = executor.execute(source)
+        self.assertTrue(result.success, result.errors)
+        self.assertEqual(result.output.strip(), "6")
+
+    def test_async_with_execution(self):
+        source = """\
+import asyncio
+
+class AsyncCtx:
+    async def __aenter__(self):
+        return 7
+
+    async def __aexit__(self, exc_type, exc, tb):
+        return False
+
+async def main():
+    async with AsyncCtx() as value:
+        return value
+
+print(asyncio.run(main()))
+"""
+        executor = ProgramExecutor(language="en")
+        result = executor.execute(source)
+        self.assertTrue(result.success, result.errors)
+        self.assertEqual(result.output.strip(), "7")
+
     def test_nested_functions(self):
         source = """\
 def make_adder(n):
@@ -307,6 +365,30 @@ ausgeben(addiere(5, 3))
             "\u0627\u0637\u0628\u0639(total)\n"
         )
         executor = ProgramExecutor(language="ar")
+        result = executor.execute(source)
+        self.assertTrue(result.success, result.errors)
+        self.assertEqual(result.output.strip(), "10")
+
+    def test_spanish_iterable_first_surface_for_loop(self):
+        source = (
+            "sea total = 0\n"
+            "range(5) para i:\n"
+            "    total = total + i\n"
+            "imprimir(total)\n"
+        )
+        executor = ProgramExecutor(language="es")
+        result = executor.execute(source)
+        self.assertTrue(result.success, result.errors)
+        self.assertEqual(result.output.strip(), "10")
+
+    def test_portuguese_iterable_first_surface_for_loop(self):
+        source = (
+            "seja total = 0\n"
+            "range(5) para cada i:\n"
+            "    total = total + i\n"
+            "imprima(total)\n"
+        )
+        executor = ProgramExecutor(language="pt")
         result = executor.execute(source)
         self.assertTrue(result.success, result.errors)
         self.assertEqual(result.output.strip(), "10")

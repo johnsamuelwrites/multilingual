@@ -182,7 +182,8 @@ class PythonCodeGenerator:
     def visit_ForLoop(self, node):
         target = self._expr(node.target)
         iterable = self._expr(node.iterable)
-        self._emit(f"for {target} in {iterable}:")
+        prefix = "async " if getattr(node, "is_async", False) else ""
+        self._emit(f"{prefix}for {target} in {iterable}:")
         self._emit_body(node.body)
 
     def visit_FunctionDef(self, node):
@@ -222,6 +223,9 @@ class PythonCodeGenerator:
         self._emit_body(node.body)
         for handler in node.handlers:
             handler.accept(self)
+        if node.else_body:
+            self._emit("else:")
+            self._emit_body(node.else_body)
         if node.finally_body:
             self._emit("finally:")
             self._emit_body(node.finally_body)
@@ -261,7 +265,8 @@ class PythonCodeGenerator:
                 parts.append(f"{ctx} as {name}")
             else:
                 parts.append(ctx)
-        self._emit(f"with {', '.join(parts)}:")
+        prefix = "async " if getattr(node, "is_async", False) else ""
+        self._emit(f"{prefix}with {', '.join(parts)}:")
         self._emit_body(node.body)
 
     def visit_ImportStatement(self, node):

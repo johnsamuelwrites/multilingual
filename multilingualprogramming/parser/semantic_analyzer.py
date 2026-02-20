@@ -113,6 +113,48 @@ class SemanticAnalyzer:
         program.accept(self)
         return self.errors
 
+    def _validate_parameters(self, params, node):
+        """Validate Python-like parameter ordering and uniqueness."""
+        seen_names = set()
+        seen_default = False
+        seen_vararg = False
+        seen_kwarg = False
+
+        for param in params:
+            if isinstance(param, str):
+                continue
+
+            name = param.name
+            if name in seen_names:
+                self._report("DUPLICATE_DEFINITION", param, name=name)
+            seen_names.add(name)
+
+            if param.is_kwarg:
+                if seen_kwarg or param.default is not None:
+                    self._report("UNEXPECTED_TOKEN", param,
+                                 token=f"invalid parameter '{name}'")
+                seen_kwarg = True
+                continue
+
+            if param.is_vararg:
+                if seen_vararg or seen_kwarg or param.default is not None:
+                    self._report("UNEXPECTED_TOKEN", param,
+                                 token=f"invalid parameter '{name}'")
+                seen_vararg = True
+                continue
+
+            if seen_kwarg:
+                self._report("UNEXPECTED_TOKEN", param,
+                             token=f"parameter '{name}' after **kwargs")
+
+            # Python allows required keyword-only params after *args.
+            if not seen_vararg:
+                if param.default is None and seen_default:
+                    self._report("UNEXPECTED_TOKEN", param,
+                                 token=f"non-default parameter '{name}' follows default parameter")
+                if param.default is not None:
+                    seen_default = True
+
     def _report(self, message_key, node, **kwargs):
         """Record a semantic error."""
         kwargs.setdefault("line", node.line)
@@ -275,6 +317,7 @@ class SemanticAnalyzer:
     def visit_LambdaExpr(self, node):
         self.symbol_table.enter_scope("lambda", "function")
         self._in_function += 1
+        self._validate_parameters(node.params, node)
         for param in node.params:
             if isinstance(param, str):
                 self.symbol_table.define(
@@ -396,6 +439,8 @@ class SemanticAnalyzer:
         self._in_loop -= 1
 
     def visit_ForLoop(self, node):
+        if getattr(node, "is_async", False) and self._in_async_function == 0:
+            self._report("UNEXPECTED_TOKEN", node, token="async for")
         node.iterable.accept(self)
         self._define_for_target(node.target)
         self._in_loop += 1
@@ -425,6 +470,7 @@ class SemanticAnalyzer:
         self._in_function += 1
         if getattr(node, "is_async", False):
             self._in_async_function += 1
+        self._validate_parameters(node.params, node)
         for param in node.params:
             if isinstance(param, str):
                 self.symbol_table.define(
@@ -468,6 +514,9 @@ class SemanticAnalyzer:
             stmt.accept(self)
         for handler in node.handlers:
             handler.accept(self)
+        if node.else_body:
+            for stmt in node.else_body:
+                stmt.accept(self)
         if node.finally_body:
             for stmt in node.finally_body:
                 stmt.accept(self)
@@ -497,6 +546,8 @@ class SemanticAnalyzer:
             stmt.accept(self)
 
     def visit_WithStatement(self, node):
+        if getattr(node, "is_async", False) and self._in_async_function == 0:
+            self._report("UNEXPECTED_TOKEN", node, token="async with")
         for context_expr, _name in node.items:
             context_expr.accept(self)
         self.symbol_table.enter_scope("with", "block")

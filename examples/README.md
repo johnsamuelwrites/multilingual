@@ -57,6 +57,24 @@ python -m multilingualprogramming run examples/surface_for_ja.ml --lang ja
 python -m multilingualprogramming run examples/surface_for_ja_canonical.ml --lang ja
 ```
 
+## 5. Spanish And Portuguese Surface Syntax Examples
+
+These files demonstrate iterable-first loop normalization in Romance languages.
+
+- Spanish surface: `examples/surface_for_es.ml`
+- Spanish canonical: `examples/surface_for_es_canonical.ml`
+- Portuguese surface: `examples/surface_for_pt.ml`
+- Portuguese canonical: `examples/surface_for_pt_canonical.ml`
+
+Run:
+
+```bash
+python -m multilingualprogramming run examples/surface_for_es.ml --lang es
+python -m multilingualprogramming run examples/surface_for_es_canonical.ml --lang es
+python -m multilingualprogramming run examples/surface_for_pt.ml --lang pt
+python -m multilingualprogramming run examples/surface_for_pt_canonical.ml --lang pt
+```
+
 ## Python Module Examples
 
 The original Python-module examples are still available:

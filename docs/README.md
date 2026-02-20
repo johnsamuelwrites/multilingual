@@ -99,6 +99,7 @@ The implementation includes support for:
 
 - variable declarations and assignment
 - control flow (`if/else`, loops)
+- async constructs (`async def`, `await`, `async for`, `async with`)
 - functions and classes
 - imports
 - assertions
@@ -117,6 +118,27 @@ Example (nested comprehension):
 let rows = [[1, 2], [3, 4]]
 let flat = [x for row in rows for x in row]
 print(flat)  # [1, 2, 3, 4]
+```
+
+Example (async for / async with):
+
+```text
+import asyncio
+
+class AsyncCtx:
+    async def __aenter__(self):
+        return 1
+    async def __aexit__(self, exc_type, exc, tb):
+        return False
+
+async def main(xs):
+    let total = 0
+    async with AsyncCtx() as base:
+        async for i in xs:
+            total = total + i + base
+    return total
+
+print(asyncio.run(main([1, 2, 3])))
 ```
 
 ## API Entry Points

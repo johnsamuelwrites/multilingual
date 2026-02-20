@@ -35,3 +35,8 @@ Initial equivalence tests are in:
 
 - `tests/frontend_equivalence_test.py`
 - `tests/core_ir_test.py`
+
+Recent additions include:
+
+- Japanese/Arabic/Spanish/Portuguese iterable-first loop surface variants
+- `try`/`except`/`else` frontend/runtime equivalence coverage

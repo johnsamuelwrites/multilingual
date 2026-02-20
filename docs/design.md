@@ -45,10 +45,10 @@ Current constructs include:
 - `if` / `elif` / `else`
 - `while` / `for`
 - `match` / `case`
-- `try` / `except` / `finally`
+- `try` / `except` / `else` / `finally`
 - `with` (including multiple context managers)
 - functions, classes, decorators
-- async/await
+- async/await, `async for`, `async with`
 
 ## Keyword Localization Model
 
