@@ -13,7 +13,7 @@ Not yet another programming language. A multilingual one.
 ## Project Positioning
 
 - This is not a beginner-only teaching DSL.
-- This project targets broad Python-compatible semantics with localized language frontends.
+- This project targets a broad Python-like subset with localized language frontends.
 - Goal: language-inclusive authoring without fragmenting runtime behavior.
 
 ## Who Is This For?
@@ -46,11 +46,13 @@ Not yet another programming language. A multilingual one.
 - A small declarative surface-normalization layer now supports selected alternate phrasing patterns, but coverage is still limited.
 - The project supports a controlled subset (CNL-style) per language, not unconstrained natural language.
 - Standard library/module APIs mostly stay canonical Python names; localization is focused on keywords and selected builtins.
+- Full drop-in compatibility with arbitrary existing Python code is not claimed yet.
 
 Details:
 - Word order and naturalness: [docs/word_order_and_naturalness.md](docs/word_order_and_naturalness.md)
 - Stdlib localization boundaries: [docs/stdlib_localization.md](docs/stdlib_localization.md)
 - Controlled language scope: [docs/cnl_scope.md](docs/cnl_scope.md)
+- Python compatibility matrix: [docs/compatibility_matrix.md](docs/compatibility_matrix.md)
 
 ## Quick Start
 
@@ -294,6 +296,7 @@ Use this README for setup and workflow; use `docs/` for design rationale and pol
 - Word order and syntax naturalness notes: [docs/word_order_and_naturalness.md](docs/word_order_and_naturalness.md)
 - Standard library localization strategy: [docs/stdlib_localization.md](docs/stdlib_localization.md)
 - Controlled language scope and ambiguity policy: [docs/cnl_scope.md](docs/cnl_scope.md)
+- Python compatibility matrix: [docs/compatibility_matrix.md](docs/compatibility_matrix.md)
 - Translation governance guide: [docs/translation_guidelines.md](docs/translation_guidelines.md)
 - Development and debugging guide: [docs/development.md](docs/development.md)
 - Guide complet en francais: [docs/fr/programmation.md](docs/fr/programmation.md)

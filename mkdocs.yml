@@ -18,6 +18,7 @@ nav:
     - Development Guide: development.md
   - Reference:
     - Detailed Reference: README.md
+    - Compatibility Matrix: compatibility_matrix.md
     - Language Onboarding: language_onboarding.md
   - Design:
     - Design Overview: design.md

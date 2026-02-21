@@ -119,6 +119,9 @@ These examples use a broad set of supported features in one file:
 - boolean logic + `assert`
 - `try` / `except` / `finally`
 
+Compatibility baseline reference:
+- `docs/compatibility_matrix.md`
+
 Files:
 
 - English: `examples/complete_features_en.ml`

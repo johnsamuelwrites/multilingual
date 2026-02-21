@@ -6,6 +6,9 @@ This document is the detailed reference for the project.
 
 `multilingualprogramming` is a Python framework for multilingual programming. It supports writing source code with keywords, numerals, and literals from multiple human languages while mapping everything to a shared semantic model.
 
+Python compatibility baseline:
+- [compatibility_matrix.md](compatibility_matrix.md)
+
 Current version: `0.3.0`
 
 ## Supported Languages
@@ -427,6 +430,7 @@ python -m pylint $(git ls-files '*.py')
 - Standard library localization strategy: [stdlib_localization.md](stdlib_localization.md)
 - Translation governance: [translation_guidelines.md](translation_guidelines.md)
 - Development and debugging guide: [development.md](development.md)
+- Python compatibility matrix: [compatibility_matrix.md](compatibility_matrix.md)
 - Usage snippets: [USAGE.md](_generated/USAGE.md)
 - Examples guide: [examples/README.md](_generated/examples/README.md)
 - French programming guide: [fr/programmation.md](fr/programmation.md)
