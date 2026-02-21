@@ -16,9 +16,9 @@ def creer_compteur(depart):
         retour total
     retour etape
 
-soit prochain = creer_compteur(5)
-soit premiere = prochain()
-soit deuxieme = prochain()
+soit compteur_suivant = creer_compteur(5)
+soit premiere = compteur_suivant()
+soit deuxieme = compteur_suivant()
 
 avec ouvrir("tmp_complete_fr.txt", "w", encoding="utf-8") comme ecriture:
     ecriture.write("ok")

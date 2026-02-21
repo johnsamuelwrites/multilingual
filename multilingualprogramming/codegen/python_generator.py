@@ -563,8 +563,14 @@ class _ExpressionGenerator:
                 escaped = escaped.replace("{", "{{").replace("}", "}}")
                 result += escaped
             else:
-                conversion = getattr(part, "_fstring_conversion", "")
-                format_spec = getattr(part, "_fstring_format_spec", "")
+                conversion = getattr(
+                    part, "fstring_conversion",
+                    getattr(part, "_fstring_conversion", "")
+                )
+                format_spec = getattr(
+                    part, "fstring_format_spec",
+                    getattr(part, "_fstring_format_spec", "")
+                )
                 expr_str = self._expr(part)
                 suffix = ""
                 if conversion:

@@ -1477,7 +1477,7 @@ class Parser:
 
         self._error("EXPECTED_EXPRESSION", tok, token=tok.value)
 
-    def _parse_fstring(self, tok):
+    def _parse_fstring(self, tok):  # pylint: disable=too-many-statements
         """Parse an f-string by extracting {expr} segments from the raw text.
 
         Handles format specs ({expr:fmt}) and conversions ({expr!r}).
@@ -1536,8 +1536,8 @@ class Parser:
                 expr_node = sub_parser.parse_expression_fragment()
                 # Attach format spec and conversion as metadata
                 if format_spec or conversion:
-                    expr_node._fstring_format_spec = format_spec
-                    expr_node._fstring_conversion = conversion
+                    setattr(expr_node, "fstring_format_spec", format_spec)
+                    setattr(expr_node, "fstring_conversion", conversion)
                 parts.append(expr_node)
             elif ch == "}" and i + 1 < len(raw) and raw[i + 1] == "}":
                 # Escaped }} → literal }
