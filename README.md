@@ -305,6 +305,8 @@ Use this README for setup and workflow; use `docs/` for design rationale and pol
 - Guide complet en francais: [docs/fr/programmation.md](docs/fr/programmation.md)
 - Language onboarding guide: [docs/language_onboarding.md](docs/language_onboarding.md)
 - Contribution guide: [CONTRIBUTING.md](CONTRIBUTING.md)
+- Release process: [docs/releasing.md](docs/releasing.md)
+- Changelog: [CHANGELOG.md](CHANGELOG.md)
 
 ## Development
 

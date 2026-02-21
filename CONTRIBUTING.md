@@ -79,6 +79,18 @@ python -m pytest -q
 python -m pylint $(git ls-files '*.py')
 ```
 
+## Branch Protection And Required Checks
+
+`main` should require the following passing GitHub Actions checks:
+
+- `Python package`
+- `Pylint`
+- `Package Artifacts`
+- `Compatibility (Python 3.12)` (recommended)
+
+Repository administrators configure this in:
+`Settings -> Branches -> Branch protection rules`.
+
 ## Expectations
 
 - Be respectful and practical.

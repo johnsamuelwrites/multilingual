@@ -9,7 +9,7 @@
 Project metadata is defined in ``pyproject.toml`` (PEP 621).
 """
 
-from setuptools import setup
+from setuptools import setup  # pylint: disable=import-error
 
 
 if __name__ == "__main__":

@@ -9,6 +9,13 @@ description = "Python application for multilingual programming"
 readme = "README.md"
 license = {text = "GPL-3.0-or-later"}
 requires-python = ">=3.12"
+keywords = [
+    "programming-language",
+    "multilingual",
+    "compiler",
+    "transpiler",
+    "education",
+]
 authors = [
     {name = "John Samuel", email = "johnsamuelwrites@example.com"},
 ]
@@ -38,6 +45,10 @@ multilg = "multilingualprogramming.__main__:main"
 
 [project.urls]
 Homepage = "https://github.com/johnsamuelwrites/multilingual"
+Documentation = "https://johnsamuelwrites.github.io/multilingual/"
+Repository = "https://github.com/johnsamuelwrites/multilingual"
+Issues = "https://github.com/johnsamuelwrites/multilingual/issues"
+Changelog = "https://github.com/johnsamuelwrites/multilingual/blob/main/CHANGELOG.md"
 
 [tool.setuptools.packages.find]
 include = ["multilingualprogramming*"]
