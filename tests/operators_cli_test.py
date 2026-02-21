@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 
-"""Tests for Phase 4: Language Completeness & CLI."""
+"""Tests for operators, assertions, chained assignment, CLI, and REPL."""
 
 import unittest
 from argparse import Namespace
@@ -408,8 +408,8 @@ class REPLImprovementsTestSuite(unittest.TestCase):
 # Multilingual integration
 # ---------------------------------------------------------------
 
-class MultilingualPhase4TestSuite(unittest.TestCase):
-    """Test Phase 4 features with non-English languages."""
+class MultilingualOperatorsTestSuite(unittest.TestCase):
+    """Test operators and assertions with non-English languages."""
 
     def test_hindi_ternary(self):
         r = _execute('प्रिंट(10 अगर सत्य वरना 20)\n', lang="hi",

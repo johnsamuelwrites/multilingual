@@ -70,7 +70,7 @@ from tests.critical_features_test import (
     FStringTestSuite,
     MultilingualCriticalFeaturesTestSuite,
 )
-from tests.phase4_test import (
+from tests.language_completeness_cli_test import (
     AugmentedAssignmentTestSuite,
     MembershipIdentityTestSuite,
     TernaryExpressionTestSuite,
@@ -78,9 +78,9 @@ from tests.phase4_test import (
     ChainedAssignmentTestSuite,
     CLITestSuite,
     REPLImprovementsTestSuite,
-    MultilingualPhase4TestSuite,
+    MultilingualCompletenessCLITestSuite,
 )
-from tests.phase5_test import (
+from tests.advanced_language_features_test import (
     WhileElseTestSuite,
     ForElseTestSuite,
     YieldFromTestSuite,
@@ -98,11 +98,12 @@ from tests.phase5_test import (
     SpecialValuesTestSuite,
     SurfaceNormalizationTestSuite,
     DataQualityTestSuite,
-    Phase5IntegrationTestSuite,
-    MultilingualPhase5TestSuite,
+    AdvancedFeaturesIntegrationTestSuite,
+    MultilingualAdvancedFeaturesTestSuite,
     ExtendedBuiltinsTestSuite,
     ExtendedAliasResolutionTestSuite,
     ExtendedAliasExecutionTestSuite,
+    StarredUnpackingTestSuite,
 )
 
 if __name__ == "__main__":
@@ -162,7 +163,7 @@ if __name__ == "__main__":
     chained_assign_tests = ChainedAssignmentTestSuite()
     cli_tests = CLITestSuite()
     repl_improvements_tests = REPLImprovementsTestSuite()
-    multilingual_phase4_tests = MultilingualPhase4TestSuite()
+    multilingual_completeness_cli_tests = MultilingualCompletenessCLITestSuite()
     while_else_tests = WhileElseTestSuite()
     for_else_tests = ForElseTestSuite()
     yield_from_tests = YieldFromTestSuite()
@@ -180,11 +181,12 @@ if __name__ == "__main__":
     special_values_tests = SpecialValuesTestSuite()
     surface_normalization_tests = SurfaceNormalizationTestSuite()
     data_quality_tests = DataQualityTestSuite()
-    phase5_integration_tests = Phase5IntegrationTestSuite()
-    multilingual_phase5_tests = MultilingualPhase5TestSuite()
+    advanced_features_integration_tests = AdvancedFeaturesIntegrationTestSuite()
+    multilingual_advanced_features_tests = MultilingualAdvancedFeaturesTestSuite()
     extended_builtins_tests = ExtendedBuiltinsTestSuite()
     extended_alias_resolution_tests = ExtendedAliasResolutionTestSuite()
     extended_alias_execution_tests = ExtendedAliasExecutionTestSuite()
+    starred_unpacking_tests = StarredUnpackingTestSuite()
     tests = unittest.TestSuite(
         [
             mp_numeral_tests,
@@ -243,7 +245,7 @@ if __name__ == "__main__":
             chained_assign_tests,
             cli_tests,
             repl_improvements_tests,
-            multilingual_phase4_tests,
+            multilingual_completeness_cli_tests,
             while_else_tests,
             for_else_tests,
             yield_from_tests,
@@ -261,11 +263,12 @@ if __name__ == "__main__":
             special_values_tests,
             surface_normalization_tests,
             data_quality_tests,
-            phase5_integration_tests,
-            multilingual_phase5_tests,
+            advanced_features_integration_tests,
+            multilingual_advanced_features_tests,
             extended_builtins_tests,
             extended_alias_resolution_tests,
             extended_alias_execution_tests,
+            starred_unpacking_tests,
         ]
     )
     unittest.main()

@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 
-"""Tests for Phase 3.5 critical features."""
+"""Tests for critical language features."""
 
 import unittest
 

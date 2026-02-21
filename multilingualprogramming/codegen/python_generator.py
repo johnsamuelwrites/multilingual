@@ -503,6 +503,9 @@ class _ExpressionGenerator:
 
     def visit_TupleLiteral(self, node):
         elems = ", ".join(self._expr(e) for e in node.elements)
+        # Single-element tuples need trailing comma: (x,)
+        if len(node.elements) == 1:
+            elems += ","
         return elems
 
     def visit_ListComprehension(self, node):

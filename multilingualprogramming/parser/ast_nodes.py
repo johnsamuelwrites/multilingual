@@ -333,7 +333,7 @@ class FromImportStatement(ASTNode):
         self.module = module
         self.names = names
 # ---------------------------------------------------------------------------
-# Extended expression nodes (Phase 3.5)
+# Extended expression nodes
 # ---------------------------------------------------------------------------
 class SliceExpr(ASTNode):
     """Slice expression: start:stop or start:stop:step."""

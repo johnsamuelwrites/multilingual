@@ -4,7 +4,7 @@ This matrix defines the current compatibility baseline for `multilingual`.
 
 Baseline source of truth:
 - `examples/complete_features_en.ml`
-- `tests/` (799 tests across 74 test suites)
+- `tests/` (858 tests across 78 test suites)
 
 Target runtime:
 - CPython `3.12.x`
@@ -52,6 +52,7 @@ third-party ecosystem.
 | Arithmetic and expressions | Supported | `+`, `-`, `*`, `/`, `//`, `%`, `**`, bitwise ops |
 | Augmented assignment | Supported | `+=`, `-=`, `*=`, `/=`, `**=`, `//=`, `%=`, `&=`, `\|=`, `^=`, `<<=`, `>>=` |
 | Chained assignment | Supported | `a = b = c = 0` |
+| Starred unpacking | Supported | `a, *rest = [1, 2, 3]`, `first, *mid, last = items` |
 
 ### Data Structures
 
@@ -138,10 +139,10 @@ third-party ecosystem.
 | Coverage area | Status | Notes |
 |---|---|---|
 | Python keywords (3.12) | Complete | 51 concept IDs across 7 categories in keyword registry |
-| Universal built-in functions | 60+ available | `len`, `range`, `abs`, `pow`, `divmod`, `complex`, `format`, `ascii`, `compile`, `eval`, `exec`, `globals`, `locals`, `issubclass`, `delattr`, `slice`, and more |
-| Exception types | 30+ available | `ValueError`, `TypeError`, `KeyError`, `PermissionError`, `RecursionError`, `TimeoutError`, `UnicodeError`, `StopAsyncIteration`, and more |
+| Universal built-in functions | 70+ available | `len`, `range`, `abs`, `pow`, `divmod`, `complex`, `format`, `ascii`, `compile`, `eval`, `exec`, `globals`, `locals`, `issubclass`, `delattr`, `slice`, `aiter`, `anext`, and more |
+| Exception types | 45+ available | `BaseException`, `KeyboardInterrupt`, `ValueError`, `TypeError`, `KeyError`, `ModuleNotFoundError`, `ExceptionGroup`, `BaseExceptionGroup`, all warning subclasses, and more |
 | Special values | Available | `True`, `False`, `None`, `Ellipsis`, `NotImplemented` |
-| Localized built-in aliases | 13 concepts | `range`, `len`, `sum`, `abs`, `min`, `max`, `print`, `super`, `open`, `set`, `tuple`, `zip` with multilingual aliases across all 17 languages |
+| Localized built-in aliases | 41 concepts | `range`, `len`, `sum`, `abs`, `min`, `max`, `sorted`, `reversed`, `enumerate`, `map`, `filter`, `isinstance`, `type`, `input`, `any`, `all`, `round`, `pow`, `hash`, `callable`, `iter`, `next`, `chr`, `ord`, `repr`, `dir`, `format`, `frozenset`, `bytes`, `divmod`, `issubclass`, `hasattr`, `getattr`, `setattr`, `delattr`, and more — each with aliases across all 16 non-English languages |
 | Canonical Python built-in names | Fully available | Canonical names (e.g., `len`, `print`, `super`) remain usable across all languages via runtime namespace |
 
 ## Surface Syntax Normalization
@@ -152,14 +153,14 @@ parsing.
 
 | Statement | Languages with normalization | Example (Japanese) |
 |---|---|---|
-| `for` loop | ja, ar, es, pt | iterable-first: `範囲(6) 内の 各 i に対して:` |
-| `while` loop | ja, ar | condition-first: `condition 間:` |
-| `if` statement | ja, ar | condition-first: `condition もし:` |
-| `with` statement | ja, ar | expression-first: `expression 付き:` |
+| `for` loop | ja, ar, es, pt, hi, bn, ta | iterable-first: `範囲(6) 内の 各 i に対して:` |
+| `while` loop | ja, ar, hi, bn, ta | condition-first: `condition 間:` |
+| `if` statement | ja, ar, hi, bn, ta | condition-first: `condition もし:` |
+| `with` statement | ja, ar, hi, bn, ta | expression-first: `expression 付き:` |
 
 ## Test Coverage
 
-799 tests across 74 test suites covering:
+858 tests across 78 test suites covering:
 
 | Test area | Suite count | Description |
 |---|---|---|
@@ -170,8 +171,8 @@ parsing.
 | Code generation | 4 | Expressions, statements, compounds, multilingual |
 | Execution | 4 | Basic, multilingual, transpile, errors |
 | Critical features | 8 | Triple-quoted strings, slices, parameters, tuples, comprehensions, decorators, f-strings |
-| Phase 4 features | 8 | Augmented assignment, membership/identity, ternary, assert, chained assignment, CLI, REPL |
-| Phase 5 features | 19 | Loop else, yield/raise from, set comprehensions, parameter separators, f-string formatting, match guards/OR/AS, global/nonlocal, builtins, exceptions, surface normalization, data quality, integration, multilingual |
+| Language completeness and CLI features | 8 | Augmented assignment, membership/identity, ternary, assert, chained assignment, CLI, REPL |
+| Advanced language features | 23 | Loop else, yield/raise from, set comprehensions, parameter separators, f-string formatting, match guards/OR/AS, global/nonlocal, builtins, exceptions, surface normalization, data quality, extended builtins, alias resolution, alias execution, starred unpacking, integration, multilingual |
 | Infrastructure | 10 | Keyword registry, AST nodes, AST printer, error messages, runtime builtins, REPL |
 
 ## Not Guaranteed Yet
@@ -182,8 +183,8 @@ The following are not claimed as universally compatible at this stage:
 - Full behavioral parity with all CPython edge cases
 - Full third-party package/runtime ecosystem compatibility
 - Every advanced metaprogramming/introspection scenario
-- Complete localization aliases for every CPython built-in function/type
-- Starred unpacking in all expression contexts (`*iterable` in assignments)
+- Complete localization aliases for every CPython built-in function/type (41 of 70+ have aliases)
+- Starred unpacking in deeply nested expression contexts
 - Complex decorator chains with arguments
 
 ## Recommendation

@@ -6,7 +6,7 @@ baseline to high-confidence CPython 3.12 compatibility.
 Target runtime:
 - CPython `3.12.x`
 
-Non-goal for early phases:
+Non-goal for early milestones:
 - immediate full compatibility with every third-party package
 
 ## Principles

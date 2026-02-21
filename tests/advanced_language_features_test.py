@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 
-"""Tests for Phase 5: Advanced Language Features."""
+"""Tests for advanced language features."""
 
 import json
 import unittest
@@ -17,6 +17,7 @@ from multilingualprogramming import (
 from multilingualprogramming.parser.ast_nodes import (
     WhileLoop, ForLoop, RaiseStatement, YieldStatement,
     SetComprehension, MatchStatement, FromImportStatement, FunctionDef,
+    Assignment, TupleLiteral, StarredExpr,
 )
 from multilingualprogramming.codegen.runtime_builtins import RuntimeBuiltins
 from multilingualprogramming.parser.surface_normalizer import (
@@ -620,6 +621,11 @@ class SurfaceNormalizationTestSuite(unittest.TestCase):
         # Should not raise
         validate_surface_patterns_config(config)
 
+    def test_pattern_count_at_least_22(self):
+        """Should have at least 22 surface patterns."""
+        patterns = self._reload_surface_patterns()
+        self.assertGreaterEqual(len(patterns), 22)
+
     def test_while_template_exists(self):
         self._reload_surface_patterns()
         templates = getattr(SurfaceNormalizer, "_templates")
@@ -649,6 +655,73 @@ class SurfaceNormalizationTestSuite(unittest.TestCase):
         patterns = self._reload_surface_patterns()
         names = [p["name"] for p in patterns]
         self.assertIn("ar_with_expr_first", names)
+
+    def test_hi_for_pattern_exists(self):
+        patterns = self._reload_surface_patterns()
+        names = [p["name"] for p in patterns]
+        self.assertIn("hi_for_iterable_first", names)
+
+    def test_hi_while_pattern_exists(self):
+        patterns = self._reload_surface_patterns()
+        names = [p["name"] for p in patterns]
+        self.assertIn("hi_while_condition_first", names)
+
+    def test_hi_if_pattern_exists(self):
+        patterns = self._reload_surface_patterns()
+        names = [p["name"] for p in patterns]
+        self.assertIn("hi_if_condition_first", names)
+
+    def test_hi_with_pattern_exists(self):
+        patterns = self._reload_surface_patterns()
+        names = [p["name"] for p in patterns]
+        self.assertIn("hi_with_expr_first", names)
+
+    def test_bn_for_pattern_exists(self):
+        patterns = self._reload_surface_patterns()
+        names = [p["name"] for p in patterns]
+        self.assertIn("bn_for_iterable_first", names)
+
+    def test_bn_while_pattern_exists(self):
+        patterns = self._reload_surface_patterns()
+        names = [p["name"] for p in patterns]
+        self.assertIn("bn_while_condition_first", names)
+
+    def test_bn_if_pattern_exists(self):
+        patterns = self._reload_surface_patterns()
+        names = [p["name"] for p in patterns]
+        self.assertIn("bn_if_condition_first", names)
+
+    def test_bn_with_pattern_exists(self):
+        patterns = self._reload_surface_patterns()
+        names = [p["name"] for p in patterns]
+        self.assertIn("bn_with_expr_first", names)
+
+    def test_ta_for_pattern_exists(self):
+        patterns = self._reload_surface_patterns()
+        names = [p["name"] for p in patterns]
+        self.assertIn("ta_for_iterable_first", names)
+
+    def test_ta_while_pattern_exists(self):
+        patterns = self._reload_surface_patterns()
+        names = [p["name"] for p in patterns]
+        self.assertIn("ta_while_condition_first", names)
+
+    def test_ta_if_pattern_exists(self):
+        patterns = self._reload_surface_patterns()
+        names = [p["name"] for p in patterns]
+        self.assertIn("ta_if_condition_first", names)
+
+    def test_ta_with_pattern_exists(self):
+        patterns = self._reload_surface_patterns()
+        names = [p["name"] for p in patterns]
+        self.assertIn("ta_with_expr_first", names)
+
+    def test_seven_languages_have_patterns(self):
+        """Seven languages should have normalization patterns."""
+        patterns = self._reload_surface_patterns()
+        languages = set(p["language"] for p in patterns)
+        for lang in ("ja", "ar", "es", "pt", "hi", "bn", "ta"):
+            self.assertIn(lang, languages)
 
 
 # ---------------------------------------------------------------
@@ -705,8 +778,8 @@ class DataQualityTestSuite(unittest.TestCase):
 # Integration tests: end-to-end execution
 # ---------------------------------------------------------------
 
-class Phase5IntegrationTestSuite(unittest.TestCase):
-    """End-to-end integration tests for all Phase 5 features."""
+class AdvancedFeaturesIntegrationTestSuite(unittest.TestCase):
+    """End-to-end integration tests for advanced language features."""
 
     def test_while_else_break_skips_else(self):
         src = (
@@ -806,8 +879,8 @@ class Phase5IntegrationTestSuite(unittest.TestCase):
 # Multilingual tests
 # ---------------------------------------------------------------
 
-class MultilingualPhase5TestSuite(unittest.TestCase):
-    """Test Phase 5 features in non-English languages."""
+class MultilingualAdvancedFeaturesTestSuite(unittest.TestCase):
+    """Test advanced language features in non-English languages."""
 
     def test_french_while_else(self):
         src = (
@@ -858,7 +931,7 @@ class MultilingualPhase5TestSuite(unittest.TestCase):
 # ---------------------------------------------------------------
 
 class ExtendedBuiltinsTestSuite(unittest.TestCase):
-    """Test newly added builtins in runtime namespace (Phase 5.5)."""
+    """Test newly added builtins in runtime namespace."""
 
     def test_base_exception_in_namespace(self):
         ns = RuntimeBuiltins("en").namespace()
@@ -1036,7 +1109,7 @@ class ExtendedAliasExecutionTestSuite(unittest.TestCase):
             "soit s = trier([3, 1, 2])\n"
             "afficher(s)\n"
         )
-        r = _execute(src, lang="fr", check_semantics=False)
+        r = _execute(src, lang="fr")
         self.assertTrue(r.success, r.errors)
         self.assertEqual(r.output.strip(), "[1, 2, 3]")
 
@@ -1045,7 +1118,7 @@ class ExtendedAliasExecutionTestSuite(unittest.TestCase):
             "pour i, v dans enumerer([10, 20]):\n"
             "    afficher(i, v)\n"
         )
-        r = _execute(src, lang="fr", check_semantics=False)
+        r = _execute(src, lang="fr")
         self.assertTrue(r.success, r.errors)
         lines = r.output.strip().split("\n")
         self.assertEqual(lines[0].strip(), "0 10")
@@ -1056,7 +1129,7 @@ class ExtendedAliasExecutionTestSuite(unittest.TestCase):
             "afficher(un_quelconque([Faux, Vrai, Faux]))\n"
             "afficher(tous([Vrai, Vrai, Vrai]))\n"
         )
-        r = _execute(src, lang="fr", check_semantics=False)
+        r = _execute(src, lang="fr")
         self.assertTrue(r.success, r.errors)
         lines = r.output.strip().split("\n")
         self.assertEqual(lines[0].strip(), "True")
@@ -1067,7 +1140,7 @@ class ExtendedAliasExecutionTestSuite(unittest.TestCase):
             "sea s = lista(invertido([1, 2, 3]))\n"
             "imprimir(s)\n"
         )
-        r = _execute(src, lang="es", check_semantics=False)
+        r = _execute(src, lang="es")
         self.assertTrue(r.success, r.errors)
         self.assertEqual(r.output.strip(), "[3, 2, 1]")
 
@@ -1076,7 +1149,7 @@ class ExtendedAliasExecutionTestSuite(unittest.TestCase):
             'ausgeben(ist_instanz(42, int))\n'
             'ausgeben(ist_instanz("hi", int))\n'
         )
-        r = _execute(src, lang="de", check_semantics=False)
+        r = _execute(src, lang="de")
         self.assertTrue(r.success, r.errors)
         lines = r.output.strip().split("\n")
         self.assertEqual(lines[0].strip(), "True")
@@ -1089,7 +1162,7 @@ class ExtendedAliasExecutionTestSuite(unittest.TestCase):
             "soit evens = liste(filtrer(lambda x: x > 3, nums))\n"
             "afficher(evens)\n"
         )
-        r = _execute(src, lang="fr", check_semantics=False)
+        r = _execute(src, lang="fr")
         self.assertTrue(r.success, r.errors)
         lines = r.output.strip().split("\n")
         self.assertEqual(lines[0].strip(), "[2, 4, 6]")
@@ -1097,13 +1170,13 @@ class ExtendedAliasExecutionTestSuite(unittest.TestCase):
 
     def test_french_round_executes(self):
         src = "afficher(arrondir(3.14159, 2))\n"
-        r = _execute(src, lang="fr", check_semantics=False)
+        r = _execute(src, lang="fr")
         self.assertTrue(r.success, r.errors)
         self.assertEqual(r.output.strip(), "3.14")
 
     def test_spanish_pow_executes(self):
         src = "imprimir(potencia(2, 10))\n"
-        r = _execute(src, lang="es", check_semantics=False)
+        r = _execute(src, lang="es")
         self.assertTrue(r.success, r.errors)
         self.assertEqual(r.output.strip(), "1024")
 
@@ -1112,11 +1185,88 @@ class ExtendedAliasExecutionTestSuite(unittest.TestCase):
             "打印(长度([1, 2, 3]))\n"
             "打印(列表(范围(4)))\n"
         )
-        r = _execute(src, lang="zh", check_semantics=False)
+        r = _execute(src, lang="zh")
         self.assertTrue(r.success, r.errors)
         lines = r.output.strip().split("\n")
         self.assertEqual(lines[0].strip(), "3")
         self.assertEqual(lines[1].strip(), "[0, 1, 2, 3]")
+
+
+# ---------------------------------------------------------------
+# Starred unpacking in assignments
+# ---------------------------------------------------------------
+
+class StarredUnpackingTestSuite(unittest.TestCase):
+    """Test starred unpacking in assignments, let, and for targets."""
+
+    def test_starred_rest_in_assignment(self):
+        src = "a, *rest = [1, 2, 3, 4]\nprint(a, rest)\n"
+        r = _execute(src, check_semantics=False)
+        self.assertTrue(r.success, r.errors)
+        self.assertEqual(r.output.strip(), "1 [2, 3, 4]")
+
+    def test_starred_prefix_in_assignment(self):
+        src = "*init, last = [1, 2, 3, 4]\nprint(init, last)\n"
+        r = _execute(src, check_semantics=False)
+        self.assertTrue(r.success, r.errors)
+        self.assertEqual(r.output.strip(), "[1, 2, 3] 4")
+
+    def test_starred_middle_in_assignment(self):
+        src = "first, *mid, last = [1, 2, 3, 4]\nprint(first, mid, last)\n"
+        r = _execute(src, check_semantics=False)
+        self.assertTrue(r.success, r.errors)
+        self.assertEqual(r.output.strip(), "1 [2, 3] 4")
+
+    def test_starred_in_let(self):
+        src = "let a, *rest = [1, 2, 3]\nprint(a, rest)\n"
+        r = _execute(src, check_semantics=False)
+        self.assertTrue(r.success, r.errors)
+        self.assertEqual(r.output.strip(), "1 [2, 3]")
+
+    def test_starred_prefix_in_let(self):
+        src = "let *init, last = [1, 2, 3]\nprint(init, last)\n"
+        r = _execute(src, check_semantics=False)
+        self.assertTrue(r.success, r.errors)
+        self.assertEqual(r.output.strip(), "[1, 2] 3")
+
+    def test_starred_in_for_loop(self):
+        src = (
+            "let items = [[1, 2, 3], [4, 5, 6]]\n"
+            "for a, *rest in items:\n"
+            "    print(a, rest)\n"
+        )
+        r = _execute(src, check_semantics=False)
+        self.assertTrue(r.success, r.errors)
+        lines = r.output.strip().split("\n")
+        self.assertEqual(lines[0].strip(), "1 [2, 3]")
+        self.assertEqual(lines[1].strip(), "4 [5, 6]")
+
+    def test_starred_parses_to_starred_expr(self):
+        src = "a, *rest = [1, 2, 3]\n"
+        program = _parse(src)
+        stmt = program.body[0]
+        self.assertIsInstance(stmt, Assignment)
+        self.assertIsInstance(stmt.target, TupleLiteral)
+        self.assertEqual(len(stmt.target.elements), 2)
+        self.assertIsInstance(stmt.target.elements[1], StarredExpr)
+
+    def test_starred_codegen_produces_star(self):
+        src = "a, *rest = [1, 2, 3]\n"
+        code = _generate(src)
+        self.assertIn("*rest", code)
+
+    def test_starred_in_let_codegen(self):
+        src = "let first, *rest = [1, 2, 3]\n"
+        code = _generate(src)
+        self.assertIn("*rest", code)
+        self.assertIn("first", code)
+
+    def test_starred_trailing_comma_let(self):
+        """let *rest, = [1, 2, 3] should work."""
+        src = "let *rest, = [1, 2, 3]\nprint(rest)\n"
+        r = _execute(src, check_semantics=False)
+        self.assertTrue(r.success, r.errors)
+        self.assertEqual(r.output.strip(), "[1, 2, 3]")
 
 
 if __name__ == "__main__":

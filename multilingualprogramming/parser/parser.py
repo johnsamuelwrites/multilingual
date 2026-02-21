@@ -371,17 +371,26 @@ class Parser:
     # Variable declarations and assignments
     # ------------------------------------------------------------------
 
+    def _parse_target_item(self):
+        """Parse a single assignment target: identifier or *identifier."""
+        if self._match_operator("*"):
+            star_tok = self._advance()
+            id_tok = self._expect_identifier()
+            return StarredExpr(
+                Identifier(id_tok.value, line=id_tok.line, column=id_tok.column),
+                is_double=False,
+                line=star_tok.line, column=star_tok.column
+            )
+        id_tok = self._expect_identifier()
+        return Identifier(id_tok.value, line=id_tok.line, column=id_tok.column)
+
     def _parse_let_declaration(self):
         """Parse LET declaration, including tuple/chained assignment forms."""
         tok = self._advance()  # consume LET
-        first_tok = self._expect_identifier()
-        target = Identifier(
-            first_tok.value,
-            line=first_tok.line, column=first_tok.column
-        )
+        target = self._parse_target_item()
 
-        # Annotated LET: let x: T = value
-        if self._match_delimiter(":"):
+        # Annotated LET: let x: T = value (only for plain identifiers)
+        if isinstance(target, Identifier) and self._match_delimiter(":"):
             self._advance()
             annotation = self._parse_annotation_expression()
             self._expect_operator("=")
@@ -395,11 +404,10 @@ class Parser:
             elements = [target]
             while self._match_delimiter(","):
                 self._advance()
-                next_tok = self._expect_identifier()
-                elements.append(Identifier(
-                    next_tok.value,
-                    line=next_tok.line, column=next_tok.column
-                ))
+                # Stop if we hit = after comma (trailing comma)
+                if self._match_operator("="):
+                    break
+                elements.append(self._parse_target_item())
             target = TupleLiteral(elements, line=tok.line, column=tok.column)
 
         self._expect_operator("=")
@@ -447,7 +455,17 @@ class Parser:
 
     def _parse_assignment_or_expression(self):
         """Parse assignment or expression statement."""
-        expr = self._parse_expression()
+        # Check for starred target at statement start: *rest, a = ...
+        if self._match_operator("*"):
+            star_tok = self._advance()
+            id_tok = self._expect_identifier()
+            expr = StarredExpr(
+                Identifier(id_tok.value, line=id_tok.line, column=id_tok.column),
+                is_double=False,
+                line=star_tok.line, column=star_tok.column
+            )
+        else:
+            expr = self._parse_expression()
 
         # Annotated assignment: name: type [= value]
         if isinstance(expr, Identifier) and self._match_delimiter(":"):
@@ -462,7 +480,7 @@ class Parser:
                 line=tok.line, column=tok.column
             )
 
-        # Check for comma (tuple unpacking: a, b = ...)
+        # Check for comma (tuple unpacking: a, b = ... or a, *rest = ...)
         if self._match_delimiter(","):
             elements = [expr]
             while self._match_delimiter(","):
@@ -471,7 +489,18 @@ class Parser:
                 if self._current().type == TokenType.OPERATOR \
                         and self._current().value == "=":
                     break
-                elements.append(self._parse_expression())
+                # Support starred element: a, *rest = ...
+                if self._match_operator("*"):
+                    star_tok = self._advance()
+                    id_tok = self._expect_identifier()
+                    elements.append(StarredExpr(
+                        Identifier(id_tok.value,
+                                   line=id_tok.line, column=id_tok.column),
+                        is_double=False,
+                        line=star_tok.line, column=star_tok.column
+                    ))
+                else:
+                    elements.append(self._parse_expression())
             expr = TupleLiteral(elements,
                                 line=expr.line, column=expr.column)
 
@@ -568,21 +597,14 @@ class Parser:
     def _parse_for_loop(self, is_async=False, async_tok=None):
         """Parse: FOR target[, target2, ...] IN iterable : block [ELSE : block]."""
         tok = self._advance()  # consume FOR
-        target_tok = self._expect_identifier()
-        target = Identifier(
-            target_tok.value,
-            line=target_tok.line, column=target_tok.column
-        )
+        target = self._parse_target_item()
         # Support tuple unpacking: for a, b in items
+        # and starred unpacking: for a, *rest in items
         if self._match_delimiter(","):
             elements = [target]
             while self._match_delimiter(","):
                 self._advance()
-                next_tok = self._expect_identifier()
-                elements.append(Identifier(
-                    next_tok.value,
-                    line=next_tok.line, column=next_tok.column
-                ))
+                elements.append(self._parse_target_item())
             target = TupleLiteral(elements,
                                   line=target.line, column=target.column)
         self._expect_concept("IN")
