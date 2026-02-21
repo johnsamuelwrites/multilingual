@@ -16,9 +16,9 @@ def crear_contador(inicio):
         devolver total
     devolver paso
 
-sea siguiente = crear_contador(5)
-sea primero = siguiente()
-sea segundo = siguiente()
+sea contador_siguiente = crear_contador(5)
+sea primero = contador_siguiente()
+sea segundo = contador_siguiente()
 
 con abrir("tmp_complete_es.txt", "w", encoding="utf-8") como escritura:
     escritura.write("ok")
