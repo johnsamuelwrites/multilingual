@@ -372,7 +372,7 @@ imprimir(soma)
 
 Runnable examples are documented in:
 
-- [examples/README.md](../examples/README.md)
+- [examples/README.md](_generated/examples/README.md)
 
 Run all examples from repository root:
 
@@ -400,7 +400,7 @@ python -m pylint $(git ls-files '*.py')
 
 ## Related Docs
 
-- Project quick start: [README.md](../README.md)
+- Project quick start: [README.md](_generated/README.md)
 - Design overview: [design.md](design.md)
 - Core formal specification: [core_spec.md](core_spec.md)
 - Frontend translation contracts: [frontend_contracts.md](frontend_contracts.md)
@@ -411,8 +411,8 @@ python -m pylint $(git ls-files '*.py')
 - Standard library localization strategy: [stdlib_localization.md](stdlib_localization.md)
 - Translation governance: [translation_guidelines.md](translation_guidelines.md)
 - Development and debugging guide: [development.md](development.md)
-- Usage snippets: [USAGE.md](../USAGE.md)
-- Examples guide: [examples/README.md](../examples/README.md)
+- Usage snippets: [USAGE.md](_generated/USAGE.md)
+- Examples guide: [examples/README.md](_generated/examples/README.md)
 - French programming guide: [programmation_fr.md](programmation_fr.md)
 - Language onboarding: [language_onboarding.md](language_onboarding.md)
 

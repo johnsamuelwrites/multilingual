@@ -34,9 +34,15 @@ jobs:
       - name: Stage root docs into docs_dir
         run: |
           mkdir -p docs/_generated
+          mkdir -p docs/_generated/examples
+          mkdir -p docs/_generated/docs
           cp README.md docs/_generated/README.md
           cp RELEASE.md docs/_generated/RELEASE.md
           cp CONTRIBUTING.md docs/_generated/CONTRIBUTING.md
+          cp USAGE.md docs/_generated/USAGE.md
+          cp examples/README.md docs/_generated/examples/README.md
+          cp docs/*.md docs/_generated/docs/
+          cp -R docs/assets docs/_generated/docs/assets
 
       - name: Build site
         run: mkdocs build --strict
