@@ -4,6 +4,7 @@ This matrix defines the current compatibility baseline for `multilingual`.
 
 Baseline source of truth:
 - `examples/complete_features_en.ml`
+- `tests/` (799 tests across 74 test suites)
 
 Target runtime:
 - CPython `3.12.x`
@@ -14,55 +15,164 @@ Target runtime:
 it is **not** full drop-in compatibility for every existing Python project and
 third-party ecosystem.
 
+## Supported Languages
+
+17 natural languages are supported with localized keywords and error messages:
+
+| Language | Code | Example keyword (`if`) |
+|---|---|---|
+| English | `en` | `if` |
+| French | `fr` | `si` |
+| Spanish | `es` | `si` |
+| German | `de` | `wenn` |
+| Hindi | `hi` | `अगर` |
+| Arabic | `ar` | `إذا` |
+| Bengali | `bn` | `যদি` |
+| Tamil | `ta` | `என்றால்` |
+| Chinese | `zh` | `如果` |
+| Japanese | `ja` | `もし` |
+| Italian | `it` | `se` |
+| Portuguese | `pt` | `se` |
+| Polish | `pl` | `jezeli` |
+| Dutch | `nl` | `als` |
+| Swedish | `sv` | `om` |
+| Danish | `da` | `hvis` |
+| Finnish | `fi` | `jos` |
+
 ## Supported Baseline (Current)
 
-The following constructs are exercised in the baseline example and considered
-available in the current implementation.
+### Core Constructs
 
 | Area | Status | Notes / Example |
 |---|---|---|
 | Imports | Supported | `import math`, `from math import sqrt as root_fn` |
-| Variable declarations | Supported | `let acc_total = 0` |
-| Arithmetic and expressions | Supported | numeric and boolean expressions |
-| Lists | Supported | list literals and iteration |
-| `for` loops | Supported | `for item in items:` |
+| Wildcard imports | Supported | `from os import *` |
+| Variable declarations | Supported | `let x = 0`, `const PI = 3.14` |
+| Type annotations | Supported | `let x: int = 0`, `def f(x: int) -> str:` |
+| Arithmetic and expressions | Supported | `+`, `-`, `*`, `/`, `//`, `%`, `**`, bitwise ops |
+| Augmented assignment | Supported | `+=`, `-=`, `*=`, `/=`, `**=`, `//=`, `%=`, `&=`, `\|=`, `^=`, `<<=`, `>>=` |
+| Chained assignment | Supported | `a = b = c = 0` |
+
+### Data Structures
+
+| Area | Status | Notes / Example |
+|---|---|---|
+| Lists | Supported | literals, iteration, indexing, slicing |
+| Dictionaries | Supported | literals, comprehensions, unpacking (`**d`) |
+| Sets | Supported | literals, comprehensions |
+| Tuples | Supported | literals, unpacking |
+| Strings | Supported | single/double quotes, triple-quoted, f-strings |
+| F-string format specs | Supported | `f"{x:.2f}"`, `f"{x!r}"`, `f"{x!s}"`, `f"{x!a}"` |
+| Hex/octal/binary literals | Supported | `0xFF`, `0o77`, `0b1010` |
+| Scientific notation | Supported | `1.5e10` |
+
+### Control Flow
+
+| Area | Status | Notes / Example |
+|---|---|---|
+| `if` / `elif` / `else` | Supported | full conditional chains |
 | `while` loops | Supported | `while condition:` |
-| Conditionals | Supported | `if` / `else` |
-| Functions | Supported | `def ...`, `return` |
-| List comprehensions | Supported | including `if` filter clause |
-| Boolean logic | Supported | `True`, `False`, `and`, `not` |
-| Assertions | Supported | `assert expr` |
-| Exceptions | Supported | `try` / `except` / `finally` |
-| Classes | Supported | class definition, methods, attributes |
-| Method calls | Supported | instance method invocation |
-| Built-in calls | Supported | e.g. `len`, `int`, `print` |
-| Identity checks | Supported | `is` with `None` |
+| `while` / `else` | Supported | else block runs when loop completes without `break` |
+| `for` loops | Supported | `for item in items:`, tuple unpacking targets |
+| `for` / `else` | Supported | else block runs when loop completes without `break` |
+| `break` / `continue` | Supported | loop control |
+| `pass` | Supported | no-op placeholder |
+| `match` / `case` | Supported | structural pattern matching |
+| `case` guard clauses | Supported | `case n if n > 0:` |
+| `case` OR patterns | Supported | `case 1 \| 2 \| 3:` |
+| `case` AS bindings | Supported | `case pattern as name:` |
+| `case _` (default) | Supported | wildcard/default case |
+| Ternary expressions | Supported | `x if cond else y` |
 
-## Also Supported (Documented Elsewhere)
+### Functions and Classes
 
-These features are documented and tested in project docs/examples, even if they
-are not all present in `complete_features_en.ml`.
+| Area | Status | Notes / Example |
+|---|---|---|
+| Function definitions | Supported | `def f(x):`, with defaults, `*args`, `**kwargs` |
+| Positional-only params | Supported | `def f(a, b, /, c):` |
+| Keyword-only params | Supported | `def f(a, *, b):` |
+| Return annotations | Supported | `def f() -> int:` |
+| Decorators | Supported | `@decorator` on functions and classes |
+| Lambda expressions | Supported | `lambda x: x + 1` |
+| `yield` / `yield from` | Supported | generator functions and delegation |
+| `async def` / `await` | Supported | async functions, `async for`, `async with` |
+| Class definitions | Supported | inheritance, methods, attributes |
+| Walrus operator | Supported | `(x := expr)` |
 
-- Type annotations
-- Set literals
-- Multiple context managers
-- Dictionary unpacking
-- Hex/octal/binary literals
-- Scientific notation
-- Async constructs (`async def`, `await`, `async for`, `async with`)
-- Walrus operator (`:=`)
+### Error Handling
 
-See:
-- `README.md` ("Additional syntax now supported")
-- `docs/reference.md` ("Language Features")
+| Area | Status | Notes / Example |
+|---|---|---|
+| `try` / `except` / `else` / `finally` | Supported | full exception handling |
+| `raise` | Supported | bare `raise`, `raise ValueError("msg")` |
+| `raise` ... `from` | Supported | exception chaining: `raise X from Y` |
+| `assert` | Supported | `assert expr`, `assert expr, msg` |
+
+### Scope and Variables
+
+| Area | Status | Notes / Example |
+|---|---|---|
+| `global` | Supported | declares global scope; defines name in local scope |
+| `nonlocal` | Supported | declares enclosing scope; defines name in local scope |
+| `del` | Supported | `del variable` |
+
+### Comprehensions and Generators
+
+| Area | Status | Notes / Example |
+|---|---|---|
+| List comprehensions | Supported | `[x for x in items if cond]`, nested clauses |
+| Dict comprehensions | Supported | `{k: v for k, v in items}` |
+| Set comprehensions | Supported | `{x for x in items if cond}`, nested clauses |
+| Generator expressions | Supported | `(x for x in items)` |
+
+### Context Managers
+
+| Area | Status | Notes / Example |
+|---|---|---|
+| `with` statement | Supported | `with open(f) as h:` |
+| Multiple contexts | Supported | `with A() as a, B() as b:` |
+| `async with` | Supported | async context managers |
 
 ## Keyword and Built-in Coverage Status
 
 | Coverage area | Status | Notes |
 |---|---|---|
-| Python keywords (3.12) | Complete in keyword registry | Includes full keyword surface such as `del`, `nonlocal`, `match`, `case`, async keywords, etc. |
-| Localized built-in aliases | Partial by design | `resources/usm/builtins_aliases.json` currently provides a curated set (12 concepts), not all CPython built-ins. |
-| Canonical Python built-in names | Fully available | Canonical names (for example `len`, `print`, `super`) remain usable across languages via runtime namespace. |
+| Python keywords (3.12) | Complete | 51 concept IDs across 7 categories in keyword registry |
+| Universal built-in functions | 60+ available | `len`, `range`, `abs`, `pow`, `divmod`, `complex`, `format`, `ascii`, `compile`, `eval`, `exec`, `globals`, `locals`, `issubclass`, `delattr`, `slice`, and more |
+| Exception types | 30+ available | `ValueError`, `TypeError`, `KeyError`, `PermissionError`, `RecursionError`, `TimeoutError`, `UnicodeError`, `StopAsyncIteration`, and more |
+| Special values | Available | `True`, `False`, `None`, `Ellipsis`, `NotImplemented` |
+| Localized built-in aliases | 13 concepts | `range`, `len`, `sum`, `abs`, `min`, `max`, `print`, `super`, `open`, `set`, `tuple`, `zip` with multilingual aliases across all 17 languages |
+| Canonical Python built-in names | Fully available | Canonical names (e.g., `len`, `print`, `super`) remain usable across all languages via runtime namespace |
+
+## Surface Syntax Normalization
+
+SOV (Subject-Object-Verb) and RTL (Right-to-Left) languages can use natural
+word order. The surface normalizer rewrites tokens to canonical order before
+parsing.
+
+| Statement | Languages with normalization | Example (Japanese) |
+|---|---|---|
+| `for` loop | ja, ar, es, pt | iterable-first: `範囲(6) 内の 各 i に対して:` |
+| `while` loop | ja, ar | condition-first: `condition 間:` |
+| `if` statement | ja, ar | condition-first: `condition もし:` |
+| `with` statement | ja, ar | expression-first: `expression 付き:` |
+
+## Test Coverage
+
+799 tests across 74 test suites covering:
+
+| Test area | Suite count | Description |
+|---|---|---|
+| Numerals and dates | 8 | Multilingual numerals, Unicode, Roman, complex, fractions, datetime |
+| Lexer | 2 | Tokenization and lexer behavior |
+| Parser | 5 | Expressions, statements, compounds, multilingual, errors |
+| Semantic analysis | 6 | Scopes, constants, control flow, definitions, multilingual errors, symbol table |
+| Code generation | 4 | Expressions, statements, compounds, multilingual |
+| Execution | 4 | Basic, multilingual, transpile, errors |
+| Critical features | 8 | Triple-quoted strings, slices, parameters, tuples, comprehensions, decorators, f-strings |
+| Phase 4 features | 8 | Augmented assignment, membership/identity, ternary, assert, chained assignment, CLI, REPL |
+| Phase 5 features | 19 | Loop else, yield/raise from, set comprehensions, parameter separators, f-string formatting, match guards/OR/AS, global/nonlocal, builtins, exceptions, surface normalization, data quality, integration, multilingual |
+| Infrastructure | 10 | Keyword registry, AST nodes, AST printer, error messages, runtime builtins, REPL |
 
 ## Not Guaranteed Yet
 
@@ -73,6 +183,8 @@ The following are not claimed as universally compatible at this stage:
 - Full third-party package/runtime ecosystem compatibility
 - Every advanced metaprogramming/introspection scenario
 - Complete localization aliases for every CPython built-in function/type
+- Starred unpacking in all expression contexts (`*iterable` in assignments)
+- Complex decorator chains with arguments
 
 ## Recommendation
 

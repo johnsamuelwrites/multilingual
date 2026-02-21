@@ -24,7 +24,7 @@ from multilingualprogramming.parser.ast_nodes import (
     WithStatement, ImportStatement, FromImportStatement,
     SliceExpr, Parameter, StarredExpr, TupleLiteral,
     ComprehensionClause,
-    ListComprehension, DictComprehension, GeneratorExpr,
+    ListComprehension, DictComprehension, GeneratorExpr, SetComprehension,
     FStringLiteral, AssertStatement, ChainedAssignment, DictUnpackEntry,
 )
 from multilingualprogramming.parser.error_messages import ErrorMessageRegistry
@@ -551,17 +551,22 @@ class Parser:
         )
 
     def _parse_while_loop(self):
-        """Parse: WHILE condition : block."""
+        """Parse: WHILE condition : block [ELSE : block]."""
         tok = self._advance()  # consume WHILE
         condition = self._parse_expression()
         body = self._parse_block()
+        self._skip_newlines()
+        else_body = None
+        if self._match_concept("COND_ELSE"):
+            self._advance()
+            else_body = self._parse_block()
         return WhileLoop(
-            condition, body,
+            condition, body, else_body=else_body,
             line=tok.line, column=tok.column
         )
 
     def _parse_for_loop(self, is_async=False, async_tok=None):
-        """Parse: FOR target[, target2, ...] IN iterable : block."""
+        """Parse: FOR target[, target2, ...] IN iterable : block [ELSE : block]."""
         tok = self._advance()  # consume FOR
         target_tok = self._expect_identifier()
         target = Identifier(
@@ -583,10 +588,16 @@ class Parser:
         self._expect_concept("IN")
         iterable = self._parse_expression()
         body = self._parse_block()
+        self._skip_newlines()
+        else_body = None
+        if self._match_concept("COND_ELSE"):
+            self._advance()
+            else_body = self._parse_block()
         line = async_tok.line if async_tok else tok.line
         column = async_tok.column if async_tok else tok.column
         return ForLoop(
             target, iterable, body, is_async=is_async,
+            else_body=else_body,
             line=line, column=column
         )
 
@@ -603,10 +614,15 @@ class Parser:
         while not self._at_end() and not self._match_type(TokenType.DEDENT):
             if self._match_concept("CASE"):
                 case_tok = self._advance()
-                pattern = self._parse_expression()
+                pattern = self._parse_case_pattern()
+                guard = None
+                if self._match_concept("COND_IF"):
+                    self._advance()
+                    guard = self._parse_expression()
                 case_body = self._parse_block()
                 cases.append(CaseClause(
                     pattern, case_body, is_default=False,
+                    guard=guard,
                     line=case_tok.line, column=case_tok.column
                 ))
             elif self._match_concept("DEFAULT"):
@@ -628,6 +644,44 @@ class Parser:
             subject, cases,
             line=tok.line, column=tok.column
         )
+
+    def _parse_case_pattern(self):
+        """Parse a case pattern: pattern [| pattern]* [AS name].
+
+        Uses expression parsing for individual patterns, then handles
+        OR patterns (|) and AS binding at the pattern level.
+        """
+        pattern = self._parse_or_expression()
+
+        # OR patterns: pattern | pattern | ...
+        if self._match_operator("|"):
+            patterns = [pattern]
+            while self._match_operator("|"):
+                self._advance()
+                patterns.append(self._parse_or_expression())
+            # Emit as BinaryOp chain with | operator for codegen
+            pattern = patterns[0]
+            for right in patterns[1:]:
+                pattern = BinaryOp(
+                    pattern, "|", right,
+                    line=pattern.line, column=pattern.column
+                )
+
+        # AS binding: pattern as name
+        if self._match_concept("AS"):
+            self._advance()
+            name_tok = self._expect_identifier()
+            # Emit as NamedExpr-like pattern (codegen emits "pattern as name")
+            name_node = Identifier(
+                name_tok.value,
+                line=name_tok.line, column=name_tok.column
+            )
+            pattern = BinaryOp(
+                pattern, " as ", name_node,
+                line=pattern.line, column=pattern.column
+            )
+
+        return pattern
 
     # ------------------------------------------------------------------
     # Definitions
@@ -662,15 +716,26 @@ class Parser:
         )
 
     def _parse_parameter(self):
-        """Parse a single function parameter: [*|**] name [: type] [= default]."""
+        """Parse a single function parameter: [*|**] name [: type] [= default].
+
+        Also handles bare * (keyword-only separator) and / (positional-only separator).
+        """
         is_vararg = False
         is_kwarg = False
+
+        # Handle / for positional-only parameter separator
+        if self._match_operator("/"):
+            tok = self._advance()
+            return Parameter("/", line=tok.line, column=tok.column)
 
         if self._match_operator("**"):
             self._advance()
             is_kwarg = True
         elif self._match_operator("*"):
-            self._advance()
+            tok = self._advance()
+            # Bare * (keyword-only separator) vs *name (vararg)
+            if self._match_delimiter(",") or self._match_delimiter(")"):
+                return Parameter("*", line=tok.line, column=tok.column)
             is_vararg = True
 
         name_tok = self._expect_identifier()
@@ -835,6 +900,14 @@ class Parser:
 
         self._expect_concept("IMPORT")
 
+        # Handle 'from module import *'
+        if self._match_operator("*"):
+            self._advance()
+            return FromImportStatement(
+                module, [("*", None)],
+                line=tok.line, column=tok.column
+            )
+
         names = []
         name_tok = self._expect_identifier()
         alias = None
@@ -874,24 +947,34 @@ class Parser:
         return ReturnStatement(value, line=tok.line, column=tok.column)
 
     def _parse_yield_statement(self):
-        """Parse: YIELD [expression]."""
+        """Parse: YIELD [FROM] [expression]."""
         tok = self._advance()  # consume YIELD
+        is_from = False
+        if self._match_concept("FROM"):
+            self._advance()
+            is_from = True
         value = None
         if not self._at_end() and not self._match_type(TokenType.NEWLINE) \
                 and not self._match_type(TokenType.DEDENT) \
                 and not self._match_type(TokenType.EOF):
             value = self._parse_expression()
-        return YieldStatement(value, line=tok.line, column=tok.column)
+        return YieldStatement(value, is_from=is_from,
+                              line=tok.line, column=tok.column)
 
     def _parse_raise_statement(self):
-        """Parse: RAISE [expression]."""
+        """Parse: RAISE [expression [FROM expression]]."""
         tok = self._advance()  # consume RAISE
         value = None
+        cause = None
         if not self._at_end() and not self._match_type(TokenType.NEWLINE) \
                 and not self._match_type(TokenType.DEDENT) \
                 and not self._match_type(TokenType.EOF):
             value = self._parse_expression()
-        return RaiseStatement(value, line=tok.line, column=tok.column)
+            if self._match_concept("FROM"):
+                self._advance()
+                cause = self._parse_expression()
+        return RaiseStatement(value, cause=cause,
+                              line=tok.line, column=tok.column)
 
     def _parse_del_statement(self):
         """Parse: DEL target [, target]*."""
@@ -1395,7 +1478,10 @@ class Parser:
         self._error("EXPECTED_EXPRESSION", tok, token=tok.value)
 
     def _parse_fstring(self, tok):
-        """Parse an f-string by extracting {expr} segments from the raw text."""
+        """Parse an f-string by extracting {expr} segments from the raw text.
+
+        Handles format specs ({expr:fmt}) and conversions ({expr!r}).
+        """
         raw = tok.value
         parts = []
         i = 0
@@ -1416,6 +1502,9 @@ class Parser:
                 depth = 1
                 i += 1
                 expr_text = ""
+                format_spec = ""
+                conversion = ""
+                in_format = False
                 while i < len(raw) and depth > 0:
                     if raw[i] == "{":
                         depth += 1
@@ -1423,7 +1512,21 @@ class Parser:
                         depth -= 1
                         if depth == 0:
                             break
-                    expr_text += raw[i]
+                    # Detect conversion (!r, !s, !a) at depth 1
+                    if depth == 1 and not in_format and raw[i] == "!" \
+                            and i + 1 < len(raw) and raw[i + 1] in "rsa":
+                        conversion = raw[i + 1]
+                        i += 2
+                        continue
+                    # Detect format spec (:...) at depth 1
+                    if depth == 1 and not in_format and raw[i] == ":":
+                        in_format = True
+                        i += 1
+                        continue
+                    if in_format:
+                        format_spec += raw[i]
+                    else:
+                        expr_text += raw[i]
                     i += 1
                 i += 1  # skip closing }
                 # Parse the expression text
@@ -1431,6 +1534,10 @@ class Parser:
                 sub_tokens = sub_lexer.tokenize()
                 sub_parser = Parser(sub_tokens, self.source_language)
                 expr_node = sub_parser.parse_expression_fragment()
+                # Attach format spec and conversion as metadata
+                if format_spec or conversion:
+                    expr_node._fstring_format_spec = format_spec
+                    expr_node._fstring_conversion = conversion
                 parts.append(expr_node)
             elif ch == "}" and i + 1 < len(raw) and raw[i + 1] == "}":
                 # Escaped }} → literal }
@@ -1460,15 +1567,20 @@ class Parser:
         return LambdaExpr(params, body, line=tok.line, column=tok.column)
 
     def _parse_yield_expr(self):
-        """Parse: YIELD [expression]."""
+        """Parse: YIELD [FROM] [expression]."""
         tok = self._advance()  # consume YIELD
+        is_from = False
+        if self._match_concept("FROM"):
+            self._advance()
+            is_from = True
         value = None
         if not self._at_end() and not self._match_type(TokenType.NEWLINE) \
                 and not self._match_type(TokenType.DEDENT) \
                 and not self._match_delimiter(")") \
                 and not self._match_delimiter(","):
             value = self._parse_expression()
-        return YieldExpr(value, line=tok.line, column=tok.column)
+        return YieldExpr(value, is_from=is_from,
+                         line=tok.line, column=tok.column)
 
     def _parse_list_literal(self):
         """Parse: [ expr, expr, ... ] or [expr for target in iter [if cond]]."""
@@ -1546,6 +1658,10 @@ class Parser:
             self._expect_delimiter("}")
             return DictLiteral(entries, line=tok.line, column=tok.column)
 
+        # Set comprehension: {expr FOR ...}
+        if self._match_concept("LOOP_FOR"):
+            return self._parse_set_comprehension_tail(first, tok)
+
         # Set literal
         elements = [first]
         while self._match_delimiter(","):
@@ -1614,6 +1730,18 @@ class Parser:
         self._expect_delimiter("}")
         return DictComprehension(
             key, value, first.target, first.iterable, first.conditions,
+            clauses=clauses,
+            line=tok.line, column=tok.column
+        )
+
+    def _parse_set_comprehension_tail(self, element, tok):
+        """Parse: FOR target IN iterable [IF cond]... }."""
+        clauses = self._parse_comprehension_clauses()
+        first = clauses[0]
+
+        self._expect_delimiter("}")
+        return SetComprehension(
+            element, first.target, first.iterable, first.conditions,
             clauses=clauses,
             line=tok.line, column=tok.column
         )

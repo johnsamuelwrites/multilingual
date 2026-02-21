@@ -128,7 +128,11 @@ class PythonCodeGenerator:
     def visit_RaiseStatement(self, node):
         if node.value:
             val = self._expr(node.value)
-            self._emit(f"raise {val}")
+            if getattr(node, "cause", None):
+                cause = self._expr(node.cause)
+                self._emit(f"raise {val} from {cause}")
+            else:
+                self._emit(f"raise {val}")
         else:
             self._emit("raise")
 
@@ -158,11 +162,12 @@ class PythonCodeGenerator:
         self._emit(f"nonlocal {names}")
 
     def visit_YieldStatement(self, node):
+        keyword = "yield from" if getattr(node, "is_from", False) else "yield"
         if node.value:
             val = self._expr(node.value)
-            self._emit(f"yield {val}")
+            self._emit(f"{keyword} {val}")
         else:
-            self._emit("yield")
+            self._emit(keyword)
 
     # -- Compound statements --
 
@@ -182,6 +187,9 @@ class PythonCodeGenerator:
         cond = self._expr(node.condition)
         self._emit(f"while {cond}:")
         self._emit_body(node.body)
+        if node.else_body:
+            self._emit("else:")
+            self._emit_body(node.else_body)
 
     def visit_ForLoop(self, node):
         target = self._expr(node.target)
@@ -189,6 +197,9 @@ class PythonCodeGenerator:
         prefix = "async " if getattr(node, "is_async", False) else ""
         self._emit(f"{prefix}for {target} in {iterable}:")
         self._emit_body(node.body)
+        if getattr(node, "else_body", None):
+            self._emit("else:")
+            self._emit_body(node.else_body)
 
     def visit_FunctionDef(self, node):
         # Emit decorators
@@ -258,7 +269,10 @@ class PythonCodeGenerator:
             self._emit("case _:")
         else:
             pattern = self._expr(node.pattern)
-            self._emit(f"case {pattern}:")
+            guard = ""
+            if getattr(node, "guard", None):
+                guard = f" if {self._expr(node.guard)}"
+            self._emit(f"case {pattern}{guard}:")
         self._emit_body(node.body)
 
     def visit_WithStatement(self, node):
@@ -436,10 +450,11 @@ class _ExpressionGenerator:
         return f"(lambda {params}: {body})"
 
     def visit_YieldExpr(self, node):
+        keyword = "yield from" if getattr(node, "is_from", False) else "yield"
         if node.value:
             val = self._expr(node.value)
-            return f"(yield {val})"
-        return "(yield)"
+            return f"({keyword} {val})"
+        return f"({keyword})"
 
     def visit_AwaitExpr(self, node):
         val = self._expr(node.value)
@@ -465,6 +480,9 @@ class _ExpressionGenerator:
         return f"{start}:{stop}"
 
     def visit_Parameter(self, node):
+        # Handle separator markers: bare * and /
+        if node.name in ("*", "/"):
+            return node.name
         prefix = ""
         if node.is_kwarg:
             prefix = "**"
@@ -524,6 +542,18 @@ class _ExpressionGenerator:
         result += ")"
         return result
 
+    def visit_SetComprehension(self, node):
+        elem = self._expr(node.element)
+        result = "{" + elem
+        for clause in self._comprehension_clauses(node):
+            target = self._expr(clause.target)
+            iterable = self._expr(clause.iterable)
+            result += f" for {target} in {iterable}"
+            for cond in clause.conditions:
+                result += f" if {self._expr(cond)}"
+        result += "}"
+        return result
+
     def visit_FStringLiteral(self, node):
         result = 'f"'
         for part in node.parts:
@@ -533,7 +563,15 @@ class _ExpressionGenerator:
                 escaped = escaped.replace("{", "{{").replace("}", "}}")
                 result += escaped
             else:
-                result += "{" + self._expr(part) + "}"
+                conversion = getattr(part, "_fstring_conversion", "")
+                format_spec = getattr(part, "_fstring_format_spec", "")
+                expr_str = self._expr(part)
+                suffix = ""
+                if conversion:
+                    suffix += f"!{conversion}"
+                if format_spec:
+                    suffix += f":{format_spec}"
+                result += "{" + expr_str + suffix + "}"
         result += '"'
         return result
 

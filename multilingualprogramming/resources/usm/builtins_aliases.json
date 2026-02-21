@@ -4,600 +4,728 @@
   "description": "Localized aliases for selected universal runtime built-ins",
   "aliases": {
     "range": {
-      "fr": [
-        "intervalle"
-      ],
-      "es": [
-        "rango"
-      ],
-      "de": [
-        "bereich"
-      ],
-      "it": [
-        "intervallo"
-      ],
-      "pt": [
-        "intervalo"
-      ],
-      "hi": [
-        "परास"
-      ],
-      "ar": [
-        "مدى"
-      ],
-      "bn": [
-        "পরিসর"
-      ],
-      "ta": [
-        "வரம்பு"
-      ],
-      "zh": [
-        "范围"
-      ],
-      "ja": [
-        "範囲"
-      ],
-      "pl": [
-        "zakres"
-      ],
-      "nl": [
-        "bereik"
-      ],
-      "sv": [
-        "intervall"
-      ],
-      "da": [
-        "interval"
-      ],
-      "fi": [
-        "vali"
-      ]
+      "fr": ["intervalle"],
+      "es": ["rango"],
+      "de": ["bereich"],
+      "it": ["intervallo"],
+      "pt": ["intervalo"],
+      "hi": ["परास"],
+      "ar": ["مدى"],
+      "bn": ["পরিসর"],
+      "ta": ["வரம்பு"],
+      "zh": ["范围"],
+      "ja": ["範囲"],
+      "pl": ["zakres"],
+      "nl": ["bereik"],
+      "sv": ["intervall"],
+      "da": ["interval"],
+      "fi": ["vali"]
     },
     "len": {
-      "fr": [
-        "longueur"
-      ],
-      "es": [
-        "longitud"
-      ],
-      "de": [
-        "laenge"
-      ],
-      "it": [
-        "lunghezza"
-      ],
-      "pt": [
-        "comprimento"
-      ],
-      "hi": [
-        "लंबाई"
-      ],
-      "ar": [
-        "طول"
-      ],
-      "bn": [
-        "দৈর্ঘ্য"
-      ],
-      "ta": [
-        "நீளம்"
-      ],
-      "zh": [
-        "长度"
-      ],
-      "ja": [
-        "長さ"
-      ],
-      "pl": [
-        "dlugosc"
-      ],
-      "nl": [
-        "lengte"
-      ],
-      "sv": [
-        "langd"
-      ],
-      "da": [
-        "laengde"
-      ],
-      "fi": [
-        "pituus"
-      ]
+      "fr": ["longueur"],
+      "es": ["longitud"],
+      "de": ["laenge"],
+      "it": ["lunghezza"],
+      "pt": ["comprimento"],
+      "hi": ["लंबाई"],
+      "ar": ["طول"],
+      "bn": ["দৈর্ঘ্য"],
+      "ta": ["நீளம்"],
+      "zh": ["长度"],
+      "ja": ["長さ"],
+      "pl": ["dlugosc"],
+      "nl": ["lengte"],
+      "sv": ["langd"],
+      "da": ["laengde"],
+      "fi": ["pituus"]
     },
     "sum": {
-      "fr": [
-        "somme"
-      ],
-      "es": [
-        "suma"
-      ],
-      "de": [
-        "summe"
-      ],
-      "it": [
-        "somma"
-      ],
-      "pt": [
-        "soma"
-      ],
-      "hi": [
-        "योग"
-      ],
-      "ar": [
-        "مجموع"
-      ],
-      "bn": [
-        "যোগফল"
-      ],
-      "ta": [
-        "கூட்டுத்தொகை"
-      ],
-      "zh": [
-        "总和"
-      ],
-      "ja": [
-        "合計"
-      ],
-      "pl": [
-        "suma"
-      ],
-      "nl": [
-        "som"
-      ],
-      "sv": [
-        "summa"
-      ],
-      "fi": [
-        "summa"
-      ]
+      "fr": ["somme"],
+      "es": ["suma"],
+      "de": ["summe"],
+      "it": ["somma"],
+      "pt": ["soma"],
+      "hi": ["योग"],
+      "ar": ["مجموع"],
+      "bn": ["যোগফল"],
+      "ta": ["கூட்டுத்தொகை"],
+      "zh": ["总和"],
+      "ja": ["合計"],
+      "pl": ["suma"],
+      "nl": ["som"],
+      "sv": ["summa"],
+      "da": ["summering"],
+      "fi": ["summa"]
     },
     "abs": {
-      "fr": [
-        "valeurabsolue"
-      ],
-      "es": [
-        "valorabsoluto"
-      ],
-      "de": [
-        "absolut"
-      ],
-      "it": [
-        "assoluto"
-      ],
-      "pt": [
-        "absoluto"
-      ],
-      "hi": [
-        "निरपेक्ष"
-      ],
-      "ar": [
-        "مطلق"
-      ],
-      "bn": [
-        "পরম"
-      ],
-      "ta": [
-        "முழுமதிப்பு"
-      ],
-      "zh": [
-        "绝对值"
-      ],
-      "ja": [
-        "絶対値"
-      ],
-      "pl": [
-        "bezwzgledna"
-      ],
-      "nl": [
-        "absoluut"
-      ],
-      "sv": [
-        "absolut"
-      ],
-      "da": [
-        "absolut"
-      ],
-      "fi": [
-        "itseisarvo"
-      ]
+      "fr": ["valeurabsolue"],
+      "es": ["valorabsoluto"],
+      "de": ["absolut"],
+      "it": ["assoluto"],
+      "pt": ["absoluto"],
+      "hi": ["निरपेक्ष"],
+      "ar": ["مطلق"],
+      "bn": ["পরম"],
+      "ta": ["முழுமதிப்பு"],
+      "zh": ["绝对值"],
+      "ja": ["絶対値"],
+      "pl": ["bezwzgledna"],
+      "nl": ["absoluut"],
+      "sv": ["absolut"],
+      "da": ["absolut"],
+      "fi": ["itseisarvo"]
     },
     "min": {
-      "fr": [
-        "minimum"
-      ],
-      "es": [
-        "minimo"
-      ],
-      "de": [
-        "minimum"
-      ],
-      "it": [
-        "minimo"
-      ],
-      "pt": [
-        "mínimo",
-        "minimo"
-      ],
-      "hi": [
-        "न्यूनतम"
-      ],
-      "ar": [
-        "أدنى"
-      ],
-      "bn": [
-        "সর্বনিম্ন"
-      ],
-      "ta": [
-        "குறைந்தபட்சம்"
-      ],
-      "zh": [
-        "最小值"
-      ],
-      "ja": [
-        "最小値"
-      ],
-      "pl": [
-        "minimum"
-      ],
-      "nl": [
-        "minimum"
-      ],
-      "sv": [
-        "minimum"
-      ],
-      "da": [
-        "minimum"
-      ],
-      "fi": [
-        "minimi"
-      ]
+      "fr": ["minimum"],
+      "es": ["minimo"],
+      "de": ["minimum"],
+      "it": ["minimo"],
+      "pt": ["mínimo", "minimo"],
+      "hi": ["न्यूनतम"],
+      "ar": ["أدنى"],
+      "bn": ["সর্বনিম্ন"],
+      "ta": ["குறைந்தபட்சம்"],
+      "zh": ["最小值"],
+      "ja": ["最小値"],
+      "pl": ["minimum"],
+      "nl": ["minimum"],
+      "sv": ["minimum"],
+      "da": ["minimum"],
+      "fi": ["minimi"]
     },
     "max": {
-      "fr": [
-        "maximum"
-      ],
-      "es": [
-        "maximo"
-      ],
-      "de": [
-        "maximum"
-      ],
-      "it": [
-        "massimo"
-      ],
-      "pt": [
-        "máximo",
-        "maximo"
-      ],
-      "hi": [
-        "अधिकतम"
-      ],
-      "ar": [
-        "أقصى"
-      ],
-      "bn": [
-        "সর্বোচ্চ"
-      ],
-      "ta": [
-        "அதிகபட்சம்"
-      ],
-      "zh": [
-        "最大值"
-      ],
-      "ja": [
-        "最大値"
-      ],
-      "pl": [
-        "maksimum"
-      ],
-      "nl": [
-        "maximum"
-      ],
-      "sv": [
-        "maximum"
-      ],
-      "da": [
-        "maksimum"
-      ],
-      "fi": [
-        "maksimi"
-      ]
+      "fr": ["maximum"],
+      "es": ["maximo"],
+      "de": ["maximum"],
+      "it": ["massimo"],
+      "pt": ["máximo", "maximo"],
+      "hi": ["अधिकतम"],
+      "ar": ["أقصى"],
+      "bn": ["সর্বোচ্চ"],
+      "ta": ["அதிகபட்சம்"],
+      "zh": ["最大值"],
+      "ja": ["最大値"],
+      "pl": ["maksimum"],
+      "nl": ["maximum"],
+      "sv": ["maximum"],
+      "da": ["maksimum"],
+      "fi": ["maksimi"]
     },
     "print": {
-      "hi": [
-        "प्रिंट"
-      ],
-      "ar": [
-        "طباعة"
-      ]
+      "hi": ["प्रिंट"],
+      "ar": ["طباعة"]
     },
     "super": {
-      "fr": [
-        "superieur",
-        "superclasse"
-      ],
-      "es": [
-        "superior",
-        "superclase"
-      ],
-      "de": [
-        "oberklasse",
-        "superklasse"
-      ],
-      "hi": [
-        "सुपर",
-        "सुपरवर्ग"
-      ],
-      "ar": [
-        "فئة_أب",
-        "سوبر"
-      ],
-      "bn": [
-        "সুপার",
-        "সুপারশ্রেণি"
-      ],
-      "ta": [
-        "மேற்கிளை",
-        "சூப்பர்"
-      ],
-      "zh": [
-        "父类",
-        "超类"
-      ],
-      "ja": [
-        "親クラス",
-        "スーパークラス"
-      ],
-      "it": [
-        "superclasse",
-        "superiore"
-      ],
-      "pt": [
-        "superclasse",
-        "superior"
-      ],
-      "pl": [
-        "nadklasa",
-        "nadrzedna"
-      ],
-      "nl": [
-        "superklasse",
-        "bovenklasse"
-      ],
-      "sv": [
-        "superklass",
-        "overklass"
-      ],
-      "da": [
-        "superklasse",
-        "overklasse"
-      ],
-      "fi": [
-        "ylaluokka"
-      ]
+      "fr": ["superieur", "superclasse"],
+      "es": ["superior", "superclase"],
+      "de": ["oberklasse", "superklasse"],
+      "hi": ["सुपर", "सुपरवर्ग"],
+      "ar": ["فئة_أب", "سوبر"],
+      "bn": ["সুপার", "সুপারশ্রেণি"],
+      "ta": ["மேற்கிளை", "சூப்பர்"],
+      "zh": ["父类", "超类"],
+      "ja": ["親クラス", "スーパークラス"],
+      "it": ["superclasse", "superiore"],
+      "pt": ["superclasse", "superior"],
+      "pl": ["nadklasa", "nadrzedna"],
+      "nl": ["superklasse", "bovenklasse"],
+      "sv": ["superklass", "overklass"],
+      "da": ["superklasse", "overklasse"],
+      "fi": ["ylaluokka"]
     },
     "open": {
-      "fr": [
-        "ouvrir"
-      ],
-      "es": [
-        "abrir"
-      ],
-      "de": [
-        "oeffnen",
-        "offnen"
-      ],
-      "hi": [
-        "खोलो",
-        "खोलें"
-      ],
-      "ar": [
-        "افتح"
-      ],
-      "bn": [
-        "খুলো",
-        "খুলুন"
-      ],
-      "ta": [
-        "திற"
-      ],
-      "zh": [
-        "打开"
-      ],
-      "ja": [
-        "開く"
-      ],
-      "it": [
-        "apri"
-      ],
-      "pt": [
-        "abrir"
-      ],
-      "pl": [
-        "otworz"
-      ],
-      "nl": [
-        "openen"
-      ],
-      "sv": [
-        "oppna"
-      ],
-      "da": [
-        "aabn"
-      ],
-      "fi": [
-        "avaa"
-      ]
+      "fr": ["ouvrir"],
+      "es": ["abrir"],
+      "de": ["oeffnen", "offnen"],
+      "hi": ["खोलो", "खोलें"],
+      "ar": ["افتح"],
+      "bn": ["খুলো", "খুলুন"],
+      "ta": ["திற"],
+      "zh": ["打开"],
+      "ja": ["開く"],
+      "it": ["apri"],
+      "pt": ["abrir"],
+      "pl": ["otworz"],
+      "nl": ["openen"],
+      "sv": ["oppna"],
+      "da": ["aabn"],
+      "fi": ["avaa"]
     },
     "set": {
-      "fr": [
-        "ensemble"
-      ],
-      "es": [
-        "conjunto"
-      ],
-      "de": [
-        "menge"
-      ],
-      "hi": [
-        "समुच्चय",
-        "सेट"
-      ],
-      "ar": [
-        "مجموعة"
-      ],
-      "bn": [
-        "সেট",
-        "সমষ্টি"
-      ],
-      "ta": [
-        "தொகுப்பு",
-        "செட்"
-      ],
-      "zh": [
-        "集合"
-      ],
-      "ja": [
-        "集合"
-      ],
-      "it": [
-        "insieme"
-      ],
-      "pt": [
-        "conjunto"
-      ],
-      "pl": [
-        "zbior"
-      ],
-      "nl": [
-        "verzameling"
-      ],
-      "sv": [
-        "mangd"
-      ],
-      "da": [
-        "maengde"
-      ],
-      "fi": [
-        "joukko"
-      ]
+      "fr": ["ensemble"],
+      "es": ["conjunto"],
+      "de": ["menge"],
+      "hi": ["समुच्चय", "सेट"],
+      "ar": ["مجموعة"],
+      "bn": ["সেট", "সমষ্টি"],
+      "ta": ["தொகுப்பு", "செட்"],
+      "zh": ["集合"],
+      "ja": ["集合"],
+      "it": ["insieme"],
+      "pt": ["conjunto"],
+      "pl": ["zbior"],
+      "nl": ["verzameling"],
+      "sv": ["mangd"],
+      "da": ["maengde"],
+      "fi": ["joukko"]
     },
     "tuple": {
-      "fr": [
-        "nuplet",
-        "tuplet"
-      ],
-      "es": [
-        "tupla"
-      ],
-      "de": [
-        "tupel"
-      ],
-      "hi": [
-        "ट्यूपल"
-      ],
-      "ar": [
-        "تيوبل",
-        "صف_ثابت"
-      ],
-      "bn": [
-        "টিউপল"
-      ],
-      "ta": [
-        "டப்பிள்",
-        "நிலைத்தொடர்"
-      ],
-      "zh": [
-        "元组"
-      ],
-      "ja": [
-        "タプル"
-      ],
-      "it": [
-        "tupla"
-      ],
-      "pt": [
-        "tuplo"
-      ],
-      "pl": [
-        "krotka"
-      ],
-      "nl": [
-        "tuple"
-      ],
-      "sv": [
-        "tuppel"
-      ],
-      "da": [
-        "tupel"
-      ],
-      "fi": [
-        "monikko"
-      ]
+      "fr": ["nuplet", "tuplet"],
+      "es": ["tupla"],
+      "de": ["tupel"],
+      "hi": ["ट्यूपल"],
+      "ar": ["تيوبل", "صف_ثابت"],
+      "bn": ["টিউপল"],
+      "ta": ["டப்பிள்", "நிலைத்தொடர்"],
+      "zh": ["元组"],
+      "ja": ["タプル"],
+      "it": ["tupla"],
+      "pt": ["tuplo"],
+      "pl": ["krotka"],
+      "nl": ["tuple"],
+      "sv": ["tuppel"],
+      "da": ["tupel"],
+      "fi": ["monikko"]
     },
     "zip": {
-      "fr": [
-        "fusionner",
-        "apparier"
-      ],
-      "es": [
-        "combinar",
-        "emparejar"
-      ],
-      "de": [
-        "zippen",
-        "paaren"
-      ],
-      "hi": [
-        "जोड़ो",
-        "युग्मित"
-      ],
-      "ar": [
-        "اربط",
-        "زاوج"
-      ],
-      "bn": [
-        "জোড়া",
-        "যুগ্ম"
-      ],
-      "ta": [
-        "இணை",
-        "ஜோடி"
-      ],
-      "zh": [
-        "配对"
-      ],
-      "ja": [
-        "組み合わせ",
-        "ペア化"
-      ],
-      "it": [
-        "accoppia",
-        "combina"
-      ],
-      "pt": [
-        "combinar",
-        "emparelhar"
-      ],
-      "pl": [
-        "polacz",
-        "paruj"
-      ],
-      "nl": [
-        "koppel",
-        "paren"
-      ],
-      "sv": [
-        "para",
-        "para_ihop"
-      ],
-      "da": [
-        "par",
-        "sammenkobl"
-      ],
-      "fi": [
-        "parita",
-        "yhdista_pareiksi"
-      ]
+      "fr": ["fusionner", "apparier"],
+      "es": ["combinar", "emparejar"],
+      "de": ["zippen", "paaren"],
+      "hi": ["जोड़ो", "युग्मित"],
+      "ar": ["اربط", "زاوج"],
+      "bn": ["জোড়া", "যুগ্ম"],
+      "ta": ["இணை", "ஜோடி"],
+      "zh": ["配对"],
+      "ja": ["組み合わせ", "ペア化"],
+      "it": ["accoppia", "combina"],
+      "pt": ["combinar", "emparelhar"],
+      "pl": ["polacz", "paruj"],
+      "nl": ["koppel", "paren"],
+      "sv": ["para", "para_ihop"],
+      "da": ["par", "sammenkobl"],
+      "fi": ["parita", "yhdista_pareiksi"]
+    },
+    "sorted": {
+      "fr": ["trier", "trié"],
+      "es": ["ordenado", "ordenar"],
+      "de": ["sortiert"],
+      "it": ["ordinato"],
+      "pt": ["ordenado"],
+      "hi": ["क्रमबद्ध"],
+      "ar": ["مرتب"],
+      "bn": ["সাজানো"],
+      "ta": ["வரிசைப்படுத்து"],
+      "zh": ["排序"],
+      "ja": ["ソート済み", "整列"],
+      "pl": ["posortowane"],
+      "nl": ["gesorteerd"],
+      "sv": ["sorterad"],
+      "da": ["sorteret"],
+      "fi": ["jarjestetty"]
+    },
+    "reversed": {
+      "fr": ["inversé", "inverser"],
+      "es": ["invertido", "revertido"],
+      "de": ["umgekehrt"],
+      "it": ["invertito", "rovesciato"],
+      "pt": ["invertido", "reverso"],
+      "hi": ["उलटा"],
+      "ar": ["معكوس"],
+      "bn": ["উল্টানো"],
+      "ta": ["தலைகீழ்"],
+      "zh": ["反转"],
+      "ja": ["逆順"],
+      "pl": ["odwrocone"],
+      "nl": ["omgekeerd"],
+      "sv": ["omvand"],
+      "da": ["omvendt"],
+      "fi": ["kaannetty"]
+    },
+    "enumerate": {
+      "fr": ["énumérer", "enumerer"],
+      "es": ["enumerar"],
+      "de": ["aufzaehlen"],
+      "it": ["enumerare"],
+      "pt": ["enumerar"],
+      "hi": ["गणना"],
+      "ar": ["ترقيم"],
+      "bn": ["গণনা"],
+      "ta": ["எண்ணிடு"],
+      "zh": ["枚举"],
+      "ja": ["列挙"],
+      "pl": ["wylicz"],
+      "nl": ["opsommen"],
+      "sv": ["numrera"],
+      "da": ["nummerer"],
+      "fi": ["numeroi"]
+    },
+    "map": {
+      "fr": ["appliquer"],
+      "es": ["mapear", "aplicar"],
+      "de": ["abbilden"],
+      "it": ["mappare", "applicare"],
+      "pt": ["mapear", "aplicar"],
+      "hi": ["मानचित्र", "लागू"],
+      "ar": ["طبّق", "خريطة"],
+      "bn": ["প্রয়োগ"],
+      "ta": ["பொருத்து"],
+      "zh": ["映射"],
+      "ja": ["写像", "マップ"],
+      "pl": ["mapuj"],
+      "nl": ["toepassen"],
+      "sv": ["avbilda"],
+      "da": ["anvend"],
+      "fi": ["kuvaus"]
+    },
+    "filter": {
+      "fr": ["filtrer"],
+      "es": ["filtrar"],
+      "de": ["filtern"],
+      "it": ["filtrare"],
+      "pt": ["filtrar"],
+      "hi": ["छानना", "फ़िल्टर"],
+      "ar": ["تصفية"],
+      "bn": ["ছাঁকনি"],
+      "ta": ["வடிகட்டு"],
+      "zh": ["过滤"],
+      "ja": ["フィルタ"],
+      "pl": ["filtruj"],
+      "nl": ["filteren"],
+      "sv": ["filtrera"],
+      "da": ["filtrer"],
+      "fi": ["suodata"]
+    },
+    "isinstance": {
+      "fr": ["est_instance"],
+      "es": ["es_instancia"],
+      "de": ["ist_instanz"],
+      "it": ["è_istanza", "e_istanza"],
+      "pt": ["é_instancia", "e_instancia"],
+      "hi": ["उदाहरण_है"],
+      "ar": ["هو_نموذج"],
+      "bn": ["দৃষ্টান্ত_কি"],
+      "ta": ["நிகழ்வா"],
+      "zh": ["是实例"],
+      "ja": ["インスタンスか"],
+      "pl": ["jest_instancja"],
+      "nl": ["is_instantie"],
+      "sv": ["ar_instans"],
+      "da": ["er_instans"],
+      "fi": ["on_ilmentyma"]
+    },
+    "type": {
+      "fr": ["type_de"],
+      "es": ["tipo", "tipo_de"],
+      "de": ["typ"],
+      "it": ["tipo"],
+      "pt": ["tipo"],
+      "hi": ["प्रकार"],
+      "ar": ["نوع"],
+      "bn": ["ধরন"],
+      "ta": ["வகை"],
+      "zh": ["类型"],
+      "ja": ["型"],
+      "pl": ["typ"],
+      "nl": ["type_van"],
+      "sv": ["typ"],
+      "da": ["type_af"],
+      "fi": ["tyyppi"]
+    },
+    "input": {
+      "fr": ["saisir", "entrée"],
+      "es": ["entrada"],
+      "de": ["eingabe"],
+      "it": ["ingresso"],
+      "pt": ["entrada"],
+      "hi": ["इनपुट", "दर्ज"],
+      "ar": ["إدخال"],
+      "bn": ["ইনপুট"],
+      "ta": ["உள்ளீடு"],
+      "zh": ["输入"],
+      "ja": ["入力"],
+      "pl": ["wejscie"],
+      "nl": ["invoer"],
+      "sv": ["inmatning"],
+      "da": ["inddata"],
+      "fi": ["syote"]
+    },
+    "any": {
+      "fr": ["un_quelconque"],
+      "es": ["alguno"],
+      "de": ["irgendein"],
+      "it": ["qualsiasi"],
+      "pt": ["qualquer"],
+      "hi": ["कोई_भी"],
+      "ar": ["أي"],
+      "bn": ["যেকোনো"],
+      "ta": ["ஏதேனும்"],
+      "zh": ["任一"],
+      "ja": ["いずれか"],
+      "pl": ["jakikolwiek"],
+      "nl": ["enige"],
+      "sv": ["nagot"],
+      "da": ["nogen"],
+      "fi": ["jokin"]
+    },
+    "all": {
+      "fr": ["tous"],
+      "es": ["todos"],
+      "de": ["alle"],
+      "it": ["tutti"],
+      "pt": ["todos"],
+      "hi": ["सभी"],
+      "ar": ["جميع"],
+      "bn": ["সব"],
+      "ta": ["அனைத்தும்"],
+      "zh": ["全部"],
+      "ja": ["すべて"],
+      "pl": ["wszystkie"],
+      "nl": ["alle"],
+      "sv": ["alla"],
+      "da": ["alle"],
+      "fi": ["kaikki"]
+    },
+    "round": {
+      "fr": ["arrondir"],
+      "es": ["redondear"],
+      "de": ["runden"],
+      "it": ["arrotondare"],
+      "pt": ["arredondar"],
+      "hi": ["गोल"],
+      "ar": ["تقريب"],
+      "bn": ["রাউন্ড"],
+      "ta": ["வட்டமிடு"],
+      "zh": ["四舍五入"],
+      "ja": ["丸め"],
+      "pl": ["zaokraglij"],
+      "nl": ["afronden"],
+      "sv": ["avrunda"],
+      "da": ["afrund"],
+      "fi": ["pyorista"]
+    },
+    "pow": {
+      "fr": ["puissance"],
+      "es": ["potencia"],
+      "de": ["potenz"],
+      "it": ["potenza"],
+      "pt": ["potencia"],
+      "hi": ["घात"],
+      "ar": ["قوة"],
+      "bn": ["ঘাত"],
+      "ta": ["அடுக்கு"],
+      "zh": ["幂"],
+      "ja": ["累乗"],
+      "pl": ["potega"],
+      "nl": ["macht"],
+      "sv": ["potens"],
+      "da": ["potens"],
+      "fi": ["potenssi"]
+    },
+    "divmod": {
+      "fr": ["divmod"],
+      "es": ["divmod"],
+      "de": ["divmod"],
+      "it": ["divmod"],
+      "pt": ["divmod"],
+      "hi": ["भागशेष"],
+      "ar": ["قسمة_باقي"],
+      "bn": ["ভাগশেষ"],
+      "ta": ["வகுமீதி"],
+      "zh": ["商余"],
+      "ja": ["商余り"],
+      "pl": ["dzielmod"],
+      "nl": ["deelrest"],
+      "sv": ["divmod"],
+      "da": ["divmod"],
+      "fi": ["jakojaannos"]
+    },
+    "hash": {
+      "fr": ["hachage"],
+      "es": ["hash"],
+      "de": ["hashwert"],
+      "it": ["hash"],
+      "pt": ["hash"],
+      "hi": ["हैश"],
+      "ar": ["تجزئة"],
+      "bn": ["হ্যাশ"],
+      "ta": ["ஹாஷ்"],
+      "zh": ["哈希"],
+      "ja": ["ハッシュ"],
+      "pl": ["hasz"],
+      "nl": ["hash"],
+      "sv": ["hash"],
+      "da": ["hash"],
+      "fi": ["tiiviste"]
+    },
+    "callable": {
+      "fr": ["appelable"],
+      "es": ["invocable"],
+      "de": ["aufrufbar"],
+      "it": ["richiamabile"],
+      "pt": ["invocavel"],
+      "hi": ["कॉल_योग्य"],
+      "ar": ["قابل_للاستدعاء"],
+      "bn": ["কলযোগ্য"],
+      "ta": ["அழைக்கத்தக்க"],
+      "zh": ["可调用"],
+      "ja": ["呼出可能"],
+      "pl": ["wywolywalny"],
+      "nl": ["aanroepbaar"],
+      "sv": ["anropbar"],
+      "da": ["kaldbar"],
+      "fi": ["kutsuttava"]
+    },
+    "iter": {
+      "fr": ["itérateur", "iterateur"],
+      "es": ["iterador"],
+      "de": ["iterator"],
+      "it": ["iteratore"],
+      "pt": ["iterador"],
+      "hi": ["पुनरावर्तक"],
+      "ar": ["مكرر"],
+      "bn": ["ইটারেটর"],
+      "ta": ["மீள்செய்கி"],
+      "zh": ["迭代器"],
+      "ja": ["イテレータ"],
+      "pl": ["iterator"],
+      "nl": ["iterator"],
+      "sv": ["iterator"],
+      "da": ["iterator"],
+      "fi": ["iteraattori"]
+    },
+    "next": {
+      "fr": ["suivant", "prochain"],
+      "es": ["siguiente"],
+      "de": ["naechstes"],
+      "it": ["prossimo"],
+      "pt": ["proximo"],
+      "hi": ["अगला"],
+      "ar": ["التالي"],
+      "bn": ["পরবর্তী"],
+      "ta": ["அடுத்து"],
+      "zh": ["下一个"],
+      "ja": ["次"],
+      "pl": ["nastepny"],
+      "nl": ["volgende"],
+      "sv": ["nasta"],
+      "da": ["naeste"],
+      "fi": ["seuraava"]
+    },
+    "frozenset": {
+      "fr": ["ensemble_gelé", "ensemble_gele"],
+      "es": ["conjunto_inmutable"],
+      "de": ["unveraenderliche_menge"],
+      "it": ["insieme_immutabile"],
+      "pt": ["conjunto_imutavel"],
+      "hi": ["अचल_समुच्चय"],
+      "ar": ["مجموعة_ثابتة"],
+      "bn": ["স্থির_সেট"],
+      "ta": ["நிலைத்தொகுப்பு"],
+      "zh": ["冻结集合"],
+      "ja": ["不変集合"],
+      "pl": ["zbior_niezmienny"],
+      "nl": ["bevroren_verzameling"],
+      "sv": ["frusen_mangd"],
+      "da": ["frossen_maengde"],
+      "fi": ["jaadytetty_joukko"]
+    },
+    "bytes": {
+      "fr": ["octets"],
+      "es": ["bytes"],
+      "de": ["bytes"],
+      "it": ["byte"],
+      "pt": ["bytes"],
+      "hi": ["बाइट्स"],
+      "ar": ["بايتات"],
+      "bn": ["বাইটস"],
+      "ta": ["பைட்கள்"],
+      "zh": ["字节"],
+      "ja": ["バイト列"],
+      "pl": ["bajty"],
+      "nl": ["bytes"],
+      "sv": ["bytes"],
+      "da": ["bytes"],
+      "fi": ["tavut"]
+    },
+    "repr": {
+      "fr": ["représentation", "representation"],
+      "es": ["representacion"],
+      "de": ["darstellung"],
+      "it": ["rappresentazione"],
+      "pt": ["representacao"],
+      "hi": ["प्रतिनिधि"],
+      "ar": ["تمثيل"],
+      "bn": ["উপস্থাপনা"],
+      "ta": ["பிரதிநிதி"],
+      "zh": ["表示"],
+      "ja": ["表現"],
+      "pl": ["reprezentacja"],
+      "nl": ["representatie"],
+      "sv": ["representation"],
+      "da": ["repraesentation"],
+      "fi": ["esitys"]
+    },
+    "dir": {
+      "fr": ["répertoire", "repertoire"],
+      "es": ["directorio"],
+      "de": ["verzeichnis"],
+      "it": ["elenco"],
+      "pt": ["diretorio"],
+      "hi": ["निर्देशिका"],
+      "ar": ["دليل"],
+      "bn": ["ডিরেক্টরি"],
+      "ta": ["அடைவு"],
+      "zh": ["目录"],
+      "ja": ["属性一覧"],
+      "pl": ["katalog"],
+      "nl": ["inhoud"],
+      "sv": ["katalog"],
+      "da": ["katalog"],
+      "fi": ["hakemisto"]
+    },
+    "chr": {
+      "fr": ["caractère", "caractere"],
+      "es": ["caracter"],
+      "de": ["zeichen"],
+      "it": ["carattere"],
+      "pt": ["caractere"],
+      "hi": ["अक्षर"],
+      "ar": ["حرف"],
+      "bn": ["অক্ষর"],
+      "ta": ["எழுத்து"],
+      "zh": ["字符"],
+      "ja": ["文字"],
+      "pl": ["znak"],
+      "nl": ["teken"],
+      "sv": ["tecken"],
+      "da": ["tegn"],
+      "fi": ["merkki"]
+    },
+    "ord": {
+      "fr": ["ordinal"],
+      "es": ["ordinal"],
+      "de": ["ordinal"],
+      "it": ["ordinale"],
+      "pt": ["ordinal"],
+      "hi": ["क्रमांक"],
+      "ar": ["ترتيبي"],
+      "bn": ["ক্রমাঙ্ক"],
+      "ta": ["வரிசைஎண்"],
+      "zh": ["编码值"],
+      "ja": ["文字コード"],
+      "pl": ["porzadkowy"],
+      "nl": ["codepunt"],
+      "sv": ["teckenkod"],
+      "da": ["tegnkode"],
+      "fi": ["jarjestysluku"]
+    },
+    "format": {
+      "fr": ["formater"],
+      "es": ["formatear"],
+      "de": ["formatieren"],
+      "it": ["formattare"],
+      "pt": ["formatar"],
+      "hi": ["प्रारूप"],
+      "ar": ["تنسيق"],
+      "bn": ["বিন্যাস"],
+      "ta": ["வடிவமை"],
+      "zh": ["格式化"],
+      "ja": ["書式"],
+      "pl": ["formatuj"],
+      "nl": ["formatteren"],
+      "sv": ["formatera"],
+      "da": ["formater"],
+      "fi": ["muotoile"]
+    },
+    "hasattr": {
+      "fr": ["a_attribut"],
+      "es": ["tiene_atributo"],
+      "de": ["hat_attribut"],
+      "it": ["ha_attributo"],
+      "pt": ["tem_atributo"],
+      "hi": ["विशेषता_है"],
+      "ar": ["لديه_سمة"],
+      "bn": ["বৈশিষ্ট্য_আছে"],
+      "ta": ["பண்புஉண்டா"],
+      "zh": ["有属性"],
+      "ja": ["属性あり"],
+      "pl": ["ma_atrybut"],
+      "nl": ["heeft_attribuut"],
+      "sv": ["har_attribut"],
+      "da": ["har_attribut"],
+      "fi": ["on_attribuutti"]
+    },
+    "getattr": {
+      "fr": ["obtenir_attribut"],
+      "es": ["obtener_atributo"],
+      "de": ["attribut_holen"],
+      "it": ["ottieni_attributo"],
+      "pt": ["obter_atributo"],
+      "hi": ["विशेषता_लो"],
+      "ar": ["احصل_سمة"],
+      "bn": ["বৈশিষ্ট্য_নাও"],
+      "ta": ["பண்பெடு"],
+      "zh": ["获取属性"],
+      "ja": ["属性取得"],
+      "pl": ["pobierz_atrybut"],
+      "nl": ["haal_attribuut"],
+      "sv": ["hamta_attribut"],
+      "da": ["hent_attribut"],
+      "fi": ["hae_attribuutti"]
+    },
+    "setattr": {
+      "fr": ["définir_attribut", "definir_attribut"],
+      "es": ["establecer_atributo"],
+      "de": ["attribut_setzen"],
+      "it": ["imposta_attributo"],
+      "pt": ["definir_atributo"],
+      "hi": ["विशेषता_रखो"],
+      "ar": ["عيّن_سمة"],
+      "bn": ["বৈশিষ্ট্য_রাখো"],
+      "ta": ["பண்பமை"],
+      "zh": ["设置属性"],
+      "ja": ["属性設定"],
+      "pl": ["ustaw_atrybut"],
+      "nl": ["zet_attribuut"],
+      "sv": ["satt_attribut"],
+      "da": ["saet_attribut"],
+      "fi": ["aseta_attribuutti"]
+    },
+    "delattr": {
+      "fr": ["supprimer_attribut"],
+      "es": ["eliminar_atributo"],
+      "de": ["attribut_loeschen"],
+      "it": ["elimina_attributo"],
+      "pt": ["remover_atributo"],
+      "hi": ["विशेषता_हटाओ"],
+      "ar": ["احذف_سمة"],
+      "bn": ["বৈশিষ্ট্য_মুছো"],
+      "ta": ["பண்புநீக்கு"],
+      "zh": ["删除属性"],
+      "ja": ["属性削除"],
+      "pl": ["usun_atrybut"],
+      "nl": ["verwijder_attribuut"],
+      "sv": ["ta_bort_attribut"],
+      "da": ["fjern_attribut"],
+      "fi": ["poista_attribuutti"]
+    },
+    "issubclass": {
+      "fr": ["est_sous_classe"],
+      "es": ["es_subclase"],
+      "de": ["ist_unterklasse"],
+      "it": ["è_sottoclasse", "e_sottoclasse"],
+      "pt": ["é_subclasse", "e_subclasse"],
+      "hi": ["उपवर्ग_है"],
+      "ar": ["هو_فرعي"],
+      "bn": ["উপশ্রেণি_কি"],
+      "ta": ["துணைவகுப்பா"],
+      "zh": ["是子类"],
+      "ja": ["サブクラスか"],
+      "pl": ["jest_podklasa"],
+      "nl": ["is_subklasse"],
+      "sv": ["ar_underklass"],
+      "da": ["er_underklasse"],
+      "fi": ["on_aliluokka"]
     }
   }
 }

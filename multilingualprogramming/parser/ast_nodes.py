@@ -131,10 +131,11 @@ class LambdaExpr(ASTNode):
         self.params = params
         self.body = body
 class YieldExpr(ASTNode):
-    """Yield expression: yield value."""
-    def __init__(self, value=None, line=0, column=0):
+    """Yield expression: yield [from] value."""
+    def __init__(self, value=None, is_from=False, line=0, column=0):
         super().__init__(line, column)
         self.value = value
+        self.is_from = is_from
 class AwaitExpr(ASTNode):
     """Await expression: await value."""
     def __init__(self, value, line=0, column=0):
@@ -194,10 +195,11 @@ class BreakStatement(ASTNode):
 class ContinueStatement(ASTNode):
     """Continue statement."""
 class RaiseStatement(ASTNode):
-    """Raise statement: raise expression."""
-    def __init__(self, value=None, line=0, column=0):
+    """Raise statement: raise expression [from cause]."""
+    def __init__(self, value=None, cause=None, line=0, column=0):
         super().__init__(line, column)
         self.value = value
+        self.cause = cause
 class DelStatement(ASTNode):
     """Delete statement: del target."""
     def __init__(self, target, line=0, column=0):
@@ -214,10 +216,11 @@ class LocalStatement(ASTNode):
         super().__init__(line, column)
         self.names = names
 class YieldStatement(ASTNode):
-    """Yield as a statement."""
-    def __init__(self, value=None, line=0, column=0):
+    """Yield as a statement: yield [from] value."""
+    def __init__(self, value=None, is_from=False, line=0, column=0):
         super().__init__(line, column)
         self.value = value
+        self.is_from = is_from
 # ---------------------------------------------------------------------------
 # Compound statement nodes
 # ---------------------------------------------------------------------------
@@ -231,19 +234,22 @@ class IfStatement(ASTNode):
         self.elif_clauses = elif_clauses or []
         self.else_body = else_body
 class WhileLoop(ASTNode):
-    """While loop: while condition: body."""
-    def __init__(self, condition, body, line=0, column=0):
+    """While loop: while condition: body [else: else_body]."""
+    def __init__(self, condition, body, else_body=None, line=0, column=0):
         super().__init__(line, column)
         self.condition = condition
         self.body = body
+        self.else_body = else_body
 class ForLoop(ASTNode):
-    """For loop: for target in iterable: body."""
-    def __init__(self, target, iterable, body, is_async=False, line=0, column=0):
+    """For loop: for target in iterable: body [else: else_body]."""
+    def __init__(self, target, iterable, body, is_async=False,
+                 else_body=None, line=0, column=0):
         super().__init__(line, column)
         self.target = target
         self.iterable = iterable
         self.body = body
         self.is_async = is_async
+        self.else_body = else_body
 class FunctionDef(ASTNode):
     """Function definition: def name(params): body."""
     def __init__(self, name, params, body, decorators=None,
@@ -290,13 +296,14 @@ class MatchStatement(ASTNode):
         self.subject = subject
         self.cases = cases
 class CaseClause(ASTNode):
-    """Single case or default clause."""
+    """Single case or default clause with optional guard."""
     def __init__(self, pattern=None, body=None, is_default=False,
-                 line=0, column=0):
+                 guard=None, line=0, column=0):
         super().__init__(line, column)
         self.pattern = pattern
         self.body = body or []
         self.is_default = is_default
+        self.guard = guard
 class WithStatement(ASTNode):
     """With statement: with expr as name, ...: body."""
     def __init__(self, items, name=None, body=None, is_async=False, line=0, column=0):
@@ -414,6 +421,21 @@ class GeneratorExpr(ASTNode):
         ]
         first = self.clauses[0]
         # Backward compatibility: expose first-clause fields.
+        self.target = first.target
+        self.iterable = first.iterable
+        self.conditions = first.conditions
+class SetComprehension(ASTNode):
+    """Set comprehension: {expr for target in iterable if cond}."""
+    def __init__(self, element, target, iterable, conditions=None,
+                 clauses=None, line=0, column=0):
+        super().__init__(line, column)
+        self.element = element
+        self.clauses = clauses or [
+            ComprehensionClause(
+                target, iterable, conditions or [], line=line, column=column
+            )
+        ]
+        first = self.clauses[0]
         self.target = first.target
         self.iterable = first.iterable
         self.conditions = first.conditions

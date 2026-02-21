@@ -80,6 +80,30 @@ from tests.phase4_test import (
     REPLImprovementsTestSuite,
     MultilingualPhase4TestSuite,
 )
+from tests.phase5_test import (
+    WhileElseTestSuite,
+    ForElseTestSuite,
+    YieldFromTestSuite,
+    RaiseFromTestSuite,
+    FromImportStarTestSuite,
+    SetComprehensionTestSuite,
+    ParameterSeparatorTestSuite,
+    FStringFormatTestSuite,
+    MatchGuardTestSuite,
+    MatchOrPatternTestSuite,
+    MatchAsPatternTestSuite,
+    GlobalNonlocalSemanticTestSuite,
+    AdditionalBuiltinsTestSuite,
+    ExceptionTypesTestSuite,
+    SpecialValuesTestSuite,
+    SurfaceNormalizationTestSuite,
+    DataQualityTestSuite,
+    Phase5IntegrationTestSuite,
+    MultilingualPhase5TestSuite,
+    ExtendedBuiltinsTestSuite,
+    ExtendedAliasResolutionTestSuite,
+    ExtendedAliasExecutionTestSuite,
+)
 
 if __name__ == "__main__":
     mp_numeral_tests = MPNumeralTestSuite()
@@ -139,6 +163,28 @@ if __name__ == "__main__":
     cli_tests = CLITestSuite()
     repl_improvements_tests = REPLImprovementsTestSuite()
     multilingual_phase4_tests = MultilingualPhase4TestSuite()
+    while_else_tests = WhileElseTestSuite()
+    for_else_tests = ForElseTestSuite()
+    yield_from_tests = YieldFromTestSuite()
+    raise_from_tests = RaiseFromTestSuite()
+    from_import_star_tests = FromImportStarTestSuite()
+    set_comprehension_tests = SetComprehensionTestSuite()
+    parameter_separator_tests = ParameterSeparatorTestSuite()
+    fstring_format_tests = FStringFormatTestSuite()
+    match_guard_tests = MatchGuardTestSuite()
+    match_or_pattern_tests = MatchOrPatternTestSuite()
+    match_as_pattern_tests = MatchAsPatternTestSuite()
+    global_nonlocal_tests = GlobalNonlocalSemanticTestSuite()
+    additional_builtins_tests = AdditionalBuiltinsTestSuite()
+    exception_types_tests = ExceptionTypesTestSuite()
+    special_values_tests = SpecialValuesTestSuite()
+    surface_normalization_tests = SurfaceNormalizationTestSuite()
+    data_quality_tests = DataQualityTestSuite()
+    phase5_integration_tests = Phase5IntegrationTestSuite()
+    multilingual_phase5_tests = MultilingualPhase5TestSuite()
+    extended_builtins_tests = ExtendedBuiltinsTestSuite()
+    extended_alias_resolution_tests = ExtendedAliasResolutionTestSuite()
+    extended_alias_execution_tests = ExtendedAliasExecutionTestSuite()
     tests = unittest.TestSuite(
         [
             mp_numeral_tests,
@@ -198,6 +244,28 @@ if __name__ == "__main__":
             cli_tests,
             repl_improvements_tests,
             multilingual_phase4_tests,
+            while_else_tests,
+            for_else_tests,
+            yield_from_tests,
+            raise_from_tests,
+            from_import_star_tests,
+            set_comprehension_tests,
+            parameter_separator_tests,
+            fstring_format_tests,
+            match_guard_tests,
+            match_or_pattern_tests,
+            match_as_pattern_tests,
+            global_nonlocal_tests,
+            additional_builtins_tests,
+            exception_types_tests,
+            special_values_tests,
+            surface_normalization_tests,
+            data_quality_tests,
+            phase5_integration_tests,
+            multilingual_phase5_tests,
+            extended_builtins_tests,
+            extended_alias_resolution_tests,
+            extended_alias_execution_tests,
         ]
     )
     unittest.main()

@@ -23,6 +23,48 @@
         "kind": "delimiter",
         "value": ":"
       }
+    ],
+    "while_condition_first": [
+      {
+        "kind": "keyword",
+        "concept": "LOOP_WHILE"
+      },
+      {
+        "kind": "expr_slot",
+        "slot": "condition"
+      },
+      {
+        "kind": "delimiter",
+        "value": ":"
+      }
+    ],
+    "if_condition_first": [
+      {
+        "kind": "keyword",
+        "concept": "COND_IF"
+      },
+      {
+        "kind": "expr_slot",
+        "slot": "condition"
+      },
+      {
+        "kind": "delimiter",
+        "value": ":"
+      }
+    ],
+    "with_expr_first": [
+      {
+        "kind": "keyword",
+        "concept": "WITH"
+      },
+      {
+        "kind": "expr_slot",
+        "slot": "context"
+      },
+      {
+        "kind": "delimiter",
+        "value": ":"
+      }
     ]
   },
   "patterns": [
@@ -123,6 +165,120 @@
         {
           "kind": "identifier",
           "slot": "target"
+        },
+        {
+          "kind": "delimiter",
+          "value": ":"
+        }
+      ]
+    },
+    {
+      "name": "ja_while_condition_first",
+      "language": "ja",
+      "normalize_template": "while_condition_first",
+      "pattern": [
+        {
+          "kind": "expr",
+          "slot": "condition"
+        },
+        {
+          "kind": "keyword",
+          "concept": "LOOP_WHILE"
+        },
+        {
+          "kind": "delimiter",
+          "value": ":"
+        }
+      ]
+    },
+    {
+      "name": "ar_while_condition_first",
+      "language": "ar",
+      "normalize_template": "while_condition_first",
+      "pattern": [
+        {
+          "kind": "expr",
+          "slot": "condition"
+        },
+        {
+          "kind": "keyword",
+          "concept": "LOOP_WHILE"
+        },
+        {
+          "kind": "delimiter",
+          "value": ":"
+        }
+      ]
+    },
+    {
+      "name": "ja_if_condition_first",
+      "language": "ja",
+      "normalize_template": "if_condition_first",
+      "pattern": [
+        {
+          "kind": "expr",
+          "slot": "condition"
+        },
+        {
+          "kind": "keyword",
+          "concept": "COND_IF"
+        },
+        {
+          "kind": "delimiter",
+          "value": ":"
+        }
+      ]
+    },
+    {
+      "name": "ar_if_condition_first",
+      "language": "ar",
+      "normalize_template": "if_condition_first",
+      "pattern": [
+        {
+          "kind": "expr",
+          "slot": "condition"
+        },
+        {
+          "kind": "keyword",
+          "concept": "COND_IF"
+        },
+        {
+          "kind": "delimiter",
+          "value": ":"
+        }
+      ]
+    },
+    {
+      "name": "ja_with_expr_first",
+      "language": "ja",
+      "normalize_template": "with_expr_first",
+      "pattern": [
+        {
+          "kind": "expr",
+          "slot": "context"
+        },
+        {
+          "kind": "keyword",
+          "concept": "WITH"
+        },
+        {
+          "kind": "delimiter",
+          "value": ":"
+        }
+      ]
+    },
+    {
+      "name": "ar_with_expr_first",
+      "language": "ar",
+      "normalize_template": "with_expr_first",
+      "pattern": [
+        {
+          "kind": "expr",
+          "slot": "context"
+        },
+        {
+          "kind": "keyword",
+          "concept": "WITH"
         },
         {
           "kind": "delimiter",

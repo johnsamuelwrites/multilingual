@@ -384,6 +384,8 @@ class SemanticAnalyzer:
     def visit_RaiseStatement(self, node):
         if node.value:
             node.value.accept(self)
+        if getattr(node, "cause", None):
+            node.cause.accept(self)
 
     def visit_DelStatement(self, node):
         node.target.accept(self)
@@ -408,11 +410,19 @@ class SemanticAnalyzer:
             else:
                 target.accept(self)
 
-    def visit_GlobalStatement(self, _node):
-        pass
+    def visit_GlobalStatement(self, node):
+        for name in node.names:
+            # Define in current scope so references don't trigger "undefined"
+            self.symbol_table.define(
+                name, "variable", line=node.line, column=node.column
+            )
 
-    def visit_LocalStatement(self, _node):
-        pass
+    def visit_LocalStatement(self, node):
+        for name in node.names:
+            # Define in current scope so references don't trigger "undefined"
+            self.symbol_table.define(
+                name, "variable", line=node.line, column=node.column
+            )
 
     def visit_YieldStatement(self, node):
         if self._in_function == 0:
@@ -440,6 +450,9 @@ class SemanticAnalyzer:
         for stmt in node.body:
             stmt.accept(self)
         self._in_loop -= 1
+        if node.else_body:
+            for stmt in node.else_body:
+                stmt.accept(self)
 
     def visit_ForLoop(self, node):
         if getattr(node, "is_async", False) and self._in_async_function == 0:
@@ -450,6 +463,9 @@ class SemanticAnalyzer:
         for stmt in node.body:
             stmt.accept(self)
         self._in_loop -= 1
+        if getattr(node, "else_body", None):
+            for stmt in node.else_body:
+                stmt.accept(self)
 
     def _define_for_target(self, target):
         """Define for-loop target variable(s) in the current scope."""
@@ -545,6 +561,8 @@ class SemanticAnalyzer:
     def visit_CaseClause(self, node):
         if node.pattern:
             node.pattern.accept(self)
+        if getattr(node, "guard", None):
+            node.guard.accept(self)
         for stmt in node.body:
             stmt.accept(self)
 
@@ -599,6 +617,22 @@ class SemanticAnalyzer:
 
     def visit_GeneratorExpr(self, node):
         self.symbol_table.enter_scope("genexpr", "block")
+        for clause in getattr(node, "clauses", [node]):
+            clause.iterable.accept(self)
+            if isinstance(clause.target, str):
+                self.symbol_table.define(
+                    clause.target, "variable",
+                    line=node.line, column=node.column
+                )
+            else:
+                self._define_comp_target(clause.target, node)
+            for cond in clause.conditions:
+                cond.accept(self)
+        node.element.accept(self)
+        self.symbol_table.exit_scope()
+
+    def visit_SetComprehension(self, node):
+        self.symbol_table.enter_scope("setcomp", "block")
         for clause in getattr(node, "clauses", [node]):
             clause.iterable.accept(self)
             if isinstance(clause.target, str):

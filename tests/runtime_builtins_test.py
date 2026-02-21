@@ -175,7 +175,8 @@ class RuntimeBuiltinsTestSuite(unittest.TestCase):
         """All function-type builtins should be callable."""
         ns = RuntimeBuiltins("en").namespace()
         for name, obj in ns.items():
-            if name not in ("True", "False", "None"):
+            if name not in ("True", "False", "None",
+                            "Ellipsis", "NotImplemented"):
                 self.assertTrue(
                     callable(obj),
                     f"Built-in {name!r} is not callable"

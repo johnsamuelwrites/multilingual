@@ -119,6 +119,88 @@ class RuntimeBuiltins:
         "True": True,
         "False": False,
         "None": None,
+        # Additional built-in functions
+        "pow": pow,
+        "divmod": divmod,
+        "complex": complex,
+        "format": format,
+        "ascii": ascii,
+        "breakpoint": breakpoint,
+        "compile": compile,
+        "eval": eval,
+        "exec": exec,
+        "globals": globals,
+        "locals": locals,
+        "issubclass": issubclass,
+        "delattr": delattr,
+        "slice": slice,
+        "input": input,
+        # Additional exception types
+        "ArithmeticError": ArithmeticError,
+        "AssertionError": AssertionError,
+        "BufferError": BufferError,
+        "EOFError": EOFError,
+        "FloatingPointError": FloatingPointError,
+        "GeneratorExit": GeneratorExit,
+        "LookupError": LookupError,
+        "NameError": NameError,
+        "OverflowError": OverflowError,
+        "PermissionError": PermissionError,
+        "RecursionError": RecursionError,
+        "ReferenceError": ReferenceError,
+        "SyntaxError": SyntaxError,
+        "SystemError": SystemError,
+        "SystemExit": SystemExit,
+        "TimeoutError": TimeoutError,
+        "UnicodeError": UnicodeError,
+        "UnicodeDecodeError": UnicodeDecodeError,
+        "UnicodeEncodeError": UnicodeEncodeError,
+        "Warning": Warning,
+        "DeprecationWarning": DeprecationWarning,
+        "UserWarning": UserWarning,
+        "FutureWarning": FutureWarning,
+        "ResourceWarning": ResourceWarning,
+        "ConnectionError": ConnectionError,
+        "BrokenPipeError": BrokenPipeError,
+        "BlockingIOError": BlockingIOError,
+        "ChildProcessError": ChildProcessError,
+        "ConnectionAbortedError": ConnectionAbortedError,
+        "ConnectionRefusedError": ConnectionRefusedError,
+        "ConnectionResetError": ConnectionResetError,
+        "FileExistsError": FileExistsError,
+        "InterruptedError": InterruptedError,
+        "IsADirectoryError": IsADirectoryError,
+        "NotADirectoryError": NotADirectoryError,
+        "ProcessLookupError": ProcessLookupError,
+        "StopAsyncIteration": StopAsyncIteration,
+        "UnboundLocalError": UnboundLocalError,
+        # Base exception classes
+        "BaseException": BaseException,
+        "KeyboardInterrupt": KeyboardInterrupt,
+        # Additional exception types (Python 3.12)
+        "ModuleNotFoundError": ModuleNotFoundError,
+        "IndentationError": IndentationError,
+        "TabError": TabError,
+        "UnicodeTranslateError": UnicodeTranslateError,
+        "ExceptionGroup": ExceptionGroup,
+        "BaseExceptionGroup": BaseExceptionGroup,
+        # Additional warning types
+        "BytesWarning": BytesWarning,
+        "EncodingWarning": EncodingWarning,
+        "ImportWarning": ImportWarning,
+        "PendingDeprecationWarning": PendingDeprecationWarning,
+        "RuntimeWarning": RuntimeWarning,
+        "SyntaxWarning": SyntaxWarning,
+        "UnicodeWarning": UnicodeWarning,
+        # Async built-in functions (Python 3.10+)
+        "aiter": aiter,
+        "anext": anext,
+    }
+
+    # Non-callable special values available in exec() namespace
+    _SPECIAL_VALUES = {
+        "Ellipsis": Ellipsis,
+        "NotImplemented": NotImplemented,
     }
 
     _BUILTIN_ALIAS_CATALOG = None
@@ -163,6 +245,7 @@ class RuntimeBuiltins:
         2. Universal Python built-ins (len, range, abs, etc.)
         """
         ns = dict(self._UNIVERSAL_BUILTINS)
+        ns.update(self._SPECIAL_VALUES)
 
         # Add language-specific mappings (all variants, not only canonical).
         concept_map = self._registry.get_concept_map()

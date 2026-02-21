@@ -360,6 +360,9 @@ class ASTPrinter:
         self._dedent()
         self._emit("body:")
         self._visit_body(node.body)
+        if node.else_body:
+            self._emit("else:")
+            self._visit_body(node.else_body)
         self._dedent()
 
     def visit_ForLoop(self, node):
@@ -375,6 +378,9 @@ class ASTPrinter:
         self._dedent()
         self._emit("body:")
         self._visit_body(node.body)
+        if getattr(node, "else_body", None):
+            self._emit("else:")
+            self._visit_body(node.else_body)
         self._dedent()
 
     def visit_FunctionDef(self, node):
@@ -609,6 +615,29 @@ class ASTPrinter:
 
     def visit_GeneratorExpr(self, node):
         self._emit("GeneratorExpr")
+        self._indent()
+        self._emit("element:")
+        self._indent()
+        node.element.accept(self)
+        self._dedent()
+        self._emit("target:")
+        self._indent()
+        node.target.accept(self)
+        self._dedent()
+        self._emit("iterable:")
+        self._indent()
+        node.iterable.accept(self)
+        self._dedent()
+        if node.conditions:
+            self._emit("conditions:")
+            self._indent()
+            for cond in node.conditions:
+                cond.accept(self)
+            self._dedent()
+        self._dedent()
+
+    def visit_SetComprehension(self, node):
+        self._emit("SetComprehension")
         self._indent()
         self._emit("element:")
         self._indent()
