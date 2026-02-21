@@ -134,7 +134,6 @@ class RuntimeBuiltins:
         "issubclass": issubclass,
         "delattr": delattr,
         "slice": slice,
-        "input": input,
         # Additional exception types
         "ArithmeticError": ArithmeticError,
         "AssertionError": AssertionError,

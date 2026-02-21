@@ -58,6 +58,7 @@ Details:
 ## Quick Start
 
 Source files for this language use the `.ml` extension (for example: `hello.ml`).
+Requires Python 3.12 or newer.
 
 ### 1. Install
 

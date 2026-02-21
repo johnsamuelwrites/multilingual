@@ -43,10 +43,11 @@ if setuptools is not None:
         },
         classifiers=[
             "Programming Language :: Python :: 3",
+            "Programming Language :: Python :: 3.12",
             "License :: OSI Approved :: GNU General Public License"
             + " v3 or later (GPLv3+)",
             "Operating System :: OS Independent",
         ],
         install_requires=["roman>=3.3"],
-        python_requires=">=3.7",
+        python_requires=">=3.12",
     )
