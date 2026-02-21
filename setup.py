@@ -44,6 +44,8 @@ if setuptools is not None:
         classifiers=[
             "Programming Language :: Python :: 3",
             "Programming Language :: Python :: 3.12",
+            "Programming Language :: Python :: 3.13",
+            "Programming Language :: Python :: 3.14",
             "License :: OSI Approved :: GNU General Public License"
             + " v3 or later (GPLv3+)",
             "Operating System :: OS Independent",
