@@ -29,7 +29,14 @@ jobs:
       - name: Install docs dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install mkdocs mkdocs-material
+          python -m pip install mkdocs
+
+      - name: Stage root docs into docs_dir
+        run: |
+          mkdir -p docs/_generated
+          cp README.md docs/_generated/README.md
+          cp RELEASE.md docs/_generated/RELEASE.md
+          cp CONTRIBUTING.md docs/_generated/CONTRIBUTING.md
 
       - name: Build site
         run: mkdocs build --strict

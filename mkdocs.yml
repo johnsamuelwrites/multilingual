@@ -5,41 +5,27 @@ repo_url: https://github.com/johnsamuelwrites/multilingual
 repo_name: johnsamuelwrites/multilingual
 
 theme:
-  name: material
+  name: mkdocs
 
-docs_dir: .
-
-exclude_docs: |
-  .claude/**
-  .github/**
-  build/**
-  multilingualprogramming/**
-  multilingualprogramming.egg-info/**
-  tests/**
-  examples/**
-  *.py
-  *.toml
-  *.txt
-  LICENSE
+docs_dir: docs
 
 nav:
-  - Home: README.md
-  - Release Notes: RELEASE.md
-  - Contributing: CONTRIBUTING.md
-  - Usage: USAGE.md
-  - Detailed Reference: docs/README.md
-  - Design: docs/design.md
-  - Core Spec: docs/core_spec.md
-  - Frontend Contracts: docs/frontend_contracts.md
-  - Evaluation Plan: docs/evaluation_plan.md
-  - Related Work: docs/related_work.md
-  - Language Onboarding: docs/language_onboarding.md
-  - Development Guide: docs/development.md
-  - Translation Guidelines: docs/translation_guidelines.md
-  - CNL Scope: docs/cnl_scope.md
-  - Stdlib Localization: docs/stdlib_localization.md
-  - Naturalness Notes: docs/word_order_and_naturalness.md
-  - Guide FR: docs/programmation_fr.md
+  - Home: _generated/README.md
+  - Release Notes: _generated/RELEASE.md
+  - Contributing: _generated/CONTRIBUTING.md
+  - Detailed Reference: README.md
+  - Design: design.md
+  - Core Spec: core_spec.md
+  - Frontend Contracts: frontend_contracts.md
+  - Evaluation Plan: evaluation_plan.md
+  - Related Work: related_work.md
+  - Language Onboarding: language_onboarding.md
+  - Development Guide: development.md
+  - Translation Guidelines: translation_guidelines.md
+  - CNL Scope: cnl_scope.md
+  - Stdlib Localization: stdlib_localization.md
+  - Naturalness Notes: word_order_and_naturalness.md
+  - Guide FR: programmation_fr.md
 
 markdown_extensions:
   - admonition
