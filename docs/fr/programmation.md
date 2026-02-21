@@ -39,13 +39,17 @@ afficher("Bonjour le monde")
 Lancer le REPL en francais:
 
 ```bash
-python -m multilingualprogramming repl --lang fr
+multilingual repl --lang fr
+# alternative dev/debug:
+# python -m multilingualprogramming repl --lang fr
 ```
 
 Afficher aussi le Python genere:
 
 ```bash
-python -m multilingualprogramming repl --lang fr --show-python
+multilingual repl --lang fr --show-python
+# alternative dev/debug:
+# python -m multilingualprogramming repl --lang fr --show-python
 ```
 
 Executer un fichier source (ex. `bonjour.ml`):
@@ -55,7 +59,9 @@ afficher("Bonjour le monde")
 ```
 
 ```bash
-python -m multilingualprogramming run bonjour.ml --lang fr
+multilingual run bonjour.ml --lang fr
+# alternative dev/debug:
+# python -m multilingualprogramming run bonjour.ml --lang fr
 ```
 
 ## 3. Capacites principales du langage
@@ -321,6 +327,56 @@ Exemples frequents:
 
 Les noms universels Python restent utilisables en parallele.
 
+Le fichier `examples/complete_features_fr.ml` montre un scenario couvrant
+plusieurs capacites combinees dans un seul programme.
+
+- import avance avec alias:
+
+```text
+importer math
+depuis math importer sqrt comme root_fn
+```
+
+- boucle `tantque`:
+
+```text
+soit compteur = 0
+tantque compteur < 2:
+    compteur = compteur + 1
+```
+
+- logique booleenne localisee:
+
+```text
+soit drapeau_ok = Vrai et non Faux
+affirmer drapeau_ok
+```
+
+- gestion d'exceptions (`essayer` / `sauf` / `finalement`):
+
+```text
+essayer:
+    soit racine = root_fn(16)
+sauf Exception comme erreur_geree:
+    soit racine = 0
+finalement:
+    afficher(racine)
+```
+
+- test d'identite avec `Rien`:
+
+```text
+afficher(total_acc est Rien)
+```
+
+Pour reproduire exactement cet exemple:
+
+```bash
+multilingual run examples/complete_features_fr.ml --lang fr
+# alternative dev/debug:
+# python -m multilingualprogramming run examples/complete_features_fr.ml --lang fr
+```
+
 ## 5. Commandes REPL utiles
 
 - `:help` afficher l'aide
@@ -393,7 +449,7 @@ Sortie attendue:
 
 ## 10. Documentation associee
 
-- Guide usage: [USAGE.md](_generated/USAGE.md)
-- Reference technique: [README docs](README.md)
-- Vue design (architecture + roadmap): [design.md](design.md)
-- Onboarding nouvelles langues: [language_onboarding.md](language_onboarding.md)
+- Guide usage: [USAGE.md](../_generated/USAGE.md)
+- Reference technique: [README docs](../README.md)
+- Vue design (architecture + roadmap): [design.md](../design.md)
+- Onboarding nouvelles langues: [language_onboarding.md](../language_onboarding.md)

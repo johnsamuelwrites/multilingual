@@ -296,7 +296,7 @@ Use this README for setup and workflow; use `docs/` for design rationale and pol
 - Controlled language scope and ambiguity policy: [docs/cnl_scope.md](docs/cnl_scope.md)
 - Translation governance guide: [docs/translation_guidelines.md](docs/translation_guidelines.md)
 - Development and debugging guide: [docs/development.md](docs/development.md)
-- Guide complet en francais: [docs/programmation_fr.md](docs/programmation_fr.md)
+- Guide complet en francais: [docs/fr/programmation.md](docs/fr/programmation.md)
 - Language onboarding guide: [docs/language_onboarding.md](docs/language_onboarding.md)
 - Contribution guide: [CONTRIBUTING.md](CONTRIBUTING.md)
 

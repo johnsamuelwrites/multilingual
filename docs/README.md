@@ -98,11 +98,13 @@ Key capabilities:
 The implementation includes support for:
 
 - variable declarations and assignment
-- control flow (`if/else`, loops)
+- booleans and `None`, including identity checks (`is`, `is not`)
+- control flow (`if/else`, `for`, `while`)
 - async constructs (`async def`, `await`, `async for`, `async with`)
 - functions and classes
-- imports
+- imports (`import`, `from ... import ...`, aliases with `as`)
 - assertions
+- exception handling (`try`, `except`, `else`, `finally`)
 - chained assignment
 - slices (`a[1:3]`, `a[::-1]`)
 - comprehensions (list, dict, generator), including nested `for` clauses
@@ -374,6 +376,20 @@ Runnable examples are documented in:
 
 - [examples/README.md](_generated/examples/README.md)
 
+Complete feature coverage examples:
+
+- `examples/complete_features_en.ml`
+- `examples/complete_features_fr.ml`
+- `examples/complete_features_es.ml`
+
+Run:
+
+```bash
+python -m multilingualprogramming run examples/complete_features_en.ml --lang en
+python -m multilingualprogramming run examples/complete_features_fr.ml --lang fr
+python -m multilingualprogramming run examples/complete_features_es.ml --lang es
+```
+
 Run all examples from repository root:
 
 ```bash
@@ -413,7 +429,7 @@ python -m pylint $(git ls-files '*.py')
 - Development and debugging guide: [development.md](development.md)
 - Usage snippets: [USAGE.md](_generated/USAGE.md)
 - Examples guide: [examples/README.md](_generated/examples/README.md)
-- French programming guide: [programmation_fr.md](programmation_fr.md)
+- French programming guide: [fr/programmation.md](fr/programmation.md)
 - Language onboarding: [language_onboarding.md](language_onboarding.md)
 
 ## License

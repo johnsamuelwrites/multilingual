@@ -11,21 +11,25 @@ docs_dir: docs
 
 nav:
   - Home: _generated/README.md
-  - Release Notes: _generated/RELEASE.md
-  - Contributing: _generated/CONTRIBUTING.md
-  - Detailed Reference: README.md
-  - Design: design.md
-  - Core Spec: core_spec.md
-  - Frontend Contracts: frontend_contracts.md
-  - Evaluation Plan: evaluation_plan.md
-  - Related Work: related_work.md
-  - Language Onboarding: language_onboarding.md
-  - Development Guide: development.md
-  - Translation Guidelines: translation_guidelines.md
-  - CNL Scope: cnl_scope.md
-  - Stdlib Localization: stdlib_localization.md
-  - Naturalness Notes: word_order_and_naturalness.md
-  - Guide FR: programmation_fr.md
+  - Guide FR: fr/programmation.md
+  - Project:
+    - Release Notes: _generated/RELEASE.md
+    - Contributing: _generated/CONTRIBUTING.md
+    - Development Guide: development.md
+  - Reference:
+    - Detailed Reference: README.md
+    - Language Onboarding: language_onboarding.md
+  - Design:
+    - Design Overview: design.md
+    - Core Spec: core_spec.md
+    - Frontend Contracts: frontend_contracts.md
+    - Evaluation Plan: evaluation_plan.md
+    - Related Work: related_work.md
+  - Localization:
+    - Translation Guidelines: translation_guidelines.md
+    - CNL Scope: cnl_scope.md
+    - Stdlib Localization: stdlib_localization.md
+    - Naturalness Notes: word_order_and_naturalness.md
 
 markdown_extensions:
   - admonition
