@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "multilingualprogramming"
-version = "0.2.0"
+dynamic = ["version"]
 description = "Python application for multilingual programming"
 readme = "README.md"
 license = {text = "GPL-3.0-or-later"}
@@ -41,6 +41,9 @@ Homepage = "https://github.com/johnsamuelwrites/multilingual"
 
 [tool.setuptools.packages.find]
 include = ["multilingualprogramming*"]
+
+[tool.setuptools.dynamic]
+version = {attr = "multilingualprogramming.version.__version__"}
 
 [tool.setuptools.package-data]
 multilingualprogramming = [
