@@ -15,6 +15,7 @@ def _rewrite(text: str, replacements: list[tuple[str, str]]) -> str:
 
 
 def main() -> None:
+    """Generate docs/index.md and docs/_generated content for MkDocs builds."""
     root = Path(__file__).resolve().parent.parent
     docs_dir = root / "docs"
     generated_dir = docs_dir / "_generated"
@@ -30,7 +31,9 @@ def main() -> None:
     index_text = _rewrite(
         index_text,
         [
+            ("](docs/README.md)", "](reference.md)"),
             ("](docs/", "]("),
+            ("](README.md)", "](index.md)"),
             ("](USAGE.md)", "](_generated/USAGE.md)"),
             ("](examples/README.md)", "](_generated/examples/README.md)"),
             ("](CONTRIBUTING.md)", "](_generated/CONTRIBUTING.md)"),
@@ -41,6 +44,8 @@ def main() -> None:
     usage_path = generated_dir / "USAGE.md"
     usage_text = usage_path.read_text(encoding="utf-8")
     usage_text = usage_text.replace("](docs/", "](../")
+    usage_text = usage_text.replace("](README.md)", "](../index.md)")
+    usage_text = usage_text.replace("](../README.md)", "](../index.md)")
     usage_path.write_text(usage_text, encoding="utf-8")
 
 

@@ -54,7 +54,7 @@ are not all present in `complete_features_en.ml`.
 
 See:
 - `README.md` ("Additional syntax now supported")
-- `docs/README.md` ("Language Features")
+- `docs/reference.md` ("Language Features")
 
 ## Keyword and Built-in Coverage Status
 

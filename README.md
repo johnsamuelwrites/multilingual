@@ -288,7 +288,7 @@ Use this README for setup and workflow; use `docs/` for design rationale and pol
 
 - Usage guide: [USAGE.md](USAGE.md)
 - Examples guide: [examples/README.md](examples/README.md)
-- Detailed reference: [docs/README.md](docs/README.md)
+- Detailed reference: [docs/reference.md](docs/reference.md)
 - Design overview: [docs/design.md](docs/design.md)
 - Related work and differentiation: [docs/related_work.md](docs/related_work.md)
 - Core formalization: [docs/core_spec.md](docs/core_spec.md)

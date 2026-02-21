@@ -273,7 +273,7 @@ This validates lexer -> parser -> semantic -> codegen/runtime in one path.
 At minimum:
 
 - `README.md` supported languages list
-- `docs/README.md` supported languages list
+- `docs/reference.md` supported languages list
 - link this onboarding guide where relevant
 
 ## Validation Commands

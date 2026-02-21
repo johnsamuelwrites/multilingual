@@ -17,7 +17,7 @@ nav:
     - Contributing: _generated/CONTRIBUTING.md
     - Development Guide: development.md
   - Reference:
-    - Detailed Reference: README.md
+    - Detailed Reference: reference.md
     - Compatibility Matrix: compatibility_matrix.md
     - Compatibility Roadmap (3.12): compatibility_roadmap.md
     - Language Onboarding: language_onboarding.md
