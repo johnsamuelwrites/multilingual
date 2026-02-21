@@ -385,6 +385,9 @@ class SemanticAnalyzer:
         if node.value:
             node.value.accept(self)
 
+    def visit_DelStatement(self, node):
+        node.target.accept(self)
+
     def visit_AssertStatement(self, node):
         node.test.accept(self)
         if node.msg:

@@ -146,9 +146,6 @@
       "sv": [
         "summa"
       ],
-      "da": [
-        "sum"
-      ],
       "fi": [
         "summa"
       ]
@@ -311,6 +308,295 @@
       ],
       "ar": [
         "طباعة"
+      ]
+    },
+    "super": {
+      "fr": [
+        "superieur",
+        "superclasse"
+      ],
+      "es": [
+        "superior",
+        "superclase"
+      ],
+      "de": [
+        "oberklasse",
+        "superklasse"
+      ],
+      "hi": [
+        "सुपर",
+        "सुपरवर्ग"
+      ],
+      "ar": [
+        "فئة_أب",
+        "سوبر"
+      ],
+      "bn": [
+        "সুপার",
+        "সুপারশ্রেণি"
+      ],
+      "ta": [
+        "மேற்கிளை",
+        "சூப்பர்"
+      ],
+      "zh": [
+        "父类",
+        "超类"
+      ],
+      "ja": [
+        "親クラス",
+        "スーパークラス"
+      ],
+      "it": [
+        "superclasse",
+        "superiore"
+      ],
+      "pt": [
+        "superclasse",
+        "superior"
+      ],
+      "pl": [
+        "nadklasa",
+        "nadrzedna"
+      ],
+      "nl": [
+        "superklasse",
+        "bovenklasse"
+      ],
+      "sv": [
+        "superklass",
+        "overklass"
+      ],
+      "da": [
+        "superklasse",
+        "overklasse"
+      ],
+      "fi": [
+        "ylaluokka"
+      ]
+    },
+    "open": {
+      "fr": [
+        "ouvrir"
+      ],
+      "es": [
+        "abrir"
+      ],
+      "de": [
+        "oeffnen",
+        "offnen"
+      ],
+      "hi": [
+        "खोलो",
+        "खोलें"
+      ],
+      "ar": [
+        "افتح"
+      ],
+      "bn": [
+        "খুলো",
+        "খুলুন"
+      ],
+      "ta": [
+        "திற"
+      ],
+      "zh": [
+        "打开"
+      ],
+      "ja": [
+        "開く"
+      ],
+      "it": [
+        "apri"
+      ],
+      "pt": [
+        "abrir"
+      ],
+      "pl": [
+        "otworz"
+      ],
+      "nl": [
+        "openen"
+      ],
+      "sv": [
+        "oppna"
+      ],
+      "da": [
+        "aabn"
+      ],
+      "fi": [
+        "avaa"
+      ]
+    },
+    "set": {
+      "fr": [
+        "ensemble"
+      ],
+      "es": [
+        "conjunto"
+      ],
+      "de": [
+        "menge"
+      ],
+      "hi": [
+        "समुच्चय",
+        "सेट"
+      ],
+      "ar": [
+        "مجموعة"
+      ],
+      "bn": [
+        "সেট",
+        "সমষ্টি"
+      ],
+      "ta": [
+        "தொகுப்பு",
+        "செட்"
+      ],
+      "zh": [
+        "集合"
+      ],
+      "ja": [
+        "集合"
+      ],
+      "it": [
+        "insieme"
+      ],
+      "pt": [
+        "conjunto"
+      ],
+      "pl": [
+        "zbior"
+      ],
+      "nl": [
+        "verzameling"
+      ],
+      "sv": [
+        "mangd"
+      ],
+      "da": [
+        "maengde"
+      ],
+      "fi": [
+        "joukko"
+      ]
+    },
+    "tuple": {
+      "fr": [
+        "nuplet",
+        "tuplet"
+      ],
+      "es": [
+        "tupla"
+      ],
+      "de": [
+        "tupel"
+      ],
+      "hi": [
+        "ट्यूपल"
+      ],
+      "ar": [
+        "تيوبل",
+        "صف_ثابت"
+      ],
+      "bn": [
+        "টিউপল"
+      ],
+      "ta": [
+        "டப்பிள்",
+        "நிலைத்தொடர்"
+      ],
+      "zh": [
+        "元组"
+      ],
+      "ja": [
+        "タプル"
+      ],
+      "it": [
+        "tupla"
+      ],
+      "pt": [
+        "tuplo"
+      ],
+      "pl": [
+        "krotka"
+      ],
+      "nl": [
+        "tuple"
+      ],
+      "sv": [
+        "tuppel"
+      ],
+      "da": [
+        "tupel"
+      ],
+      "fi": [
+        "monikko"
+      ]
+    },
+    "zip": {
+      "fr": [
+        "fusionner",
+        "apparier"
+      ],
+      "es": [
+        "combinar",
+        "emparejar"
+      ],
+      "de": [
+        "zippen",
+        "paaren"
+      ],
+      "hi": [
+        "जोड़ो",
+        "युग्मित"
+      ],
+      "ar": [
+        "اربط",
+        "زاوج"
+      ],
+      "bn": [
+        "জোড়া",
+        "যুগ্ম"
+      ],
+      "ta": [
+        "இணை",
+        "ஜோடி"
+      ],
+      "zh": [
+        "配对"
+      ],
+      "ja": [
+        "組み合わせ",
+        "ペア化"
+      ],
+      "it": [
+        "accoppia",
+        "combina"
+      ],
+      "pt": [
+        "combinar",
+        "emparelhar"
+      ],
+      "pl": [
+        "polacz",
+        "paruj"
+      ],
+      "nl": [
+        "koppel",
+        "paren"
+      ],
+      "sv": [
+        "para",
+        "para_ihop"
+      ],
+      "da": [
+        "par",
+        "sammenkobl"
+      ],
+      "fi": [
+        "parita",
+        "yhdista_pareiksi"
       ]
     }
   }

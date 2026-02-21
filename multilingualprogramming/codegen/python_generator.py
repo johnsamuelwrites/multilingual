@@ -132,6 +132,10 @@ class PythonCodeGenerator:
         else:
             self._emit("raise")
 
+    def visit_DelStatement(self, node):
+        target = self._expr(node.target)
+        self._emit(f"del {target}")
+
     def visit_AssertStatement(self, node):
         test = self._expr(node.test)
         if node.msg:

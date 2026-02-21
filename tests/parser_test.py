@@ -16,7 +16,7 @@ from multilingualprogramming.parser.ast_nodes import (
     CallExpr, AttributeAccess, IndexAccess, LambdaExpr,
     VariableDeclaration, Assignment, AnnAssignment, ExpressionStatement,
     PassStatement, ReturnStatement, BreakStatement, ContinueStatement,
-    RaiseStatement, GlobalStatement, YieldStatement,
+    RaiseStatement, DelStatement, GlobalStatement, LocalStatement, YieldStatement,
     IfStatement, WhileLoop, ForLoop, FunctionDef, ClassDef,
     TryStatement, ExceptHandler, MatchStatement, AwaitExpr, NamedExpr,
     ChainedAssignment, TupleLiteral,
@@ -386,6 +386,19 @@ class ParserStatementTestSuite(unittest.TestCase):
         stmt = prog.body[0]
         self.assertIsInstance(stmt, GlobalStatement)
         self.assertEqual(stmt.names, ["x", "y"])
+
+    def test_parse_nonlocal_statement(self):
+        prog = _parse("nonlocal x, y\n", language="en")
+        stmt = prog.body[0]
+        self.assertIsInstance(stmt, LocalStatement)
+        self.assertEqual(stmt.names, ["x", "y"])
+
+    def test_parse_del_statement(self):
+        prog = _parse("del x\n", language="en")
+        stmt = prog.body[0]
+        self.assertIsInstance(stmt, DelStatement)
+        self.assertIsInstance(stmt.target, Identifier)
+        self.assertEqual(stmt.target.name, "x")
 
     def test_parse_yield_statement(self):
         prog = _parse("yield 42\n", language="en")

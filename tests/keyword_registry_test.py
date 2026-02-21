@@ -390,9 +390,9 @@ class KeywordRegistryTestSuite(unittest.TestCase):
 
         # 14 control_flow + 10 definitions + 7 logical + 4 error_handling
 
-        # + 4 variables + 6 types + 2 io = 47 total
+        # + 6 variables + 6 types + 2 io = 49 total
 
-        self.assertEqual(len(concepts), 47)
+        self.assertEqual(len(concepts), 49)
 
 
 

@@ -89,6 +89,29 @@ class RuntimeBuiltinsTestSuite(unittest.TestCase):
         self.assertIn("प्रिंट", ns)
         self.assertIs(ns["प्रिंट"], print)
 
+    def test_french_super_and_open_aliases(self):
+        ns = RuntimeBuiltins("fr").namespace()
+        self.assertIn("superieur", ns)
+        self.assertIs(ns["superieur"], super)
+        self.assertIn("ouvrir", ns)
+        self.assertIs(ns["ouvrir"], open)
+
+    def test_spanish_set_tuple_zip_aliases(self):
+        ns = RuntimeBuiltins("es").namespace()
+        self.assertIn("conjunto", ns)
+        self.assertIs(ns["conjunto"], set)
+        self.assertIn("tupla", ns)
+        self.assertIs(ns["tupla"], tuple)
+        self.assertIn("combinar", ns)
+        self.assertIs(ns["combinar"], zip)
+
+    def test_japanese_collection_aliases(self):
+        ns = RuntimeBuiltins("ja").namespace()
+        self.assertIn("集合", ns)
+        self.assertIs(ns["集合"], set)
+        self.assertIn("タプル", ns)
+        self.assertIs(ns["タプル"], tuple)
+
     def test_namespace_has_universal_builtins(self):
         ns = RuntimeBuiltins("en").namespace()
         # Check several universal builtins

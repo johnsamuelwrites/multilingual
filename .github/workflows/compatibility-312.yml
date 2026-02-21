@@ -1,0 +1,45 @@
+name: Compatibility (Python 3.12)
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+
+jobs:
+  compatibility:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .[dev]
+          if [ -f requirements.txt ]; then python -m pip install -r requirements.txt; fi
+
+      - name: Run unit and pipeline tests
+        run: |
+          python -m pytest -q
+
+      - name: Run differential compatibility tests
+        run: |
+          python -m pytest -q tests/compatibility/differential_312_test.py --junitxml=compatibility-junit.xml
+
+      - name: Publish compatibility score
+        if: always()
+        run: |
+          python -c "import xml.etree.ElementTree as ET; root = ET.parse('compatibility-junit.xml').getroot(); tests = int(root.attrib.get('tests', 0)); failures = int(root.attrib.get('failures', 0)); errors = int(root.attrib.get('errors', 0)); skipped = int(root.attrib.get('skipped', 0)); passed = tests - failures - errors - skipped; ratio = (passed / tests * 100.0) if tests else 0.0; print('## Compatibility Score (Python 3.12)'); print(f'- Passed: {passed}/{tests} ({ratio:.1f}%)'); print(f'- Failures: {failures}'); print(f'- Errors: {errors}'); print(f'- Skipped: {skipped}')" >> $GITHUB_STEP_SUMMARY
+
+      - name: Run compatibility smoke examples
+        run: |
+          python -m multilingualprogramming run examples/complete_features_en.ml --lang en
+          python -m multilingualprogramming run examples/complete_features_fr.ml --lang fr
+          python -m multilingualprogramming run examples/complete_features_es.ml --lang es

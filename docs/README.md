@@ -8,6 +8,7 @@ This document is the detailed reference for the project.
 
 Python compatibility baseline:
 - [compatibility_matrix.md](compatibility_matrix.md)
+- [compatibility_roadmap.md](compatibility_roadmap.md)
 
 Current version: `0.3.0`
 
@@ -431,6 +432,7 @@ python -m pylint $(git ls-files '*.py')
 - Translation governance: [translation_guidelines.md](translation_guidelines.md)
 - Development and debugging guide: [development.md](development.md)
 - Python compatibility matrix: [compatibility_matrix.md](compatibility_matrix.md)
+- Python 3.12 compatibility roadmap: [compatibility_roadmap.md](compatibility_roadmap.md)
 - Usage snippets: [USAGE.md](_generated/USAGE.md)
 - Examples guide: [examples/README.md](_generated/examples/README.md)
 - French programming guide: [fr/programmation.md](fr/programmation.md)

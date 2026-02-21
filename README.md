@@ -53,6 +53,7 @@ Details:
 - Stdlib localization boundaries: [docs/stdlib_localization.md](docs/stdlib_localization.md)
 - Controlled language scope: [docs/cnl_scope.md](docs/cnl_scope.md)
 - Python compatibility matrix: [docs/compatibility_matrix.md](docs/compatibility_matrix.md)
+- Python 3.12 compatibility roadmap: [docs/compatibility_roadmap.md](docs/compatibility_roadmap.md)
 
 ## Quick Start
 
@@ -297,6 +298,7 @@ Use this README for setup and workflow; use `docs/` for design rationale and pol
 - Standard library localization strategy: [docs/stdlib_localization.md](docs/stdlib_localization.md)
 - Controlled language scope and ambiguity policy: [docs/cnl_scope.md](docs/cnl_scope.md)
 - Python compatibility matrix: [docs/compatibility_matrix.md](docs/compatibility_matrix.md)
+- Python 3.12 compatibility roadmap: [docs/compatibility_roadmap.md](docs/compatibility_roadmap.md)
 - Translation governance guide: [docs/translation_guidelines.md](docs/translation_guidelines.md)
 - Development and debugging guide: [docs/development.md](docs/development.md)
 - Guide complet en francais: [docs/fr/programmation.md](docs/fr/programmation.md)

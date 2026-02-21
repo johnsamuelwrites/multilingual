@@ -1,46 +1,82 @@
 importer math
 depuis math importer sqrt comme root_fn
 
-soit total_acc = 0
-soit nombres = [1, 2, 3, 4]
+soit compteur_global = 3
 
-pour element dans nombres:
-    total_acc = total_acc + element
+def augmenter_global():
+    global compteur_global
+    compteur_global = compteur_global + 2
+    retour compteur_global
 
-soit compteur = 0
-tantque compteur < 2:
-    compteur = compteur + 1
-    total_acc = total_acc + compteur
+def creer_compteur(depart):
+    soit total = depart
+    def etape():
+        nonlocale total
+        total = total + 1
+        retour total
+    retour etape
 
-déf ajuster_valeur(valeur):
-    si valeur > 5:
-        retour valeur - 1
-    sinon:
-        retour valeur + 1
+soit prochain = creer_compteur(5)
+soit premiere = prochain()
+soit deuxieme = prochain()
 
-soit ajustes = [ajuster_valeur(item) pour item dans nombres si item > 2]
+avec ouvrir("tmp_complete_fr.txt", "w", encoding="utf-8") comme ecriture:
+    ecriture.write("ok")
+
+soit texte_fichier = ""
+avec ouvrir("tmp_complete_fr.txt", "r", encoding="utf-8") comme lecture:
+    texte_fichier = lecture.read()
+
+classe BoiteCompteur:
+    def __init__(self, base):
+        self.valeur = base
+
+classe BoiteCompteurEnfant(BoiteCompteur):
+    def __init__(self, base):
+        superieur(BoiteCompteurEnfant, self).__init__(base)
+        self.valeur = self.valeur + 1
+
+def produire_trois():
+    pour i dans intervalle(3):
+        produire i
+
+soit paires = list(fusionner([1, 2, 3], [4, 5, 6]))
+soit uniques = ensemble([1, 1, 2, 3])
+soit fixes = nuplet([10, 20, 30])
+soit total_produit = somme(produire_trois())
+soit gere = Faux
+
+essayer:
+    si longueur(uniques) > 2:
+        lever ValueError("boom")
+sauf ValueError comme erreur_geree:
+    gere = Vrai
+finalement:
+    soit racine = entier(root_fn(16))
+
+soit temporaire = 99
+supprimer temporaire
+
+soit accum = 0
+pour n dans intervalle(6):
+    si n == 0:
+        passer
+    si n == 4:
+        arrêter
+    si n % 2 == 0:
+        continuer
+    accum = accum + n
+
 soit drapeau_ok = Vrai et non Faux
 affirmer drapeau_ok
 
-essayer:
-    soit racine = root_fn(16)
-sauf Exception comme erreur_geree:
-    soit racine = 0
-finalement:
-    total_acc = total_acc + int(racine)
+soit enfant = BoiteCompteurEnfant(40)
 
-classe BoiteCompteur:
-    déf __init__(self, depart):
-        self.valeur = depart
-
-    déf incrementer(self):
-        self.valeur = self.valeur + 1
-        retour self.valeur
-
-soit boite = BoiteCompteur(total_acc)
-soit valeur_incrementee = boite.incrementer()
-
-afficher(total_acc)
-afficher(longueur(ajustes))
-afficher(valeur_incrementee)
-afficher(total_acc est Rien)
+afficher(augmenter_global())
+afficher(premiere, deuxieme)
+afficher(texte_fichier)
+afficher(longueur(paires), longueur(uniques), fixes[1])
+afficher(enfant.valeur)
+afficher(total_produit, racine, gere)
+afficher(accum)
+afficher(compteur_global est Rien)

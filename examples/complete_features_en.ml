@@ -1,46 +1,83 @@
 import math
 from math import sqrt as root_fn
 
-let acc_total = 0
-let numbers = [1, 2, 3, 4]
+let shared_counter = 3
 
-for num_item in numbers:
-    acc_total = acc_total + num_item
+def bump_global():
+    global shared_counter
+    shared_counter = shared_counter + 2
+    return shared_counter
 
-let idx_counter = 0
-while idx_counter < 2:
-    idx_counter = idx_counter + 1
-    acc_total = acc_total + idx_counter
+def make_counter(start):
+    let total = start
+    def step():
+        nonlocal total
+        total = total + 1
+        return total
+    return step
 
-def adjust_val(value):
-    if value > 5:
-        return value - 1
-    else:
-        return value + 1
+let next_count = make_counter(5)
+let first_step = next_count()
+let second_step = next_count()
 
-let adjusted = [adjust_val(v_item) for v_item in numbers if v_item > 2]
+with open("tmp_complete_en.txt", "w", encoding="utf-8") as handle_w:
+    handle_w.write("ok")
+
+let file_text = ""
+with open("tmp_complete_en.txt", "r", encoding="utf-8") as handle_r:
+    file_text = handle_r.read()
+
+let zipped_pairs = list(zip([1, 2, 3], [4, 5, 6]))
+let unique_values = set([1, 1, 2, 3])
+let fixed_values = tuple([10, 20, 30])
+
+class CounterBox:
+    def __init__(self, start_base):
+        self.value = start_base
+
+class CounterBoxChild(CounterBox):
+    def __init__(self, start_base):
+        super().__init__(start_base)
+        self.value = self.value + 1
+
+def produce_three():
+    for i in range(3):
+        yield i
+
+let produced_total = sum(produce_three())
+let handled = False
+
+try:
+    if len(unique_values) > 2:
+        raise ValueError("boom")
+except ValueError as handled_error:
+    handled = True
+finally:
+    let root_value = int(root_fn(16))
+
+let temp_value = 99
+del temp_value
+
+let loop_acc = 0
+for n in range(6):
+    if n == 0:
+        pass
+    if n == 4:
+        break
+    if n % 2 == 0:
+        continue
+    loop_acc = loop_acc + n
+
 let flag_ok = True and not False
 assert flag_ok
 
-try:
-    let root_value = root_fn(16)
-except Exception as handled_error:
-    let root_value = 0
-finally:
-    acc_total = acc_total + int(root_value)
+let child_box = CounterBoxChild(40)
 
-class CounterBox:
-    def __init__(self, start_value):
-        self.value = start_value
-
-    def bump(self):
-        self.value = self.value + 1
-        return self.value
-
-let box = CounterBox(acc_total)
-let bumped_value = box.bump()
-
-print(acc_total)
-print(len(adjusted))
-print(bumped_value)
-print(acc_total is None)
+print(bump_global())
+print(first_step, second_step)
+print(file_text)
+print(len(zipped_pairs), len(unique_values), fixed_values[1])
+print(child_box.value)
+print(produced_total, root_value, handled)
+print(loop_acc)
+print(shared_counter is None)

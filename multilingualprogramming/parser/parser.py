@@ -18,7 +18,7 @@ from multilingualprogramming.parser.ast_nodes import (
     LambdaExpr, YieldExpr, AwaitExpr, NamedExpr,
     VariableDeclaration, Assignment, AnnAssignment, ExpressionStatement,
     PassStatement, ReturnStatement, BreakStatement, ContinueStatement,
-    RaiseStatement, GlobalStatement, LocalStatement, YieldStatement,
+    RaiseStatement, DelStatement, GlobalStatement, LocalStatement, YieldStatement,
     IfStatement, WhileLoop, ForLoop, FunctionDef, ClassDef,
     TryStatement, ExceptHandler, MatchStatement, CaseClause,
     WithStatement, ImportStatement, FromImportStatement,
@@ -43,7 +43,7 @@ _COMPOUND_CONCEPTS = {
 _SIMPLE_CONCEPTS = {
     "LET", "CONST", "RETURN", "YIELD", "RAISE",
     "LOOP_BREAK", "LOOP_CONTINUE", "PASS",
-    "GLOBAL", "LOCAL", "IMPORT", "FROM", "ASSERT",
+    "GLOBAL", "LOCAL", "NONLOCAL", "DEL", "IMPORT", "FROM", "ASSERT",
 }
 
 # Concepts treated as identifiers when appearing in expressions
@@ -324,6 +324,8 @@ class Parser:
             return self._parse_yield_statement()
         if concept == "RAISE":
             return self._parse_raise_statement()
+        if concept == "DEL":
+            return self._parse_del_statement()
         if concept == "LOOP_BREAK":
             return self._parse_break_statement()
         if concept == "LOOP_CONTINUE":
@@ -332,8 +334,8 @@ class Parser:
             return self._parse_pass_statement()
         if concept == "GLOBAL":
             return self._parse_global_statement()
-        if concept == "LOCAL":
-            return self._parse_local_statement()
+        if concept in {"LOCAL", "NONLOCAL"}:
+            return self._parse_nonlocal_statement()
         if concept == "IMPORT":
             return self._parse_import_statement()
         if concept == "FROM":
@@ -891,6 +893,20 @@ class Parser:
             value = self._parse_expression()
         return RaiseStatement(value, line=tok.line, column=tok.column)
 
+    def _parse_del_statement(self):
+        """Parse: DEL target [, target]*."""
+        tok = self._advance()  # consume DEL
+        target = self._parse_expression()
+        if self._match_delimiter(","):
+            elements = [target]
+            while self._match_delimiter(","):
+                self._advance()
+                if self._at_end() or self._match_type(TokenType.NEWLINE):
+                    break
+                elements.append(self._parse_expression())
+            target = TupleLiteral(elements, line=tok.line, column=tok.column)
+        return DelStatement(target, line=tok.line, column=tok.column)
+
     def _parse_assert_statement(self):
         """Parse: ASSERT test [, msg]."""
         tok = self._advance()  # consume ASSERT
@@ -925,9 +941,9 @@ class Parser:
             names.append(self._expect_identifier().value)
         return GlobalStatement(names, line=tok.line, column=tok.column)
 
-    def _parse_local_statement(self):
-        """Parse: LOCAL name, name, ..."""
-        tok = self._advance()  # consume LOCAL
+    def _parse_nonlocal_statement(self):
+        """Parse: NONLOCAL name, name, ..."""
+        tok = self._advance()  # consume NONLOCAL
         names = [self._expect_identifier().value]
         while self._match_delimiter(","):
             self._advance()

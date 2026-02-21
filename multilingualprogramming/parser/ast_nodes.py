@@ -198,6 +198,11 @@ class RaiseStatement(ASTNode):
     def __init__(self, value=None, line=0, column=0):
         super().__init__(line, column)
         self.value = value
+class DelStatement(ASTNode):
+    """Delete statement: del target."""
+    def __init__(self, target, line=0, column=0):
+        super().__init__(line, column)
+        self.target = target
 class GlobalStatement(ASTNode):
     """Global declaration: global x, y."""
     def __init__(self, names, line=0, column=0):

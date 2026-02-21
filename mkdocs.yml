@@ -19,6 +19,7 @@ nav:
   - Reference:
     - Detailed Reference: README.md
     - Compatibility Matrix: compatibility_matrix.md
+    - Compatibility Roadmap (3.12): compatibility_roadmap.md
     - Language Onboarding: language_onboarding.md
   - Design:
     - Design Overview: design.md

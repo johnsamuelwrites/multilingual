@@ -5,11 +5,14 @@ This matrix defines the current compatibility baseline for `multilingual`.
 Baseline source of truth:
 - `examples/complete_features_en.ml`
 
+Target runtime:
+- CPython `3.12.x`
+
 ## Scope Statement
 
-`multilingual` is currently compatible with a broad subset of Python-style
-language constructs, but it is **not** full drop-in compatibility for all
-existing Python code and all third-party ecosystems.
+`multilingual` supports a broad Python 3.12-aligned syntax/runtime subset, but
+it is **not** full drop-in compatibility for every existing Python project and
+third-party ecosystem.
 
 ## Supported Baseline (Current)
 
@@ -53,6 +56,14 @@ See:
 - `README.md` ("Additional syntax now supported")
 - `docs/README.md` ("Language Features")
 
+## Keyword and Built-in Coverage Status
+
+| Coverage area | Status | Notes |
+|---|---|---|
+| Python keywords (3.12) | Complete in keyword registry | Includes full keyword surface such as `del`, `nonlocal`, `match`, `case`, async keywords, etc. |
+| Localized built-in aliases | Partial by design | `resources/usm/builtins_aliases.json` currently provides a curated set (12 concepts), not all CPython built-ins. |
+| Canonical Python built-in names | Fully available | Canonical names (for example `len`, `print`, `super`) remain usable across languages via runtime namespace. |
+
 ## Not Guaranteed Yet
 
 The following are not claimed as universally compatible at this stage:
@@ -61,6 +72,7 @@ The following are not claimed as universally compatible at this stage:
 - Full behavioral parity with all CPython edge cases
 - Full third-party package/runtime ecosystem compatibility
 - Every advanced metaprogramming/introspection scenario
+- Complete localization aliases for every CPython built-in function/type
 
 ## Recommendation
 

@@ -17,7 +17,7 @@ from multilingualprogramming.parser.ast_nodes import (
     AwaitExpr, NamedExpr, ConditionalExpr,
     VariableDeclaration, Assignment, AnnAssignment, ExpressionStatement,
     PassStatement, ReturnStatement, BreakStatement, ContinueStatement,
-    RaiseStatement, GlobalStatement, LocalStatement,
+    RaiseStatement, DelStatement, GlobalStatement, LocalStatement,
     IfStatement, WhileLoop, ForLoop, FunctionDef, ClassDef,
     TryStatement, ExceptHandler, MatchStatement, CaseClause,
     WithStatement, ImportStatement, FromImportStatement,
@@ -283,6 +283,10 @@ class PythonGeneratorStatementTestSuite(unittest.TestCase):
     def test_local_statement(self):
         result = self._gen(LocalStatement(["count"]))
         self.assertEqual(result, "nonlocal count")
+
+    def test_del_statement(self):
+        result = self._gen(DelStatement(Identifier("x")))
+        self.assertEqual(result, "del x")
 
     def test_import_simple(self):
         result = self._gen(ImportStatement("math"))
