@@ -34,6 +34,7 @@ dev = [
 
 [project.scripts]
 multilingual = "multilingualprogramming.__main__:main"
+multilg = "multilingualprogramming.__main__:main"
 
 [project.urls]
 Homepage = "https://github.com/johnsamuelwrites/multilingual"

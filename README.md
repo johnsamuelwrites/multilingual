@@ -87,13 +87,13 @@ Start REPL:
 
 ```bash
 # 1) Default mode (English keywords)
-python -m multilingualprogramming repl
+multilingual repl
 
 # 2) French mode
-python -m multilingualprogramming repl --lang fr
+multilingual repl --lang fr
 
 # Optional: show generated Python while executing
-python -m multilingualprogramming repl --show-python
+multilingual repl --show-python
 ```
 
 Inside the REPL, type code and press Enter to execute.
@@ -159,13 +159,13 @@ print("Hello world")
 Run it:
 
 ```bash
-python -m multilingualprogramming run hello.ml
+multilingual run hello.ml
 ```
 
 Optional (force language instead of auto-detect):
 
 ```bash
-python -m multilingualprogramming run hello.ml --lang fr
+multilingual run hello.ml --lang fr
 ```
 
 ### 6. Cross-Language Module Imports
@@ -190,7 +190,7 @@ print(module_fr.incremente(module_fr.valeur))
 Run:
 
 ```bash
-python -m multilingualprogramming run main_en.ml --lang en
+multilingual run main_en.ml --lang en
 ```
 
 ## Roadmap (Short)
@@ -237,8 +237,8 @@ surface loop phrasing:
 Run:
 
 ```bash
-python -m multilingualprogramming run examples/surface_for_ja.ml --lang ja
-python -m multilingualprogramming run examples/surface_for_ja_canonical.ml --lang ja
+multilingual run examples/surface_for_ja.ml --lang ja
+multilingual run examples/surface_for_ja_canonical.ml --lang ja
 ```
 
 ### Spanish And Portuguese Surface Syntax Examples
@@ -253,10 +253,10 @@ These pairs compute the same result using canonical and iterable-first loop phra
 Run:
 
 ```bash
-python -m multilingualprogramming run examples/surface_for_es.ml --lang es
-python -m multilingualprogramming run examples/surface_for_es_canonical.ml --lang es
-python -m multilingualprogramming run examples/surface_for_pt.ml --lang pt
-python -m multilingualprogramming run examples/surface_for_pt_canonical.ml --lang pt
+multilingual run examples/surface_for_es.ml --lang es
+multilingual run examples/surface_for_es_canonical.ml --lang es
+multilingual run examples/surface_for_pt.ml --lang pt
+multilingual run examples/surface_for_pt_canonical.ml --lang pt
 ```
 
 ### Semantic Equivalence (English vs French)
@@ -295,6 +295,7 @@ Use this README for setup and workflow; use `docs/` for design rationale and pol
 - Standard library localization strategy: [docs/stdlib_localization.md](docs/stdlib_localization.md)
 - Controlled language scope and ambiguity policy: [docs/cnl_scope.md](docs/cnl_scope.md)
 - Translation governance guide: [docs/translation_guidelines.md](docs/translation_guidelines.md)
+- Development and debugging guide: [docs/development.md](docs/development.md)
 - Guide complet en francais: [docs/programmation_fr.md](docs/programmation_fr.md)
 - Language onboarding guide: [docs/language_onboarding.md](docs/language_onboarding.md)
 - Contribution guide: [CONTRIBUTING.md](CONTRIBUTING.md)
