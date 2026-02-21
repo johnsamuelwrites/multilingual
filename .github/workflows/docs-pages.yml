@@ -41,6 +41,7 @@ jobs:
           cp USAGE.md docs/_generated/USAGE.md
           cp examples/README.md docs/_generated/examples/README.md
           sed -i 's#](docs/#](../#g' docs/_generated/README.md
+          sed -i 's#](docs/#](../#g' docs/_generated/USAGE.md
 
       - name: Build site
         run: mkdocs build --strict
