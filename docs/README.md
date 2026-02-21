@@ -20,6 +20,11 @@ Current version: `0.3.0`
 - German
 - Italian
 - Portuguese
+- Polish
+- Dutch
+- Swedish
+- Danish
+- Finnish
 - Hindi
 - Arabic
 - Bengali
@@ -420,7 +425,7 @@ python -m pylint $(git ls-files '*.py')
 
 ## Related Docs
 
-- Project quick start: [README.md](_generated/README.md)
+- Project quick start: [README.md](index.md)
 - Design overview: [design.md](design.md)
 - Core formal specification: [core_spec.md](core_spec.md)
 - Frontend translation contracts: [frontend_contracts.md](frontend_contracts.md)

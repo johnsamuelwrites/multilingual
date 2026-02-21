@@ -10,7 +10,7 @@ theme:
 docs_dir: docs
 
 nav:
-  - Home: _generated/README.md
+  - Home: index.md
   - Guide FR: fr/programmation.md
   - Project:
     - Release Notes: _generated/RELEASE.md

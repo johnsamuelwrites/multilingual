@@ -86,6 +86,15 @@ On Windows PowerShell, if command substitution is unavailable in your shell:
 python -m pylint (git ls-files '*.py')
 ```
 
+## Build Docs Locally
+
+Stage root markdown files into `docs/` and run a strict MkDocs build:
+
+```bash
+python tools/stage_docs.py
+python -m mkdocs build --strict
+```
+
 ## Debugging Tips
 
 Debug CLI path with Python module execution:
@@ -127,4 +136,3 @@ multilingual --version
 multilg --version
 python -m multilingualprogramming --version
 ```
-
