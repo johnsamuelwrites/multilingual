@@ -3,6 +3,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
+# pylint: disable=duplicate-code
 
 """Differential compatibility checks against CPython 3.12 behavior."""
 

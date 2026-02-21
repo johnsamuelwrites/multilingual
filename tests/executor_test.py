@@ -3,6 +3,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
+# pylint: disable=duplicate-code
 
 """Tests for the program executor (full pipeline)."""
 
