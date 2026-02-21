@@ -1,7 +1,7 @@
 # Changelog
 
 Canonical changelog:
-- [CHANGELOG.md](../CHANGELOG.md)
+- [CHANGELOG.md](https://github.com/johnsamuelwrites/multilingual/blob/main/CHANGELOG.md)
 
 ## Notes
 
