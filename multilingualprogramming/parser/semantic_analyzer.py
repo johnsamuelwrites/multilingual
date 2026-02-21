@@ -6,7 +6,9 @@
 
 """Semantic analyzer for the multilingual programming language AST."""
 
-from multilingualprogramming.parser.ast_nodes import Identifier, TupleLiteral
+from multilingualprogramming.parser.ast_nodes import (
+    Identifier, TupleLiteral, StarredExpr,
+)
 from multilingualprogramming.parser.error_messages import ErrorMessageRegistry
 from multilingualprogramming.exceptions import SemanticError
 
@@ -220,6 +222,8 @@ class SemanticAnalyzer:
                     target.name, "variable",
                     line=target.line, column=target.column
                 )
+        elif isinstance(target, StarredExpr):
+            self._define_assignment_target(target.value)
         elif isinstance(target, TupleLiteral):
             for elem in target.elements:
                 self._define_assignment_target(elem)
@@ -472,6 +476,8 @@ class SemanticAnalyzer:
         if isinstance(target, TupleLiteral):
             for elem in target.elements:
                 self._define_for_target(elem)
+        elif isinstance(target, StarredExpr):
+            self._define_for_target(target.value)
         else:
             self.symbol_table.define(
                 target.name, "variable",
@@ -654,6 +660,8 @@ class SemanticAnalyzer:
                 target.name, "variable",
                 line=target.line, column=target.column
             )
+        elif isinstance(target, StarredExpr):
+            self._define_comp_target(target.value, node)
         elif isinstance(target, TupleLiteral):
             for elem in target.elements:
                 self._define_comp_target(elem, node)

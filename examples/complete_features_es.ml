@@ -43,6 +43,15 @@ def producir_tres():
 sea pares = list(combinar([1, 2, 3], [4, 5, 6]))
 sea unicos = conjunto([1, 1, 2, 3])
 sea fijos = tupla([10, 20, 30])
+sea primero_lista, *medio_lista, ultimo_lista = [1, 2, 3, 4]
+sea combinado = {**{"x": 1}, **{"y": 2}}
+
+def etiquetar(a, /, *, b):
+    devolver f"{a}-{b:.1f}"
+
+sea etiqueta = etiquetar(7, b=3.5)
+sea semilla = 0
+sea valor_morsa = (semilla := semilla + 9)
 sea total_producido = suma(producir_tres())
 sea manejado = Falso
 
@@ -76,7 +85,10 @@ imprimir(aumentar_global())
 imprimir(primero, segundo)
 imprimir(texto_archivo)
 imprimir(longitud(pares), longitud(unicos), fijos[1])
+imprimir(primero_lista, medio_lista, ultimo_lista)
 imprimir(hija.valor)
 imprimir(total_producido, raiz, manejado)
+imprimir(combinado["x"] + combinado["y"], etiqueta, valor_morsa)
 imprimir(acumulado)
 imprimir(contador_global es Nada)
+

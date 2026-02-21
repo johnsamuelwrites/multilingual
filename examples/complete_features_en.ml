@@ -30,6 +30,15 @@ with open("tmp_complete_en.txt", "r", encoding="utf-8") as handle_r:
 let zipped_pairs = list(zip([1, 2, 3], [4, 5, 6]))
 let unique_values = set([1, 1, 2, 3])
 let fixed_values = tuple([10, 20, 30])
+let first_item, *middle_items, last_item = [1, 2, 3, 4]
+let merged_map = {**{"x": 1}, **{"y": 2}}
+
+def format_tag(a, /, *, b):
+    return f"{a}-{b:.1f}"
+
+let formatted = format_tag(7, b=3.5)
+let seed = 0
+let walrus_value = (seed := seed + 9)
 
 class CounterBox:
     def __init__(self, start_base):
@@ -77,7 +86,10 @@ print(bump_global())
 print(first_step, second_step)
 print(file_text)
 print(len(zipped_pairs), len(unique_values), fixed_values[1])
+print(first_item, middle_items, last_item)
 print(child_box.value)
 print(produced_total, root_value, handled)
+print(merged_map["x"] + merged_map["y"], formatted, walrus_value)
 print(loop_acc)
 print(shared_counter is None)
+

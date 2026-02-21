@@ -43,6 +43,15 @@ def produire_trois():
 soit paires = list(fusionner([1, 2, 3], [4, 5, 6]))
 soit uniques = ensemble([1, 1, 2, 3])
 soit fixes = nuplet([10, 20, 30])
+soit premier, *milieu, dernier = [1, 2, 3, 4]
+soit fusionne = {**{"x": 1}, **{"y": 2}}
+
+def etiquetter(a, /, *, b):
+    retour f"{a}-{b:.1f}"
+
+soit etiquette = etiquetter(7, b=3.5)
+soit graine = 0
+soit valeur_morsure = (graine := graine + 9)
 soit total_produit = somme(produire_trois())
 soit gere = Faux
 
@@ -76,7 +85,10 @@ afficher(augmenter_global())
 afficher(premiere, deuxieme)
 afficher(texte_fichier)
 afficher(longueur(paires), longueur(uniques), fixes[1])
+afficher(premier, milieu, dernier)
 afficher(enfant.valeur)
 afficher(total_produit, racine, gere)
+afficher(fusionne["x"] + fusionne["y"], etiquette, valeur_morsure)
 afficher(accum)
 afficher(compteur_global est Rien)
+
