@@ -8,12 +8,16 @@ theme:
   name: mkdocs
 
 docs_dir: docs
+exclude_docs: |
+  _generated/README.md
 
 nav:
   - Home: index.md
   - Guide FR: fr/programmation.md
   - Project:
     - Release Notes: _generated/RELEASE.md
+    - Changelog: CHANGELOG.md
+    - Releasing: releasing.md
     - Contributing: _generated/CONTRIBUTING.md
     - Development Guide: development.md
   - Reference:
