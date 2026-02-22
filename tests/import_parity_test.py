@@ -1,16 +1,14 @@
 """
-M3 Tests: Import/Module Resolution Parity
+Import/Module Resolution Parity Tests
 
 Verify that import behavior and module resolution work correctly across the
 multilingual language, matching CPython semantics for import statements,
 module aliases, and cross-language imports.
 """
 
+# pylint: disable=line-too-long
+
 import unittest
-import tempfile
-import os
-import sys
-from pathlib import Path
 
 from multilingualprogramming.codegen.executor import ProgramExecutor
 
@@ -211,7 +209,7 @@ class ImportErrorHandlingTestSuite(unittest.TestCase):
 
     def test_relative_import_not_supported(self):
         """Relative imports should fail gracefully."""
-        # Relative imports are complex, not required for M3
+        # Relative imports are complex and not required in this suite
         source = "from . import something"
         result = ProgramExecutor(language="en", check_semantics=True).execute(source)
         # Just verify it doesn't crash

@@ -553,7 +553,7 @@ except ValueError as e:
             python_source=python_source,
         )
 
-    # M2.1 Expansion: Exception handling parity tests
+    # Expansion: Exception handling parity tests
     def test_exception_value_error_parity(self):
         """ValueError exception produces identical behavior."""
         multilingual_source = """\
@@ -722,7 +722,7 @@ finally:
             python_source=python_source,
         )
 
-    # M2.1 Expansion: Operator behavior parity
+    # Expansion: Operator behavior parity
     def test_operator_short_circuit_and(self):
         """Short-circuit AND operator."""
         multilingual_source = """\
@@ -843,7 +843,7 @@ else:
             python_source=python_source,
         )
 
-    # M2.1 Expansion: Scope and closure parity
+    # Expansion: Scope and closure parity
     def test_scope_global_modification(self):
         """Global variable modification."""
         multilingual_source = """\
@@ -917,7 +917,7 @@ print(add5(3))
             python_source=python_source,
         )
 
-    # M2.1 Expansion: Class and object model parity
+    # Expansion: Class and object model parity
     def test_class_inheritance_basic(self):
         """Basic inheritance."""
         multilingual_source = """\
@@ -997,7 +997,7 @@ print(b.method())
             python_source=python_source,
         )
 
-    # M2.1 Expansion: Advanced features parity
+    # Expansion: Advanced features parity
     def test_walrus_operator_assignment(self):
         """Walrus operator assignment in expression."""
         multilingual_source = """\

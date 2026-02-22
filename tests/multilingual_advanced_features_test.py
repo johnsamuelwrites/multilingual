@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 
-"""Tests for advanced language features in multiple languages (M1.4)."""
+"""Tests for advanced language features in multiple languages."""
 
 import unittest
 from multilingualprogramming.lexer.lexer import Lexer
@@ -25,7 +25,7 @@ def _parse(source, language):
 class MultilingualAdvancedFeatures(unittest.TestCase):
     """Tests for advanced features across multiple languages."""
 
-    # M1.4: List comprehensions in multiple languages
+    # List comprehensions in multiple languages
     def test_list_comprehension_english(self):
         source = "[x for x in range(5) if x > 2]\n"
         prog = _parse(source, "en")

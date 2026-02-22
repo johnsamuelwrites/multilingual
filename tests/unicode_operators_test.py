@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 
-"""Tests for Unicode operator variants (M1.5)."""
+"""Tests for Unicode operator variants."""
 
 import unittest
 from multilingualprogramming.lexer.lexer import Lexer

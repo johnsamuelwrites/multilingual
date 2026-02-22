@@ -1,10 +1,12 @@
 """
-M3 Tests: Standard Library Parity
+Standard Library Parity Tests
 
 Verify that stdlib functions behave consistently with CPython 3.12 when called
 from multilingual programs. Focus on key modules: math, json, datetime,
 itertools, pathlib, collections, functools.
 """
+
+# pylint: disable=line-too-long
 
 import unittest
 from multilingualprogramming.codegen.executor import ProgramExecutor

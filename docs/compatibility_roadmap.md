@@ -6,7 +6,7 @@ baseline to high-confidence CPython 3.12 compatibility.
 Target runtime:
 - CPython `3.12.x`
 
-Non-goal for early milestones:
+Non-goal for early stages:
 - immediate full compatibility with every third-party package
 
 ## Principles
@@ -15,7 +15,7 @@ Non-goal for early milestones:
 - Behavior parity matters more than syntax acceptance alone.
 - Regressions block merges once a capability is marked "supported".
 
-## Milestone M0: Baseline Freeze and Measurement
+## Stage 0: Baseline Freeze and Measurement
 
 Goal:
 - lock current capabilities and establish measurable progress metrics
@@ -34,7 +34,7 @@ Exit criteria:
 - CI runs baseline compatibility checks on every PR
 - matrix entries map to at least one executable test/example
 
-## Milestone M1: Syntax Coverage Parity (Parser/Lexer)
+## Stage 1: Syntax Coverage Parity (Parser/Lexer)
 
 Goal:
 - support CPython 3.12 syntax surface for targeted language subset
@@ -48,7 +48,7 @@ Exit criteria:
 - feature checklist for syntax forms is complete and test-linked
 - no known parser gaps for advertised features
 
-## Milestone M2: Semantic and Runtime Parity
+## Stage 2: Semantic and Runtime Parity
 
 Goal:
 - align runtime behavior with CPython 3.12 semantics for supported syntax
@@ -63,7 +63,7 @@ Exit criteria:
 - differential suite passes for targeted semantics
 - documented deviations are explicit and intentional
 
-## Milestone M3: Import/Stdlib Parity
+## Stage 3: Import/Stdlib Parity
 
 Goal:
 - make import behavior and selected stdlib interactions predictable vs CPython
@@ -77,7 +77,7 @@ Exit criteria:
 - import behavior matrix complete for documented patterns
 - prioritized stdlib smoke suite green on CI
 
-## Milestone M4: Ecosystem Compatibility
+## Stage 4: Ecosystem Compatibility
 
 Goal:
 - execute representative real-world Python code with minimal rewrites

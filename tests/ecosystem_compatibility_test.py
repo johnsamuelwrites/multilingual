@@ -1,5 +1,5 @@
 """
-M4 Tests: Ecosystem Compatibility
+Ecosystem Compatibility Tests
 
 Tests execution of real-world Python code (small, pure-Python projects)
 with output/behavior parity against CPython 3.12.

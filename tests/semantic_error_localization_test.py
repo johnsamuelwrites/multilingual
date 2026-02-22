@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 
-"""Tests for semantic error localization across languages (M2.2)."""
+"""Tests for semantic error localization across languages."""
 
 import unittest
 from multilingualprogramming.codegen.executor import ProgramExecutor
@@ -26,7 +26,7 @@ def _execute_multilingual(source, language="en"):
 class SemanticErrorLocalizationTestSuite(unittest.TestCase):
     """Tests for semantic error detection across languages."""
 
-    # M2.2: Undefined variable errors
+    # Undefined variable errors
     def test_undefined_variable_english(self):
         """Undefined variable error in English."""
         source = "print(undefined_var)\n"
