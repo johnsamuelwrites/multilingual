@@ -12,6 +12,10 @@ Validates that the WASM generator produces valid Rust/WASM code.
 """
 
 import unittest
+import shutil
+import subprocess
+import tempfile
+from pathlib import Path
 from multilingualprogramming.codegen.wasm_generator import (
     WasmCodeGenerator,
     WasmTarget,
@@ -226,6 +230,86 @@ class WasmCodegenProofOfConceptTestSuite(unittest.TestCase):
         self.assertIn("tracked_fn", wasm_funcs)
         self.assertIsInstance(wasm_funcs["tracked_fn"], FunctionDef)
 
+
+
+
+class WasmRustCompilationValidationTestSuite(unittest.TestCase):
+    """Validate generated Rust compiles to a WASM binary."""
+
+    @staticmethod
+    def _compile_generated_rust(rust_code: str):
+        """Compile generated Rust code to wasm32 and fail on compiler errors."""
+        rustc = shutil.which("rustc")
+        if rustc is None:
+            raise unittest.SkipTest("rustc is not installed; skipping WASM Rust compile validation")
+
+        target_check = subprocess.run(
+            [rustc, "--print", "target-libdir", "--target", "wasm32-unknown-unknown"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if target_check.returncode != 0:
+            raise unittest.SkipTest(
+                "rustc target wasm32-unknown-unknown is not installed; "
+                "skipping WASM Rust compile validation"
+            )
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            source_path = temp_path / "generated_module.rs"
+            wasm_path = temp_path / "generated_module.wasm"
+            source_path.write_text(rust_code, encoding="utf-8")
+
+            command = [
+                rustc,
+                "--crate-type",
+                "cdylib",
+                "--target",
+                "wasm32-unknown-unknown",
+                "-C",
+                "panic=abort",
+                str(source_path),
+                "-o",
+                str(wasm_path),
+            ]
+            result = subprocess.run(command, capture_output=True, text=True, check=False)
+
+            if result.returncode != 0:
+                if "error[E0463]" in result.stderr and "can't find crate for `core`" in result.stderr:
+                    raise unittest.SkipTest(
+                        "rustc target wasm32-unknown-unknown is not installed; "
+                        "skipping WASM Rust compile validation"
+                    )
+                raise AssertionError(
+                    "Generated Rust failed to compile to wasm32-unknown-unknown\n"
+                    f"stdout:\n{result.stdout}\n"
+                    f"stderr:\n{result.stderr}"
+                )
+
+            if not wasm_path.exists() or wasm_path.stat().st_size == 0:
+                raise AssertionError("rustc reported success but no .wasm artifact was produced")
+
+    def test_generated_rust_compiles_to_wasm_empty_program(self):
+        """Verify empty program output compiles to a valid wasm artifact."""
+        generator = WasmCodeGenerator()
+        rust_code = generator.generate(Program([], 1, 0))
+        self._compile_generated_rust(rust_code)
+
+    def test_generated_rust_compiles_to_wasm_with_exported_function(self):
+        """Verify generated Rust with exported function compiles to wasm."""
+        func = FunctionDef(
+            name=Identifier("compiled_fn", 1, 0),
+            params=[Parameter(Identifier("x", 1, 0), None, 1, 0)],
+            body=[ReturnStatement(NumeralLiteral(7, 1, 0), 1, 0)],
+            decorators=[],
+            line=1,
+            column=0,
+        )
+
+        generator = WasmCodeGenerator()
+        rust_code = generator.generate(Program([func], 1, 0))
+        self._compile_generated_rust(rust_code)
 
 class WasmCodegenIntegrationProofOfConceptTestSuite(unittest.TestCase):
     """Integration tests for WASM infrastructure."""

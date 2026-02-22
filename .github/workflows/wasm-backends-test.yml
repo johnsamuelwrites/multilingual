@@ -42,6 +42,13 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
+
+    - name: Install Rust toolchain for WASM compile checks
+      if: matrix.backend == 'wasm'
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        targets: wasm32-unknown-unknown
+
     - name: Install dependencies (base)
       run: |
         python -m pip install --upgrade pip setuptools wheel
@@ -75,6 +82,12 @@ jobs:
       if: matrix.backend == 'wasm'
       run: |
         python -m pytest tests -k wasm -v --tb=short --timeout=60
+
+
+    - name: Compile generated Rust to WASM
+      if: matrix.backend == 'wasm'
+      run: |
+        pytest tests/wasm_codegen_poc_test.py -k rust_compiles_to_wasm -v --tb=short --timeout=120
 
     - name: Run fallback-specific tests
       if: matrix.backend == 'fallback'
