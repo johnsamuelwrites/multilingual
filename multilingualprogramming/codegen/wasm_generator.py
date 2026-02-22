@@ -16,7 +16,7 @@ Generates WebAssembly from multilingual AST, providing:
 WASM Infrastructure Build
 """
 
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional
 from dataclasses import dataclass
 from multilingualprogramming.parser.ast_nodes import Program, FunctionDef
 
@@ -156,7 +156,7 @@ pub extern "C" fn {func_name}('''
         self.exported_functions.append(func_name)
         self.wasm_functions[func_name] = func_def
 
-    def _get_wasm_type(self, param) -> str:
+    def _get_wasm_type(self, _param) -> str:
         """Map parameter to WASM type."""
         # Placeholder - will be expanded
         return "WasmI32"
@@ -220,7 +220,6 @@ class WasmBuildConfig:
         """
         # Placeholder - WASM Bridge will implement actual build
         self.rust_source = rust_code
-        return None
 
     def get_rust_code(self) -> str:
         """Get the Rust intermediate code (for inspection/debugging)."""

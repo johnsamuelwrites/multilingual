@@ -14,11 +14,16 @@ Automatically detects and selects the best execution backend:
 Backend Selection: Smart Backend Loader
 """
 
-from typing import Dict, Any, Callable, Optional, Literal
+from typing import Dict, Any, Callable, Optional
 from enum import Enum
 import sys
-from pathlib import Path
+from multilingualprogramming.wasm.loader import WasmModule
+from multilingualprogramming.runtime.python_fallbacks import FALLBACK_REGISTRY
 
+try:
+    import wasmtime
+except ImportError:
+    wasmtime = None
 
 class Backend(Enum):
     """Execution backend selection."""
@@ -57,11 +62,7 @@ class BackendSelector:
 
     def _check_wasm_available(self) -> bool:
         """Check if WASM runtime is available."""
-        try:
-            import wasmtime
-            return True
-        except ImportError:
-            return False
+        return wasmtime is not None
 
     def _determine_backend(self) -> bool:
         """
@@ -72,25 +73,25 @@ class BackendSelector:
         """
         if self._backend == Backend.PYTHON:
             return False
-        elif self._backend == Backend.WASM:
+        if self._backend == Backend.WASM:
             if not self._wasm_available:
                 print("Warning: WASM requested but not available. Using Python.",
                       file=sys.stderr)
             return self._wasm_available
-        else:  # AUTO
-            # Use WASM if available and on supported platform
-            if not self._wasm_available:
-                return False
+        # AUTO
+        # Use WASM if available and on supported platform
+        if not self._wasm_available:
+            return False
 
-            # Check platform support
-            if sys.platform not in ["win32", "linux", "darwin"]:
-                return False
+        # Check platform support
+        if sys.platform not in ["win32", "linux", "darwin"]:
+            return False
 
-            # Check Python version
-            if sys.version_info < (3, 7):
-                return False
+        # Check Python version
+        if sys.version_info < (3, 7):
+            return False
 
-            return True
+        return True
 
     def set_backend(self, backend: Backend) -> None:
         """
@@ -122,37 +123,23 @@ class BackendSelector:
         This provides a default implementation that looks up functions
         in the FALLBACK_REGISTRY dictionary.
         """
-        try:
-            from multilingualprogramming.runtime.python_fallbacks import FALLBACK_REGISTRY
+        def default_fallback(func_name: str, *args, **kwargs):
+            """Default fallback that looks up function in registry."""
+            # Try exact match first
+            if func_name in FALLBACK_REGISTRY:
+                return FALLBACK_REGISTRY[func_name](*args, **kwargs)
 
-            def default_fallback(func_name: str, *args, **kwargs):
-                """Default fallback that looks up function in registry."""
-                # Try exact match first
-                if func_name in FALLBACK_REGISTRY:
-                    return FALLBACK_REGISTRY[func_name](*args, **kwargs)
+            # Try with common prefixes (for backwards compatibility)
+            prefixes = ["numeric_", "matrix_", "string_", "crypto_", "data_",
+                       "json_", "search_", "image_"]
+            for prefix in prefixes:
+                full_name = f"{prefix}{func_name}"
+                if full_name in FALLBACK_REGISTRY:
+                    return FALLBACK_REGISTRY[full_name](*args, **kwargs)
 
-                # Try with common prefixes (for backwards compatibility)
-                prefixes = ["numeric_", "matrix_", "string_", "crypto_", "data_",
-                           "json_", "search_", "image_"]
-                for prefix in prefixes:
-                    full_name = f"{prefix}{func_name}"
-                    if full_name in FALLBACK_REGISTRY:
-                        return FALLBACK_REGISTRY[full_name](*args, **kwargs)
+            raise KeyError(f"Function '{func_name}' not found in FALLBACK_REGISTRY")
 
-                # Try without prefix if it has one
-                for prefix in prefixes:
-                    if func_name.startswith(prefix):
-                        short_name = func_name[len(prefix):]
-                        # This is already the full name, so we've tried it above
-                        break
-
-                raise KeyError(f"Function '{func_name}' not found in FALLBACK_REGISTRY")
-
-            self._python_fallback = default_fallback
-        except ImportError:
-            # If FALLBACK_REGISTRY not available, keep fallback as None
-            # and let the call_function method handle the error
-            pass
+        self._python_fallback = default_fallback
 
     def set_wasm_module(self, wasm_path: str) -> bool:
         """
@@ -168,7 +155,6 @@ class BackendSelector:
             return False
 
         try:
-            from multilingualprogramming.wasm.loader import WasmModule
             self._wasm_module = WasmModule.load(wasm_path)
             return self._wasm_module.instantiate()
         except Exception as e:
@@ -204,8 +190,7 @@ class BackendSelector:
         # Use Python fallback
         if self._python_fallback:
             return self._python_fallback(function_name, *args, **kwargs)
-        else:
-            raise RuntimeError(f"No implementation for {function_name}")
+        raise RuntimeError(f"No implementation for {function_name}")
 
     def _convert_to_wasm(self, *args) -> tuple:
         """
@@ -313,13 +298,12 @@ class BackendRegistry:
 
         if backend == Backend.PYTHON:
             return self._backends[func_name].get("python")
-        elif backend == Backend.WASM:
+        if backend == Backend.WASM:
             return self._backends[func_name].get("wasm")
-        else:
-            # Return whichever is available
-            if "wasm" in self._backends[func_name]:
-                return self._backends[func_name]["wasm"]
-            return self._backends[func_name].get("python")
+        # Return whichever is available
+        if "wasm" in self._backends[func_name]:
+            return self._backends[func_name]["wasm"]
+        return self._backends[func_name].get("python")
 
 
 # Global backend selector

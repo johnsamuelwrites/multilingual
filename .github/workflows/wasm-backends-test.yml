@@ -74,7 +74,7 @@ jobs:
     - name: Run WASM-specific tests
       if: matrix.backend == 'wasm'
       run: |
-        pytest tests/wasm_*.py -v --tb=short --timeout=60
+        python -m pytest tests -k wasm -v --tb=short --timeout=60
 
     - name: Run fallback-specific tests
       if: matrix.backend == 'fallback'
