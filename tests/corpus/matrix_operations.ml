@@ -3,157 +3,140 @@
 # English variant
 #
 # Demonstrates:
-# - Matrix multiplication (computational heavy, WASM sweet spot)
+# - Matrix multiplication (compute-intensive, WASM sweet spot)
 # - Matrix transpose
 # - Determinant calculation
-# - Performance sensitive operations
+# - Performance-sensitive operations
 
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-def create_identity_matrix(n: integer) -> list:
-    """Create n×n identity matrix."""
+def create_identity_matrix(n: int) -> list:
+    """Create n x n identity matrix."""
     result = []
-    pour i dans intervalle(n):
+    for i in range(n):
         row = []
-        pour j dans intervalle(n):
-            si i est j:
-                row.ajouter(1)
-            sinon:
-                row.ajouter(0)
-        result.ajouter(row)
-    retourne result
+        for j in range(n):
+            if i == j:
+                row.append(1)
+            else:
+                row.append(0)
+        result.append(row)
+    return result
 
 
-def create_test_matrix(n: integer) -> list:
-    """Create n×n test matrix with sequential values."""
+def create_test_matrix(n: int) -> list:
+    """Create n x n test matrix with sequential values."""
     result = []
     counter = 1
-    pour i dans intervalle(n):
+    for i in range(n):
         row = []
-        pour j dans intervalle(n):
-            row.ajouter(counter)
+        for j in range(n):
+            row.append(counter)
             counter = counter + 1
-        result.ajouter(row)
-    retourne result
+        result.append(row)
+    return result
 
 
 def matrix_multiply(a: list, b: list) -> list:
-    """Multiply two matrices.
-
-    Args:
-        a: m×n matrix (list of lists)
-        b: n×p matrix (list of lists)
-
-    Returns:
-        m×p result matrix
-    """
-    m = longueur(a)
-    n = longueur(a[0])
-    p = longueur(b[0])
+    """Multiply two matrices."""
+    m = len(a)
+    n = len(a[0])
+    p = len(b[0])
 
     result = []
-    pour i dans intervalle(m):
+    for i in range(m):
         row = []
-        pour j dans intervalle(p):
+        for j in range(p):
             sum_val = 0
-            pour k dans intervalle(n):
+            for k in range(n):
                 sum_val = sum_val + (a[i][k] * b[k][j])
-            row.ajouter(sum_val)
-        result.ajouter(row)
+            row.append(sum_val)
+        result.append(row)
 
-    retourne result
+    return result
 
 
 def matrix_transpose(matrix: list) -> list:
     """Transpose a matrix (swap rows and columns)."""
-    si longueur(matrix) est 0:
-        retourne []
+    if len(matrix) == 0:
+        return []
 
-    rows = longueur(matrix)
-    cols = longueur(matrix[0])
+    rows = len(matrix)
+    cols = len(matrix[0])
 
     result = []
-    pour j dans intervalle(cols):
+    for j in range(cols):
         row = []
-        pour i dans intervalle(rows):
-            row.ajouter(matrix[i][j])
-        result.ajouter(row)
+        for i in range(rows):
+            row.append(matrix[i][j])
+        result.append(row)
 
-    retourne result
-
-
-def matrix_determinant_2x2(matrix: list) -> nombre:
-    """Calculate determinant of 2×2 matrix."""
-    retourne (matrix[0][0] * matrix[1][1]) - (matrix[0][1] * matrix[1][0])
+    return result
 
 
-def matrix_determinant_3x3(matrix: list) -> nombre:
-    """Calculate determinant of 3×3 matrix using rule of Sarrus."""
+def matrix_determinant_2x2(matrix: list) -> float:
+    """Calculate determinant of a 2x2 matrix."""
+    return (matrix[0][0] * matrix[1][1]) - (matrix[0][1] * matrix[1][0])
+
+
+def matrix_determinant_3x3(matrix: list) -> float:
+    """Calculate determinant of a 3x3 matrix using rule of Sarrus."""
     a = matrix[0][0] * (matrix[1][1] * matrix[2][2] - matrix[1][2] * matrix[2][1])
     b = matrix[0][1] * (matrix[1][0] * matrix[2][2] - matrix[1][2] * matrix[2][0])
     c = matrix[0][2] * (matrix[1][0] * matrix[2][1] - matrix[1][1] * matrix[2][0])
+    return a - b + c
 
-    retourne a - b + c
 
-
-def frobenius_norm(matrix: list) -> nombre:
-    """Calculate Frobenius norm of matrix (sqrt of sum of squares)."""
+def frobenius_norm(matrix: list) -> float:
+    """Calculate Frobenius norm of matrix."""
     sum_of_squares = 0
-    pour row dans matrix:
-        pour element dans row:
+    for row in matrix:
+        for element in row:
             sum_of_squares = sum_of_squares + (element * element)
-
-    # Simple sqrt approximation for demo
-    retourne somme([element * element pour element dans row pour row dans matrix]) ** 0.5
+    return sum_of_squares ** 0.5
 
 
 def main():
-    # Test 2×2 matrices
-    afficher("=== Testing 2x2 Matrices ===")
+    print("=== Testing 2x2 Matrices ===")
     a2 = [[1, 2], [3, 4]]
     b2 = [[5, 6], [7, 8]]
 
     result2 = matrix_multiply(a2, b2)
-    afficher("2x2 Multiplication result:")
-    pour row dans result2:
-        afficher(row)
+    print("2x2 Multiplication result:")
+    for row in result2:
+        print(row)
 
-    # Test identity matrix
-    afficher("\n=== Testing Identity Matrix ===")
+    print("\n=== Testing Identity Matrix ===")
     identity = create_identity_matrix(3)
-    afficher("3x3 Identity matrix:")
-    pour row dans identity:
-        afficher(row)
+    print("3x3 Identity matrix:")
+    for row in identity:
+        print(row)
 
-    # Test transpose
-    afficher("\n=== Testing Transpose ===")
+    print("\n=== Testing Transpose ===")
     test_matrix = create_test_matrix(3)
-    afficher("Original 3x3 test matrix:")
-    pour row dans test_matrix:
-        afficher(row)
+    print("Original 3x3 test matrix:")
+    for row in test_matrix:
+        print(row)
 
     transposed = matrix_transpose(test_matrix)
-    afficher("Transposed:")
-    pour row dans transposed:
-        afficher(row)
+    print("Transposed:")
+    for row in transposed:
+        print(row)
 
-    # Test determinant
-    afficher("\n=== Testing Determinant ===")
+    print("\n=== Testing Determinant ===")
     det2 = matrix_determinant_2x2(a2)
-    afficher(f"Det(2x2) = {det2}")
+    print(f"Det(2x2) = {det2}")
 
     det3 = matrix_determinant_3x3(test_matrix)
-    afficher(f"Det(3x3) = {det3}")
+    print(f"Det(3x3) = {det3}")
 
-    # Test larger matrix multiplication
-    afficher("\n=== Testing Larger Matrix Multiplication ===")
+    print("\n=== Testing Larger Matrix Multiplication ===")
     a_large = create_test_matrix(4)
     b_large = create_test_matrix(4)
-
     result_large = matrix_multiply(a_large, b_large)
-    afficher(f"4x4 matrix multiplication completed. First row: {result_large[0]}")
+    print(f"4x4 matrix multiplication completed. First row: {result_large[0]}")
 
-    afficher("\n✓ All matrix operations completed successfully")
+    print("\nAll matrix operations completed successfully")
 
 
 main()

@@ -9,9 +9,21 @@ Provides fixtures for:
 """
 
 import os
-import sys
+import time
+import importlib.util
 import pytest
-from typing import Callable, Any, Optional
+from multilingualprogramming.runtime.backend_selector import BackendSelector, Backend
+from multilingualprogramming.runtime.python_fallbacks import (
+    MatrixOperations,
+    StringOperations,
+    CryptoOperations,
+    DataProcessing,
+    NumericOperations,
+    JSONOperations,
+    SearchOperations,
+    ImageOperations,
+    FALLBACK_REGISTRY,
+)
 
 
 # Environment variable to force backend selection
@@ -43,55 +55,34 @@ def backend_preference():
 @pytest.fixture(scope="session")
 def is_wasm_available():
     """Check if WASM backend is available."""
-    try:
-        import wasmtime
-        return True
-    except ImportError:
-        return False
+    return importlib.util.find_spec("wasmtime") is not None
 
 
 @pytest.fixture(scope="session")
 def backend_selector():
     """Provide a BackendSelector instance."""
-    from multilingualprogramming.runtime.backend_selector import BackendSelector, Backend
-
     if WASM_BACKEND_PREFERENCE == "wasm":
         return BackendSelector(prefer_backend=Backend.WASM)
-    elif WASM_BACKEND_PREFERENCE == "fallback":
+    if WASM_BACKEND_PREFERENCE == "fallback":
         return BackendSelector(prefer_backend=Backend.PYTHON)
-    else:  # auto
-        return BackendSelector(prefer_backend=Backend.AUTO)
+    return BackendSelector(prefer_backend=Backend.AUTO)
 
 
 @pytest.fixture
 def wasm_backend_selector():
     """Provide a BackendSelector forced to WASM."""
-    from multilingualprogramming.runtime.backend_selector import BackendSelector, Backend
     return BackendSelector(prefer_backend=Backend.WASM)
 
 
 @pytest.fixture
 def fallback_backend_selector():
     """Provide a BackendSelector forced to Python fallback."""
-    from multilingualprogramming.runtime.backend_selector import BackendSelector, Backend
     return BackendSelector(prefer_backend=Backend.PYTHON)
 
 
 @pytest.fixture
 def python_fallbacks():
     """Provide all Python fallback implementations."""
-    from multilingualprogramming.runtime.python_fallbacks import (
-        MatrixOperations,
-        StringOperations,
-        CryptoOperations,
-        DataProcessing,
-        NumericOperations,
-        JSONOperations,
-        SearchOperations,
-        ImageOperations,
-        FALLBACK_REGISTRY,
-    )
-
     return {
         "matrix": MatrixOperations,
         "string": StringOperations,
@@ -147,12 +138,10 @@ class PerformanceTimer:
         self.start_time = None
 
     def __enter__(self):
-        import time
         self.start_time = time.perf_counter()
         return self
 
     def __exit__(self, *args):
-        import time
         self.elapsed = time.perf_counter() - self.start_time
 
     def __str__(self):
@@ -182,7 +171,7 @@ def assert_speedup():
     return _assert_speedup
 
 
-def pytest_collection_modifyitems(config, items):
+def pytest_collection_modifyitems(_config, items):
     """Automatically mark tests based on backend and type."""
     for item in items:
         # Mark correctness tests

@@ -11,8 +11,10 @@ Python Fallback Implementations
 Validates that pure Python versions work correctly.
 """
 
+# pylint: disable=duplicate-code
+
 import unittest
-import math
+import json
 from multilingualprogramming.runtime.python_fallbacks import (
     MatrixOperations,
     StringOperations,
@@ -251,7 +253,6 @@ class JSONOperationsFallbackTestSuite(unittest.TestCase):
         obj = {"name": "Alice", "age": 30}
         result = JSONOperations.stringify_json(obj)
         # Should be valid JSON
-        import json
         parsed = json.loads(result)
         self.assertEqual(parsed["name"], "Alice")
 

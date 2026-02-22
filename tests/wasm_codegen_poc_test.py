@@ -26,10 +26,7 @@ from multilingualprogramming.parser.ast_nodes import (
     ReturnStatement,
     Parameter,
 )
-from multilingualprogramming.wasm.loader import (
-    WasmModule,
-    is_wasm_available,
-)
+from multilingualprogramming.wasm.loader import is_wasm_available
 from multilingualprogramming.runtime.backend_selector import (
     BackendSelector,
     Backend,
@@ -145,7 +142,7 @@ class WasmCodegenProofOfConceptTestSuite(unittest.TestCase):
 
     def test_backend_selector_auto_mode(self):
         """Verify backend selector auto-detects backend."""
-        selector = BackendSelector(prefer_backend=Backend.AUTO)
+        BackendSelector(prefer_backend=Backend.AUTO)
         # Should default to Python if WASM not available
         # or WASM if available and supported
         current = get_current_backend()
@@ -249,7 +246,7 @@ class WasmCodegenIntegrationProofOfConceptTestSuite(unittest.TestCase):
     def test_backend_selector_with_fallback(self):
         """Verify backend selector with fallback."""
 
-        def python_impl(fn_name, *args, **kwargs):
+        def python_impl(_fn_name, *_args, **_kwargs):
             return 42
 
         selector = BackendSelector(prefer_backend=Backend.PYTHON)

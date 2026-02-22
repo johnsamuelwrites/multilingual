@@ -23,11 +23,13 @@ Test Categories:
 - Platform tests: Cross-platform compatibility
 """
 
+# pylint: disable=duplicate-code
+
 import unittest
 import time
 import platform
 import sys
-from typing import Tuple, Any
+import importlib
 from multilingualprogramming.runtime.python_fallbacks import (
     MatrixOperations,
     StringOperations,
@@ -36,13 +38,11 @@ from multilingualprogramming.runtime.python_fallbacks import (
     NumericOperations,
     JSONOperations,
     SearchOperations,
-    ImageOperations,
     FALLBACK_REGISTRY,
 )
 from multilingualprogramming.runtime.backend_selector import (
     BackendSelector,
     Backend,
-    BackendRegistry,
 )
 
 
@@ -76,7 +76,7 @@ class CorrectnessTestSuite(unittest.TestCase):
     def test_matrix_determinant_2x2_correctness(self):
         """Verify 2x2 determinant calculation."""
         matrix = [[1, 2], [3, 4]]
-        result = MatrixOperations.determinant_2x2(matrix)
+        result = MatrixOperations.determinant(matrix)
 
         # det = 1*4 - 2*3 = 4 - 6 = -2
         self.assertEqual(result, -2)
@@ -390,9 +390,9 @@ class PlatformCompatibilityTestSuite(unittest.TestCase):
     def test_import_compatibility(self):
         """Test that all modules import successfully."""
         try:
-            from multilingualprogramming.runtime import python_fallbacks
-            from multilingualprogramming.runtime import backend_selector
-            from multilingualprogramming.codegen import wasm_generator
+            importlib.import_module("multilingualprogramming.runtime.python_fallbacks")
+            importlib.import_module("multilingualprogramming.runtime.backend_selector")
+            importlib.import_module("multilingualprogramming.codegen.wasm_generator")
 
             print("\n  All core modules import successfully")
         except ImportError as e:
