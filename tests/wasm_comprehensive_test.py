@@ -79,7 +79,8 @@ class CorrectnessTestSuite(unittest.TestCase):
         result = MatrixOperations.determinant(matrix)
 
         # det = 1*4 - 2*3 = 4 - 6 = -2
-        self.assertEqual(result, -2)
+        # Use assertAlmostEqual for floating-point precision tolerance
+        self.assertAlmostEqual(result, -2, places=6)
 
     def test_string_reverse_correctness(self):
         """Verify string reversal."""
@@ -255,11 +256,11 @@ class FallbackTestSuite(unittest.TestCase):
         expected_functions = [
             "matrix_multiply",
             "matrix_transpose",
-            "xor_cipher",
-            "simple_hash",
-            "fibonacci",
-            "factorial",
-            "binary_search",
+            "crypto_xor_encrypt",
+            "crypto_hash",
+            "numeric_fibonacci",
+            "numeric_factorial",
+            "search_binary",
         ]
 
         for func_name in expected_functions:
@@ -283,7 +284,7 @@ class FallbackTestSuite(unittest.TestCase):
         selector = BackendSelector(prefer_backend=Backend.AUTO)
 
         # Should work with either Python or WASM
-        result = selector.call_function("fibonacci", 10)
+        result = selector.call_function("numeric_fibonacci", 10)
         self.assertIsNotNone(result)
 
     def test_fallback_graceful_degradation(self):
@@ -293,8 +294,8 @@ class FallbackTestSuite(unittest.TestCase):
         # All operations should work on Python fallback
         operations = [
             ("matrix_multiply", [[1, 2], [3, 4]], [[5, 6], [7, 8]]),
-            ("fibonacci", 10),
-            ("xor_cipher", "hello", "secret"),
+            ("numeric_fibonacci", 10),
+            ("crypto_xor_encrypt", "hello", "secret"),
         ]
 
         for op, *args in operations:

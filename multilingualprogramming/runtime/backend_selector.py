@@ -52,6 +52,9 @@ class BackendSelector:
         self._performance_stats: Dict[str, Dict[str, float]] = {}
         self._use_wasm = self._determine_backend()
 
+        # Set up default Python fallback using FALLBACK_REGISTRY
+        self._setup_default_fallback()
+
     def _check_wasm_available(self) -> bool:
         """Check if WASM runtime is available."""
         try:
@@ -111,6 +114,45 @@ class BackendSelector:
             func: Python function to use as fallback
         """
         self._python_fallback = func
+
+    def _setup_default_fallback(self) -> None:
+        """
+        Set up default Python fallback using FALLBACK_REGISTRY.
+
+        This provides a default implementation that looks up functions
+        in the FALLBACK_REGISTRY dictionary.
+        """
+        try:
+            from multilingualprogramming.runtime.python_fallbacks import FALLBACK_REGISTRY
+
+            def default_fallback(func_name: str, *args, **kwargs):
+                """Default fallback that looks up function in registry."""
+                # Try exact match first
+                if func_name in FALLBACK_REGISTRY:
+                    return FALLBACK_REGISTRY[func_name](*args, **kwargs)
+
+                # Try with common prefixes (for backwards compatibility)
+                prefixes = ["numeric_", "matrix_", "string_", "crypto_", "data_",
+                           "json_", "search_", "image_"]
+                for prefix in prefixes:
+                    full_name = f"{prefix}{func_name}"
+                    if full_name in FALLBACK_REGISTRY:
+                        return FALLBACK_REGISTRY[full_name](*args, **kwargs)
+
+                # Try without prefix if it has one
+                for prefix in prefixes:
+                    if func_name.startswith(prefix):
+                        short_name = func_name[len(prefix):]
+                        # This is already the full name, so we've tried it above
+                        break
+
+                raise KeyError(f"Function '{func_name}' not found in FALLBACK_REGISTRY")
+
+            self._python_fallback = default_fallback
+        except ImportError:
+            # If FALLBACK_REGISTRY not available, keep fallback as None
+            # and let the call_function method handle the error
+            pass
 
     def set_wasm_module(self, wasm_path: str) -> bool:
         """
