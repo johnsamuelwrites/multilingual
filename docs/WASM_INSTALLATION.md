@@ -9,7 +9,7 @@ The Multilingual Programming Language includes **optional WebAssembly (WASM) sup
 - ✅ Zero code changes required - transparent backend selection
 - ✅ Automatic Python fallback if WASM unavailable
 - ✅ Works on Windows, Linux, macOS
-- ✅ Supports Python 3.7+ (core requires 3.7+, full features 3.12+)
+- ✅ Supports Python 3.12+ (full features 3.12+)
 
 ---
 
@@ -45,7 +45,7 @@ pip install multilingualprogramming[wasm]
 - ✅ Automatic fallback to Python
 
 **Requirements**:
-- Python 3.7+
+- Python 3.12+
 - wasmtime runtime (auto-installed)
 
 **Size**: ~150 MB (includes WASM binaries)
@@ -75,7 +75,7 @@ pip install multilingualprogramming[performance]
 ### Linux Installation
 
 ```bash
-# Python 3.7+
+# Python 3.12+
 python3 -m pip install multilingualprogramming[wasm]
 
 # Verify installation
@@ -330,7 +330,7 @@ pip uninstall multilingualprogramming
 
 | Component | Requirement |
 |-----------|-------------|
-| Python | 3.7+ |
+| Python | 3.12+ |
 | RAM | 256 MB |
 | Disk | 50 MB (Python only) |
 | OS | Windows, Linux, macOS, BSD |

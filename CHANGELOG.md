@@ -15,11 +15,11 @@ The format is inspired by Keep a Changelog, and this project follows SemVer.
 - **Python Fallback Implementations**: 25+ pure Python implementations for guaranteed compatibility across all platforms
 - **WASM Corpus Projects**: 20 multilingual example projects (matrix operations, cryptography, image processing, JSON parsing, scientific computing) in 4 languages each
 - **Comprehensive Test Suite**: 33+ tests covering correctness, performance, fallback mechanisms, integration, and platform compatibility
-- **PyPI Distribution Infrastructure**: Complete packaging for PyPI with optional WASM dependencies and Python 3.7+ support
+- **PyPI Distribution Infrastructure**: Complete packaging for PyPI with optional WASM dependencies and Python 3.12+ support
 - **Documentation Suite**: WASM architecture overview, installation guides, performance tuning, troubleshooting, and FAQ
 
 ### Changed
-- **Python Version Support**: Expanded from 3.12+ to 3.7+ (core features), 3.12+ (advanced features)
+- **Python Version Support**: 3.12+ (advanced features)
 - **Performance Profile**: CPU-bound operations now execute 50-100x faster via WASM backend
 - **Dependency Model**: WASM support now optional via `[wasm]` extra; numpy support optional via `[performance]`
 

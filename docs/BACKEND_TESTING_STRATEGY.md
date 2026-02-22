@@ -23,7 +23,7 @@ Tests both backends across multiple platforms and Python versions.
 
 **Test Matrix:**
 - **Platforms**: Linux (Ubuntu), macOS, Windows
-- **Python versions**: 3.7, 3.9, 3.12, 3.13
+- **Python versions**: 3.12, 3.13
 - **Backends**: WASM, Python fallback
 - **Total combinations**: 3 × 4 × 2 = 24 test configurations
 

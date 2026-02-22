@@ -384,9 +384,9 @@ class PlatformCompatibilityTestSuite(unittest.TestCase):
         python_version = sys.version_info
         print(f"\n  Python version: {python_version.major}.{python_version.minor}")
 
-        # Require Python 3.7+
+        # Require Python 3.12+
         self.assertGreaterEqual(python_version.major, 3)
-        self.assertGreaterEqual(python_version.minor, 7)
+        self.assertGreaterEqual(python_version.minor, 12)
 
     def test_import_compatibility(self):
         """Test that all modules import successfully."""

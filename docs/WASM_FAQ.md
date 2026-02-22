@@ -6,7 +6,7 @@
 A: Yes! Python fallback always works. WASM gives 50-100x speedup if available.
 
 **Q: What Python versions are supported?**
-A: Python 3.7+ (core), Python 3.12+ (full features). Check with `python --version`.
+A: Python 3.12+ (full features). Check with `python --version`.
 
 **Q: How do I install WASM support?**
 A: `pip install multilingualprogramming[wasm]` (includes wasmtime runtime)
@@ -117,9 +117,9 @@ pip install multilingualprogramming[wasm]
 
 ### Q: Does it work with Docker/Kubernetes?
 
-**Answer**: Yes! Same Python 3.7+ requirements.
+**Answer**: Yes! Same Python 3.12+ requirements.
 ```dockerfile
-FROM python:3.10
+FROM python:3.12
 RUN pip install multilingualprogramming[wasm]
 ```
 

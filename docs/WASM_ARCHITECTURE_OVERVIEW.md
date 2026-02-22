@@ -546,7 +546,7 @@ Integration:
 Platform:
   ✓ Windows, Linux, macOS
   ✓ 32-bit and 64-bit
-  ✓ Python 3.7+
+  ✓ Python 3.12+
   ✓ 4 platform tests
 ```
 
@@ -613,7 +613,7 @@ Fallback path should be as fast as possible
 
 ### Supported Standards
 - ✅ WebAssembly 1.0 (W3C)
-- ✅ Python 3.7+ (PEP 8)
+- ✅ Python 3.12+ (PEP 8)
 - ✅ GPL-3.0-or-later (licensing)
 
 ### Compatibility Matrix

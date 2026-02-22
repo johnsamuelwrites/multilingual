@@ -438,7 +438,7 @@ selector = BackendSelector()
 # Check availability
 print(f"WASM available: {selector.is_wasm_available()}")
 print(f"Current backend: {selector.backend}")
-print(f"Python 3.7+: {selector._check_python_version()}")
+print(f"Python 3.12+: {selector._check_python_version()}")
 
 # Check module loading
 try:
@@ -491,7 +491,7 @@ stats.print_stats(10)
 
 ### Before Reporting an Issue
 
-1. **Verify Python version**: `python --version` (should be 3.7+)
+1. **Verify Python version**: `python --version` (should be 3.12+)
 2. **Check installation**: `pip show multilingualprogramming`
 3. **Test fallback**: Force Python backend, see if it works
 4. **Try diagnostics**: Run scripts in [Diagnostics](#quick-diagnostics)

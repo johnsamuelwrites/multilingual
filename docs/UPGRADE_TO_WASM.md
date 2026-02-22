@@ -227,7 +227,6 @@ except RuntimeError:
 - Python 3.12+
 
 ### v0.4
-- Python 3.7+ (core)
 - Python 3.12+ (full features)
 
 **Migration**: Your existing Python 3.12 installation works perfectly!
@@ -430,9 +429,9 @@ pip install "multilingualprogramming==0.3.0"
 
 **A**: ~1 minute: `pip install --upgrade multilingualprogramming[wasm]`
 
-### Q: Do I need Python 3.7 to use v0.4?
+### Q: Do I need Python 3.12 to use v0.4?
 
-**A**: For core: Yes, 3.7+. For full features: 3.12+.
+**A**: For full features: 3.12+.
 
 ---
 

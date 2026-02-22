@@ -220,4 +220,4 @@ jobs:
         echo "- WASM backend (when available)" >> $GITHUB_STEP_SUMMARY
         echo "- Python fallback (always available)" >> $GITHUB_STEP_SUMMARY
         echo "- Cross-platform: Linux, macOS, Windows" >> $GITHUB_STEP_SUMMARY
-        echo "- Python versions: 3.7, 3.9, 3.12, 3.13" >> $GITHUB_STEP_SUMMARY
+        echo "- Python versions: 3.12, 3.13" >> $GITHUB_STEP_SUMMARY
