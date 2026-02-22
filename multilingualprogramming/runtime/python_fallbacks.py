@@ -13,8 +13,7 @@ Ensures code always works, even without WASM runtime.
 Python Fallbacks: Fallback Implementations
 """
 
-from typing import List, Dict, Any, Tuple, Union
-import math
+from typing import List, Dict, Any
 try:
     import numpy as np
     NUMPY_AVAILABLE = True
@@ -41,20 +40,20 @@ class MatrixOperations:
             # NumPy version: much faster
             result = np.dot(np.array(a), np.array(b))
             return result.tolist()
-        else:
-            # Pure Python version
-            m = len(a)
-            n = len(a[0]) if a else 0
-            p = len(b[0]) if b else 0
 
-            result = [[0.0 for _ in range(p)] for _ in range(m)]
+        # Pure Python version
+        m = len(a)
+        n = len(a[0]) if a else 0
+        p = len(b[0]) if b else 0
 
-            for i in range(m):
-                for j in range(p):
-                    for k in range(n):
-                        result[i][j] += a[i][k] * b[k][j]
+        result = [[0.0 for _ in range(p)] for _ in range(m)]
 
-            return result
+        for i in range(m):
+            for j in range(p):
+                for k in range(n):
+                    result[i][j] += a[i][k] * b[k][j]
+
+        return result
 
     @staticmethod
     def transpose(matrix: List[List[float]]) -> List[List[float]]:
@@ -69,12 +68,12 @@ class MatrixOperations:
         """
         if NUMPY_AVAILABLE:
             return np.array(matrix).T.tolist()
-        else:
-            if not matrix:
-                return []
-            m = len(matrix)
-            n = len(matrix[0]) if matrix else 0
-            return [[matrix[i][j] for i in range(m)] for j in range(n)]
+
+        if not matrix:
+            return []
+        m = len(matrix)
+        n = len(matrix[0]) if matrix else 0
+        return [[matrix[i][j] for i in range(m)] for j in range(n)]
 
     @staticmethod
     def determinant(matrix: List[List[float]]) -> float:
@@ -89,19 +88,18 @@ class MatrixOperations:
         """
         if NUMPY_AVAILABLE:
             return float(np.linalg.det(np.array(matrix)))
-        else:
-            n = len(matrix)
-            if n == 1:
-                return float(matrix[0][0])
-            elif n == 2:
-                return matrix[0][0] * matrix[1][1] - matrix[0][1] * matrix[1][0]
-            elif n == 3:
-                a = matrix[0][0] * (matrix[1][1] * matrix[2][2] - matrix[1][2] * matrix[2][1])
-                b = matrix[0][1] * (matrix[1][0] * matrix[2][2] - matrix[1][2] * matrix[2][0])
-                c = matrix[0][2] * (matrix[1][0] * matrix[2][1] - matrix[1][1] * matrix[2][0])
-                return a - b + c
-            else:
-                raise ValueError("Determinant only implemented for 1×1, 2×2, 3×3 matrices")
+
+        n = len(matrix)
+        if n == 1:
+            return float(matrix[0][0])
+        if n == 2:
+            return matrix[0][0] * matrix[1][1] - matrix[0][1] * matrix[1][0]
+        if n == 3:
+            a = matrix[0][0] * (matrix[1][1] * matrix[2][2] - matrix[1][2] * matrix[2][1])
+            b = matrix[0][1] * (matrix[1][0] * matrix[2][2] - matrix[1][2] * matrix[2][0])
+            c = matrix[0][2] * (matrix[1][0] * matrix[2][1] - matrix[1][1] * matrix[2][0])
+            return a - b + c
+        raise ValueError("Determinant only implemented for 1×1, 2×2, 3×3 matrices")
 
 
 class StringOperations:
@@ -245,7 +243,7 @@ class NumericOperations:
             return [0]
 
         fib = [0, 1]
-        for i in range(2, n):
+        for _ in range(2, n):
             fib.append(fib[-1] + fib[-2])
         return fib[:n]
 
@@ -384,25 +382,24 @@ class ImageOperations:
         if NUMPY_AVAILABLE:
             # NumPy version: much faster
             arr = np.array(pixels, dtype=float)
-            kernel = np.ones((kernel_size, kernel_size)) / (kernel_size ** 2)
-            # Simplified convolution
+            # Note: Full convolution would use kernel here, but simplified version just returns array
             return arr.astype(int).tolist()
-        else:
-            # Simple averaging (very basic blur)
-            h, w = len(pixels), len(pixels[0]) if pixels else 0
-            if h < 3 or w < 3:
-                return pixels
 
-            result = [[0 for _ in range(w)] for _ in range(h)]
+        # Simple averaging (very basic blur)
+        h, w = len(pixels), len(pixels[0]) if pixels else 0
+        if h < 3 or w < 3:
+            return pixels
 
-            for i in range(1, h - 1):
-                for j in range(1, w - 1):
-                    avg = sum(pixels[i + di][j + dj]
-                              for di in [-1, 0, 1]
-                              for dj in [-1, 0, 1]) // 9
-                    result[i][j] = avg
+        result = [[0 for _ in range(w)] for _ in range(h)]
 
-            return result
+        for i in range(1, h - 1):
+            for j in range(1, w - 1):
+                avg = sum(pixels[i + di][j + dj]
+                          for di in [-1, 0, 1]
+                          for dj in [-1, 0, 1]) // 9
+                result[i][j] = avg
+
+        return result
 
 
 # Registry of all fallback operations

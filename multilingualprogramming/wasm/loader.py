@@ -125,7 +125,7 @@ class WasmModule:
             # Call with store and arguments
             return func(self.store, *args)
         except Exception as e:
-            raise RuntimeError(f"Error calling WASM function '{function_name}': {e}")
+            raise RuntimeError(f"Error calling WASM function '{function_name}': {e}") from e
 
     def has_function(self, function_name: str) -> bool:
         """Check if function is exported from WASM module."""
@@ -160,7 +160,7 @@ class WasmModule:
             buffer = bytes(data[offset:offset + length])
             return buffer
         except Exception as e:
-            raise RuntimeError(f"Failed to read WASM memory: {e}")
+            raise RuntimeError(f"Failed to read WASM memory: {e}") from e
 
     def write_memory(self, offset: int, data: bytes) -> None:
         """
@@ -183,7 +183,7 @@ class WasmModule:
             for i, byte in enumerate(data):
                 data_ptr[offset + i] = byte
         except Exception as e:
-            raise RuntimeError(f"Failed to write WASM memory: {e}")
+            raise RuntimeError(f"Failed to write WASM memory: {e}") from e
 
 
 class WasmModuleCache:
