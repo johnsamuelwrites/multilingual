@@ -119,6 +119,7 @@ rev = reverse("hello")  # Too small
 
 ---
 
+<a id="batch-operations"></a>
 ### 2. Batch Operations
 
 **Instead of**:
@@ -200,6 +201,7 @@ print(f"Matrix size: {sys.getsizeof(a) / 1024 / 1024:.1f} MB")
 
 ---
 
+<a id="benchmark-your-code"></a>
 ### 5. Benchmark Your Code
 
 ```python
@@ -475,7 +477,7 @@ monitor.report()
 
 ## Resources
 
-- 📊 [Performance Benchmarks](../tests/wasm_comprehensive_test.py)
+- 📊 [Performance Benchmarks](https://github.com/johnsamuelwrites/multilingual/blob/main/tests/wasm_comprehensive_test.py)
 - 📚 [WASM Development Guide](./WASM_DEVELOPMENT.md)
 - 🔗 [Installation Guide](./WASM_INSTALLATION.md)
 

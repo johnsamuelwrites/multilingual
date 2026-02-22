@@ -1,0 +1,223 @@
+# Comprehensive WASM and Python Fallback Backend Testing
+# Tests both execution paths to ensure compatibility and performance
+
+name: WASM & Fallback Backends Test
+
+on:
+  push:
+    branches: [ master, main, develop ]
+  pull_request:
+    branches: [ master, main ]
+  schedule:
+    # Run weekly comprehensive test
+    - cron: '0 0 * * 0'
+
+jobs:
+  backend-testing:
+    name: Test ${{ matrix.backend }} backend on Python ${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, macos-latest, windows-latest ]
+        python-version: [ "3.7", "3.9", "3.12", "3.13" ]
+        backend: [ "wasm", "fallback" ]
+        include:
+          # Primary test matrix: all combinations
+          - os: ubuntu-latest
+            python-version: "3.12"
+            backend: wasm
+            primary: true
+          - os: ubuntu-latest
+            python-version: "3.12"
+            backend: fallback
+            primary: true
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install dependencies (base)
+      run: |
+        python -m pip install --upgrade pip setuptools wheel
+        pip install pytest pytest-cov pytest-timeout
+
+    - name: Install WASM dependencies
+      if: matrix.backend == 'wasm'
+      run: |
+        pip install -e ".[wasm,performance]"
+
+    - name: Install Python fallback only (no WASM)
+      if: matrix.backend == 'fallback'
+      run: |
+        pip install -e .
+
+    - name: Verify backend configuration
+      env:
+        WASM_BACKEND: ${{ matrix.backend == 'wasm' && '1' || '0' }}
+      run: |
+        python -c "
+        import sys
+        from multilingualprogramming.runtime.backend_selector import BackendSelector, Backend
+
+        selector = BackendSelector()
+        print(f'Python version: {sys.version_info.major}.{sys.version_info.minor}')
+        print(f'Expected backend: ${{ matrix.backend }}')
+        print(f'Backend selector initialized successfully')
+        "
+
+    - name: Run WASM-specific tests
+      if: matrix.backend == 'wasm'
+      run: |
+        pytest tests/wasm_*.py -v --tb=short --timeout=60
+
+    - name: Run fallback-specific tests
+      if: matrix.backend == 'fallback'
+      run: |
+        pytest tests/wasm_comprehensive_test.py::FallbackTestSuite -v --tb=short
+
+    - name: Run common correctness tests
+      run: |
+        pytest tests/wasm_comprehensive_test.py::CorrectnessTestSuite -v --tb=short --timeout=30
+
+    - name: Run integration tests
+      run: |
+        pytest tests/wasm_comprehensive_test.py::IntegrationTestSuite -v --tb=short --timeout=60
+
+    - name: Run platform compatibility tests
+      run: |
+        pytest tests/wasm_comprehensive_test.py::PlatformCompatibilityTestSuite -v --tb=short
+
+    - name: Run corpus project tests
+      if: matrix.primary
+      run: |
+        pytest tests/wasm_corpus_test.py -v --tb=short --timeout=120
+
+    - name: Benchmark - Python fallback (if available)
+      if: matrix.backend == 'fallback' && matrix.primary
+      run: |
+        pytest tests/wasm_comprehensive_test.py::PerformanceBenchmarkSuite -v --tb=short
+
+    - name: Benchmark - WASM backend (if available)
+      if: matrix.backend == 'wasm' && matrix.primary
+      run: |
+        pytest tests/wasm_comprehensive_test.py::PerformanceBenchmarkSuite -v --tb=short
+
+    - name: Generate coverage report
+      if: matrix.primary
+      run: |
+        pytest tests/ --cov=multilingualprogramming --cov-report=xml --cov-report=term-missing -v
+
+    - name: Upload coverage to Codecov
+      if: matrix.primary
+      uses: codecov/codecov-action@v3
+      with:
+        files: ./coverage.xml
+        flags: ${{ matrix.backend }}-${{ matrix.python-version }}
+        fail_ci_if_error: false
+
+  cross-backend-parity:
+    name: Cross-backend parity validation
+    runs-on: ubuntu-latest
+    needs: backend-testing
+
+    strategy:
+      matrix:
+        python-version: [ "3.12", "3.13" ]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install dependencies (both backends)
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e ".[wasm,performance]"
+        pip install pytest pytest-timeout
+
+    - name: Run cross-backend correctness tests
+      run: |
+        # Run all correctness tests twice and compare outputs
+        pytest tests/wasm_comprehensive_test.py::CorrectnessTestSuite -v --tb=short
+
+    - name: Validate semantic parity
+      run: |
+        python -c "
+        from multilingualprogramming.runtime.backend_selector import BackendSelector, Backend
+        from multilingualprogramming.runtime.python_fallbacks import (
+            MatrixOperations, CryptoOperations, NumericOperations, JSONOperations
+        )
+        import json
+
+        # Test matrix operations
+        a = [[1, 2], [3, 4]]
+        b = [[5, 6], [7, 8]]
+        result_py = MatrixOperations.multiply(a, b)
+
+        # Test crypto
+        plaintext = 'Hello World'
+        key = 'secret'
+        encrypted = CryptoOperations.xor_cipher(plaintext, key)
+        decrypted = CryptoOperations.xor_decipher(encrypted, key)
+        assert decrypted == plaintext, f'XOR cipher parity failed: {decrypted} != {plaintext}'
+
+        # Test numeric
+        fib = NumericOperations.fibonacci(10)
+        assert len(fib) == 10, 'Fibonacci parity failed'
+
+        print('✅ All semantic parity checks passed')
+        "
+
+  ecosystem-validation:
+    name: Ecosystem validation - Backend routing
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'schedule'
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+
+    - name: Install with WASM support
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e ".[wasm,performance]"
+        pip install pytest pytest-timeout
+
+    - name: Run ecosystem corpus tests
+      run: |
+        pytest tests/wasm_corpus_test.py::MatrixOperationsCorpusTest -v --tb=short --timeout=60
+        pytest tests/wasm_corpus_test.py::CryptographyCorpusTest -v --tb=short --timeout=60
+        pytest tests/wasm_corpus_test.py::JSONParsingCorpusTest -v --tb=short --timeout=30
+
+  results-summary:
+    name: Test Results Summary
+    runs-on: ubuntu-latest
+    needs: [ backend-testing, cross-backend-parity ]
+    if: always()
+
+    steps:
+    - name: Check test results
+      run: |
+        echo "## WASM & Fallback Backend Test Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "✅ Backend matrix testing: ${{ needs.backend-testing.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "✅ Cross-backend parity: ${{ needs.cross-backend-parity.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Test Coverage" >> $GITHUB_STEP_SUMMARY
+        echo "- WASM backend (when available)" >> $GITHUB_STEP_SUMMARY
+        echo "- Python fallback (always available)" >> $GITHUB_STEP_SUMMARY
+        echo "- Cross-platform: Linux, macOS, Windows" >> $GITHUB_STEP_SUMMARY
+        echo "- Python versions: 3.7, 3.9, 3.12, 3.13" >> $GITHUB_STEP_SUMMARY

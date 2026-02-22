@@ -335,7 +335,7 @@ def test_fibonacci_python():
 - 📖 [WASM Installation](./WASM_INSTALLATION.md) ✨ NEW
 - 📖 [WASM Development](./WASM_DEVELOPMENT.md) ✨ NEW
 - 📖 [Performance Tuning](./WASM_PERFORMANCE_TUNING.md) ✨ NEW
-- 📖 [Architecture Overview](./ARCHITECTURE_OVERVIEW.md) ✨ NEW
+- 📖 [Architecture Overview](./WASM_ARCHITECTURE_OVERVIEW.md) ✨ NEW
 - 🆘 [Troubleshooting](./WASM_TROUBLESHOOTING.md) ✨ NEW
 - ❓ [FAQ](./WASM_FAQ.md) ✨ NEW
 

@@ -12,7 +12,7 @@ print(f"WASM Available: {selector.is_wasm_available()}")
 print(f"Current Backend: {selector.backend}")
 ```
 
-If `WASM Available: False` → See [WASM Not Available](#wasm-not-available)
+If `WASM Available: False` → See [WASM Not Available](#issue-2-wasm-not-available)
 If `WASM Available: True` → WASM is working ✓
 
 ---

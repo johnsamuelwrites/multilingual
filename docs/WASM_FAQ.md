@@ -77,7 +77,7 @@ pip install multilingualprogramming[wasm]
 2. WASM not available - using Python fallback
 3. Operation not optimized for WASM yet
 
-**Solution**: See [PERFORMANCE_TUNING.md](./PERFORMANCE_TUNING.md)
+**Solution**: See [PERFORMANCE_TUNING.md](./WASM_PERFORMANCE_TUNING.md)
 
 ### Q: Do I need to change my code for better performance?
 
@@ -94,7 +94,7 @@ pip install multilingualprogramming[wasm]
 
 ### Q: Can I benchmark my code?
 
-**Answer**: Yes! See [PERFORMANCE_TUNING.md](./PERFORMANCE_TUNING.md#benchmark-your-code)
+**Answer**: Yes! See [PERFORMANCE_TUNING.md](./WASM_PERFORMANCE_TUNING.md#benchmark-your-code)
 
 ---
 
@@ -241,7 +241,7 @@ else:
 3. **Platform not supported**: Use Python fallback
 4. **Corrupted installation**: `pip install --force-reinstall multilingualprogramming[wasm]`
 
-See [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) for detailed solutions
+See [TROUBLESHOOTING.md](./WASM_TROUBLESHOOTING.md) for detailed solutions
 
 ### Q: Why is my operation slower with WASM?
 
@@ -250,7 +250,7 @@ See [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) for detailed solutions
 **Solution**:
 - Only use WASM for operations > 1ms
 - Batch small operations
-- See [PERFORMANCE_TUNING.md](./PERFORMANCE_TUNING.md#batch-operations)
+- See [PERFORMANCE_TUNING.md](./WASM_PERFORMANCE_TUNING.md#batch-operations)
 
 ### Q: What if there's a bug in WASM?
 
@@ -331,7 +331,7 @@ pytest tests/ --cov=multilingualprogramming
 
 ### Q: How do I upgrade from v0.3 to v0.4?
 
-**Answer**: See [MIGRATION.md](./MIGRATION.md)
+**Answer**: See [MIGRATION.md](./UPGRADE_TO_WASM.md)
 
 **Quick version**:
 ```bash
@@ -385,15 +385,15 @@ pip install --upgrade multilingualprogramming
 **Answer**:
 - 📖 [Installation Guide](./WASM_INSTALLATION.md)
 - 📖 [Development Guide](./WASM_DEVELOPMENT.md)
-- 📖 [Performance Tuning](./PERFORMANCE_TUNING.md)
-- 📖 [Architecture Overview](./ARCHITECTURE_OVERVIEW.md)
-- 🆘 [Troubleshooting](./TROUBLESHOOTING.md)
-- ❓ [This FAQ](./FAQ.md)
+- 📖 [Performance Tuning](./WASM_PERFORMANCE_TUNING.md)
+- 📖 [Architecture Overview](./WASM_ARCHITECTURE_OVERVIEW.md)
+- 🆘 [Troubleshooting](./WASM_TROUBLESHOOTING.md)
+- ❓ [This FAQ](./WASM_FAQ.md)
 
 ### Q: How do I report a bug?
 
 **Answer**:
-1. Check [TROUBLESHOOTING.md](./TROUBLESHOOTING.md)
+1. Check [TROUBLESHOOTING.md](./WASM_TROUBLESHOOTING.md)
 2. Check [existing issues](https://github.com/johnsamuelwrites/multilingual/issues)
 3. Create new issue with:
    - Python version
@@ -439,7 +439,7 @@ pip install --upgrade multilingualprogramming
 
 ### Q: How do I measure speedup?
 
-**Answer**: See [PERFORMANCE_TUNING.md](./PERFORMANCE_TUNING.md#benchmark-your-code)
+**Answer**: See [PERFORMANCE_TUNING.md](./WASM_PERFORMANCE_TUNING.md#benchmark-your-code)
 
 ---
 

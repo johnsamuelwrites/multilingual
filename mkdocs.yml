@@ -37,6 +37,14 @@ nav:
     - CNL Scope: cnl_scope.md
     - Stdlib Localization: stdlib_localization.md
     - Naturalness Notes: word_order_and_naturalness.md
+  - WASM:
+    - Installation: WASM_INSTALLATION.md
+    - Development: WASM_DEVELOPMENT.md
+    - Performance Tuning: WASM_PERFORMANCE_TUNING.md
+    - Troubleshooting: WASM_TROUBLESHOOTING.md
+    - FAQ: WASM_FAQ.md
+    - Architecture Overview: WASM_ARCHITECTURE_OVERVIEW.md
+    - Upgrade Guide: UPGRADE_TO_WASM.md
 
 markdown_extensions:
   - admonition
