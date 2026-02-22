@@ -2,7 +2,7 @@
 # Humanize Numbers: Format numbers with thousands separators
 # Mimics humanize library number formatting
 
-def format_number(n, use_separator=True):
+def format_number(n, use_separator):
     """Format a number with thousands separator."""
     if n == 0:
         return "0"
