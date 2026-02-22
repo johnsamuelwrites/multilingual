@@ -11,7 +11,7 @@ Provides fixtures for:
 import os
 import time
 import importlib.util
-import pytest
+import pytest  # pylint: disable=import-error
 from multilingualprogramming.runtime.backend_selector import BackendSelector, Backend
 from multilingualprogramming.runtime.python_fallbacks import (
     MatrixOperations,

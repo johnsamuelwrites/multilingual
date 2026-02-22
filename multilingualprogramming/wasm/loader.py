@@ -16,6 +16,11 @@ from pathlib import Path
 from typing import Dict, Any, Callable, Optional, Union
 import sys
 
+try:
+    import wasmtime
+except ImportError:
+    wasmtime = None
+
 
 class WasmModule:
     """
@@ -46,8 +51,9 @@ class WasmModule:
     def _load_wasm_runtime(self):
         """Load WASM runtime (wasmtime)."""
         try:
-            import wasmtime
             self.wasmtime = wasmtime
+            if self.wasmtime is None:
+                raise ImportError
             self.engine = wasmtime.Engine()
             self.store = wasmtime.Store(self.engine)
         except ImportError:
@@ -253,8 +259,4 @@ def is_wasm_available() -> bool:
     Returns:
         True if wasmtime is installed
     """
-    try:
-        import wasmtime
-        return True
-    except ImportError:
-        return False
+    return wasmtime is not None

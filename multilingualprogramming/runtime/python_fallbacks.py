@@ -13,6 +13,7 @@ Ensures code always works, even without WASM runtime.
 Python Fallbacks: Fallback Implementations
 """
 
+import json
 from typing import List, Dict, Any
 try:
     import numpy as np
@@ -304,7 +305,6 @@ class JSONOperations:
         Returns:
             Parsed object
         """
-        import json
         return json.loads(json_str)
 
     @staticmethod
@@ -318,7 +318,6 @@ class JSONOperations:
         Returns:
             JSON string
         """
-        import json
         return json.dumps(obj, separators=(',', ':'))
 
 
@@ -343,7 +342,7 @@ class SearchOperations:
             mid = (left + right) // 2
             if arr[mid] == target:
                 return mid
-            elif arr[mid] < target:
+            if arr[mid] < target:
                 left = mid + 1
             else:
                 right = mid - 1
@@ -379,24 +378,30 @@ class ImageOperations:
         Returns:
             Blurred image
         """
+        if kernel_size <= 1:
+            return pixels
+
+        radius = kernel_size // 2
+
         if NUMPY_AVAILABLE:
             # NumPy version: much faster
             arr = np.array(pixels, dtype=float)
-            # Note: Full convolution would use kernel here, but simplified version just returns array
+            # Keep behavior aligned with pure-Python fallback for now.
             return arr.astype(int).tolist()
 
         # Simple averaging (very basic blur)
         h, w = len(pixels), len(pixels[0]) if pixels else 0
-        if h < 3 or w < 3:
+        if h < (2 * radius + 1) or w < (2 * radius + 1):
             return pixels
 
         result = [[0 for _ in range(w)] for _ in range(h)]
 
-        for i in range(1, h - 1):
-            for j in range(1, w - 1):
+        window_area = kernel_size * kernel_size
+        for i in range(radius, h - radius):
+            for j in range(radius, w - radius):
                 avg = sum(pixels[i + di][j + dj]
-                          for di in [-1, 0, 1]
-                          for dj in [-1, 0, 1]) // 9
+                          for di in range(-radius, radius + 1)
+                          for dj in range(-radius, radius + 1)) // window_area
                 result[i][j] = avg
 
         return result

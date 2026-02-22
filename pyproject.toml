@@ -8,7 +8,7 @@ dynamic = ["version"]
 description = "Python application for multilingual programming"
 readme = "README.md"
 license = {text = "GPL-3.0-or-later"}
-requires-python = ">=3.7"
+requires-python = ">=3.12"
 keywords = [
     "programming-language",
     "multilingual",
@@ -20,12 +20,6 @@ authors = [
     {name = "John Samuel", email = "johnsamuelwrites@example.com"},
 ]
 classifiers = [
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.7",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
