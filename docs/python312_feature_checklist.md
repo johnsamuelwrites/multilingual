@@ -367,4 +367,4 @@
 
 - [Python 3.12 What's New](https://docs.python.org/3.12/whatsnew/3.12.html)
 - [Python Enhancement Proposals (PEPs)](https://www.python.org/dev/peps/)
-- [Multilingual Language Feature Coverage](../docs/compatibility_matrix.md)
+- [Multilingual Language Feature Coverage](compatibility_matrix.md)

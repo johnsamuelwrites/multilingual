@@ -24,6 +24,7 @@ nav:
     - Detailed Reference: reference.md
     - Compatibility Matrix: compatibility_matrix.md
     - Compatibility Roadmap (3.12): compatibility_roadmap.md
+    - Python 3.12 Feature Checklist: python312_feature_checklist.md
     - Language Onboarding: language_onboarding.md
   - Design:
     - Design Overview: design.md
