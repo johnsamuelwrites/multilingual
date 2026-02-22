@@ -19,8 +19,10 @@ nav:
     - Release Notes: _generated/RELEASE.md
     - Changelog: CHANGELOG.md
     - Releasing: releasing.md
-    - Contributing: _generated/CONTRIBUTING.md
     - Development Guide: development.md
+    - Backend Testing Quick Start: BACKEND_TESTING_QUICK_START.md
+    - Backend Testing Strategy: BACKEND_TESTING_STRATEGY.md
+    - Contributing: development.md
   - Reference:
     - Detailed Reference: reference.md
     - Compatibility Matrix: compatibility_matrix.md
