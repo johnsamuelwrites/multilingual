@@ -20,27 +20,14 @@ sea contador_siguiente = crear_contador(5)
 sea primero = contador_siguiente()
 sea segundo = contador_siguiente()
 
-con abrir("tmp_complete_es.txt", "w", encoding="utf-8") como escritura:
+con abrir("tmp_complete_en.txt", "w", encoding="utf-8") como escritura:
     escritura.write("ok")
 
 sea texto_archivo = ""
-con abrir("tmp_complete_es.txt", "r", encoding="utf-8") como lectura:
+con abrir("tmp_complete_en.txt", "r", encoding="utf-8") como lectura:
     texto_archivo = lectura.read()
 
-clase CajaContador:
-    def __init__(self, base):
-        self.valor = base
-
-clase CajaContadorHija(CajaContador):
-    def __init__(self, base):
-        superior(CajaContadorHija, self).__init__(base)
-        self.valor = self.valor + 1
-
-def producir_tres():
-    para i en rango(3):
-        producir i
-
-sea pares = list(combinar([1, 2, 3], [4, 5, 6]))
+sea pares = lista(combinar([1, 2, 3], [4, 5, 6]))
 sea unicos = conjunto([1, 1, 2, 3])
 sea fijos = tupla([10, 20, 30])
 sea primero_lista, *medio_lista, ultimo_lista = [1, 2, 3, 4]
@@ -52,6 +39,20 @@ def etiquetar(a, /, *, b):
 sea etiqueta = etiquetar(7, b=3.5)
 sea semilla = 0
 sea valor_morsa = (semilla := semilla + 9)
+
+clase CajaContador:
+    def __init__(self, base):
+        self.valor = base
+
+clase CajaContadorHija(CajaContador):
+    def __init__(self, base):
+        superior(CajaContadorHija, self).__init__(base)
+        self.valor = self.valor + 1
+
+def producir_tres():
+    para indice en rango(3):
+        producir indice
+
 sea total_producido = suma(producir_tres())
 sea manejado = Falso
 
@@ -81,39 +82,6 @@ afirmar bandera_ok
 
 sea hija = CajaContadorHija(40)
 
-# Cláusulas else de bucles
-sea elementos_encontrados = Falso
-para elemento en rango(3):
-    si elemento == 10:
-        elementos_encontrados = Verdadero
-        romper
-sino:
-    elementos_encontrados = "no_encontrado"
-
-sea val_while_else = 0
-mientras val_while_else < 2:
-    val_while_else = val_while_else + 1
-sino:
-    val_while_else = val_while_else + 10
-
-# Desempaquetamiento con asterisco
-sea a, *resto = [10, 20, 30, 40]
-sea *init, b = [10, 20, 30, 40]
-sea c, *medio2, d = [10, 20, 30, 40]
-
-# Comprensión de conjunto
-sea conjunto_cuadrados = {x * x para x en rango(5)}
-
-# Builtins extendidos
-sea resultado_potencia = potencia(2, 8)
-sea resultado_divmod = divmod(17, 5)
-
-# Generador de delegación
-def gen_delegado():
-    producir desde rango(3)
-
-sea delegado = list(gen_delegado())
-
 imprimir(aumentar_global())
 imprimir(primero, segundo)
 imprimir(texto_archivo)
@@ -124,9 +92,42 @@ imprimir(total_producido, raiz, manejado)
 imprimir(combinado["x"] + combinado["y"], etiqueta, valor_morsa)
 imprimir(acumulado)
 imprimir(contador_global es Nada)
+
+# Loop else clauses
+sea elementos_encontrados = Falso
+para elemento en rango(3):
+    si elemento == 10:
+        elementos_encontrados = Verdadero
+        romper
+sino:
+    elementos_encontrados = "not_found"
+
+sea val_while_else = 0
+mientras val_while_else < 2:
+    val_while_else = val_while_else + 1
+sino:
+    val_while_else = val_while_else + 10
+
+# Starred unpacking variations
+sea a, *resto = [10, 20, 30, 40]
+sea *init, b = [10, 20, 30, 40]
+sea c, *medio2, d = [10, 20, 30, 40]
+
+# Set comprehension
+sea conjunto_cuadrados = {x * x para x en rango(5)}
+
+# Extended builtins
+sea resultado_potencia = potencia(2, 8)
+sea resultado_divmod = divmod(17, 5)
+
+# Yield from generator
+def gen_delegado():
+    producir desde rango(3)
+
+sea delegado = lista(gen_delegado())
+
 imprimir(elementos_encontrados, val_while_else)
 imprimir(a, resto, init, b, c, medio2, d)
-imprimir(ordenar(conjunto_cuadrados))
+imprimir(ordenado(conjunto_cuadrados))
 imprimir(resultado_potencia, resultado_divmod)
 imprimir(delegado)
-

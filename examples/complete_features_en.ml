@@ -46,12 +46,12 @@ class CounterBox:
 
 class CounterBoxChild(CounterBox):
     def __init__(self, start_base):
-        super().__init__(start_base)
+        super(CounterBoxChild, self).__init__(start_base)
         self.value = self.value + 1
 
 def produce_three():
-    for i in range(3):
-        yield i
+    for idx in range(3):
+        yield idx
 
 let produced_total = sum(produce_three())
 let handled = False
@@ -131,4 +131,3 @@ print(a, rest, init, b, c, middle, d)
 print(sorted(squared_set))
 print(power_result, divmod_result)
 print(delegated)
-

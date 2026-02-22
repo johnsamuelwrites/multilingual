@@ -303,6 +303,47 @@ class CorpusProjectRegistry:
                 "4950\n"
             ),
         ),
+        "multilingual_control_flow": CorpusProject(
+            name="multilingual_control_flow",
+            source_file=Path("tests/corpus/multilingual_control_flow.ml"),
+            languages=["en", "fr", "es"],
+            category="control_flow",
+            complexity="moderate",
+            description="Multilingual control flow (while, if) with surface patterns",
+            expected_output=(
+                "3\n"
+                "greater\n"
+                "2\n"
+            ),
+        ),
+        "complete_features": CorpusProject(
+            name="complete_features",
+            source_file=Path("examples/complete_features_en.ml"),
+            languages=["en", "fr", "es", "de"],
+            category="comprehensive",
+            complexity="high",
+            description=(
+                "Comprehensive feature coverage: imports, functions, classes, "
+                "control flow, generators, exceptions, builtins"
+            ),
+            expected_output=(
+                "5\n"
+                "6 7\n"
+                "ok\n"
+                "3 3 20\n"
+                "1 [2, 3] 4\n"
+                "41\n"
+                "3 4 True\n"
+                "3 7-3.5 9\n"
+                "4\n"
+                "False\n"
+                "not_found 12\n"
+                "10 [20, 30, 40] [10, 20, 30] 40 10 [20, 30] 40\n"
+                "[0, 1, 4, 9, 16]\n"
+                "256 (3, 2)\n"
+                "[0, 1, 2]\n"
+            ),
+        ),
     }
 
     @classmethod
@@ -655,6 +696,12 @@ class DateArithmeticTestSuite(unittest.TestCase):
     def _load_corpus(self, filename: str) -> str:
         return (Path("tests/corpus") / filename).read_text(encoding="utf-8")
 
+    def _load_corpus_for_language(self, filename: str, language: str) -> str:
+        lang_path = Path("tests/corpus") / language / filename
+        if lang_path.exists():
+            return lang_path.read_text(encoding="utf-8")
+        return self._load_corpus(filename)
+
     def test_date_arithmetic(self):
         """Perform date arithmetic."""
         result = self.runner.execute_multilingual(
@@ -691,6 +738,36 @@ class DateArithmeticTestSuite(unittest.TestCase):
         )
         self.assertTrue(result.success)
         self.assertIn("365", result.output)
+
+    def test_date_arithmetic_french_parity(self):
+        """French date arithmetic corpus matches expected output."""
+        baseline = self.runner.execute_multilingual(
+            self._load_corpus("date_arithmetic.ml"), language="en"
+        )
+        self.assertTrue(
+            baseline.success, msg=f"English baseline failed: {baseline.error or 'Unknown error'}"
+        )
+        source = self._load_corpus_for_language("date_arithmetic.ml", "fr")
+        result = self.runner.execute_multilingual(source, language="fr")
+        self.assertTrue(
+            result.success, msg=f"Failed: {result.error or 'Unknown error'}"
+        )
+        self.assertEqual(result.output.strip(), baseline.output.strip())
+
+    def test_date_arithmetic_spanish_parity(self):
+        """Spanish date arithmetic corpus matches expected output."""
+        baseline = self.runner.execute_multilingual(
+            self._load_corpus("date_arithmetic.ml"), language="en"
+        )
+        self.assertTrue(
+            baseline.success, msg=f"English baseline failed: {baseline.error or 'Unknown error'}"
+        )
+        source = self._load_corpus_for_language("date_arithmetic.ml", "es")
+        result = self.runner.execute_multilingual(source, language="es")
+        self.assertTrue(
+            result.success, msg=f"Failed: {result.error or 'Unknown error'}"
+        )
+        self.assertEqual(result.output.strip(), baseline.output.strip())
 
 
 class StatisticsTestSuite(unittest.TestCase):
@@ -1274,6 +1351,119 @@ class PerformanceTestSuite(unittest.TestCase):
         )
         self.assertTrue(result.success)
         self.assertIn("4950", result.output)
+
+
+class MultilingualControlFlowTestSuite(unittest.TestCase):
+    """Tests multilingual control flow with new surface patterns."""
+
+    def setUp(self):
+        self.runner = EcosystemTestRunner()
+        self.project = CorpusProjectRegistry.get("multilingual_control_flow")
+
+    def _load_corpus(self, filename: str) -> str:
+        return (Path("tests/corpus") / filename).read_text(encoding="utf-8")
+
+    def test_english_control_flow(self):
+        """English while/if control flow works."""
+        result = self.runner.execute_multilingual(
+            self._load_corpus("multilingual_control_flow.ml"), language="en"
+        )
+        self.assertTrue(
+            result.success, msg=f"Failed: {result.error or 'Unknown error'}"
+        )
+        self.assertIn("3", result.output)
+        self.assertIn("greater", result.output)
+
+    def test_french_control_flow(self):
+        """French pendant/si control flow works with surface patterns."""
+        result = self.runner.execute_multilingual(
+            self._load_corpus("multilingual_control_flow_fr.ml"), language="fr"
+        )
+        self.assertTrue(
+            result.success, msg=f"Failed: {result.error or 'Unknown error'}"
+        )
+        self.assertEqual(result.output.strip(), self.project.expected_output.strip())
+
+    def test_spanish_control_flow(self):
+        """Spanish mientras/si control flow works with surface patterns."""
+        result = self.runner.execute_multilingual(
+            self._load_corpus("multilingual_control_flow_es.ml"), language="es"
+        )
+        self.assertTrue(
+            result.success, msg=f"Failed: {result.error or 'Unknown error'}"
+        )
+        self.assertEqual(result.output.strip(), self.project.expected_output.strip())
+
+    def test_french_while_loop(self):
+        """French 'pendant' while loop works."""
+        result = self.runner.execute_multilingual(
+            self._load_corpus("multilingual_control_flow_fr.ml"), language="fr"
+        )
+        self.assertTrue(result.success)
+        self.assertIn("3", result.output)
+
+    def test_french_if_statement(self):
+        """French 'si' if statement works."""
+        result = self.runner.execute_multilingual(
+            self._load_corpus("multilingual_control_flow_fr.ml"), language="fr"
+        )
+        self.assertTrue(result.success)
+        self.assertIn("greater", result.output)
+
+    def test_spanish_while_loop(self):
+        """Spanish 'mientras' while loop works."""
+        result = self.runner.execute_multilingual(
+            self._load_corpus("multilingual_control_flow_es.ml"), language="es"
+        )
+        self.assertTrue(result.success)
+        self.assertIn("3", result.output)
+
+    def test_spanish_if_statement(self):
+        """Spanish 'si' if statement works."""
+        result = self.runner.execute_multilingual(
+            self._load_corpus("multilingual_control_flow_es.ml"), language="es"
+        )
+        self.assertTrue(result.success)
+        self.assertIn("greater", result.output)
+
+
+class CompleteFeatureTestSuite(unittest.TestCase):
+    """Tests comprehensive language features across multiple languages."""
+
+    COMPLETE_FEATURE_FILES = sorted(Path("examples").glob("complete_features_*.ml"))
+    EXPECTED_OUTPUT = ""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.runner = EcosystemTestRunner()
+        english_source = (Path("examples") / "complete_features_en.ml").read_text(
+            encoding="utf-8"
+        )
+        english_result = cls.runner.execute_multilingual(english_source, language="en")
+        if not english_result.success:
+            raise AssertionError(f"English baseline failed: {english_result.error}")
+        cls.EXPECTED_OUTPUT = english_result.output
+
+    def setUp(self):
+        self.runner = EcosystemTestRunner()
+
+    def _load_example(self, path: Path) -> str:
+        return path.read_text(encoding="utf-8")
+
+    def test_complete_features_all_languages(self):
+        """Every complete_features example executes and matches English behavior."""
+        self.assertTrue(
+            self.COMPLETE_FEATURE_FILES,
+            "No complete_features examples found in examples/ directory",
+        )
+
+        for source_path in self.COMPLETE_FEATURE_FILES:
+            language = source_path.stem.rsplit("_", maxsplit=1)[-1]
+            with self.subTest(example=source_path.name, language=language):
+                source = self._load_example(source_path)
+                result = self.runner.execute_multilingual(source, language=language)
+                self.assertTrue(result.success, f"Execution failed: {result.error}")
+                self.assertEqual(result.output, self.EXPECTED_OUTPUT)
 
 
 if __name__ == "__main__":

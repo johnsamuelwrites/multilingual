@@ -537,6 +537,987 @@
           "value": ":"
         }
       ]
+    },
+    {
+      "name": "fr_for_iterable_first",
+      "language": "fr",
+      "normalize_template": "for_iterable_first",
+      "pattern": [
+        {
+          "kind": "keyword",
+          "concept": "LOOP_FOR"
+        },
+        {
+          "kind": "identifier",
+          "slot": "target"
+        },
+        {
+          "kind": "keyword",
+          "concept": "IN"
+        },
+        {
+          "kind": "expr",
+          "slot": "iterable"
+        },
+        {
+          "kind": "delimiter",
+          "value": ":"
+        }
+      ]
+    },
+    {
+      "name": "fr_while_condition_first",
+      "language": "fr",
+      "normalize_template": "while_condition_first",
+      "pattern": [
+        {
+          "kind": "keyword",
+          "concept": "LOOP_WHILE"
+        },
+        {
+          "kind": "expr",
+          "slot": "condition"
+        },
+        {
+          "kind": "delimiter",
+          "value": ":"
+        }
+      ]
+    },
+    {
+      "name": "fr_if_condition_first",
+      "language": "fr",
+      "normalize_template": "if_condition_first",
+      "pattern": [
+        {
+          "kind": "keyword",
+          "concept": "COND_IF"
+        },
+        {
+          "kind": "expr",
+          "slot": "condition"
+        },
+        {
+          "kind": "delimiter",
+          "value": ":"
+        }
+      ]
+    },
+    {
+      "name": "fr_with_expr_first",
+      "language": "fr",
+      "normalize_template": "with_expr_first",
+      "pattern": [
+        {
+          "kind": "keyword",
+          "concept": "WITH"
+        },
+        {
+          "kind": "expr",
+          "slot": "context"
+        },
+        {
+          "kind": "delimiter",
+          "value": ":"
+        }
+      ]
+    },
+    {
+      "name": "es_while_condition_first",
+      "language": "es",
+      "normalize_template": "while_condition_first",
+      "pattern": [
+        {
+          "kind": "keyword",
+          "concept": "LOOP_WHILE"
+        },
+        {
+          "kind": "expr",
+          "slot": "condition"
+        },
+        {
+          "kind": "delimiter",
+          "value": ":"
+        }
+      ]
+    },
+    {
+      "name": "es_if_condition_first",
+      "language": "es",
+      "normalize_template": "if_condition_first",
+      "pattern": [
+        {
+          "kind": "keyword",
+          "concept": "COND_IF"
+        },
+        {
+          "kind": "expr",
+          "slot": "condition"
+        },
+        {
+          "kind": "delimiter",
+          "value": ":"
+        }
+      ]
+    },
+    {
+      "name": "es_with_expr_first",
+      "language": "es",
+      "normalize_template": "with_expr_first",
+      "pattern": [
+        {
+          "kind": "keyword",
+          "concept": "WITH"
+        },
+        {
+          "kind": "expr",
+          "slot": "context"
+        },
+        {
+          "kind": "delimiter",
+          "value": ":"
+        }
+      ]
+    },
+    {
+      "name": "da_for_iterable_first",
+      "language": "da",
+      "normalize_template": "for_iterable_first",
+      "pattern": [
+        {
+          "kind": "keyword",
+          "concept": "LOOP_FOR"
+        },
+        {
+          "kind": "identifier",
+          "slot": "target"
+        },
+        {
+          "kind": "keyword",
+          "concept": "IN"
+        },
+        {
+          "kind": "expr",
+          "slot": "iterable"
+        },
+        {
+          "kind": "delimiter",
+          "value": ":"
+        }
+      ]
+    },
+    {
+      "name": "da_while_condition_first",
+      "language": "da",
+      "normalize_template": "while_condition_first",
+      "pattern": [
+        {
+          "kind": "keyword",
+          "concept": "LOOP_WHILE"
+        },
+        {
+          "kind": "expr",
+          "slot": "condition"
+        },
+        {
+          "kind": "delimiter",
+          "value": ":"
+        }
+      ]
+    },
+    {
+      "name": "da_if_condition_first",
+      "language": "da",
+      "normalize_template": "if_condition_first",
+      "pattern": [
+        {
+          "kind": "keyword",
+          "concept": "COND_IF"
+        },
+        {
+          "kind": "expr",
+          "slot": "condition"
+        },
+        {
+          "kind": "delimiter",
+          "value": ":"
+        }
+      ]
+    },
+    {
+      "name": "da_with_expr_first",
+      "language": "da",
+      "normalize_template": "with_expr_first",
+      "pattern": [
+        {
+          "kind": "keyword",
+          "concept": "WITH"
+        },
+        {
+          "kind": "expr",
+          "slot": "context"
+        },
+        {
+          "kind": "delimiter",
+          "value": ":"
+        }
+      ]
+    },
+    {
+      "name": "de_for_iterable_first",
+      "language": "de",
+      "normalize_template": "for_iterable_first",
+      "pattern": [
+        {
+          "kind": "keyword",
+          "concept": "LOOP_FOR"
+        },
+        {
+          "kind": "identifier",
+          "slot": "target"
+        },
+        {
+          "kind": "keyword",
+          "concept": "IN"
+        },
+        {
+          "kind": "expr",
+          "slot": "iterable"
+        },
+        {
+          "kind": "delimiter",
+          "value": ":"
+        }
+      ]
+    },
+    {
+      "name": "de_while_condition_first",
+      "language": "de",
+      "normalize_template": "while_condition_first",
+      "pattern": [
+        {
+          "kind": "keyword",
+          "concept": "LOOP_WHILE"
+        },
+        {
+          "kind": "expr",
+          "slot": "condition"
+        },
+        {
+          "kind": "delimiter",
+          "value": ":"
+        }
+      ]
+    },
+    {
+      "name": "de_if_condition_first",
+      "language": "de",
+      "normalize_template": "if_condition_first",
+      "pattern": [
+        {
+          "kind": "keyword",
+          "concept": "COND_IF"
+        },
+        {
+          "kind": "expr",
+          "slot": "condition"
+        },
+        {
+          "kind": "delimiter",
+          "value": ":"
+        }
+      ]
+    },
+    {
+      "name": "de_with_expr_first",
+      "language": "de",
+      "normalize_template": "with_expr_first",
+      "pattern": [
+        {
+          "kind": "keyword",
+          "concept": "WITH"
+        },
+        {
+          "kind": "expr",
+          "slot": "context"
+        },
+        {
+          "kind": "delimiter",
+          "value": ":"
+        }
+      ]
+    },
+    {
+      "name": "en_for_iterable_first",
+      "language": "en",
+      "normalize_template": "for_iterable_first",
+      "pattern": [
+        {
+          "kind": "keyword",
+          "concept": "LOOP_FOR"
+        },
+        {
+          "kind": "identifier",
+          "slot": "target"
+        },
+        {
+          "kind": "keyword",
+          "concept": "IN"
+        },
+        {
+          "kind": "expr",
+          "slot": "iterable"
+        },
+        {
+          "kind": "delimiter",
+          "value": ":"
+        }
+      ]
+    },
+    {
+      "name": "en_while_condition_first",
+      "language": "en",
+      "normalize_template": "while_condition_first",
+      "pattern": [
+        {
+          "kind": "keyword",
+          "concept": "LOOP_WHILE"
+        },
+        {
+          "kind": "expr",
+          "slot": "condition"
+        },
+        {
+          "kind": "delimiter",
+          "value": ":"
+        }
+      ]
+    },
+    {
+      "name": "en_if_condition_first",
+      "language": "en",
+      "normalize_template": "if_condition_first",
+      "pattern": [
+        {
+          "kind": "keyword",
+          "concept": "COND_IF"
+        },
+        {
+          "kind": "expr",
+          "slot": "condition"
+        },
+        {
+          "kind": "delimiter",
+          "value": ":"
+        }
+      ]
+    },
+    {
+      "name": "en_with_expr_first",
+      "language": "en",
+      "normalize_template": "with_expr_first",
+      "pattern": [
+        {
+          "kind": "keyword",
+          "concept": "WITH"
+        },
+        {
+          "kind": "expr",
+          "slot": "context"
+        },
+        {
+          "kind": "delimiter",
+          "value": ":"
+        }
+      ]
+    },
+    {
+      "name": "fi_for_iterable_first",
+      "language": "fi",
+      "normalize_template": "for_iterable_first",
+      "pattern": [
+        {
+          "kind": "keyword",
+          "concept": "LOOP_FOR"
+        },
+        {
+          "kind": "identifier",
+          "slot": "target"
+        },
+        {
+          "kind": "keyword",
+          "concept": "IN"
+        },
+        {
+          "kind": "expr",
+          "slot": "iterable"
+        },
+        {
+          "kind": "delimiter",
+          "value": ":"
+        }
+      ]
+    },
+    {
+      "name": "fi_while_condition_first",
+      "language": "fi",
+      "normalize_template": "while_condition_first",
+      "pattern": [
+        {
+          "kind": "keyword",
+          "concept": "LOOP_WHILE"
+        },
+        {
+          "kind": "expr",
+          "slot": "condition"
+        },
+        {
+          "kind": "delimiter",
+          "value": ":"
+        }
+      ]
+    },
+    {
+      "name": "fi_if_condition_first",
+      "language": "fi",
+      "normalize_template": "if_condition_first",
+      "pattern": [
+        {
+          "kind": "keyword",
+          "concept": "COND_IF"
+        },
+        {
+          "kind": "expr",
+          "slot": "condition"
+        },
+        {
+          "kind": "delimiter",
+          "value": ":"
+        }
+      ]
+    },
+    {
+      "name": "fi_with_expr_first",
+      "language": "fi",
+      "normalize_template": "with_expr_first",
+      "pattern": [
+        {
+          "kind": "keyword",
+          "concept": "WITH"
+        },
+        {
+          "kind": "expr",
+          "slot": "context"
+        },
+        {
+          "kind": "delimiter",
+          "value": ":"
+        }
+      ]
+    },
+    {
+      "name": "it_for_iterable_first",
+      "language": "it",
+      "normalize_template": "for_iterable_first",
+      "pattern": [
+        {
+          "kind": "keyword",
+          "concept": "LOOP_FOR"
+        },
+        {
+          "kind": "identifier",
+          "slot": "target"
+        },
+        {
+          "kind": "keyword",
+          "concept": "IN"
+        },
+        {
+          "kind": "expr",
+          "slot": "iterable"
+        },
+        {
+          "kind": "delimiter",
+          "value": ":"
+        }
+      ]
+    },
+    {
+      "name": "it_while_condition_first",
+      "language": "it",
+      "normalize_template": "while_condition_first",
+      "pattern": [
+        {
+          "kind": "keyword",
+          "concept": "LOOP_WHILE"
+        },
+        {
+          "kind": "expr",
+          "slot": "condition"
+        },
+        {
+          "kind": "delimiter",
+          "value": ":"
+        }
+      ]
+    },
+    {
+      "name": "it_if_condition_first",
+      "language": "it",
+      "normalize_template": "if_condition_first",
+      "pattern": [
+        {
+          "kind": "keyword",
+          "concept": "COND_IF"
+        },
+        {
+          "kind": "expr",
+          "slot": "condition"
+        },
+        {
+          "kind": "delimiter",
+          "value": ":"
+        }
+      ]
+    },
+    {
+      "name": "it_with_expr_first",
+      "language": "it",
+      "normalize_template": "with_expr_first",
+      "pattern": [
+        {
+          "kind": "keyword",
+          "concept": "WITH"
+        },
+        {
+          "kind": "expr",
+          "slot": "context"
+        },
+        {
+          "kind": "delimiter",
+          "value": ":"
+        }
+      ]
+    },
+    {
+      "name": "nl_for_iterable_first",
+      "language": "nl",
+      "normalize_template": "for_iterable_first",
+      "pattern": [
+        {
+          "kind": "keyword",
+          "concept": "LOOP_FOR"
+        },
+        {
+          "kind": "identifier",
+          "slot": "target"
+        },
+        {
+          "kind": "keyword",
+          "concept": "IN"
+        },
+        {
+          "kind": "expr",
+          "slot": "iterable"
+        },
+        {
+          "kind": "delimiter",
+          "value": ":"
+        }
+      ]
+    },
+    {
+      "name": "nl_while_condition_first",
+      "language": "nl",
+      "normalize_template": "while_condition_first",
+      "pattern": [
+        {
+          "kind": "keyword",
+          "concept": "LOOP_WHILE"
+        },
+        {
+          "kind": "expr",
+          "slot": "condition"
+        },
+        {
+          "kind": "delimiter",
+          "value": ":"
+        }
+      ]
+    },
+    {
+      "name": "nl_if_condition_first",
+      "language": "nl",
+      "normalize_template": "if_condition_first",
+      "pattern": [
+        {
+          "kind": "keyword",
+          "concept": "COND_IF"
+        },
+        {
+          "kind": "expr",
+          "slot": "condition"
+        },
+        {
+          "kind": "delimiter",
+          "value": ":"
+        }
+      ]
+    },
+    {
+      "name": "nl_with_expr_first",
+      "language": "nl",
+      "normalize_template": "with_expr_first",
+      "pattern": [
+        {
+          "kind": "keyword",
+          "concept": "WITH"
+        },
+        {
+          "kind": "expr",
+          "slot": "context"
+        },
+        {
+          "kind": "delimiter",
+          "value": ":"
+        }
+      ]
+    },
+    {
+      "name": "pl_for_iterable_first",
+      "language": "pl",
+      "normalize_template": "for_iterable_first",
+      "pattern": [
+        {
+          "kind": "keyword",
+          "concept": "LOOP_FOR"
+        },
+        {
+          "kind": "identifier",
+          "slot": "target"
+        },
+        {
+          "kind": "keyword",
+          "concept": "IN"
+        },
+        {
+          "kind": "expr",
+          "slot": "iterable"
+        },
+        {
+          "kind": "delimiter",
+          "value": ":"
+        }
+      ]
+    },
+    {
+      "name": "pl_while_condition_first",
+      "language": "pl",
+      "normalize_template": "while_condition_first",
+      "pattern": [
+        {
+          "kind": "keyword",
+          "concept": "LOOP_WHILE"
+        },
+        {
+          "kind": "expr",
+          "slot": "condition"
+        },
+        {
+          "kind": "delimiter",
+          "value": ":"
+        }
+      ]
+    },
+    {
+      "name": "pl_if_condition_first",
+      "language": "pl",
+      "normalize_template": "if_condition_first",
+      "pattern": [
+        {
+          "kind": "keyword",
+          "concept": "COND_IF"
+        },
+        {
+          "kind": "expr",
+          "slot": "condition"
+        },
+        {
+          "kind": "delimiter",
+          "value": ":"
+        }
+      ]
+    },
+    {
+      "name": "pl_with_expr_first",
+      "language": "pl",
+      "normalize_template": "with_expr_first",
+      "pattern": [
+        {
+          "kind": "keyword",
+          "concept": "WITH"
+        },
+        {
+          "kind": "expr",
+          "slot": "context"
+        },
+        {
+          "kind": "delimiter",
+          "value": ":"
+        }
+      ]
+    },
+    {
+      "name": "pt_for_iterable_first",
+      "language": "pt",
+      "normalize_template": "for_iterable_first",
+      "pattern": [
+        {
+          "kind": "keyword",
+          "concept": "LOOP_FOR"
+        },
+        {
+          "kind": "identifier",
+          "slot": "target"
+        },
+        {
+          "kind": "keyword",
+          "concept": "IN"
+        },
+        {
+          "kind": "expr",
+          "slot": "iterable"
+        },
+        {
+          "kind": "delimiter",
+          "value": ":"
+        }
+      ]
+    },
+    {
+      "name": "pt_while_condition_first",
+      "language": "pt",
+      "normalize_template": "while_condition_first",
+      "pattern": [
+        {
+          "kind": "keyword",
+          "concept": "LOOP_WHILE"
+        },
+        {
+          "kind": "expr",
+          "slot": "condition"
+        },
+        {
+          "kind": "delimiter",
+          "value": ":"
+        }
+      ]
+    },
+    {
+      "name": "pt_if_condition_first",
+      "language": "pt",
+      "normalize_template": "if_condition_first",
+      "pattern": [
+        {
+          "kind": "keyword",
+          "concept": "COND_IF"
+        },
+        {
+          "kind": "expr",
+          "slot": "condition"
+        },
+        {
+          "kind": "delimiter",
+          "value": ":"
+        }
+      ]
+    },
+    {
+      "name": "pt_with_expr_first",
+      "language": "pt",
+      "normalize_template": "with_expr_first",
+      "pattern": [
+        {
+          "kind": "keyword",
+          "concept": "WITH"
+        },
+        {
+          "kind": "expr",
+          "slot": "context"
+        },
+        {
+          "kind": "delimiter",
+          "value": ":"
+        }
+      ]
+    },
+    {
+      "name": "sv_for_iterable_first",
+      "language": "sv",
+      "normalize_template": "for_iterable_first",
+      "pattern": [
+        {
+          "kind": "keyword",
+          "concept": "LOOP_FOR"
+        },
+        {
+          "kind": "identifier",
+          "slot": "target"
+        },
+        {
+          "kind": "keyword",
+          "concept": "IN"
+        },
+        {
+          "kind": "expr",
+          "slot": "iterable"
+        },
+        {
+          "kind": "delimiter",
+          "value": ":"
+        }
+      ]
+    },
+    {
+      "name": "sv_while_condition_first",
+      "language": "sv",
+      "normalize_template": "while_condition_first",
+      "pattern": [
+        {
+          "kind": "keyword",
+          "concept": "LOOP_WHILE"
+        },
+        {
+          "kind": "expr",
+          "slot": "condition"
+        },
+        {
+          "kind": "delimiter",
+          "value": ":"
+        }
+      ]
+    },
+    {
+      "name": "sv_if_condition_first",
+      "language": "sv",
+      "normalize_template": "if_condition_first",
+      "pattern": [
+        {
+          "kind": "keyword",
+          "concept": "COND_IF"
+        },
+        {
+          "kind": "expr",
+          "slot": "condition"
+        },
+        {
+          "kind": "delimiter",
+          "value": ":"
+        }
+      ]
+    },
+    {
+      "name": "sv_with_expr_first",
+      "language": "sv",
+      "normalize_template": "with_expr_first",
+      "pattern": [
+        {
+          "kind": "keyword",
+          "concept": "WITH"
+        },
+        {
+          "kind": "expr",
+          "slot": "context"
+        },
+        {
+          "kind": "delimiter",
+          "value": ":"
+        }
+      ]
+    },
+    {
+      "name": "zh_for_iterable_first",
+      "language": "zh",
+      "normalize_template": "for_iterable_first",
+      "pattern": [
+        {
+          "kind": "keyword",
+          "concept": "LOOP_FOR"
+        },
+        {
+          "kind": "identifier",
+          "slot": "target"
+        },
+        {
+          "kind": "keyword",
+          "concept": "IN"
+        },
+        {
+          "kind": "expr",
+          "slot": "iterable"
+        },
+        {
+          "kind": "delimiter",
+          "value": ":"
+        }
+      ]
+    },
+    {
+      "name": "zh_while_condition_first",
+      "language": "zh",
+      "normalize_template": "while_condition_first",
+      "pattern": [
+        {
+          "kind": "keyword",
+          "concept": "LOOP_WHILE"
+        },
+        {
+          "kind": "expr",
+          "slot": "condition"
+        },
+        {
+          "kind": "delimiter",
+          "value": ":"
+        }
+      ]
+    },
+    {
+      "name": "zh_if_condition_first",
+      "language": "zh",
+      "normalize_template": "if_condition_first",
+      "pattern": [
+        {
+          "kind": "keyword",
+          "concept": "COND_IF"
+        },
+        {
+          "kind": "expr",
+          "slot": "condition"
+        },
+        {
+          "kind": "delimiter",
+          "value": ":"
+        }
+      ]
+    },
+    {
+      "name": "zh_with_expr_first",
+      "language": "zh",
+      "normalize_template": "with_expr_first",
+      "pattern": [
+        {
+          "kind": "keyword",
+          "concept": "WITH"
+        },
+        {
+          "kind": "expr",
+          "slot": "context"
+        },
+        {
+          "kind": "delimiter",
+          "value": ":"
+        }
+      ]
     }
   ]
 }
