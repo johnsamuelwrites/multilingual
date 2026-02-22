@@ -62,9 +62,27 @@ Requires Python 3.12 or newer.
 
 ### 1. Install
 
+PyPI package: https://pypi.org/project/multilingualprogramming/
+
+Option 1 (recommended): install in a virtual environment.
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install multilingualprogramming
+```
+
+Option 2: install with `pipx` (isolated CLI install).
+
+```bash
+pipx install multilingualprogramming
+```
+
+For local development from source, use:
+
 ```bash
 pip install -r requirements.txt
-# or
 pip install .
 ```
 
