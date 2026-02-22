@@ -76,7 +76,8 @@ class MatrixOperationsFallbackTestSuite(unittest.TestCase):
         det = MatrixOperations.determinant(a)
 
         # det = 1*4 - 2*3 = -2
-        self.assertEqual(det, -2)
+        # Use assertAlmostEqual for floating-point precision tolerance
+        self.assertAlmostEqual(det, -2, places=6)
 
     def test_matrix_determinant_identity(self):
         """Verify identity matrix determinant is 1."""
@@ -330,7 +331,7 @@ class FallbackRegistryTestSuite(unittest.TestCase):
     def test_has_fallback(self):
         """Verify fallback existence check."""
         self.assertTrue(has_fallback("matrix_multiply"))
-        self.assertTrue(has_fallback("fibonacci"))
+        self.assertTrue(has_fallback("numeric_fibonacci"))
         self.assertFalse(has_fallback("nonexistent"))
 
     def test_list_fallbacks(self):
