@@ -6,7 +6,6 @@
 
 """Tests for operator evaluation order parity with Python."""
 
-import io
 import unittest
 from multilingualprogramming.codegen.executor import ProgramExecutor
 

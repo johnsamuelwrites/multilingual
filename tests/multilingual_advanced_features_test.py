@@ -10,8 +10,7 @@ import unittest
 from multilingualprogramming.lexer.lexer import Lexer
 from multilingualprogramming.parser.parser import Parser
 from multilingualprogramming.parser.ast_nodes import (
-    ListComprehension, DictComprehension, SetComprehension,
-    FunctionDef, MatchStatement, AwaitExpr, YieldStatement,
+    FunctionDef, MatchStatement, YieldStatement,
 )
 
 
@@ -128,7 +127,7 @@ class MultilingualAdvancedFeatures(unittest.TestCase):
             if hasattr(prog.body[0], '__class__'):
                 # Just check it parses without error
                 self.assertIsNotNone(prog)
-        except:
+        except Exception:
             # async may not be supported in French yet
             pass
 
@@ -198,12 +197,19 @@ class MultilingualAdvancedFeatures(unittest.TestCase):
         self.assertIsNotNone(stmt)
 
     def test_multiple_except_french(self):
-        source = "essayer:\n    passer\nsauf ValeurErreur:\n    passer\nsauf ErreurType:\n    passer\n"
+        source = (
+            "essayer:\n"
+            "    passer\n"
+            "sauf ValeurErreur:\n"
+            "    passer\n"
+            "sauf ErreurType:\n"
+            "    passer\n"
+        )
         # Skip if French exception names not supported
         try:
             prog = _parse(source, "fr")
             self.assertIsNotNone(prog.body[0])
-        except:
+        except Exception:
             # French exception names may not all be supported
             pass
 

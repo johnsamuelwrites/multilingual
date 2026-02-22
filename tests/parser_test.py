@@ -783,34 +783,57 @@ class ParserEdgeCaseTestSuite(unittest.TestCase):
         self.assertIsNotNone(expr)
 
     def test_nested_comprehension_three_levels(self):
-        prog = _parse("[[z for z in range(y)] for y in [x for x in range(2)]]\n", language="en")
+        prog = _parse(
+            "[[z for z in range(y)] for y in [x for x in range(2)]]\n",
+            language="en",
+        )
         expr = prog.body[0].expression
         self.assertIsNotNone(expr)
 
     def test_comprehension_with_multiple_conditions(self):
-        prog = _parse("[x for x in range(10) if x > 2 if x < 8]\n", language="en")
+        prog = _parse(
+            "[x for x in range(10) if x > 2 if x < 8]\n", language="en"
+        )
         expr = prog.body[0].expression
         self.assertIsNotNone(expr)
 
     def test_dict_comprehension_complex(self):
-        prog = _parse("{k: v for k, v in [(i, i*2) for i in range(3)]}\n", language="en")
+        prog = _parse(
+            "{k: v for k, v in [(i, i*2) for i in range(3)]}\n",
+            language="en",
+        )
         expr = prog.body[0].expression
         self.assertIsNotNone(expr)
 
     def test_set_comprehension_with_nested_for(self):
-        prog = _parse("{x*y for x in range(2) for y in range(3)}\n", language="en")
+        prog = _parse(
+            "{x*y for x in range(2) for y in range(3)}\n", language="en"
+        )
         expr = prog.body[0].expression
         self.assertIsNotNone(expr)
 
     # Nested function/class definitions
     def test_nested_function_definitions(self):
-        source = "def outer():\n    def middle():\n        def inner():\n            pass\n        pass\n    pass\n"
+        source = (
+            "def outer():\n"
+            "    def middle():\n"
+            "        def inner():\n"
+            "            pass\n"
+            "        pass\n"
+            "    pass\n"
+        )
         prog = _parse(source, language="en")
         stmt = prog.body[0]
         self.assertIsInstance(stmt, FunctionDef)
 
     def test_class_with_nested_functions(self):
-        source = "class A:\n    def method(self):\n        def inner():\n            pass\n        pass\n"
+        source = (
+            "class A:\n"
+            "    def method(self):\n"
+            "        def inner():\n"
+            "            pass\n"
+            "        pass\n"
+        )
         prog = _parse(source, language="en")
         stmt = prog.body[0]
         self.assertIsInstance(stmt, ClassDef)
@@ -876,12 +899,17 @@ class ParserEdgeCaseTestSuite(unittest.TestCase):
 
     # Walrus operator in various contexts
     def test_walrus_in_comprehension(self):
-        prog = _parse("[y for x in range(5) if (y := x*2) > 4]\n", language="en")
+        prog = _parse(
+            "[y for x in range(5) if (y := x*2) > 4]\n", language="en"
+        )
         expr = prog.body[0].expression
         self.assertIsNotNone(expr)
 
     def test_walrus_in_nested_comprehension(self):
-        prog = _parse("[[z for z in range(3) if (w := z) > 0] for x in range(2)]\n", language="en")
+        prog = _parse(
+            "[[z for z in range(3) if (w := z) > 0] for x in range(2)]\n",
+            language="en",
+        )
         expr = prog.body[0].expression
         self.assertIsNotNone(expr)
 
@@ -915,7 +943,16 @@ class ParserEdgeCaseTestSuite(unittest.TestCase):
 
     def test_multiple_except_handlers(self):
         # This is a valid edge case - testing that parser accepts it
-        source = "try:\n    pass\nexcept ValueError:\n    pass\nexcept TypeError:\n    pass\nexcept:\n    pass\n"
+        source = (
+            "try:\n"
+            "    pass\n"
+            "except ValueError:\n"
+            "    pass\n"
+            "except TypeError:\n"
+            "    pass\n"
+            "except:\n"
+            "    pass\n"
+        )
         prog = _parse(source, language="en")
         stmt = prog.body[0]
         self.assertIsInstance(stmt, TryStatement)
@@ -929,7 +966,16 @@ class ParserEdgeCaseTestSuite(unittest.TestCase):
         self.assertIsInstance(stmt, TryStatement)
 
     def test_try_except_else_finally_all(self):
-        source = "try:\n    pass\nexcept ValueError:\n    pass\nelse:\n    pass\nfinally:\n    pass\n"
+        source = (
+            "try:\n"
+            "    pass\n"
+            "except ValueError:\n"
+            "    pass\n"
+            "else:\n"
+            "    pass\n"
+            "finally:\n"
+            "    pass\n"
+        )
         prog = _parse(source, language="en")
         stmt = prog.body[0]
         self.assertIsInstance(stmt, TryStatement)
@@ -1084,11 +1130,13 @@ class ParserErrorTestSuite(unittest.TestCase):
     def test_error_break_outside_loop(self):
         # This is a semantic error, not parser error
         prog = _parse("break\n", language="en")
+        self.assertIsNotNone(prog)
         # Parser accepts it, semantic analyzer rejects it
 
     def test_error_continue_outside_loop(self):
         # This is a semantic error, not parser error
         prog = _parse("continue\n", language="en")
+        self.assertIsNotNone(prog)
 
     def test_error_missing_function_body(self):
         with self.assertRaises(ParseError):

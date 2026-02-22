@@ -28,7 +28,7 @@ class UnicodeOperatorsTestSuite(unittest.TestCase):
         try:
             prog = _parse("2 · 3\n")
             self.assertIsNotNone(prog)
-        except:
+        except Exception:
             # Middle dot may not be supported
             pass
 
@@ -37,7 +37,7 @@ class UnicodeOperatorsTestSuite(unittest.TestCase):
         try:
             prog = _parse("2 × 3\n")
             self.assertIsNotNone(prog)
-        except:
+        except Exception:
             # Times sign may not be supported
             pass
 
@@ -46,7 +46,7 @@ class UnicodeOperatorsTestSuite(unittest.TestCase):
         try:
             prog = _parse("6 ÷ 2\n")
             self.assertIsNotNone(prog)
-        except:
+        except Exception:
             # Obelus may not be supported
             pass
 
@@ -55,7 +55,7 @@ class UnicodeOperatorsTestSuite(unittest.TestCase):
         try:
             prog = _parse("5 ± 2\n")
             self.assertIsNotNone(prog)
-        except:
+        except Exception:
             # Plus-minus may not be supported
             pass
 
@@ -64,7 +64,7 @@ class UnicodeOperatorsTestSuite(unittest.TestCase):
         try:
             prog = _parse("5 ∓ 2\n")
             self.assertIsNotNone(prog)
-        except:
+        except Exception:
             # Minus-plus may not be supported
             pass
 
@@ -74,7 +74,7 @@ class UnicodeOperatorsTestSuite(unittest.TestCase):
         try:
             prog = _parse("x ≤ 10\n")
             self.assertIsNotNone(prog)
-        except:
+        except Exception:
             # Unicode less-equal may not be supported
             pass
 
@@ -83,7 +83,7 @@ class UnicodeOperatorsTestSuite(unittest.TestCase):
         try:
             prog = _parse("x ≥ 10\n")
             self.assertIsNotNone(prog)
-        except:
+        except Exception:
             # Unicode greater-equal may not be supported
             pass
 
@@ -92,7 +92,7 @@ class UnicodeOperatorsTestSuite(unittest.TestCase):
         try:
             prog = _parse("x ≠ 0\n")
             self.assertIsNotNone(prog)
-        except:
+        except Exception:
             # Unicode not-equal may not be supported
             pass
 
@@ -102,7 +102,7 @@ class UnicodeOperatorsTestSuite(unittest.TestCase):
         try:
             prog = _parse("a ∧ b\n")
             self.assertIsNotNone(prog)
-        except:
+        except Exception:
             # Unicode AND may not be supported
             pass
 
@@ -111,7 +111,7 @@ class UnicodeOperatorsTestSuite(unittest.TestCase):
         try:
             prog = _parse("a ∨ b\n")
             self.assertIsNotNone(prog)
-        except:
+        except Exception:
             # Unicode OR may not be supported
             pass
 
@@ -120,7 +120,7 @@ class UnicodeOperatorsTestSuite(unittest.TestCase):
         try:
             prog = _parse("¬a\n")
             self.assertIsNotNone(prog)
-        except:
+        except Exception:
             # Unicode NOT may not be supported
             pass
 
@@ -130,7 +130,7 @@ class UnicodeOperatorsTestSuite(unittest.TestCase):
         try:
             prog = _parse("a ∪ b\n")
             self.assertIsNotNone(prog)
-        except:
+        except Exception:
             # Unicode union may not be supported
             pass
 
@@ -139,7 +139,7 @@ class UnicodeOperatorsTestSuite(unittest.TestCase):
         try:
             prog = _parse("a ∩ b\n")
             self.assertIsNotNone(prog)
-        except:
+        except Exception:
             # Unicode intersection may not be supported
             pass
 
@@ -149,7 +149,7 @@ class UnicodeOperatorsTestSuite(unittest.TestCase):
         try:
             prog = _parse("x ∈ S\n")
             self.assertIsNotNone(prog)
-        except:
+        except Exception:
             # Unicode element-of may not be supported
             pass
 
@@ -158,7 +158,7 @@ class UnicodeOperatorsTestSuite(unittest.TestCase):
         try:
             prog = _parse("x ∉ S\n")
             self.assertIsNotNone(prog)
-        except:
+        except Exception:
             # Unicode not-element-of may not be supported
             pass
 
@@ -168,7 +168,7 @@ class UnicodeOperatorsTestSuite(unittest.TestCase):
         try:
             prog = _parse("A ⊂ B\n")
             self.assertIsNotNone(prog)
-        except:
+        except Exception:
             # Unicode subset may not be supported
             pass
 
@@ -177,7 +177,7 @@ class UnicodeOperatorsTestSuite(unittest.TestCase):
         try:
             prog = _parse("A ⊆ B\n")
             self.assertIsNotNone(prog)
-        except:
+        except Exception:
             # Unicode subset-equal may not be supported
             pass
 
@@ -187,7 +187,7 @@ class UnicodeOperatorsTestSuite(unittest.TestCase):
         try:
             prog = _parse("x → y\n")
             self.assertIsNotNone(prog)
-        except:
+        except Exception:
             # Unicode arrow may not be supported
             pass
 
@@ -196,7 +196,7 @@ class UnicodeOperatorsTestSuite(unittest.TestCase):
         try:
             prog = _parse("x ← y\n")
             self.assertIsNotNone(prog)
-        except:
+        except Exception:
             # Unicode left arrow may not be supported
             pass
 
@@ -205,7 +205,7 @@ class UnicodeOperatorsTestSuite(unittest.TestCase):
         try:
             prog = _parse("x ↔ y\n")
             self.assertIsNotNone(prog)
-        except:
+        except Exception:
             # Unicode double arrow may not be supported
             pass
 
@@ -215,7 +215,7 @@ class UnicodeOperatorsTestSuite(unittest.TestCase):
         try:
             prog = _parse("a ⊕ b\n")
             self.assertIsNotNone(prog)
-        except:
+        except Exception:
             # Unicode XOR may not be supported
             pass
 
@@ -224,7 +224,7 @@ class UnicodeOperatorsTestSuite(unittest.TestCase):
         try:
             prog = _parse("a ⊗ b\n")
             self.assertIsNotNone(prog)
-        except:
+        except Exception:
             # Unicode tensor may not be supported
             pass
 

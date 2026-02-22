@@ -1047,8 +1047,8 @@ print(sorted(result.items()))
             python_source=python_source,
         )
 
-    def test_set_comprehension_parity(self):
-        """Set comprehension."""
+    def test_set_comprehension_even_filter_parity(self):
+        """Set comprehension with filtering."""
         multilingual_source = """\
 let result = {x*x for x in range(5) if x % 2 == 0}
 print(sorted(result))

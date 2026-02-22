@@ -85,10 +85,12 @@ class ASTNormalizationTestSuite(unittest.TestCase):
             "fr": "si x > 5:\n    passer\n",
         }
 
-        asts = {lang: _parse(sources[lang], lang).body[0] for lang in sources}
+        asts = {lang: _parse(source, lang).body[0]
+                for lang, source in sources.items()}
 
         # All should have same structure
-        structures = {lang: _ast_structure(asts[lang]) for lang in asts}
+        structures = {lang: _ast_structure(ast)
+                      for lang, ast in asts.items()}
         first_structure = list(structures.values())[0]
 
         for lang, struct in structures.items():
@@ -102,8 +104,10 @@ class ASTNormalizationTestSuite(unittest.TestCase):
             "fr": "pour i dans intervalle(5):\n    passer\n",
         }
 
-        asts = {lang: _parse(sources[lang], lang).body[0] for lang in sources}
-        structures = {lang: _ast_structure(asts[lang]) for lang in asts}
+        asts = {lang: _parse(source, lang).body[0]
+                for lang, source in sources.items()}
+        structures = {lang: _ast_structure(ast)
+                      for lang, ast in asts.items()}
         first_structure = list(structures.values())[0]
 
         for lang, struct in structures.items():
@@ -117,8 +121,10 @@ class ASTNormalizationTestSuite(unittest.TestCase):
             "fr": "tantque Vrai:\n    passer\n",
         }
 
-        asts = {lang: _parse(sources[lang], lang).body[0] for lang in sources}
-        structures = {lang: _ast_structure(asts[lang]) for lang in asts}
+        asts = {lang: _parse(source, lang).body[0]
+                for lang, source in sources.items()}
+        structures = {lang: _ast_structure(ast)
+                      for lang, ast in asts.items()}
         first_structure = list(structures.values())[0]
 
         for lang, struct in structures.items():
@@ -132,8 +138,10 @@ class ASTNormalizationTestSuite(unittest.TestCase):
             "fr": "def func(a, b):\n    retour a + b\n",
         }
 
-        asts = {lang: _parse(sources[lang], lang).body[0] for lang in sources}
-        structures = {lang: _ast_structure(asts[lang]) for lang in asts}
+        asts = {lang: _parse(source, lang).body[0]
+                for lang, source in sources.items()}
+        structures = {lang: _ast_structure(ast)
+                      for lang, ast in asts.items()}
         first_structure = list(structures.values())[0]
 
         for lang, struct in structures.items():
@@ -161,8 +169,10 @@ class ASTNormalizationTestSuite(unittest.TestCase):
             "fr": "a < b <= c < d\n",
         }
 
-        asts = {lang: _parse(sources[lang], lang).body[0].expression for lang in sources}
-        structures = {lang: _ast_structure(asts[lang]) for lang in asts}
+        asts = {lang: _parse(source, lang).body[0].expression
+                for lang, source in sources.items()}
+        structures = {lang: _ast_structure(ast)
+                      for lang, ast in asts.items()}
         first_structure = list(structures.values())[0]
 
         for lang, struct in structures.items():
@@ -176,8 +186,10 @@ class ASTNormalizationTestSuite(unittest.TestCase):
             "fr": "func(1, 2, x=3, y=4)\n",
         }
 
-        asts = {lang: _parse(sources[lang], lang).body[0].expression for lang in sources}
-        structures = {lang: _ast_structure(asts[lang]) for lang in asts}
+        asts = {lang: _parse(source, lang).body[0].expression
+                for lang, source in sources.items()}
+        structures = {lang: _ast_structure(ast)
+                      for lang, ast in asts.items()}
         first_structure = list(structures.values())[0]
 
         for lang, struct in structures.items():
@@ -188,11 +200,18 @@ class ASTNormalizationTestSuite(unittest.TestCase):
         """Nested if-for-function structures produce equivalent AST."""
         sources = {
             "en": "def f():\n    for i in range(5):\n        if i > 2:\n            pass\n",
-            "fr": "def f():\n    pour i dans intervalle(5):\n        si i > 2:\n            passer\n",
+            "fr": (
+                "def f():\n"
+                "    pour i dans intervalle(5):\n"
+                "        si i > 2:\n"
+                "            passer\n"
+            ),
         }
 
-        asts = {lang: _parse(sources[lang], lang).body[0] for lang in sources}
-        structures = {lang: _ast_structure(asts[lang]) for lang in asts}
+        asts = {lang: _parse(source, lang).body[0]
+                for lang, source in sources.items()}
+        structures = {lang: _ast_structure(ast)
+                      for lang, ast in asts.items()}
         first_structure = list(structures.values())[0]
 
         for lang, struct in structures.items():
@@ -206,8 +225,10 @@ class ASTNormalizationTestSuite(unittest.TestCase):
             "fr": "[x pour x dans intervalle(5) si x > 2]\n",
         }
 
-        asts = {lang: _parse(sources[lang], lang).body[0].expression for lang in sources}
-        structures = {lang: _ast_structure(asts[lang]) for lang in asts}
+        asts = {lang: _parse(source, lang).body[0].expression
+                for lang, source in sources.items()}
+        structures = {lang: _ast_structure(ast)
+                      for lang, ast in asts.items()}
         first_structure = list(structures.values())[0]
 
         for lang, struct in structures.items():
