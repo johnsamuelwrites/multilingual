@@ -266,7 +266,6 @@ class HumanizeNumberTestSuite(unittest.TestCase):
         )
         self.assertEqual(result.output.strip(), self.project.expected_output.strip())
 
-    @unittest.skip("Multilingual variants require extended language support")
     def test_humanize_format_fr_equivalent(self):
         """Humanize numbers in French produces same result."""
         source = self._load_corpus("humanize_numbers_fr.ml")
@@ -274,8 +273,9 @@ class HumanizeNumberTestSuite(unittest.TestCase):
         self.assertTrue(
             result.success, msg=f"Failed: {result.error or 'Unknown error'}"
         )
+        # Should produce same output as English version
+        self.assertEqual(result.output.strip(), self.project.expected_output.strip())
 
-    @unittest.skip("Multilingual variants require extended language support")
     def test_humanize_format_es_equivalent(self):
         """Humanize numbers in Spanish produces same result."""
         source = self._load_corpus("humanize_numbers_es.ml")
@@ -283,6 +283,8 @@ class HumanizeNumberTestSuite(unittest.TestCase):
         self.assertTrue(
             result.success, msg=f"Failed: {result.error or 'Unknown error'}"
         )
+        # Should produce same output as English version
+        self.assertEqual(result.output.strip(), self.project.expected_output.strip())
 
 
 class AlgorithmsTestSuite(unittest.TestCase):
