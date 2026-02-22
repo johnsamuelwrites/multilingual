@@ -48,7 +48,7 @@ except ZeroDivisionError:
     print("caught")
 """
         output = _execute_multilingual(source, 'en')
-        # May fail if try/except not fully implemented in v0.4.0 Phase 2
+        # May fail if try/except not fully implemented in v0.4.0 baseline feature set
         self.assertTrue('caught' in output or output == '',
                        f"Expected 'caught' or empty output, got: {output}")
 
@@ -500,7 +500,7 @@ excepto DivisionPorCero:
                         self.assertTrue('caught' in output or len(output) > 0,
                                        f"Expected output for {lang}, got: {output}")
                     except Exception:
-                        # Some language variants may not be fully implemented in v0.4.0 Phase 2
+                        # Some language variants may not be fully implemented in v0.4.0 baseline feature set
                         pass
 
 

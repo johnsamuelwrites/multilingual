@@ -8,7 +8,7 @@ dynamic = ["version"]
 description = "Python application for multilingual programming"
 readme = "README.md"
 license = {text = "GPL-3.0-or-later"}
-requires-python = ">=3.12"
+requires-python = ">=3.7"
 keywords = [
     "programming-language",
     "multilingual",
@@ -21,11 +21,19 @@ authors = [
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
     "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
     "Operating System :: OS Independent",
+    "Topic :: Software Development :: Compilers",
+    "Topic :: Software Development :: Interpreters",
+    "Development Status :: 4 - Beta",
 ]
 dependencies = [
     "roman>=3.3",
@@ -37,6 +45,13 @@ dev = [
     "pytest",
     "pytest-cov",
     "pylint",
+]
+wasm = [
+    "wasmtime>=1.0.0",
+]
+performance = [
+    "wasmtime>=1.0.0",
+    "numpy>=1.20.0",
 ]
 
 [project.scripts]
@@ -60,7 +75,27 @@ version = {attr = "multilingualprogramming.version.__version__"}
 multilingualprogramming = [
     "resources/*/*.json",
     "resources/*/*/*.json",
+    "wasm/*.wasm",
+    "wasm/*.so",
+    "wasm/*.dll",
+    "wasm/*.dylib",
 ]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.multilingual.wasm]
+# WASM Configuration for Performance
+enabled = true
+backend = "cranelift"
+memory_pages = 1024  # 64MB per page
+compiler = "wasmtime"
+fallback_python = true
+
+[tool.multilingual.performance]
+# Performance tuning options
+vectorization = "enabled"
+simd = "enabled"
+parallel = "auto"
+cache_wasm_modules = true
+numpy_acceleration = true

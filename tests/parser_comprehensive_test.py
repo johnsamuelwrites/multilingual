@@ -50,7 +50,8 @@ class ParserEdgeCasesTestSuite(unittest.TestCase):
             prog = _parse(source)
             self.assertEqual(len(prog.body), 1)
         except ParseError:
-            # Deeply nested comprehensions may exceed parser recursion limits in Phase 3
+            # Deeply nested comprehensions may exceed parser recursion limits
+            # in advanced syntax coverage.
             pass
 
     def test_deeply_nested_function_defs(self):
@@ -71,7 +72,7 @@ class ParserEdgeCasesTestSuite(unittest.TestCase):
             self.assertEqual(len(prog.body), 1)
             self.assertIsInstance(prog.body[0], FunctionDef)
         except ParseError:
-            # Deeply nested functions may exceed parser recursion limits in Phase 3
+            # Deeply nested functions may exceed parser recursion limits in advanced syntax coverage
             pass
 
     def test_complex_decorator_chains(self):
@@ -94,7 +95,7 @@ def func():
             prog = _parse(source)
             self.assertEqual(len(prog.body), 5)
         except ParseError:
-            # Complex slice patterns may not be fully supported in Phase 3
+            # Complex slice patterns may not be fully supported in advanced syntax coverage
             pass
 
     def test_mixed_function_call_arguments(self):
@@ -106,7 +107,7 @@ def func():
             call = prog.body[0].expression
             self.assertIsInstance(call, CallExpr)
         except ParseError:
-            # Complex argument patterns may not be fully supported in Phase 3
+            # Complex argument patterns may not be fully supported in advanced syntax coverage
             pass
 
     def test_walrus_in_comprehension(self):
@@ -117,7 +118,7 @@ def func():
             prog = _parse(source)
             self.assertEqual(len(prog.body), 1)
         except ParseError:
-            # Walrus operator in comprehensions may have scope issues in Phase 3
+            # Walrus operator in comprehensions may have scope issues in advanced syntax coverage
             pass
 
     def test_complex_match_patterns(self):
@@ -136,7 +137,7 @@ def func():
             self.assertIsInstance(match, MatchStatement)
             self.assertGreaterEqual(len(match.cases), 2)
         except (ParseError, Exception):
-            # Complex match patterns may not be fully supported in Phase 3
+            # Complex match patterns may not be fully supported in advanced syntax coverage
             pass
 
     def test_multiple_context_managers(self):
@@ -170,7 +171,7 @@ finally:
             self.assertIsNotNone(try_stmt.else_body)
             self.assertIsNotNone(try_stmt.finally_body)
         except ParseError:
-            # Complex try/except/else/finally may not be fully supported in Phase 3
+            # Complex try/except/else/finally may not be fully supported in advanced syntax coverage
             pass
 
 
@@ -182,7 +183,7 @@ class ParserNegativeTestSuite(unittest.TestCase):
         source = "x[::0]\n"
         try:
             _parse(source)
-            # Note: Zero-step validation may not be implemented in Phase 3
+            # Note: Zero-step validation may not be implemented in advanced syntax coverage
             # Parser may allow x[::0] without error
             return
         except (ParseError, ValueError, ZeroDivisionError):
@@ -278,7 +279,7 @@ class ParserMultilingualVariantsTestSuite(unittest.TestCase):
             'ja': "もし x > 0:\n    pass\n",
         }
 
-        # Track which languages are fully supported in v0.4.0 Phase 2
+        # Track which languages are fully supported in v0.4.0 baseline feature set
         supported_languages = {'en', 'fr', 'es', 'de'}  # Core languages with full support
 
         for lang, source in templates.items():
@@ -326,7 +327,7 @@ class ParserMultilingualVariantsTestSuite(unittest.TestCase):
                     self.assertEqual(len(prog.body), 1)
                     self.assertIsInstance(prog.body[0], WhileLoop)
                 except (ParseError, Exception) as e:
-                    # Some keyword mappings may not be complete in v0.4.0 Phase 2/3
+                    # Some keyword mappings may not be complete in v0.4.0 baseline feature set/3
                     if lang in supported_languages:
                         self.fail(f"Failed to parse while loop in {lang}: {e}")
                     else:
@@ -434,7 +435,8 @@ class ParserASTDeterminismTestSuite(unittest.TestCase):
             except (ParseError, Exception):
                 pass
 
-        # At least English should parse successfully; others may have keyword issues in Phase 3
+        # At least English should parse successfully; others may have keyword
+        # issues in advanced syntax coverage.
         self.assertGreaterEqual(len(asts), 1, "At least one language should parse")
 
         # All parsed ASTs should have one statement

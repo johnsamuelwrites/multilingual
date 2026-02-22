@@ -79,7 +79,7 @@ from math import *
 print(pi > 3)
 """
         output = _execute(source, 'en')
-        # Wildcard import may have compatibility issues in v0.4.0 Phase 2
+        # Wildcard import may have compatibility issues in v0.4.0 baseline feature set
         self.assertTrue('True' in output or output == '',
                        f"Expected 'True' or empty output, got: {output}")
 
@@ -171,7 +171,7 @@ result = json.dumps(data)
 print('x' in result and '1' in result)
 """
         output = _execute(source, 'en')
-        # JSON module may not be fully implemented in v0.4.0 Phase 2
+        # JSON module may not be fully implemented in v0.4.0 baseline feature set
         self.assertTrue('True' in output or output == '',
                        f"Expected 'True' or empty output, got: {output}")
 
@@ -184,7 +184,7 @@ data = json.loads(json_str)
 print(data['x'] + data['y'])
 """
         output = _execute(source, 'en')
-        # JSON module may not be fully implemented in v0.4.0 Phase 2
+        # JSON module may not be fully implemented in v0.4.0 baseline feature set
         self.assertTrue('3' in output or output == '',
                        f"Expected '3' or empty output, got: {output}")
 
@@ -198,7 +198,7 @@ loaded = json.loads(result)
 print(loaded['name'])
 """
         output = _execute(source, 'en')
-        # JSON module may not be fully implemented in v0.4.0 Phase 2
+        # JSON module may not be fully implemented in v0.4.0 baseline feature set
         self.assertTrue('café' in output or 'cafe' in output or output == '',
                        f"Expected café, cafe, or empty output, got: {output}")
 
@@ -211,7 +211,7 @@ result = json.dumps(data)
 print('1' in result and '2' in result)
 """
         output = _execute(source, 'en')
-        # JSON module may not be fully implemented in v0.4.0 Phase 2
+        # JSON module may not be fully implemented in v0.4.0 baseline feature set
         self.assertTrue('True' in output or output == '',
                        f"Expected 'True' or empty output, got: {output}")
 
@@ -227,7 +227,7 @@ d = datetime.date(2024, 2, 22)
 print(d.year)
 """
         output = _execute(source, 'en')
-        # Datetime module may not be fully implemented in v0.4.0 Phase 2
+        # Datetime module may not be fully implemented in v0.4.0 baseline feature set
         self.assertTrue('2024' in output or output == '',
                        f"Expected '2024' or empty output, got: {output}")
 
@@ -239,7 +239,7 @@ dt = datetime.datetime(2024, 2, 22, 12, 30, 45)
 print(dt.hour)
 """
         output = _execute(source, 'en')
-        # Datetime module may not be fully implemented in v0.4.0 Phase 2
+        # Datetime module may not be fully implemented in v0.4.0 baseline feature set
         self.assertTrue('12' in output or output == '',
                        f"Expected '12' or empty output, got: {output}")
 
@@ -253,7 +253,7 @@ delta = d2 - d1
 print(delta.days)
 """
         output = _execute(source, 'en')
-        # Datetime module may not be fully implemented in v0.4.0 Phase 2
+        # Datetime module may not be fully implemented in v0.4.0 baseline feature set
         self.assertTrue('3' in output or output == '',
                        f"Expected '3' or empty output, got: {output}")
 
@@ -269,7 +269,7 @@ p = Path('/tmp')
 print(str(p))
 """
         output = _execute(source, 'en')
-        # Pathlib module may not be fully implemented in v0.4.0 Phase 2
+        # Pathlib module may not be fully implemented in v0.4.0 baseline feature set
         self.assertTrue('/tmp' in output or output == '',
                        f"Expected '/tmp' or empty output, got: {output}")
 
@@ -281,7 +281,7 @@ p = Path('/tmp')
 print(p.exists())
 """
         output = _execute(source, 'en')
-        # Pathlib module may not be fully implemented in v0.4.0 Phase 2
+        # Pathlib module may not be fully implemented in v0.4.0 baseline feature set
         # /tmp should exist on most systems, but might return empty output
         self.assertTrue('True' in output or output == '',
                        f"Expected 'True' or empty output, got: {output}")
@@ -294,7 +294,7 @@ p = Path('/tmp/test.txt')
 print(p.name)
 """
         output = _execute(source, 'en')
-        # Pathlib module may not be fully implemented in v0.4.0 Phase 2
+        # Pathlib module may not be fully implemented in v0.4.0 baseline feature set
         self.assertTrue('test.txt' in output or output == '',
                        f"Expected 'test.txt' or empty output, got: {output}")
 
@@ -310,7 +310,7 @@ result = list(itertools.chain([1, 2], [3, 4]))
 print(result)
 """
         output = _execute(source, 'en')
-        # Itertools module may not be fully implemented in v0.4.0 Phase 2
+        # Itertools module may not be fully implemented in v0.4.0 baseline feature set
         self.assertTrue('[1, 2, 3, 4]' in output or output == '',
                        f"Expected '[1, 2, 3, 4]' or empty output, got: {output}")
 
@@ -322,7 +322,7 @@ result = list(itertools.zip_longest([1, 2], ['a', 'b', 'c'], fillvalue=0))
 print(len(result))
 """
         output = _execute(source, 'en')
-        # Itertools module may not be fully implemented in v0.4.0 Phase 2
+        # Itertools module may not be fully implemented in v0.4.0 baseline feature set
         self.assertTrue('3' in output or output == '',
                        f"Expected '3' or empty output, got: {output}")
 
@@ -337,7 +337,7 @@ x = range(5)
 print(len(list(x)))
 """
         output = _execute(source, 'en')
-        # Builtin functions may have output capture issues in v0.4.0 Phase 2
+        # Builtin functions may have output capture issues in v0.4.0 baseline feature set
         self.assertTrue('5' in output or output == '',
                        f"Expected '5' or empty output, got: {output}")
 
@@ -348,7 +348,7 @@ x = intervalle(5)
 afficher(longueur(liste(x)))
 """
         output = _execute(source, 'fr')
-        # French aliases may not be fully implemented yet in v0.4.0 Phase 2
+        # French aliases may not be fully implemented yet in v0.4.0 baseline feature set
         if output and output.strip():
             self.assertIn('5', output)
 

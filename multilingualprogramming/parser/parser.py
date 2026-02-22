@@ -33,7 +33,7 @@ from multilingualprogramming.parser.surface_normalizer import (
 )
 from multilingualprogramming.exceptions import ParseError
 
-# Recursion depth configuration (Phase 4A enhancement)
+# Recursion depth configuration (deep-nesting resilience enhancement)
 DEFAULT_MAX_DEPTH = 100  # Handles 99% of real-world code
 DEFAULT_MAX_RECURSION = 500  # Alternative: set sys.setrecursionlimit before parsing
 
@@ -88,7 +88,7 @@ class Parser:
         self.tokens = normalize_surface_tokens(tokens, self.source_language)
         self.pos = 0
         self._error_registry = ErrorMessageRegistry()
-        # Phase 4A: Recursion depth management
+        # Deep-nesting resilience: recursion depth management
         self._depth = 0
         self._max_depth = max_depth if max_depth is not None else DEFAULT_MAX_DEPTH
 
@@ -141,7 +141,7 @@ class Parser:
         Check and increment parse depth. Raises ParseError if max depth exceeded.
         Returns the new depth for monitoring purposes.
 
-        Phase 4A: Recursion depth management for handling deeply nested structures.
+        Deep-nesting resilience: recursion depth management for deeply nested structures.
         """
         self._depth += 1
         if self._depth > self._max_depth:

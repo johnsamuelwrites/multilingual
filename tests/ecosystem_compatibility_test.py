@@ -42,7 +42,7 @@ from multilingualprogramming.codegen.executor import ProgramExecutor
 
 
 class FailureCategory(Enum):
-    """Layer 1: Detection phase."""
+    """Layer 1: Detection layer."""
     PARSER = "PE"
     SEMANTIC = "SE"
     CODEGEN = "CE"
@@ -1377,7 +1377,7 @@ class MultilingualControlFlowTestSuite(unittest.TestCase):
     def test_french_control_flow(self):
         """French pendant/si control flow works with surface patterns."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("multilingual_control_flow_fr.ml"), language="fr"
+            self._load_corpus("fr/multilingual_control_flow.ml"), language="fr"
         )
         self.assertTrue(
             result.success, msg=f"Failed: {result.error or 'Unknown error'}"
@@ -1387,7 +1387,7 @@ class MultilingualControlFlowTestSuite(unittest.TestCase):
     def test_spanish_control_flow(self):
         """Spanish mientras/si control flow works with surface patterns."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("multilingual_control_flow_es.ml"), language="es"
+            self._load_corpus("es/multilingual_control_flow.ml"), language="es"
         )
         self.assertTrue(
             result.success, msg=f"Failed: {result.error or 'Unknown error'}"
@@ -1397,7 +1397,7 @@ class MultilingualControlFlowTestSuite(unittest.TestCase):
     def test_french_while_loop(self):
         """French 'pendant' while loop works."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("multilingual_control_flow_fr.ml"), language="fr"
+            self._load_corpus("fr/multilingual_control_flow.ml"), language="fr"
         )
         self.assertTrue(result.success)
         self.assertIn("3", result.output)
@@ -1405,7 +1405,7 @@ class MultilingualControlFlowTestSuite(unittest.TestCase):
     def test_french_if_statement(self):
         """French 'si' if statement works."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("multilingual_control_flow_fr.ml"), language="fr"
+            self._load_corpus("fr/multilingual_control_flow.ml"), language="fr"
         )
         self.assertTrue(result.success)
         self.assertIn("greater", result.output)
@@ -1413,7 +1413,7 @@ class MultilingualControlFlowTestSuite(unittest.TestCase):
     def test_spanish_while_loop(self):
         """Spanish 'mientras' while loop works."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("multilingual_control_flow_es.ml"), language="es"
+            self._load_corpus("es/multilingual_control_flow.ml"), language="es"
         )
         self.assertTrue(result.success)
         self.assertIn("3", result.output)
@@ -1421,7 +1421,7 @@ class MultilingualControlFlowTestSuite(unittest.TestCase):
     def test_spanish_if_statement(self):
         """Spanish 'si' if statement works."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("multilingual_control_flow_es.ml"), language="es"
+            self._load_corpus("es/multilingual_control_flow.ml"), language="es"
         )
         self.assertTrue(result.success)
         self.assertIn("greater", result.output)
