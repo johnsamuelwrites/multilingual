@@ -241,7 +241,9 @@ class WasmRustCompilationValidationTestSuite(unittest.TestCase):
         """Compile generated Rust code to wasm32 and fail on compiler errors."""
         rustc = shutil.which("rustc")
         if rustc is None:
-            raise unittest.SkipTest("rustc is not installed; skipping WASM Rust compile validation")
+            raise unittest.SkipTest(
+                "rustc is not installed; skipping WASM Rust compile validation"
+            )
 
         target_check = subprocess.run(
             [rustc, "--print", "target-libdir", "--target", "wasm32-unknown-unknown"],
@@ -276,7 +278,10 @@ class WasmRustCompilationValidationTestSuite(unittest.TestCase):
             result = subprocess.run(command, capture_output=True, text=True, check=False)
 
             if result.returncode != 0:
-                if "error[E0463]" in result.stderr and "can't find crate for `core`" in result.stderr:
+                if (
+                    "error[E0463]" in result.stderr
+                    and "can't find crate for `core`" in result.stderr
+                ):
                     raise unittest.SkipTest(
                         "rustc target wasm32-unknown-unknown is not installed; "
                         "skipping WASM Rust compile validation"
