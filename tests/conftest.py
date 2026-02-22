@@ -171,8 +171,9 @@ def assert_speedup():
     return _assert_speedup
 
 
-def pytest_collection_modifyitems(_config, items):
+def pytest_collection_modifyitems(config, items):
     """Automatically mark tests based on backend and type."""
+    _ = config
     for item in items:
         # Mark correctness tests
         if "correctness" in item.nodeid.lower():
