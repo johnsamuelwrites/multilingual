@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 importer math
 depuis math importer sqrt comme root_fn
 
@@ -81,6 +82,39 @@ affirmer drapeau_ok
 
 soit enfant = BoiteCompteurEnfant(40)
 
+# Clauses else des boucles
+soit elements_trouves = Faux
+pour element dans intervalle(3):
+    si element == 10:
+        elements_trouves = Vrai
+        arrêter
+sinon:
+    elements_trouves = "non_trouve"
+
+soit val_while_else = 0
+tantque val_while_else < 2:
+    val_while_else = val_while_else + 1
+sinon:
+    val_while_else = val_while_else + 10
+
+# Déballage avec astérisque
+soit a, *reste = [10, 20, 30, 40]
+soit *init, b = [10, 20, 30, 40]
+soit c, *milieu2, d = [10, 20, 30, 40]
+
+# Compréhension d'ensemble
+soit ensemble_carres = {x * x pour x dans intervalle(5)}
+
+# Builtins étendus
+soit resultat_puissance = pow(2, 8)
+soit resultat_divmod = divmod(17, 5)
+
+# Générateur de délégation
+def gen_delegue():
+    produire depuis intervalle(3)
+
+soit delegue = list(gen_delegue())
+
 afficher(augmenter_global())
 afficher(premiere, deuxieme)
 afficher(texte_fichier)
@@ -91,4 +125,9 @@ afficher(total_produit, racine, gere)
 afficher(fusionne["x"] + fusionne["y"], etiquette, valeur_morsure)
 afficher(accum)
 afficher(compteur_global est Rien)
+afficher(elements_trouves, val_while_else)
+afficher(a, reste, init, b, c, milieu2, d)
+afficher(trier(ensemble_carres))
+afficher(resultat_puissance, resultat_divmod)
+afficher(delegue)
 
