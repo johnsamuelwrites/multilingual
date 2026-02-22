@@ -552,3 +552,512 @@ except ValueError as e:
             multilingual_source=multilingual_source,
             python_source=python_source,
         )
+
+    # M2.1 Expansion: Exception handling parity tests
+    def test_exception_value_error_parity(self):
+        """ValueError exception produces identical behavior."""
+        multilingual_source = """\
+try:
+    raise ValueError("test error")
+except ValueError as e:
+    print(str(e))
+"""
+        python_source = """\
+try:
+    raise ValueError("test error")
+except ValueError as e:
+    print(str(e))
+"""
+        self._assert_equivalent(
+            multilingual_source=multilingual_source,
+            python_source=python_source,
+        )
+
+    def test_exception_type_error_parity(self):
+        """TypeError exception produces identical behavior."""
+        multilingual_source = """\
+try:
+    let x = "string" + 5
+except TypeError as e:
+    print("caught TypeError")
+"""
+        python_source = """\
+try:
+    x = "string" + 5
+except TypeError as e:
+    print("caught TypeError")
+"""
+        self._assert_equivalent(
+            multilingual_source=multilingual_source,
+            python_source=python_source,
+        )
+
+    def test_exception_attribute_error_parity(self):
+        """AttributeError exception parity."""
+        multilingual_source = """\
+class A:
+    pass
+try:
+    let x = A().nonexistent
+except AttributeError:
+    print("caught")
+"""
+        python_source = """\
+class A:
+    pass
+try:
+    x = A().nonexistent
+except AttributeError:
+    print("caught")
+"""
+        self._assert_equivalent(
+            multilingual_source=multilingual_source,
+            python_source=python_source,
+        )
+
+    def test_exception_key_error_parity(self):
+        """KeyError exception parity."""
+        multilingual_source = """\
+try:
+    let x = {"a": 1}["b"]
+except KeyError:
+    print("caught")
+"""
+        python_source = """\
+try:
+    x = {"a": 1}["b"]
+except KeyError:
+    print("caught")
+"""
+        self._assert_equivalent(
+            multilingual_source=multilingual_source,
+            python_source=python_source,
+        )
+
+    def test_exception_index_error_parity(self):
+        """IndexError exception parity."""
+        multilingual_source = """\
+try:
+    let x = [1, 2, 3][10]
+except IndexError:
+    print("caught")
+"""
+        python_source = """\
+try:
+    x = [1, 2, 3][10]
+except IndexError:
+    print("caught")
+"""
+        self._assert_equivalent(
+            multilingual_source=multilingual_source,
+            python_source=python_source,
+        )
+
+    def test_multiple_except_execution_parity(self):
+        """Multiple except handlers execute correct one."""
+        multilingual_source = """\
+try:
+    raise TypeError("test")
+except ValueError:
+    print("wrong")
+except TypeError:
+    print("correct")
+"""
+        python_source = """\
+try:
+    raise TypeError("test")
+except ValueError:
+    print("wrong")
+except TypeError:
+    print("correct")
+"""
+        self._assert_equivalent(
+            multilingual_source=multilingual_source,
+            python_source=python_source,
+        )
+
+    def test_except_else_execution_parity(self):
+        """Else clause executes when no exception."""
+        multilingual_source = """\
+try:
+    let x = 1
+except ValueError:
+    print("error")
+else:
+    print("no error")
+"""
+        python_source = """\
+try:
+    x = 1
+except ValueError:
+    print("error")
+else:
+    print("no error")
+"""
+        self._assert_equivalent(
+            multilingual_source=multilingual_source,
+            python_source=python_source,
+        )
+
+    def test_except_finally_always_executes(self):
+        """Finally block always executes."""
+        multilingual_source = """\
+try:
+    let x = 1
+except ValueError:
+    pass
+finally:
+    print("finally")
+"""
+        python_source = """\
+try:
+    x = 1
+except ValueError:
+    pass
+finally:
+    print("finally")
+"""
+        self._assert_equivalent(
+            multilingual_source=multilingual_source,
+            python_source=python_source,
+        )
+
+    # M2.1 Expansion: Operator behavior parity
+    def test_operator_short_circuit_and(self):
+        """Short-circuit AND operator."""
+        multilingual_source = """\
+def side_effect():
+    print("called")
+    return True
+let result = False and side_effect()
+print("done")
+"""
+        python_source = """\
+def side_effect():
+    print("called")
+    return True
+result = False and side_effect()
+print("done")
+"""
+        self._assert_equivalent(
+            multilingual_source=multilingual_source,
+            python_source=python_source,
+        )
+
+    def test_operator_short_circuit_or(self):
+        """Short-circuit OR operator."""
+        multilingual_source = """\
+def side_effect():
+    print("called")
+    return False
+let result = True or side_effect()
+print("done")
+"""
+        python_source = """\
+def side_effect():
+    print("called")
+    return False
+result = True or side_effect()
+print("done")
+"""
+        self._assert_equivalent(
+            multilingual_source=multilingual_source,
+            python_source=python_source,
+        )
+
+    def test_operator_comparison_chain(self):
+        """Chained comparison operators."""
+        multilingual_source = """\
+let x = 5
+let result = 1 < x < 10
+print(result)
+"""
+        python_source = """\
+x = 5
+result = 1 < x < 10
+print(result)
+"""
+        self._assert_equivalent(
+            multilingual_source=multilingual_source,
+            python_source=python_source,
+        )
+
+    def test_operator_division_by_zero(self):
+        """Division by zero raises ZeroDivisionError."""
+        multilingual_source = """\
+try:
+    let x = 1 / 0
+except ZeroDivisionError:
+    print("caught")
+"""
+        python_source = """\
+try:
+    x = 1 / 0
+except ZeroDivisionError:
+    print("caught")
+"""
+        self._assert_equivalent(
+            multilingual_source=multilingual_source,
+            python_source=python_source,
+        )
+
+    def test_operator_truthiness_empty_list(self):
+        """Empty list is falsy."""
+        multilingual_source = """\
+let x = []
+if x:
+    print("truthy")
+else:
+    print("falsy")
+"""
+        python_source = """\
+x = []
+if x:
+    print("truthy")
+else:
+    print("falsy")
+"""
+        self._assert_equivalent(
+            multilingual_source=multilingual_source,
+            python_source=python_source,
+        )
+
+    def test_operator_truthiness_zero(self):
+        """Zero is falsy."""
+        multilingual_source = """\
+let x = 0
+if x:
+    print("truthy")
+else:
+    print("falsy")
+"""
+        python_source = """\
+x = 0
+if x:
+    print("truthy")
+else:
+    print("falsy")
+"""
+        self._assert_equivalent(
+            multilingual_source=multilingual_source,
+            python_source=python_source,
+        )
+
+    # M2.1 Expansion: Scope and closure parity
+    def test_scope_global_modification(self):
+        """Global variable modification."""
+        multilingual_source = """\
+let x = 10
+def modify():
+    global x
+    x = 20
+modify()
+print(x)
+"""
+        python_source = """\
+x = 10
+def modify():
+    global x
+    x = 20
+modify()
+print(x)
+"""
+        self._assert_equivalent(
+            multilingual_source=multilingual_source,
+            python_source=python_source,
+        )
+
+    def test_scope_nonlocal_modification(self):
+        """Nonlocal variable modification."""
+        multilingual_source = """\
+def outer():
+    let x = 10
+    def inner():
+        nonlocal x
+        x = 20
+    inner()
+    print(x)
+outer()
+"""
+        python_source = """\
+def outer():
+    x = 10
+    def inner():
+        nonlocal x
+        x = 20
+    inner()
+    print(x)
+outer()
+"""
+        self._assert_equivalent(
+            multilingual_source=multilingual_source,
+            python_source=python_source,
+        )
+
+    def test_scope_closure_capture(self):
+        """Closure captures variable."""
+        multilingual_source = """\
+def make_adder(n):
+    def adder(x):
+        return x + n
+    return adder
+let add5 = make_adder(5)
+print(add5(3))
+"""
+        python_source = """\
+def make_adder(n):
+    def adder(x):
+        return x + n
+    return adder
+add5 = make_adder(5)
+print(add5(3))
+"""
+        self._assert_equivalent(
+            multilingual_source=multilingual_source,
+            python_source=python_source,
+        )
+
+    # M2.1 Expansion: Class and object model parity
+    def test_class_inheritance_basic(self):
+        """Basic inheritance."""
+        multilingual_source = """\
+class A:
+    def method(self):
+        return "A"
+class B(A):
+    pass
+let b = B()
+print(b.method())
+"""
+        python_source = """\
+class A:
+    def method(self):
+        return "A"
+class B(A):
+    pass
+b = B()
+print(b.method())
+"""
+        self._assert_equivalent(
+            multilingual_source=multilingual_source,
+            python_source=python_source,
+        )
+
+    def test_class_method_override(self):
+        """Method override in subclass."""
+        multilingual_source = """\
+class A:
+    def method(self):
+        return "A"
+class B(A):
+    def method(self):
+        return "B"
+let b = B()
+print(b.method())
+"""
+        python_source = """\
+class A:
+    def method(self):
+        return "A"
+class B(A):
+    def method(self):
+        return "B"
+b = B()
+print(b.method())
+"""
+        self._assert_equivalent(
+            multilingual_source=multilingual_source,
+            python_source=python_source,
+        )
+
+    def test_class_super_call(self):
+        """super() in subclass."""
+        multilingual_source = """\
+class A:
+    def method(self):
+        return "A"
+class B(A):
+    def method(self):
+        return super().method() + "B"
+let b = B()
+print(b.method())
+"""
+        python_source = """\
+class A:
+    def method(self):
+        return "A"
+class B(A):
+    def method(self):
+        return super().method() + "B"
+b = B()
+print(b.method())
+"""
+        self._assert_equivalent(
+            multilingual_source=multilingual_source,
+            python_source=python_source,
+        )
+
+    # M2.1 Expansion: Advanced features parity
+    def test_walrus_operator_assignment(self):
+        """Walrus operator assignment in expression."""
+        multilingual_source = """\
+if (x := 10) > 5:
+    print(x)
+"""
+        python_source = """\
+if (x := 10) > 5:
+    print(x)
+"""
+        self._assert_equivalent(
+            multilingual_source=multilingual_source,
+            python_source=python_source,
+        )
+
+    def test_comprehension_scope_isolation(self):
+        """Comprehension variable isolated from outer scope."""
+        multilingual_source = """\
+let x = 5
+let result = [x * 2 for x in range(3)]
+print(x)
+print(result)
+"""
+        python_source = """\
+x = 5
+result = [x * 2 for x in range(3)]
+print(x)
+print(result)
+"""
+        self._assert_equivalent(
+            multilingual_source=multilingual_source,
+            python_source=python_source,
+        )
+
+    def test_dict_comprehension_parity(self):
+        """Dictionary comprehension."""
+        multilingual_source = """\
+let result = {x: x*2 for x in range(3)}
+print(sorted(result.items()))
+"""
+        python_source = """\
+result = {x: x*2 for x in range(3)}
+print(sorted(result.items()))
+"""
+        self._assert_equivalent(
+            multilingual_source=multilingual_source,
+            python_source=python_source,
+        )
+
+    def test_set_comprehension_parity(self):
+        """Set comprehension."""
+        multilingual_source = """\
+let result = {x*x for x in range(5) if x % 2 == 0}
+print(sorted(result))
+"""
+        python_source = """\
+result = {x*x for x in range(5) if x % 2 == 0}
+print(sorted(result))
+"""
+        self._assert_equivalent(
+            multilingual_source=multilingual_source,
+            python_source=python_source,
+        )
