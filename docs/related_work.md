@@ -32,6 +32,11 @@ Work on pluggable syntax and macro systems demonstrates that one semantic core
 can support many surface forms (for example Racket `#lang`, macro-centric
 language extension work, and syntax-skin style ideas).
 
+In Racket specifically, `#lang` selects a language that controls module parsing
+at both reader and expander levels, and supports packaging/installing new
+languages. This is a strong precedent for architecture where language identity
+is explicit at the module boundary while implementation is shared.
+
 Alignment with this project:
 
 - core-first architecture
@@ -74,3 +79,4 @@ original surface syntax.
 - [ALGOL 68](https://en.wikipedia.org/wiki/ALGOL_68)
 - [Non-English-based programming languages](https://en.wikipedia.org/wiki/Non-English-based_programming_languages)
 - [Rouille](https://github.com/bnjbvr/rouille)
+- [Racket Guide: Defining new #lang Languages](https://docs.racket-lang.org/guide/hash-languages.html)
