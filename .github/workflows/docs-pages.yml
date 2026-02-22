@@ -26,10 +26,18 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install docs dependencies
+      - name: Install build + docs dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install mkdocs
+          python -m pip install build mkdocs
+
+      - name: Build wheel for playground
+        run: |
+          python -m build --wheel
+          mkdir -p docs/assets
+          WHEEL_FILE=$(ls dist/*.whl | head -n 1 | xargs basename)
+          cp "dist/${WHEEL_FILE}" "docs/assets/${WHEEL_FILE}"
+          echo "{\"wheel\": \"${WHEEL_FILE}\"}" > docs/assets/wheel_info.json
 
       - name: Stage root docs into docs_dir
         run: python tools/stage_docs.py

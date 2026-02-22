@@ -13,6 +13,7 @@ exclude_docs: |
 
 nav:
   - Home: index.md
+  - Playground: playground.md
   - Guide FR: fr/programmation.md
   - Project:
     - Release Notes: _generated/RELEASE.md

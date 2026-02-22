@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<!--
+  SPDX-FileCopyrightText: 2024 John Samuel <johnsamuelwrites@gmail.com>
+  SPDX-License-Identifier: GPL-3.0-or-later
+
+  Interactive Playground for the Multilingual Programming Language.
+
+  Architecture
+  ────────────
+  • Pyodide  — CPython 3.12 compiled to WASM.  Hosts the full interpreter
+    (lexer → parser → PythonCodeGenerator → exec) for the "Output" tab.
+  • WATCodeGenerator — Python class inside Pyodide that walks the same AST
+    and emits valid WAT (WebAssembly Text format) for the "WAT / WASM" tab.
+  • wabt.js  — WABT compiled to WASM.  Parses the WAT text, validates it,
+    and returns binary WASM bytes that are instantiated by the browser's
+    native WebAssembly engine.  The WASM module imports JS-side print hooks
+    so its output appears directly in the "WAT / WASM" tab.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Multilingual Programming — Interactive Playground</title>
+
+  <!-- Pyodide: CPython 3.12 on WebAssembly -->
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.26.0/full/pyodide.js"></script>
+
+  <!-- wabt.js: WABT compiled to WASM — used to assemble WAT → binary WASM -->
+  <script src="https://cdn.jsdelivr.net/npm/wabt@1.0.36/wabt.js"></script>
+
+  <!-- CodeMirror 5: editor with Unicode / multilingual text support -->
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css"
+        crossorigin="anonymous">
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css"
+        crossorigin="anonymous">
+
+  <style>
+    /* ── Reset ─────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #1e1e2e;
+      --surface:   #2a2a3e;
+      --surface2:  #313145;
+      --border:    #44445a;
+      --accent:    #7c6af7;
+      --accent2:   #56cfe1;
+      --green:     #a6e3a1;
+      --red:       #f38ba8;
+      --yellow:    #f9e2af;
+      --orange:    #fab387;
+      --text:      #cdd6f4;
+      --text-dim:  #6c7086;
+      --radius:    8px;
+      --mono: 'Fira Code','Cascadia Code','JetBrains Mono','Courier New',monospace;
+    }
+
+    html, body { height: 100%; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+                 background: var(--bg); color: var(--text); line-height: 1.5; }
+    a { color: var(--accent2); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* ── App shell ─────────────────────────────────────────────── */
+    #app { display: flex; flex-direction: column; height: 100vh; }
+
+    /* ── Header ────────────────────────────────────────────────── */
+    header {
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      padding: .5rem 1.2rem; display: flex; align-items: center; gap: .9rem;
+      flex-shrink: 0;
+    }
+    .hlogo { font-size: 1.4rem; }
+    .htitle { font-size: 1.05rem; font-weight: 700; }
+    .hsub   { font-size: .72rem; color: var(--text-dim); margin-top: 1px; }
+    .hlinks { margin-left: auto; display: flex; gap: .8rem; font-size: .85rem; }
+
+    /* ── Toolbar ───────────────────────────────────────────────── */
+    #toolbar {
+      background: var(--surface2); border-bottom: 1px solid var(--border);
+      padding: .45rem .9rem; display: flex; align-items: center; gap: .6rem;
+      flex-wrap: wrap; flex-shrink: 0;
+    }
+    #toolbar label { font-size: .78rem; color: var(--text-dim); white-space: nowrap; }
+    #lang-select {
+      background: var(--surface); color: var(--text); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: .3rem .55rem; font-size: .88rem;
+      cursor: pointer; min-width: 190px;
+    }
+    #lang-select:focus { outline: 2px solid var(--accent); }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: .3rem;
+      padding: .35rem .85rem; border: none; border-radius: var(--radius);
+      font-size: .88rem; font-weight: 600; cursor: pointer;
+      transition: opacity .15s, transform .1s;
+    }
+    .btn:active { transform: scale(.97); }
+    .btn:disabled { opacity: .4; cursor: not-allowed; }
+    #run-btn   { background: var(--accent); color: #fff; }
+    #run-btn:hover:not(:disabled) { background: #9580ff; }
+    #clear-btn { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+    #clear-btn:hover { background: var(--border); }
+
+    #status-bar {
+      margin-left: auto; font-size: .78rem;
+      display: flex; align-items: center; gap: .4rem; white-space: nowrap;
+    }
+    .dot {
+      width: 8px; height: 8px; border-radius: 50%; background: var(--text-dim); flex-shrink: 0;
+    }
+    .dot.loading { background: var(--yellow); animation: pulse 1.1s ease-in-out infinite; }
+    .dot.ready   { background: var(--green); }
+    .dot.error   { background: var(--red); }
+    .dot.running { background: var(--accent2); animation: pulse .7s ease-in-out infinite; }
+    @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.25} }
+
+    /* ── Main split pane ───────────────────────────────────────── */
+    #main {
+      display: grid; grid-template-columns: 1fr 1fr;
+      flex: 1; min-height: 0; gap: 0;
+    }
+
+    /* ── Editor pane ───────────────────────────────────────────── */
+    #editor-pane {
+      display: flex; flex-direction: column;
+      border-right: 1px solid var(--border); min-height: 0;
+    }
+    .pane-header {
+      background: var(--surface2); border-bottom: 1px solid var(--border);
+      padding: .3rem .85rem; font-size: .72rem; color: var(--text-dim);
+      text-transform: uppercase; letter-spacing: .06em;
+      display: flex; align-items: center; gap: .5rem;
+    }
+    .lang-badge {
+      background: var(--accent); color: #fff; border-radius: 4px;
+      padding: 1px 6px; font-size: .68rem;
+    }
+    #editor-wrapper { flex: 1; overflow: auto; min-height: 0; }
+    #editor-wrapper .CodeMirror {
+      height: 100%; font-family: var(--mono); font-size: 14px;
+      line-height: 1.6; background: #282a36;
+    }
+
+    /* ── Output pane ───────────────────────────────────────────── */
+    #output-pane { display: flex; flex-direction: column; min-height: 0; }
+
+    /* Tabs */
+    .tabs {
+      display: flex; border-bottom: 1px solid var(--border);
+      background: var(--surface2); flex-shrink: 0;
+    }
+    .tab-btn {
+      padding: .4rem .95rem; font-size: .78rem; font-weight: 600;
+      background: none; border: none; border-bottom: 2px solid transparent;
+      color: var(--text-dim); cursor: pointer;
+      text-transform: uppercase; letter-spacing: .05em;
+      transition: color .15s, border-color .15s;
+    }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active { color: var(--accent2); border-bottom-color: var(--accent2); }
+
+    .tab-panel { display: none; flex: 1; overflow: auto; padding: .8rem; min-height: 0; }
+    .tab-panel.active { display: flex; flex-direction: column; gap: .6rem; }
+
+    /* Shared console / code view */
+    .console, .code-view {
+      flex: 1; background: #1a1a2a; border: 1px solid var(--border);
+      border-radius: var(--radius); padding: .8rem 1rem;
+      font-family: var(--mono); font-size: 13px; line-height: 1.7;
+      white-space: pre-wrap; overflow: auto; color: var(--text);
+    }
+    .code-view { white-space: pre; tab-size: 4; }
+    .console.has-error { color: var(--red); }
+    .console.empty     { color: var(--text-dim); font-style: italic; }
+
+    /* WAT-tab layout */
+    #panel-wat { flex-direction: column; gap: .5rem; }
+
+    .wat-section-title {
+      font-size: .72rem; text-transform: uppercase; letter-spacing: .06em;
+      color: var(--text-dim); padding: 0 .1rem .15rem; flex-shrink: 0;
+    }
+
+    /* Info box */
+    .info-box {
+      background: linear-gradient(135deg,#1a1a3e,#1e2a3a);
+      border: 1px solid var(--accent); border-radius: var(--radius);
+      padding: .65rem .9rem; font-size: .8rem; color: var(--text-dim); flex-shrink: 0;
+    }
+    .info-box strong { color: var(--accent2); }
+    .info-box .pipeline { margin-top: .35rem; font-family: var(--mono); font-size: .72rem; }
+    .info-box .pipeline span { color: var(--accent2); }
+
+    /* WASM exec badge */
+    .wasm-badge {
+      display: inline-flex; align-items: center; gap: .3rem;
+      background: rgba(86,207,225,.12); border: 1px solid rgba(86,207,225,.35);
+      border-radius: 4px; padding: 2px 7px; font-size: .7rem;
+      color: var(--accent2); font-weight: 600; flex-shrink: 0;
+    }
+
+    /* Split WAT / exec output vertically */
+    #wat-split {
+      display: flex; flex-direction: column; gap: .5rem;
+      flex: 1; min-height: 0; overflow: hidden;
+    }
+    #wat-code-wrap  { flex: 3; min-height: 0; display: flex; flex-direction: column; }
+    #wasm-exec-wrap { flex: 1; min-height: 80px; display: flex; flex-direction: column; }
+    #wat-view, #wasm-exec-console { min-height: 0; }
+
+    /* ── Footer ────────────────────────────────────────────────── */
+    footer {
+      background: var(--surface); border-top: 1px solid var(--border);
+      padding: .35rem 1.2rem; font-size: .72rem; color: var(--text-dim);
+      display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+      flex-shrink: 0;
+    }
+    footer a { color: var(--text-dim); }
+    footer a:hover { color: var(--text); }
+
+    /* ── Responsive ────────────────────────────────────────────── */
+    @media (max-width: 760px) {
+      #main { grid-template-columns: 1fr; grid-template-rows: 52vh 1fr; }
+      #editor-pane { border-right: none; border-bottom: 1px solid var(--border); }
+      .hlinks { display: none; }
+    }
+  </style>
+</head>
+
+<body>
+<div id="app">
+
+  <!-- Header -->
+  <header>
+    <span class="hlogo">🌍</span>
+    <div>
+      <div class="htitle">Multilingual Programming Language</div>
+      <div class="hsub">Interactive Playground · Python execution via Pyodide WASM · WAT compiled &amp; run by browser WebAssembly</div>
+    </div>
+    <nav class="hlinks">
+      <a href="./">Documentation</a>
+      <a href="https://github.com/johnsamuelwrites/multilingual" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </header>
+
+  <!-- Toolbar -->
+  <div id="toolbar">
+    <label for="lang-select">Language:</label>
+    <select id="lang-select" title="Select programming language">
+      <option value="en">🇬🇧 English (en)</option>
+      <option value="fr">🇫🇷 Français (fr)</option>
+      <option value="es">🇪🇸 Español (es)</option>
+      <option value="de">🇩🇪 Deutsch (de)</option>
+      <option value="it">🇮🇹 Italiano (it)</option>
+      <option value="pt">🇵🇹 Português (pt)</option>
+      <option value="nl">🇳🇱 Nederlands (nl)</option>
+      <option value="pl">🇵🇱 Polski (pl)</option>
+      <option value="sv">🇸🇪 Svenska (sv)</option>
+      <option value="da">🇩🇰 Dansk (da)</option>
+      <option value="fi">🇫🇮 Suomi (fi)</option>
+      <option value="hi">🇮🇳 हिन्दी (hi)</option>
+      <option value="ar">🇸🇦 العربية (ar)</option>
+      <option value="bn">🇧🇩 বাংলা (bn)</option>
+      <option value="ta">🇮🇳 தமிழ் (ta)</option>
+      <option value="zh">🇨🇳 中文 (zh)</option>
+      <option value="ja">🇯🇵 日本語 (ja)</option>
+    </select>
+
+    <button id="run-btn"   class="btn" disabled title="Run (Ctrl+Enter)">▶ Run</button>
+    <button id="clear-btn" class="btn"            title="Clear output">✕ Clear</button>
+
+    <div id="status-bar">
+      <span class="dot loading" id="status-dot"></span>
+      <span id="status-text">Loading runtimes…</span>
+    </div>
+  </div>
+
+  <!-- Main: editor | output -->
+  <div id="main">
+
+    <!-- Editor -->
+    <div id="editor-pane">
+      <div class="pane-header">
+        <span>Source Code</span>
+        <span class="lang-badge" id="lang-badge">en</span>
+      </div>
+      <div id="editor-wrapper">
+        <textarea id="code-area"></textarea>
+      </div>
+    </div>
+
+    <!-- Output -->
+    <div id="output-pane">
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="output">Output</button>
+        <button class="tab-btn"        data-tab="python">Generated Python</button>
+        <button class="tab-btn"        data-tab="wat">WAT / WASM</button>
+      </div>
+
+      <!-- Output tab -->
+      <div class="tab-panel active" id="panel-output">
+        <pre id="output-console" class="console empty">Output will appear here after clicking ▶ Run.</pre>
+      </div>
+
+      <!-- Python tab -->
+      <div class="tab-panel" id="panel-python">
+        <pre id="python-view" class="code-view">Generated Python source will appear here.</pre>
+      </div>
+
+      <!-- WAT / WASM tab -->
+      <div class="tab-panel" id="panel-wat">
+        <div class="info-box">
+          <strong>WAT Code Generation</strong> — The multilingual AST is compiled by
+          <strong>WATCodeGenerator</strong> directly to
+          <a href="https://webassembly.github.io/spec/core/text/index.html"
+             target="_blank" rel="noopener">WebAssembly Text format (WAT)</a>.
+          <div class="pipeline">
+            Source (.ml) → Lexer → Parser → AST →
+            <span>WATCodeGenerator</span> → <span>.wat</span> →
+            wabt.js → <span>binary .wasm</span> → browser <span>WebAssembly.instantiate()</span>
+          </div>
+        </div>
+
+        <div id="wat-split">
+          <div id="wat-code-wrap">
+            <div class="wat-section-title">Generated WAT source</div>
+            <pre id="wat-view" class="code-view">WAT source will appear here after clicking ▶ Run.</pre>
+          </div>
+          <div id="wasm-exec-wrap">
+            <div class="wat-section-title">
+              <span class="wasm-badge">⚙ WASM</span>
+              &nbsp;Native browser WebAssembly execution output
+            </div>
+            <pre id="wasm-exec-console" class="console empty">WASM execution output will appear here.</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <span>
+      Powered by
+      <a href="https://pyodide.org" target="_blank" rel="noopener">Pyodide</a>
+      (CPython 3.12 on WASM) ·
+      <a href="https://github.com/WebAssembly/wabt" target="_blank" rel="noopener">wabt.js</a>
+      (WAT → binary WASM) ·
+      <a href="https://codemirror.net" target="_blank" rel="noopener">CodeMirror</a>
+    </span>
+    <span>
+      <a href="https://github.com/johnsamuelwrites/multilingual" target="_blank" rel="noopener">Source</a>
+      · GPL-3.0-or-later
+    </span>
+  </footer>
+
+</div><!-- #app -->
+
+<!-- CodeMirror 5 -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"
+        crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"
+        crossorigin="anonymous"></script>
+
+<script>
+"use strict";
+
+/* ──────────────────────────────────────────────────────────────────
+   Language examples — one per supported human language.
+   Keywords follow the USM defined in resources/usm/keywords.json.
+────────────────────────────────────────────────────────────────── */
+const EXAMPLES = {
+  en: `# English — arithmetic and loops
+let a = 10
+let b = 3
+
+print("a + b =", a + b)
+print("a - b =", a - b)
+print("a * b =", a * b)
+print("a / b =", a / b)
+print("a % b =", a % b)
+
+for i in range(1, 5):
+    print(i, "squared =", i * i)
+`,
+  fr: `# Français — arithmétique et boucles
+soit a = 10
+soit b = 3
+
+afficher("a + b =", a + b)
+afficher("a - b =", a - b)
+afficher("a * b =", a * b)
+afficher("a / b =", a / b)
+afficher("a % b =", a % b)
+
+pour i dans intervalle(1, 5):
+    afficher(i, "au carré =", i * i)
+`,
+  es: `# Español — aritmética y bucles
+sea a = 10
+sea b = 3
+
+imprimir("a + b =", a + b)
+imprimir("a - b =", a - b)
+imprimir("a * b =", a * b)
+imprimir("a / b =", a / b)
+imprimir("a % b =", a % b)
+
+para i en rango(1, 5):
+    imprimir(i, "al cuadrado =", i * i)
+`,
+  de: `# Deutsch — Arithmetik und Schleifen
+sei a = 10
+sei b = 3
+
+ausgeben("a + b =", a + b)
+ausgeben("a - b =", a - b)
+ausgeben("a * b =", a * b)
+ausgeben("a / b =", a / b)
+ausgeben("a % b =", a % b)
+
+für i in bereich(1, 5):
+    ausgeben(i, "Quadrat =", i * i)
+`,
+  it: `# Italiano — aritmetica e cicli
+sia a = 10
+sia b = 3
+
+stampa("a + b =", a + b)
+stampa("a - b =", a - b)
+stampa("a * b =", a * b)
+stampa("a / b =", a / b)
+stampa("a % b =", a % b)
+
+per x in intervallo(1, 5):
+    stampa(x, "al quadrato =", x * x)
+`,
+  pt: `# Português — aritmética e ciclos
+seja a = 10
+seja b = 3
+
+imprima("a + b =", a + b)
+imprima("a - b =", a - b)
+imprima("a * b =", a * b)
+imprima("a / b =", a / b)
+imprima("a % b =", a % b)
+
+para x em intervalo(1, 5):
+    imprima(x, "ao quadrado =", x * x)
+`,
+  nl: `# Nederlands — rekenen en lussen
+laat a = 10
+laat b = 3
+
+afdrukken("a + b =", a + b)
+afdrukken("a - b =", a - b)
+afdrukken("a * b =", a * b)
+afdrukken("a / b =", a / b)
+afdrukken("a % b =", a % b)
+
+voor x in bereik(1, 5):
+    afdrukken(x, "kwadraat =", x * x)
+`,
+  pl: `# Polski — arytmetyka i pętle
+niech a = 10
+niech b = 3
+
+drukuj("a + b =", a + b)
+drukuj("a - b =", a - b)
+drukuj("a * b =", a * b)
+drukuj("a / b =", a / b)
+drukuj("a % b =", a % b)
+
+dla x w zakres(1, 5):
+    drukuj(x, "kwadrat =", x * x)
+`,
+  sv: `# Svenska — aritmetik och loopar
+lat a = 10
+lat b = 3
+
+skriv("a + b =", a + b)
+skriv("a - b =", a - b)
+skriv("a * b =", a * b)
+skriv("a / b =", a / b)
+skriv("a % b =", a % b)
+
+for x i intervall(1, 5):
+    skriv(x, "i kvadrat =", x * x)
+`,
+  da: `# Dansk — aritmetik og løkker
+lad a = 10
+lad b = 3
+
+skriv("a + b =", a + b)
+skriv("a - b =", a - b)
+skriv("a * b =", a * b)
+skriv("a / b =", a / b)
+skriv("a % b =", a % b)
+
+for x i interval(1, 5):
+    skriv(x, "i anden =", x * x)
+`,
+  fi: `# Suomi — aritmetiikka ja silmukat
+olkoon a = 10
+olkoon b = 3
+
+tulosta("a + b =", a + b)
+tulosta("a - b =", a - b)
+tulosta("a * b =", a * b)
+tulosta("a / b =", a / b)
+tulosta("a % b =", a % b)
+
+jokaiselle x sisalla vali(1, 5):
+    tulosta(x, "toiseen =", x * x)
+`,
+  hi: `# हिन्दी — अंकगणित और लूप
+मान a = 10
+मान b = 3
+
+छापो("a + b =", a + b)
+छापो("a - b =", a - b)
+छापो("a * b =", a * b)
+छापो("a / b =", a / b)
+छापो("a % b =", a % b)
+
+के_लिए x में परास(1, 5):
+    छापो(x, "वर्ग =", x * x)
+`,
+  ar: `# العربية — الحساب والحلقات
+ليكن a = 10
+ليكن b = 3
+
+اطبع("a + b =", a + b)
+اطبع("a - b =", a - b)
+اطبع("a * b =", a * b)
+اطبع("a / b =", a / b)
+اطبع("a % b =", a % b)
+
+لكل x في مدى(1, 5):
+    اطبع(x, "تربيع =", x * x)
+`,
+  bn: `# বাংলা — গাণিতিক হিসাব ও লুপ
+ধরি a = 10
+ধরি b = 3
+
+ছাপাও("a + b =", a + b)
+ছাপাও("a - b =", a - b)
+ছাপাও("a * b =", a * b)
+ছাপাও("a / b =", a / b)
+ছাপাও("a % b =", a % b)
+
+জন্য x মধ্যে পরিসর(1, 5):
+    ছাপাও(x, "বর্গ =", x * x)
+`,
+  ta: `# தமிழ் — கணக்கீடு மற்றும் சுழல்கள்
+இருக்கட்டும் a = 10
+இருக்கட்டும் b = 3
+
+அச்சிடு("a + b =", a + b)
+அச்சிடு("a - b =", a - b)
+அச்சிடு("a * b =", a * b)
+அச்சிடு("a / b =", a / b)
+அச்சிடு("a % b =", a % b)
+
+ஒவ்வொரு x இல் வரம்பு(1, 5):
+    அச்சிடு(x, "வர்க்கம் =", x * x)
+`,
+  zh: `# 中文 — 算术运算和循环
+令 a = 10
+令 b = 3
+
+打印("a + b =", a + b)
+打印("a - b =", a - b)
+打印("a * b =", a * b)
+打印("a / b =", a / b)
+打印("a % b =", a % b)
+
+对于 x 里 范围(1, 5):
+    打印(x, "的平方 =", x * x)
+`,
+  ja: `# 日本語 — 算術演算とループ
+変数 a = 10
+変数 b = 3
+
+表示("a + b =", a + b)
+表示("a - b =", a - b)
+表示("a * b =", a * b)
+表示("a / b =", a / b)
+表示("a % b =", a % b)
+
+毎 x 中 範囲(1, 5):
+    表示(x, "の2乗 =", x * x)
+`,
+};
+
+/* ──────────────────────────────────────────────────────────────────
+   DOM refs
+────────────────────────────────────────────────────────────────── */
+const $lang      = document.getElementById('lang-select');
+const $runBtn    = document.getElementById('run-btn');
+const $clearBtn  = document.getElementById('clear-btn');
+const $dot       = document.getElementById('status-dot');
+const $status    = document.getElementById('status-text');
+const $badge     = document.getElementById('lang-badge');
+const $outCon    = document.getElementById('output-console');
+const $pyView    = document.getElementById('python-view');
+const $watView   = document.getElementById('wat-view');
+const $wasmCon   = document.getElementById('wasm-exec-console');
+
+/* ──────────────────────────────────────────────────────────────────
+   CodeMirror editor
+────────────────────────────────────────────────────────────────── */
+const editor = CodeMirror.fromTextArea(
+  document.getElementById('code-area'),
+  {
+    mode: 'python', theme: 'dracula', lineNumbers: true,
+    indentUnit: 4, tabSize: 4, indentWithTabs: false,
+    lineWrapping: false, autofocus: true,
+    extraKeys: { 'Ctrl-Enter': runCode, 'Cmd-Enter': runCode },
+  }
+);
+
+function resizeEditor() {
+  const w = document.getElementById('editor-wrapper');
+  editor.setSize('100%', w.clientHeight);
+}
+window.addEventListener('resize', resizeEditor);
+setTimeout(resizeEditor, 60);
+
+/* ──────────────────────────────────────────────────────────────────
+   Language selection
+────────────────────────────────────────────────────────────────── */
+function loadLang(lang) {
+  editor.setValue(EXAMPLES[lang] || EXAMPLES.en);
+  $badge.textContent = lang;
+  editor.getWrapperElement().style.direction = lang === 'ar' ? 'rtl' : 'ltr';
+}
+$lang.addEventListener('change', () => loadLang($lang.value));
+loadLang('en');
+
+/* ──────────────────────────────────────────────────────────────────
+   Status helpers
+────────────────────────────────────────────────────────────────── */
+function setStatus(msg, state) {
+  $status.textContent = msg;
+  $dot.className = 'dot ' + state;
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   Tab switching
+────────────────────────────────────────────────────────────────── */
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+  });
+});
+
+/* ──────────────────────────────────────────────────────────────────
+   Runtime state
+────────────────────────────────────────────────────────────────── */
+let pyodide = null;
+let wabt    = null;
+let ready   = false;
+
+/* ──────────────────────────────────────────────────────────────────
+   Initialise both runtimes in parallel
+────────────────────────────────────────────────────────────────── */
+async function initRuntimes() {
+  setStatus('Loading Pyodide and wabt.js…', 'loading');
+  $runBtn.disabled = true;
+
+  try {
+    // Both runtimes load concurrently
+    const [pyRes, wabtRes] = await Promise.allSettled([
+      initPyodide(),
+      initWabt(),
+    ]);
+
+    if (pyRes.status === 'rejected')   throw new Error('Pyodide: ' + pyRes.reason);
+    if (wabtRes.status === 'rejected') console.warn('wabt.js failed:', wabtRes.reason);
+
+    ready = true;
+    $runBtn.disabled = false;
+    const wabtNote = wabt ? '' : ' (wabt unavailable — WAT execution disabled)';
+    setStatus('Ready  ✓  Pyodide + wabt.js' + wabtNote, 'ready');
+  } catch (err) {
+    setStatus('Init error: ' + err.message, 'error');
+    console.error(err);
+  }
+}
+
+/* ── Pyodide init ──────────────────────────────────────────────── */
+async function initPyodide() {
+  pyodide = await loadPyodide({
+    indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.26.0/full/',
+  });
+  setStatus('Pyodide ready — installing packages…', 'loading');
+  await pyodide.loadPackage('micropip');
+  const micropip = pyodide.pyimport('micropip');
+  await micropip.install('roman');
+  await micropip.install('python-dateutil');
+
+  // Try local wheel first, fall back to PyPI
+  let installed = false;
+  try {
+    const resp = await fetch('./assets/wheel_info.json');
+    if (resp.ok) {
+      const info = await resp.json();
+      const url = new URL('./assets/' + info.wheel, window.location.href).href;
+      await micropip.install(url);
+      installed = true;
+    }
+  } catch (_) { /* wheel_info.json not present */ }
+
+  if (!installed) {
+    await micropip.install('multilingualprogramming');
+  }
+
+  // Warm-up import
+  await pyodide.runPythonAsync(`
+from multilingualprogramming.codegen.executor import ProgramExecutor
+from multilingualprogramming.codegen.wat_generator import WATCodeGenerator
+from multilingualprogramming.lexer.lexer import Lexer
+from multilingualprogramming.parser.parser import Parser
+`);
+}
+
+/* ── wabt.js init ──────────────────────────────────────────────── */
+async function initWabt() {
+  // WabtModule() is a global promise exposed by the wabt.js CDN script
+  if (typeof WabtModule !== 'function') {
+    throw new Error('WabtModule not found — wabt.js may not have loaded');
+  }
+  wabt = await WabtModule();
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   Run: execute in Pyodide + generate WAT + run WAT in native WASM
+────────────────────────────────────────────────────────────────── */
+async function runCode() {
+  if (!ready) return;
+  const code = editor.getValue();
+  if (!code.trim()) return;
+
+  $runBtn.disabled = true;
+  setStatus('Running…', 'running');
+
+  // Reset all panels
+  $outCon.className = 'console';   $outCon.textContent = '';
+  $pyView.textContent = '';
+  $watView.textContent = '';
+  $wasmCon.className = 'console';  $wasmCon.textContent = '';
+
+  try {
+    // ── 1. Pyodide execution (full language, all features) ────────
+    pyodide.globals.set('_user_code', code);
+
+    await pyodide.runPythonAsync(`
+from multilingualprogramming.codegen.executor import ProgramExecutor
+_exec   = ProgramExecutor()
+_result = _exec.execute(_user_code)
+_out    = _result.output or ''
+_psrc   = _result.python_source or ''
+_errs   = '\\n'.join(_result.errors) if _result.errors else ''
+_ok     = _result.success
+`);
+
+    const out  = pyodide.globals.get('_out');
+    const psrc = pyodide.globals.get('_psrc');
+    const errs = pyodide.globals.get('_errs');
+    const ok   = pyodide.globals.get('_ok');
+
+    if (!ok && errs) {
+      $outCon.className = 'console has-error';
+      $outCon.textContent = '⚠ ' + errs;
+    } else if (out) {
+      $outCon.textContent = out;
+    } else {
+      $outCon.className = 'console empty';
+      $outCon.textContent = '(no output)';
+    }
+    $pyView.textContent = psrc || '(no Python source generated)';
+
+    // ── 2. WAT generation via WATCodeGenerator ────────────────────
+    await pyodide.runPythonAsync(`
+from multilingualprogramming.codegen.wat_generator import WATCodeGenerator
+from multilingualprogramming.lexer.lexer import Lexer
+from multilingualprogramming.parser.parser import Parser
+
+try:
+    _lex   = Lexer(_user_code)
+    _toks  = _lex.tokenize()
+    _lang  = _lex.language or 'en'
+    _par   = Parser(_toks, source_language=_lang)
+    _prog  = _par.parse()
+    _wgen  = WATCodeGenerator()
+    _wat   = _wgen.generate(_prog)
+    _wat_err = ''
+except Exception as _we:
+    _wat     = ''
+    _wat_err = str(_we)
+`);
+
+    const watSrc  = pyodide.globals.get('_wat');
+    const watErr  = pyodide.globals.get('_wat_err');
+
+    if (watErr && !watSrc) {
+      $watView.textContent = ';; WATCodeGenerator error:\n;; ' + watErr;
+      $wasmCon.className = 'console has-error';
+      $wasmCon.textContent = '⚠ WAT generation failed: ' + watErr;
+    } else {
+      $watView.textContent = watSrc;
+
+      // ── 3. Compile WAT → binary WASM with wabt.js ────────────────
+      if (wabt && watSrc) {
+        await runWat(watSrc);
+      } else if (!wabt) {
+        $wasmCon.className = 'console has-error';
+        $wasmCon.textContent = '⚠ wabt.js did not load — WAT execution unavailable.\n'
+          + 'You can paste the WAT above into https://webassembly.github.io/wabt/demo/wat2wasm/';
+      }
+    }
+
+    setStatus('Done  ✓', 'ready');
+  } catch (err) {
+    $outCon.className = 'console has-error';
+    $outCon.textContent = '⚠ ' + err.message;
+    setStatus('Error', 'error');
+    console.error(err);
+  } finally {
+    $runBtn.disabled = false;
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   WAT → binary WASM via wabt.js → WebAssembly.instantiate()
+────────────────────────────────────────────────────────────────── */
+async function runWat(watText) {
+  const dec = new TextDecoder();
+  const wasmLines = [];
+  let   wasmErr   = '';
+
+  // JS-side print hooks imported by the WASM module
+  const memory = { buffer: null }; // set after instantiation
+
+  const printBuf = [];
+  const imports = {
+    env: {
+      print_str: (ptr, len) => {
+        if (!memory.buffer) return;
+        const bytes = new Uint8Array(memory.buffer, ptr, len);
+        printBuf.push(dec.decode(bytes));
+      },
+      print_f64: (val) => {
+        // Show as integer when val is a whole number
+        printBuf.push(Number.isInteger(val) ? String(val) : String(val));
+      },
+      print_bool: (val) => {
+        printBuf.push(val ? 'True' : 'False');
+      },
+      print_sep: () => {
+        printBuf.push(' ');
+      },
+      print_newline: () => {
+        wasmLines.push(printBuf.join(''));
+        printBuf.length = 0;
+      },
+    },
+  };
+
+  try {
+    // Parse + validate WAT text
+    const wabtModule = wabt.parseWat('module.wat', watText, {
+      mutable_globals: true,
+      sat_float_to_int: true,
+      sign_extension: true,
+      bulk_memory: false,
+    });
+    wabtModule.resolveNames();
+    wabtModule.validate();
+
+    // Assemble to binary WASM
+    const { buffer: wasmBytes } = wabtModule.toBinary({ log: false, write_debug_names: true });
+
+    // Compile + instantiate in the browser's native WASM engine
+    const compiled = await WebAssembly.compile(wasmBytes);
+    const instance = await WebAssembly.instantiate(compiled, imports);
+
+    // Wire up memory access for print_str
+    if (instance.exports.memory) {
+      memory.buffer = instance.exports.memory.buffer;
+    }
+
+    // Run the generated entry-point
+    if (instance.exports.__main) {
+      instance.exports.__main();
+      // Flush any remaining partial line
+      if (printBuf.length) {
+        wasmLines.push(printBuf.join(''));
+        printBuf.length = 0;
+      }
+    } else {
+      wasmLines.push('(module exported no __main — define top-level statements or functions)');
+    }
+  } catch (err) {
+    wasmErr = err.message;
+  }
+
+  if (wasmErr) {
+    $wasmCon.className = 'console has-error';
+    $wasmCon.textContent = '⚠ WASM error: ' + wasmErr
+      + '\n\nNote: strings, classes, imports and other high-level constructs\n'
+      + 'are not representable as plain WAT — see the Output tab for full execution.';
+  } else if (wasmLines.length) {
+    $wasmCon.textContent = wasmLines.join('\n');
+  } else {
+    $wasmCon.className = 'console empty';
+    $wasmCon.textContent = '(no output from WASM execution)';
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   Clear button
+────────────────────────────────────────────────────────────────── */
+$clearBtn.addEventListener('click', () => {
+  $outCon.className = 'console empty';
+  $outCon.textContent = 'Output will appear here after clicking ▶ Run.';
+  $pyView.textContent = 'Generated Python source will appear here.';
+  $watView.textContent = 'WAT source will appear here after clicking ▶ Run.';
+  $wasmCon.className = 'console empty';
+  $wasmCon.textContent = 'WASM execution output will appear here.';
+  editor.focus();
+});
+
+$runBtn.addEventListener('click', runCode);
+
+/* ──────────────────────────────────────────────────────────────────
+   Boot
+────────────────────────────────────────────────────────────────── */
+initRuntimes();
+</script>
+</body>
+</html>
