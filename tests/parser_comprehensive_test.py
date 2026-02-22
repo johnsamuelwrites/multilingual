@@ -13,18 +13,15 @@ This test suite validates:
 4. AST normalization determinism
 """
 
+# pylint: disable=duplicate-code
+
 import unittest
 from multilingualprogramming.lexer.lexer import Lexer
 from multilingualprogramming.parser.parser import Parser
 from multilingualprogramming.parser.ast_nodes import (
-    IfStatement, WhileLoop, ForLoop, FunctionDef, ClassDef,
-    ListLiteral, DictLiteral, SetLiteral, ListComprehension,
-    DictComprehension, SetComprehension, GeneratorExpr,
-    MatchStatement, CaseClause, WithStatement,
-    CompareOp, BinaryOp, UnaryOp, CallExpr, NamedExpr,
-    YieldStatement, AwaitExpr, ConditionalExpr,
-    Assignment, ChainedAssignment, AnnAssignment,
-    TryStatement, ExceptHandler, RaiseStatement,
+    IfStatement, WhileLoop, ForLoop, FunctionDef,
+    ListLiteral, ListComprehension, MatchStatement,
+    WithStatement, CallExpr, TryStatement,
 )
 from multilingualprogramming.exceptions import ParseError
 
@@ -43,8 +40,12 @@ class ParserEdgeCasesTestSuite(unittest.TestCase):
 
     def test_deeply_nested_comprehensions(self):
         """Comprehension with 3+ nested for clauses and conditions."""
-        # Use variable names that don't conflict with multilingual keywords (e.g., 'y' is 'and' in Spanish)
-        source = "[[[[item for item in range(num) if item > 0] for num in range(10) if num % 2 == 0] for z in range(5)] for w in range(3)]"
+        # Avoid names that collide with multilingual keywords.
+        source = (
+            "[[[[item for item in range(num) if item > 0] "
+            "for num in range(10) if num % 2 == 0] "
+            "for z in range(5)] for w in range(3)]"
+        )
         try:
             prog = _parse(source)
             self.assertEqual(len(prog.body), 1)
@@ -180,10 +181,10 @@ class ParserNegativeTestSuite(unittest.TestCase):
         """Slice with zero step should raise error."""
         source = "x[::0]\n"
         try:
-            prog = _parse(source)
+            _parse(source)
             # Note: Zero-step validation may not be implemented in Phase 3
             # Parser may allow x[::0] without error
-            pass
+            return
         except (ParseError, ValueError, ZeroDivisionError):
             # Expected: error for zero step
             pass
@@ -227,7 +228,7 @@ class ParserNegativeTestSuite(unittest.TestCase):
     def test_multiple_statements_on_line(self):
         """Multiple statements without separator should fail (in some cases)."""
         # Some multilingual variants might have different rules
-        source = "x = 1 y = 2\n"
+        _source = "x = 1 y = 2\n"
         # This might parse as implicit line continuation; depends on lexer
         # Included for completeness
 
@@ -372,7 +373,7 @@ class ParserMultilingualVariantsTestSuite(unittest.TestCase):
         """Test list comprehension parsing in all 17 languages."""
         source = "[x * 2 for x in range(10)]\n"
 
-        for lang, lang_name in self.LANGUAGES_TO_TEST:
+        for lang, _lang_name in self.LANGUAGES_TO_TEST:
             with self.subTest(language=lang):
                 try:
                     prog = _parse(source, language=lang)

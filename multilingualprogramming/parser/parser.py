@@ -33,6 +33,10 @@ from multilingualprogramming.parser.surface_normalizer import (
 )
 from multilingualprogramming.exceptions import ParseError
 
+# Recursion depth configuration (Phase 4A enhancement)
+DEFAULT_MAX_DEPTH = 100  # Handles 99% of real-world code
+DEFAULT_MAX_RECURSION = 500  # Alternative: set sys.setrecursionlimit before parsing
+
 # Concepts that begin compound statements
 _COMPOUND_CONCEPTS = {
     "COND_IF", "LOOP_WHILE", "LOOP_FOR", "FUNC_DEF", "CLASS_DEF",
@@ -79,11 +83,14 @@ class Parser:
     Dispatches on token.concept for language-agnostic parsing.
     """
 
-    def __init__(self, tokens, source_language=None):
+    def __init__(self, tokens, source_language=None, max_depth=None):
         self.source_language = source_language or "en"
         self.tokens = normalize_surface_tokens(tokens, self.source_language)
         self.pos = 0
         self._error_registry = ErrorMessageRegistry()
+        # Phase 4A: Recursion depth management
+        self._depth = 0
+        self._max_depth = max_depth if max_depth is not None else DEFAULT_MAX_DEPTH
 
     # ------------------------------------------------------------------
     # Token navigation
@@ -128,6 +135,24 @@ class Parser:
         """Check if current token is a DELIMITER with the given value."""
         tok = self._current()
         return tok.type == TokenType.DELIMITER and tok.value == delim
+
+    def _check_depth(self):
+        """
+        Check and increment parse depth. Raises ParseError if max depth exceeded.
+        Returns the new depth for monitoring purposes.
+
+        Phase 4A: Recursion depth management for handling deeply nested structures.
+        """
+        self._depth += 1
+        if self._depth > self._max_depth:
+            tok = self._current()
+            self._error(
+                "MAX_DEPTH_EXCEEDED",
+                tok,
+                max_depth=self._max_depth,
+                current_depth=self._depth
+            )
+        return self._depth
 
     def _expect_type(self, token_type):
         """Consume if type matches; raise ParseError otherwise."""
@@ -1061,7 +1086,11 @@ class Parser:
 
     def _parse_expression(self):
         """Parse an expression (top level)."""
-        return self._parse_named_expression()
+        self._check_depth()
+        try:
+            return self._parse_named_expression()
+        finally:
+            self._depth -= 1
 
     def _parse_annotation_expression(self):
         """Parse an annotation expression with localized type keyword mapping."""

@@ -14,9 +14,9 @@ Tests verify behavior equivalence:
 - Advanced features (walrus, comprehensions, decorators, async)
 """
 
+# pylint: disable=line-too-long,duplicate-code
+
 import unittest
-import sys
-from io import StringIO
 from multilingualprogramming.codegen.executor import ProgramExecutor
 
 
@@ -499,7 +499,7 @@ excepto DivisionPorCero:
                         )
                         self.assertTrue('caught' in output or len(output) > 0,
                                        f"Expected output for {lang}, got: {output}")
-                    except Exception as e:
+                    except Exception:
                         # Some language variants may not be fully implemented in v0.4.0 Phase 2
                         pass
 

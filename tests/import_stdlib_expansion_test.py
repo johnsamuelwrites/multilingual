@@ -14,8 +14,6 @@ Tests verify:
 """
 
 import unittest
-import sys
-from io import StringIO
 from multilingualprogramming.codegen.executor import ProgramExecutor
 
 
@@ -122,7 +120,10 @@ print(math.sqrt(4))
 """
         output = _execute(source, 'en')
         # sqrt(4) returns 2.0 in Python
-        self.assertTrue('2.0' in output or '2' in output, f"Expected 2 or 2.0 in output, got: {output}")
+        self.assertTrue(
+            '2.0' in output or '2' in output,
+            f"Expected 2 or 2.0 in output, got: {output}",
+        )
 
     def test_math_floor_ceil(self):
         """Verify math.floor() and math.ceil()."""
@@ -143,7 +144,10 @@ print(math.pow(2, 3))
 """
         output = _execute(source, 'en')
         # pow() returns 8.0 in Python
-        self.assertTrue('8.0' in output or '8' in output, f"Expected 8 or 8.0 in output, got: {output}")
+        self.assertTrue(
+            '8.0' in output or '8' in output,
+            f"Expected 8 or 8.0 in output, got: {output}",
+        )
 
     def test_math_factorial(self):
         """Verify math.factorial() works."""

@@ -305,6 +305,25 @@
       "sv": "Ogiltig syntax",
       "da": "Ugyldig syntaks",
       "fi": "Virheellinen syntaksi"
+    },
+    "MAX_DEPTH_EXCEEDED": {
+      "en": "Maximum parse depth exceeded (limit: {max_depth}, current: {current_depth}) at line {line}, column {column}",
+      "fr": "Profondeur maximale depassee (limite: {max_depth}, actuelle: {current_depth}) a la ligne {line}, colonne {column}",
+      "es": "Profundidad maxima de analisis excedida (limite: {max_depth}, actual: {current_depth}) en linea {line}, columna {column}",
+      "de": "Maximale Parse-Tiefe uberschritten (Grenzwert: {max_depth}, aktuell: {current_depth}) in Zeile {line}, Spalte {column}",
+      "hi": "Adhiktam pars gahrai atikriman (sima: {max_depth}, vartaman: {current_depth}) pankt {line}, stambh {column} par",
+      "ar": "Tami tayawaz alkhadd al-aqsa liumq altahlil (alhadd: {max_depth}, alhaliy: {current_depth}) fi alsatar {line}, al-amud {column}",
+      "bn": "Sarbadhik pars gabharata atikrima hayacheche (sima: {max_depth}, bartamana: {current_depth}) layn {line}, kalam {column} e",
+      "ta": "Adhikathama phakppayal adhainmai miravappatat (varai: {max_depth}, tharppoli: {current_depth}) vari {line}, niral {column} il",
+      "zh": "Chaoguo zuida jiexi shengdu (xianzhi: {max_depth}, dangqian: {current_depth}) zai di {line} xing di {column} lie",
+      "ja": "Saikoda kaisekishingakuka owakashita (seigen: {max_depth}, genzai: {current_depth}) gyou {line}、retsu {column}",
+      "it": "Profondita massima di analisi superata (limite: {max_depth}, attuale: {current_depth}) alla riga {line}, colonna {column}",
+      "pt": "Profundidade maxima de analise excedida (limite: {max_depth}, atual: {current_depth}) na linha {line}, coluna {column}",
+      "pl": "Przekroczono maksymalna glebokos analizy (limit: {max_depth}, biezaca: {current_depth}) w linii {line}, kolumnie {column}",
+      "nl": "Maximale parsediepte overschreden (limiet: {max_depth}, huidige: {current_depth}) op regel {line}, kolom {column}",
+      "sv": "Maximal parsdjup overskriden (grans: {max_depth}, aktuell: {current_depth}) pa rad {line}, kolumn {column}",
+      "da": "Maksimal parsingsdybde overskredet (graense: {max_depth}, nuvaerende: {current_depth}) pa linje {line}, kolonne {column}",
+      "fi": "Maksimaalinen jasennyyssyvyys ylitetty (raja: {max_depth}, nykyinen: {current_depth}) riville {line}, sarakkeessa {column}"
     }
   }
 }
