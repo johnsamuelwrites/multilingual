@@ -399,6 +399,13 @@ class HumanizeNumberTestSuite(unittest.TestCase):
         """Load corpus file."""
         return (Path("tests/corpus") / filename).read_text(encoding="utf-8")
 
+    def _load_corpus_for_language(self, filename: str, language: str) -> str:
+        """Load corpus file from language-specific folder when available."""
+        lang_path = Path("tests/corpus") / language / filename
+        if lang_path.exists():
+            return lang_path.read_text(encoding="utf-8")
+        return self._load_corpus(filename)
+
     def test_humanize_format_en_basic(self):
         """Humanize numbers in English."""
         result = self.runner.execute_multilingual(
@@ -428,7 +435,7 @@ class HumanizeNumberTestSuite(unittest.TestCase):
 
     def test_humanize_format_fr_equivalent(self):
         """Humanize numbers in French produces same result."""
-        source = self._load_corpus("humanize_numbers_fr.ml")
+        source = self._load_corpus_for_language("humanize_numbers.ml", "fr")
         result = self.runner.execute_multilingual(source, language="fr")
         self.assertTrue(
             result.success, msg=f"Failed: {result.error or 'Unknown error'}"
@@ -438,14 +445,14 @@ class HumanizeNumberTestSuite(unittest.TestCase):
 
     def test_humanize_format_fr_execution_time(self):
         """French execution completes in reasonable time."""
-        source = self._load_corpus("humanize_numbers_fr.ml")
+        source = self._load_corpus_for_language("humanize_numbers.ml", "fr")
         result = self.runner.execute_multilingual(source, language="fr")
         self.assertTrue(result.success)
         self.assertLess(result.execution_time_ms, 5000)
 
     def test_humanize_format_es_equivalent(self):
         """Humanize numbers in Spanish produces same result."""
-        source = self._load_corpus("humanize_numbers_es.ml")
+        source = self._load_corpus_for_language("humanize_numbers.ml", "es")
         result = self.runner.execute_multilingual(source, language="es")
         self.assertTrue(
             result.success, msg=f"Failed: {result.error or 'Unknown error'}"
@@ -455,7 +462,7 @@ class HumanizeNumberTestSuite(unittest.TestCase):
 
     def test_humanize_format_es_output_lines(self):
         """Spanish output has correct number of lines."""
-        source = self._load_corpus("humanize_numbers_es.ml")
+        source = self._load_corpus_for_language("humanize_numbers.ml", "es")
         result = self.runner.execute_multilingual(source, language="es")
         self.assertTrue(result.success)
         output_lines = result.output.strip().split("\n")
@@ -895,6 +902,12 @@ class SimpleCalculatorTestSuite(unittest.TestCase):
     def _load_corpus(self, filename: str) -> str:
         return (Path("tests/corpus") / filename).read_text(encoding="utf-8")
 
+    def _load_corpus_for_language(self, filename: str, language: str) -> str:
+        lang_path = Path("tests/corpus") / language / filename
+        if lang_path.exists():
+            return lang_path.read_text(encoding="utf-8")
+        return self._load_corpus(filename)
+
     def test_calculator_operations(self):
         """Perform basic calculator operations."""
         result = self.runner.execute_multilingual(
@@ -945,6 +958,24 @@ class SimpleCalculatorTestSuite(unittest.TestCase):
         output_lines = result.output.strip().split("\n")
         self.assertEqual(output_lines[3], "2.0")
 
+    def test_calculator_operations_french_parity(self):
+        """French calculator corpus matches expected output."""
+        source = self._load_corpus_for_language("simple_calculator.ml", "fr")
+        result = self.runner.execute_multilingual(source, language="fr")
+        self.assertTrue(
+            result.success, msg=f"Failed: {result.error or 'Unknown error'}"
+        )
+        self.assertEqual(result.output.strip(), self.project.expected_output.strip())
+
+    def test_calculator_operations_spanish_parity(self):
+        """Spanish calculator corpus matches expected output."""
+        source = self._load_corpus_for_language("simple_calculator.ml", "es")
+        result = self.runner.execute_multilingual(source, language="es")
+        self.assertTrue(
+            result.success, msg=f"Failed: {result.error or 'Unknown error'}"
+        )
+        self.assertEqual(result.output.strip(), self.project.expected_output.strip())
+
 
 class RecursiveFactorialTestSuite(unittest.TestCase):
     """Tests recursive function calls."""
@@ -955,6 +986,12 @@ class RecursiveFactorialTestSuite(unittest.TestCase):
 
     def _load_corpus(self, filename: str) -> str:
         return (Path("tests/corpus") / filename).read_text(encoding="utf-8")
+
+    def _load_corpus_for_language(self, filename: str, language: str) -> str:
+        lang_path = Path("tests/corpus") / language / filename
+        if lang_path.exists():
+            return lang_path.read_text(encoding="utf-8")
+        return self._load_corpus(filename)
 
     def test_recursive_factorial(self):
         """Calculate factorial using recursion."""
@@ -991,6 +1028,24 @@ class RecursiveFactorialTestSuite(unittest.TestCase):
         )
         self.assertTrue(result.success)
         self.assertIn("5040", result.output)
+
+    def test_recursive_factorial_french_parity(self):
+        """French recursive factorial corpus matches expected output."""
+        source = self._load_corpus_for_language("recursive_factorial.ml", "fr")
+        result = self.runner.execute_multilingual(source, language="fr")
+        self.assertTrue(
+            result.success, msg=f"Failed: {result.error or 'Unknown error'}"
+        )
+        self.assertEqual(result.output.strip(), self.project.expected_output.strip())
+
+    def test_recursive_factorial_spanish_parity(self):
+        """Spanish recursive factorial corpus matches expected output."""
+        source = self._load_corpus_for_language("recursive_factorial.ml", "es")
+        result = self.runner.execute_multilingual(source, language="es")
+        self.assertTrue(
+            result.success, msg=f"Failed: {result.error or 'Unknown error'}"
+        )
+        self.assertEqual(result.output.strip(), self.project.expected_output.strip())
 
 
 class LambdaFunctionsTestSuite(unittest.TestCase):
