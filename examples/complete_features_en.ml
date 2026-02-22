@@ -93,3 +93,42 @@ print(merged_map["x"] + merged_map["y"], formatted, walrus_value)
 print(loop_acc)
 print(shared_counter is None)
 
+# Loop else clauses
+let items_found = False
+for item in range(3):
+    if item == 10:
+        items_found = True
+        break
+else:
+    items_found = "not_found"
+
+let while_else_val = 0
+while while_else_val < 2:
+    while_else_val = while_else_val + 1
+else:
+    while_else_val = while_else_val + 10
+
+# Starred unpacking variations
+let a, *rest = [10, 20, 30, 40]
+let *init, b = [10, 20, 30, 40]
+let c, *middle, d = [10, 20, 30, 40]
+
+# Set comprehension
+let squared_set = {x * x for x in range(5)}
+
+# Extended builtins
+let power_result = pow(2, 8)
+let divmod_result = divmod(17, 5)
+
+# Yield from generator
+def delegating_gen():
+    yield from range(3)
+
+let delegated = list(delegating_gen())
+
+print(items_found, while_else_val)
+print(a, rest, init, b, c, middle, d)
+print(sorted(squared_set))
+print(power_result, divmod_result)
+print(delegated)
+

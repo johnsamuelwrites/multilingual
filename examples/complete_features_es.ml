@@ -81,6 +81,39 @@ afirmar bandera_ok
 
 sea hija = CajaContadorHija(40)
 
+# Cláusulas else de bucles
+sea elementos_encontrados = Falso
+para elemento en rango(3):
+    si elemento == 10:
+        elementos_encontrados = Verdadero
+        romper
+sino:
+    elementos_encontrados = "no_encontrado"
+
+sea val_while_else = 0
+mientras val_while_else < 2:
+    val_while_else = val_while_else + 1
+sino:
+    val_while_else = val_while_else + 10
+
+# Desempaquetamiento con asterisco
+sea a, *resto = [10, 20, 30, 40]
+sea *init, b = [10, 20, 30, 40]
+sea c, *medio2, d = [10, 20, 30, 40]
+
+# Comprensión de conjunto
+sea conjunto_cuadrados = {x * x para x en rango(5)}
+
+# Builtins extendidos
+sea resultado_potencia = potencia(2, 8)
+sea resultado_divmod = divmod(17, 5)
+
+# Generador de delegación
+def gen_delegado():
+    producir desde rango(3)
+
+sea delegado = list(gen_delegado())
+
 imprimir(aumentar_global())
 imprimir(primero, segundo)
 imprimir(texto_archivo)
@@ -91,4 +124,9 @@ imprimir(total_producido, raiz, manejado)
 imprimir(combinado["x"] + combinado["y"], etiqueta, valor_morsa)
 imprimir(acumulado)
 imprimir(contador_global es Nada)
+imprimir(elementos_encontrados, val_while_else)
+imprimir(a, resto, init, b, c, medio2, d)
+imprimir(ordenar(conjunto_cuadrados))
+imprimir(resultado_potencia, resultado_divmod)
+imprimir(delegado)
 

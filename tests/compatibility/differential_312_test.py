@@ -311,3 +311,244 @@ print(tools.double(default_value))
 
             self.assertEqual(ml["success"], py["success"])
             self.assertEqual(ml["output"], py["output"])
+
+    def test_starred_unpacking_assignment_parity(self):
+        """Test starred unpacking in various contexts."""
+        multilingual_source = """\
+a, *rest = [1, 2, 3, 4]
+print(a, rest)
+
+*init, last = [1, 2, 3, 4]
+print(init, last)
+
+first, *mid, last = [1, 2, 3, 4]
+print(first, mid, last)
+"""
+        python_source = """\
+a, *rest = [1, 2, 3, 4]
+print(a, rest)
+
+*init, last = [1, 2, 3, 4]
+print(init, last)
+
+first, *mid, last = [1, 2, 3, 4]
+print(first, mid, last)
+"""
+        self._assert_equivalent(
+            multilingual_source=multilingual_source,
+            python_source=python_source,
+            check_semantics=False,
+        )
+
+    def test_extended_builtins_parity(self):
+        """Test newly added built-in functions and exceptions."""
+        multilingual_source = """\
+print(pow(2, 10))
+print(divmod(17, 5))
+print(isinstance(42, int))
+try:
+    raise BaseException("test")
+except BaseException as e:
+    print("caught")
+"""
+        python_source = """\
+print(pow(2, 10))
+print(divmod(17, 5))
+print(isinstance(42, int))
+try:
+    raise BaseException("test")
+except BaseException as e:
+    print("caught")
+"""
+        self._assert_equivalent(
+            multilingual_source=multilingual_source,
+            python_source=python_source,
+        )
+
+    def test_loop_else_parity(self):
+        """Test for/while else control flow."""
+        multilingual_source = """\
+for i in range(3):
+    pass
+else:
+    print("done")
+
+let x = 0
+while x < 2:
+    x = x + 1
+else:
+    print(x)
+"""
+        python_source = """\
+for i in range(3):
+    pass
+else:
+    print("done")
+
+x = 0
+while x < 2:
+    x = x + 1
+else:
+    print(x)
+"""
+        self._assert_equivalent(
+            multilingual_source=multilingual_source,
+            python_source=python_source,
+        )
+
+    def test_match_statement_parity(self):
+        """Test match/case structural pattern matching."""
+        multilingual_source = """\
+let x = 2
+match x:
+    case 1:
+        print("one")
+    case 2:
+        print("two")
+    case _:
+        print("other")
+"""
+        python_source = """\
+x = 2
+match x:
+    case 1:
+        print("one")
+    case 2:
+        print("two")
+    case _:
+        print("other")
+"""
+        self._assert_equivalent(
+            multilingual_source=multilingual_source,
+            python_source=python_source,
+            check_semantics=False,
+        )
+
+    def test_global_nonlocal_semantic_parity(self):
+        """Test global and nonlocal scope declarations."""
+        multilingual_source = """\
+let x = 10
+def modify_global():
+    global x
+    x = 20
+modify_global()
+print(x)
+
+def outer():
+    let y = 10
+    def inner():
+        nonlocal y
+        y = 20
+    inner()
+    print(y)
+outer()
+"""
+        python_source = """\
+x = 10
+def modify_global():
+    global x
+    x = 20
+modify_global()
+print(x)
+
+def outer():
+    y = 10
+    def inner():
+        nonlocal y
+        y = 20
+    inner()
+    print(y)
+outer()
+"""
+        self._assert_equivalent(
+            multilingual_source=multilingual_source,
+            python_source=python_source,
+        )
+
+    def test_fstring_format_spec_parity(self):
+        """Test f-string format specs and conversions."""
+        multilingual_source = """\
+let x = 3.14159
+print(f"{x:.2f}")
+
+let s = "hello"
+print(f"{s!r}")
+
+let n = 42
+print(f"{n!s}")
+"""
+        python_source = """\
+x = 3.14159
+print(f"{x:.2f}")
+
+s = "hello"
+print(f"{s!r}")
+
+n = 42
+print(f"{n!s}")
+"""
+        self._assert_equivalent(
+            multilingual_source=multilingual_source,
+            python_source=python_source,
+        )
+
+    def test_set_comprehension_parity(self):
+        """Test set comprehension syntax."""
+        multilingual_source = """\
+let s = {x * x for x in range(5)}
+print(sorted(s))
+
+let s2 = {x for x in range(10) if x % 2 == 0}
+print(sorted(s2))
+"""
+        python_source = """\
+s = {x * x for x in range(5)}
+print(sorted(s))
+
+s2 = {x for x in range(10) if x % 2 == 0}
+print(sorted(s2))
+"""
+        self._assert_equivalent(
+            multilingual_source=multilingual_source,
+            python_source=python_source,
+        )
+
+    def test_yield_from_parity(self):
+        """Test yield from generator delegation."""
+        multilingual_source = """\
+def gen():
+    yield from range(3)
+
+let result = list(gen())
+print(result)
+"""
+        python_source = """\
+def gen():
+    yield from range(3)
+
+result = list(gen())
+print(result)
+"""
+        self._assert_equivalent(
+            multilingual_source=multilingual_source,
+            python_source=python_source,
+        )
+
+    def test_raise_from_parity(self):
+        """Test raise X from Y exception chaining."""
+        multilingual_source = """\
+try:
+    raise ValueError("a") from TypeError("b")
+except ValueError as e:
+    print(type(e.__cause__).__name__)
+"""
+        python_source = """\
+try:
+    raise ValueError("a") from TypeError("b")
+except ValueError as e:
+    print(type(e.__cause__).__name__)
+"""
+        self._assert_equivalent(
+            multilingual_source=multilingual_source,
+            python_source=python_source,
+        )
