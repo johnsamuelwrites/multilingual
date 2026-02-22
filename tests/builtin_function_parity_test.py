@@ -132,13 +132,13 @@ class BuiltinFunctionParityTestSuite(unittest.TestCase):
 
     # Map function
     def test_map_english(self):
-        source = "result = list(map(lambda x: x * 2, [1, 2, 3]))\nprint(result)\n"
+        source = "let result = list(map(lambda x: x * 2, [1, 2, 3]))\nprint(result)\n"
         output = _execute(source, "en")
         self.assertIn("[2, 4, 6]", output)
 
     # Filter function
     def test_filter_english(self):
-        source = "result = list(filter(lambda x: x > 1, [1, 2, 3]))\nprint(result)\n"
+        source = "let result = list(filter(lambda x: x > 1, [1, 2, 3]))\nprint(result)\n"
         output = _execute(source, "en")
         self.assertIn("[2, 3]", output)
 

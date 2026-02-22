@@ -25,7 +25,7 @@ class OperatorEvaluationOrderTestSuite(unittest.TestCase):
 def side_effect():
     print("called")
     return True
-result = False and side_effect()
+let result = False and side_effect()
 print("done")
 """
         output = _execute(source)
@@ -38,7 +38,7 @@ print("done")
 def side_effect():
     print("called")
     return False
-result = True or side_effect()
+let result = True or side_effect()
 print("done")
 """
         output = _execute(source)
@@ -51,7 +51,7 @@ print("done")
 def track():
     print("evaluated")
     return True
-result = True and track()
+let result = True and track()
 """
         output = _execute(source)
         self.assertIn("evaluated", output)
@@ -62,7 +62,7 @@ result = True and track()
 def track():
     print("evaluated")
     return False
-result = False or track()
+let result = False or track()
 """
         output = _execute(source)
         self.assertIn("evaluated", output)
@@ -73,7 +73,7 @@ result = False or track()
 let a = 1
 let b = 2
 let c = 3
-result = a < b < c
+let result = a < b < c
 print(result)
 """
         output = _execute(source)
@@ -88,7 +88,7 @@ def track(x):
     return x
 def f(a, b, c):
     return a + b + c
-result = f(track(1), track(2), track(3))
+let result = f(track(1), track(2), track(3))
 print(len(order))
 """
         output = _execute(source)
@@ -97,7 +97,7 @@ print(len(order))
     def test_operator_precedence_mult_before_add(self):
         """Multiplication has higher precedence than addition."""
         source = """\
-result = 2 + 3 * 4
+let result = 2 + 3 * 4
 print(result)
 """
         output = _execute(source)
@@ -106,7 +106,7 @@ print(result)
     def test_operator_precedence_power_highest(self):
         """Power has highest precedence."""
         source = """\
-result = 2 ** 3 ** 2
+let result = 2 ** 3 ** 2
 print(result)
 """
         output = _execute(source)
@@ -115,7 +115,7 @@ print(result)
     def test_unary_minus_precedence(self):
         """Unary minus has high precedence."""
         source = """\
-result = -2 ** 2
+let result = -2 ** 2
 print(result)
 """
         output = _execute(source)
@@ -124,7 +124,7 @@ print(result)
     def test_truthiness_evaluation(self):
         """Truthiness determines boolean outcomes."""
         source = """\
-result = [] and "truthy"
+let result = [] and "truthy"
 print(result)
 """
         output = _execute(source)
@@ -142,7 +142,7 @@ print(x)
     def test_nested_boolean_precedence(self):
         """AND has higher precedence than OR."""
         source = """\
-result = True or False and False
+let result = True or False and False
 print(result)
 """
         output = _execute(source)
@@ -151,7 +151,7 @@ print(result)
     def test_comparison_returns_boolean(self):
         """Comparisons return boolean values."""
         source = """\
-result = 5 > 3
+let result = 5 > 3
 print(result)
 print(type(result).__name__)
 """
@@ -161,7 +161,7 @@ print(type(result).__name__)
     def test_membership_operator_precedence(self):
         """Membership operators work with other comparisons."""
         source = """\
-result = 1 < 2 < 3
+let result = 1 < 2 < 3
 print(result)
 """
         output = _execute(source)
