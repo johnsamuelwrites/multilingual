@@ -5,6 +5,7 @@
 #
 
 """Tests for the WAT (WebAssembly Text) code generator."""
+# pylint: disable=duplicate-code
 
 import unittest
 

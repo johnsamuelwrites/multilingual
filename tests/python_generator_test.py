@@ -5,6 +5,7 @@
 #
 
 """Tests for the Python code generator."""
+# pylint: disable=duplicate-code
 
 import unittest
 
