@@ -1073,6 +1073,19 @@ function updateCompleteFeaturesLink(lang) {
 }
 
 let languageKeywords = new Map();
+let unicodeWordRegex = null;
+
+try {
+  unicodeWordRegex = new RegExp('[\\p{L}\\p{N}_]', 'u');
+} catch (_) {
+  unicodeWordRegex = null;
+}
+
+function isWordChar(ch) {
+  if (!ch) return false;
+  if (unicodeWordRegex) return unicodeWordRegex.test(ch);
+  return /[A-Za-z0-9_]/.test(ch) || (ch.codePointAt(0) > 127 && !/\s/.test(ch));
+}
 
 function normalizeKeywordEntry(value) {
   if (Array.isArray(value)) return value;
@@ -1118,7 +1131,6 @@ async function fetchKeywordSpec() {
 }
 
 function buildKeywordOverlay(keywords) {
-  const isWordChar = (ch) => !!ch && /[\p{L}\p{N}_]/u.test(ch);
   const sorted = keywords.slice().sort((a, b) => b.length - a.length);
 
   return {
@@ -1146,6 +1158,53 @@ function buildKeywordOverlay(keywords) {
   };
 }
 
+function applyKeywordOnlyMode(lang, keywords) {
+  const modeName = `ml-keywords-${lang}`;
+  if (!CodeMirror.modes[modeName]) {
+    const keywordSet = new Set(keywords);
+    CodeMirror.defineMode(modeName, () => ({
+      token(stream) {
+        const ch = stream.peek();
+        if (!ch) {
+          stream.next();
+          return null;
+        }
+        if (ch === '#') {
+          stream.skipToEnd();
+          return 'comment';
+        }
+        if (ch === '"' || ch === "'") {
+          const quote = stream.next();
+          let escaped = false;
+          while (!stream.eol()) {
+            const c = stream.next();
+            if (escaped) {
+              escaped = false;
+              continue;
+            }
+            if (c === '\\') {
+              escaped = true;
+              continue;
+            }
+            if (c === quote) break;
+          }
+          return 'string';
+        }
+        if (isWordChar(ch)) {
+          let word = '';
+          while (!stream.eol() && isWordChar(stream.peek())) {
+            word += stream.next();
+          }
+          return keywordSet.has(word) ? 'keyword' : null;
+        }
+        stream.next();
+        return null;
+      },
+    }));
+  }
+  editor.setOption('mode', modeName);
+}
+
 function applyEditorHighlighting(lang) {
   const keywords = languageKeywords.get(lang);
 
@@ -1154,9 +1213,14 @@ function applyEditorHighlighting(lang) {
     return;
   }
 
-  const overlay = buildKeywordOverlay(keywords);
-  const base = CodeMirror.getMode(editor.options, 'python');
-  editor.setOption('mode', CodeMirror.overlayMode(base, overlay, true));
+  if (typeof CodeMirror.overlayMode === 'function') {
+    const overlay = buildKeywordOverlay(keywords);
+    const base = CodeMirror.getMode(editor.options, 'python');
+    editor.setOption('mode', CodeMirror.overlayMode(base, overlay, true));
+    return;
+  }
+
+  applyKeywordOnlyMode(lang, keywords);
 }
 
 async function initLanguageKeywords() {
