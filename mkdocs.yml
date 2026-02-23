@@ -1,11 +1,55 @@
 site_name: Multilingual Programming
-site_description: Documentation for the multilingual programming project
+site_description: >-
+  A programming language that lets you write in 17 human languages —
+  powered by a Python interpreter, WASM backend, and a browser playground.
 site_url: https://johnsamuelwrites.github.io/multilingual/
 repo_url: https://github.com/johnsamuelwrites/multilingual
 repo_name: johnsamuelwrites/multilingual
+edit_uri: edit/main/docs/
 
 theme:
-  name: mkdocs
+  name: material
+  palette:
+    # Light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: deep purple
+      accent: cyan
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    # Dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: deep purple
+      accent: cyan
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - navigation.footer
+    - navigation.instant
+    - navigation.instant.progress
+    - search.suggest
+    - search.highlight
+    - search.share
+    - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
+    - announce.dismiss
+  icon:
+    repo: fontawesome/brands/github
+    edit: material/pencil
+  font:
+    text: Inter
+    code: JetBrains Mono
+  logo: assets/multilingual_pipeline_surface.svg
+  favicon: assets/multilingual_pipeline_surface.svg
 
 docs_dir: docs
 exclude_docs: |
@@ -51,5 +95,41 @@ nav:
 
 markdown_extensions:
   - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - footnotes
   - toc:
       permalink: true
+      title: On this page
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.tasklist:
+      custom_checkbox: true
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/johnsamuelwrites/multilingual
+      name: GitHub
+  generator: false
+
+extra_css:
+  - assets/extra.css
