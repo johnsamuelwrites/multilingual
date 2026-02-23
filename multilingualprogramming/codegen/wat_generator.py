@@ -254,7 +254,7 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
         real_params = self._func_real_params.get(fname)
         if real_params:
             # Full-fidelity mapping: match each WAT param slot to its argument.
-            kwargs = {k: v for k, v in (call_expr.keywords or [])}
+            kwargs = dict(call_expr.keywords or [])
             for i, pname in enumerate(real_params):
                 if i < len(call_expr.args):
                     self._gen_expr(call_expr.args[i], indent)
