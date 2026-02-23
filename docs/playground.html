@@ -635,6 +635,9 @@
         <button class="tab-btn" data-tab="wat">
           <span class="tab-icon">⬡</span> WAT / WASM
         </button>
+        <button class="tab-btn" data-tab="rust">
+          <span class="tab-icon">🦀</span> Rust / Wasmtime
+        </button>
       </div>
 
       <!-- Output tab -->
@@ -688,6 +691,23 @@
           </div>
         </div>
       </div><!-- #panel-wat -->
+
+      <!-- Rust / Wasmtime tab -->
+      <div class="tab-panel" id="panel-rust">
+        <div class="pipeline-box">
+          <div class="pipeline-title">🦀 Rust bridge generated for Wasmtime workflows</div>
+        </div>
+        <div id="wat-split">
+          <div id="wat-code-wrap">
+            <div class="wat-label">Generated Rust bridge source</div>
+            <pre id="rust-view" class="code-view">Generated Rust source will appear here after clicking ▶ Run.</pre>
+          </div>
+          <div id="wasm-exec-wrap">
+            <div class="wat-label">Wasmtime run hints</div>
+            <pre id="rust-run-console" class="console empty">Local run instructions will appear here.</pre>
+          </div>
+        </div>
+      </div><!-- #panel-rust -->
 
     </div><!-- #output-pane -->
   </div><!-- #main -->
@@ -996,6 +1016,8 @@ const $outCon    = document.getElementById('output-console');
 const $pyView    = document.getElementById('python-view');
 const $watView   = document.getElementById('wat-view');
 const $wasmCon   = document.getElementById('wasm-exec-console');
+const $rustView  = document.getElementById('rust-view');
+const $rustRunCon = document.getElementById('rust-run-console');
 const $exampleLink = document.getElementById('complete-features-link');
 const $homeLink  = document.getElementById('home-link');
 
@@ -1348,6 +1370,7 @@ async function initPyodide() {
   await pyodide.runPythonAsync(`
 from multilingualprogramming.codegen.executor import ProgramExecutor
 from multilingualprogramming.codegen.wat_generator import WATCodeGenerator
+from multilingualprogramming.codegen.wasm_generator import WasmCodeGenerator
 from multilingualprogramming.lexer.lexer import Lexer
 from multilingualprogramming.parser.parser import Parser
 `);
@@ -1416,6 +1439,9 @@ async function runCode() {
   $pyView.textContent = '';
   $watView.textContent = '';
   $wasmCon.className = 'console';  $wasmCon.textContent = '';
+  $rustView.textContent = '';
+  $rustRunCon.className = 'console';
+  $rustRunCon.textContent = '';
 
   const lang = $lang.value;   // explicit language selected by the user
 
@@ -1524,6 +1550,50 @@ except Exception as _we:
         $wasmCon.textContent = '⚠ wabt.js did not load — WAT execution unavailable.\n'
           + 'You can paste the WAT above into https://webassembly.github.io/wabt/demo/wat2wasm/';
       }
+    }
+
+    // ── 4. Rust bridge generation (for Wasmtime workflows) ───────
+    await pyodide.runPythonAsync(`
+from multilingualprogramming.codegen.wasm_generator import WasmCodeGenerator
+from multilingualprogramming.lexer.lexer import Lexer
+from multilingualprogramming.parser.parser import Parser
+
+try:
+    _lex_r   = Lexer(_user_code, language=_detected_lang)
+    _toks_r  = _lex_r.tokenize()
+    _par_r   = Parser(_toks_r, source_language=_detected_lang)
+    _prog_r  = _par_r.parse()
+    _rgen    = WasmCodeGenerator()
+    _rust    = _rgen.generate(_prog_r)
+    _rust_err = ''
+except Exception as _re:
+    _rust     = ''
+    _rust_err = str(_re)
+`);
+
+    const rustSrc = pyodide.globals.get('_rust');
+    const rustErr = pyodide.globals.get('_rust_err');
+
+    if (rustErr && !rustSrc) {
+      $rustView.textContent = '// Rust generator error:\n// ' + rustErr;
+      $rustRunCon.className = 'console has-error';
+      $rustRunCon.textContent = '⚠ Rust bridge generation failed: ' + rustErr;
+    } else if (rustSrc) {
+      $rustView.textContent = rustSrc;
+      $rustRunCon.className = 'console';
+      $rustRunCon.textContent =
+`How to run with Wasmtime locally:
+1. Save this Rust source as src/lib.rs in a Rust crate.
+2. Build to WASM:
+   cargo build --release --target wasm32-unknown-unknown
+3. Run with Wasmtime (example exported symbol):
+   wasmtime run --invoke __multilingual_wasm_version target/wasm32-unknown-unknown/release/<crate_name>.wasm
+
+Note: this generated Rust is a bridge scaffold (function bodies are placeholders).`;
+    } else {
+      $rustView.textContent = '(no Rust source generated)';
+      $rustRunCon.className = 'console empty';
+      $rustRunCon.textContent = 'Local run instructions will appear here.';
     }
 
     setStatus('Done ✓', 'ready');
@@ -1663,6 +1733,9 @@ $clearBtn.addEventListener('click', () => {
   $watView.textContent = 'WAT source will appear here after clicking ▶ Run.';
   $wasmCon.className = 'console empty';
   $wasmCon.textContent = 'WASM execution output will appear here.';
+  $rustView.textContent = 'Generated Rust source will appear here after clicking ▶ Run.';
+  $rustRunCon.className = 'console empty';
+  $rustRunCon.textContent = 'Local run instructions will appear here.';
   editor.focus();
 });
 
