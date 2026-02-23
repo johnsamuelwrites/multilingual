@@ -108,6 +108,29 @@ def _name(node) -> str:
     return str(node)
 
 
+# Separator pseudo-parameter names used by Python for positional-only (/)
+# and keyword-only (*) boundaries — these are not real WAT parameters.
+_PARAM_SEPARATORS = frozenset(("/", "*"))
+
+
+def _real_params(func_def: FunctionDef) -> list:
+    """Return the real WAT parameter names for *func_def*.
+
+    Filters out:
+    - positional-only separator ``/`` and keyword-only separator ``*``
+    - ``*args`` (vararg) and ``**kwargs`` (kwarg) — not representable in WAT
+    """
+    result = []
+    for p in (func_def.params or []):
+        pname = _name(p.name)
+        if pname in _PARAM_SEPARATORS:
+            continue
+        if getattr(p, "is_vararg", False) or getattr(p, "is_kwarg", False):
+            continue
+        result.append(pname)
+    return result
+
+
 # ---------------------------------------------------------------------------
 # WATCodeGenerator
 # ---------------------------------------------------------------------------
@@ -133,6 +156,8 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
         self._funcs: list[str] = []
         # Names of functions compiled to WAT in this module (populated in generate())
         self._defined_func_names: set[str] = set()
+        # Maps function name → ordered list of real WAT param names (separators excluded)
+        self._func_real_params: dict[str, list] = {}
 
     # -----------------------------------------------------------------------
     # Public API
@@ -149,6 +174,7 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
         self._strings = {}
         self._funcs = []
         self._defined_func_names = set()
+        self._func_real_params = {}
 
         if isinstance(program, CoreIRProgram):
             program = program.ast
@@ -156,10 +182,13 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
         funcs = [s for s in program.body if isinstance(s, FunctionDef)]
         top = [s for s in program.body if not isinstance(s, FunctionDef)]
 
-        # Record which function names will actually be compiled to WAT so that
-        # call-site generators can distinguish valid WAT calls from unsupported
-        # Python callables (closures, builtins, constructors, etc.).
+        # Record which function names will actually be compiled to WAT and build
+        # a map of each function's real WAT parameter names (excluding Python
+        # separators '/' and bare '*', vararg *args, and **kwargs, which have no
+        # direct WAT equivalent and must not appear as call arguments).
         self._defined_func_names = {_name(f.name) for f in funcs}
+        for f in funcs:
+            self._func_real_params[_name(f.name)] = _real_params(f)
 
         for func in funcs:
             self._emit_function(func)
@@ -215,6 +244,29 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
     # Function generation helpers
     # -----------------------------------------------------------------------
 
+    def _gen_call_args(self, call_expr: CallExpr, indent: str, fname: str):
+        """Push argument values for a call to a known WAT function.
+
+        Resolves keyword arguments by matching them against the function's
+        real parameter list, so calls like ``f(x, b=y)`` push the correct
+        number of f64 values even when some parameters are keyword-only.
+        """
+        real_params = self._func_real_params.get(fname)
+        if real_params:
+            # Full-fidelity mapping: match each WAT param slot to its argument.
+            kwargs = {k: v for k, v in (call_expr.keywords or [])}
+            for i, pname in enumerate(real_params):
+                if i < len(call_expr.args):
+                    self._gen_expr(call_expr.args[i], indent)
+                elif pname in kwargs:
+                    self._gen_expr(kwargs[pname], indent)
+                else:
+                    self._emit(f"{indent}f64.const 0  ;; missing arg: {pname}")
+        else:
+            # Fallback: just push positional args in order.
+            for arg in call_expr.args:
+                self._gen_expr(arg, indent)
+
     def _save_func_state(self):
         saved = (self._instrs, self._locals, self._loop_stack)
         self._instrs = []
@@ -230,7 +282,8 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
         saved = self._save_func_state()
 
         func_name = _name(func_def.name)
-        param_names = [_name(p.name) for p in (func_def.params or [])]
+        # Use only the real WAT params — excludes '/', '*' separators and *args/**kwargs.
+        param_names = _real_params(func_def)
         self._locals = set(param_names)
 
         # Generate body instructions first (populates self._locals)
@@ -319,8 +372,7 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
                 elif fname in self._defined_func_names:
                     # Known WAT function — emit args then call
                     self._emit(f"{indent};; call {fname}(...)")
-                    for arg in expr.args:
-                        self._gen_expr(arg, indent)
+                    self._gen_call_args(expr, indent, fname)
                     self._emit(f"{indent}call ${fname}")
                     self._emit(f"{indent}drop")
                 else:
@@ -446,8 +498,7 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
                 self._emit(f"{indent}f64.const 0  ;; print() used as expression")
             elif fname in self._defined_func_names:
                 # Known WAT function — emit args then call
-                for arg in node.args:
-                    self._gen_expr(arg, indent)
+                self._gen_call_args(node, indent, fname)
                 self._emit(f"{indent}call ${fname}")
             else:
                 # Closure, constructor, builtin, or other non-WAT callable
