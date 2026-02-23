@@ -697,7 +697,8 @@
       <a id="complete-features-link"
          href="https://github.com/johnsamuelwrites/multilingual/blob/main/examples/complete_features_en.ml"
          target="_blank"
-         rel="noopener">Complete features (en)</a>
+         rel="noopener"
+         title="Open complete feature example for the selected language">📘 Complete features (en) ✨</a>
     </span>
     <span class="footer-pill">
       <span class="dot-sm"></span>
@@ -1068,7 +1069,7 @@ function updateCompleteFeaturesLink(lang) {
   if (!$exampleLink) return;
   const langCode = lang || 'en';
   $exampleLink.href = `https://github.com/johnsamuelwrites/multilingual/blob/main/examples/complete_features_${langCode}.ml`;
-  $exampleLink.textContent = `Complete features (${langCode})`;
+  $exampleLink.textContent = `📘 Complete features (${langCode}) ✨`;
 }
 
 let languageKeywords = new Map();
@@ -1477,6 +1478,43 @@ async function runWat(watText) {
     },
   };
 
+  function summarizeParseWatError(message) {
+    if (!message || !message.includes('parseWat failed')) return '';
+
+    const undefinedFunctions = new Set();
+    const undefinedLocals = new Set();
+    let firstLocation = '';
+
+    message.split('\n').forEach(line => {
+      const locMatch = line.match(/module\.wat:\d+:\d+:/);
+      if (!firstLocation && locMatch) {
+        firstLocation = locMatch[0];
+      }
+      const fnMatch = line.match(/undefined function variable "\$([^"]+)"/);
+      if (fnMatch) undefinedFunctions.add(fnMatch[1]);
+      const localMatch = line.match(/undefined local variable "\$([^"]+)"/);
+      if (localMatch) undefinedLocals.add(localMatch[1]);
+    });
+
+    if (!undefinedFunctions.size && !undefinedLocals.size) return '';
+
+    const fnList = Array.from(undefinedFunctions).slice(0, 8).join(', ');
+    const localList = Array.from(undefinedLocals).slice(0, 8).join(', ');
+    const fnMore = undefinedFunctions.size > 8 ? '…' : '';
+    const localMore = undefinedLocals.size > 8 ? '…' : '';
+
+    let summary = 'WAT contains unresolved symbols and cannot be compiled to WASM.';
+    if (firstLocation) summary += `\nFirst parser location: ${firstLocation}`;
+    if (undefinedFunctions.size) {
+      summary += `\nUndefined functions (${undefinedFunctions.size}): ${fnList}${fnMore}`;
+    }
+    if (undefinedLocals.size) {
+      summary += `\nUndefined locals (${undefinedLocals.size}): ${localList}${localMore}`;
+    }
+    summary += '\nThis usually happens when the generated WAT includes high-level constructs not lowered to plain WAT.';
+    return summary;
+  }
+
   try {
     const wabtModule = wabt.parseWat('module.wat', watText, {
       mutable_globals: true, sat_float_to_int: true,
@@ -1507,10 +1545,14 @@ async function runWat(watText) {
   }
 
   if (wasmErr) {
+    const concise = summarizeParseWatError(wasmErr);
     $wasmCon.className = 'console has-error';
-    $wasmCon.textContent = '⚠ WASM error: ' + wasmErr
+    $wasmCon.textContent = '⚠ WASM error: ' + (concise || wasmErr)
       + '\n\nNote: strings, classes, imports and other high-level constructs\n'
       + 'are not representable as plain WAT — see the Output tab for full execution.';
+    if (concise) {
+      console.warn('Full parseWat error details:\n' + wasmErr);
+    }
   } else if (wasmLines.length) {
     $wasmCon.textContent = wasmLines.join('\n');
   } else {
