@@ -112,7 +112,7 @@ def _name(node) -> str:
 # WATCodeGenerator
 # ---------------------------------------------------------------------------
 
-class WATCodeGenerator:
+class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
     """
     Visitor-based WAT source code generator.
 
@@ -131,6 +131,8 @@ class WATCodeGenerator:
         self._data: bytearray = bytearray()
         self._strings: dict[str, tuple[int, int]] = {}
         self._funcs: list[str] = []
+        # Names of functions compiled to WAT in this module (populated in generate())
+        self._defined_func_names: set[str] = set()
 
     # -----------------------------------------------------------------------
     # Public API
@@ -146,12 +148,18 @@ class WATCodeGenerator:
         self._data = bytearray()
         self._strings = {}
         self._funcs = []
+        self._defined_func_names = set()
 
         if isinstance(program, CoreIRProgram):
             program = program.ast
 
         funcs = [s for s in program.body if isinstance(s, FunctionDef)]
         top = [s for s in program.body if not isinstance(s, FunctionDef)]
+
+        # Record which function names will actually be compiled to WAT so that
+        # call-site generators can distinguish valid WAT calls from unsupported
+        # Python callables (closures, builtins, constructors, etc.).
+        self._defined_func_names = {_name(f.name) for f in funcs}
 
         for func in funcs:
             self._emit_function(func)
@@ -308,12 +316,16 @@ class WATCodeGenerator:
                 fname = _name(expr.func)
                 if fname in _PRINT_NAMES:
                     self._gen_print(expr, indent)
-                else:
+                elif fname in self._defined_func_names:
+                    # Known WAT function — emit args then call
                     self._emit(f"{indent};; call {fname}(...)")
                     for arg in expr.args:
                         self._gen_expr(arg, indent)
                     self._emit(f"{indent}call ${fname}")
                     self._emit(f"{indent}drop")
+                else:
+                    # Closure, constructor, builtin, or other non-WAT callable
+                    self._emit(f"{indent};; unsupported call: {fname}(...) — not a WAT function")
             else:
                 self._gen_expr(expr, indent)
                 self._emit(f"{indent}drop")
@@ -407,7 +419,12 @@ class WATCodeGenerator:
             self._emit(f"{indent}f64.const {float(offset)}  ;; str offset (not a numeric value)")
 
         elif isinstance(node, Identifier):
-            self._emit(f"{indent}local.get ${node.name}")
+            if node.name in self._locals:
+                self._emit(f"{indent}local.get ${node.name}")
+            else:
+                # Name not declared as a local — could be a closure, class, or
+                # module-level name that WAT cannot represent; emit 0 as placeholder.
+                self._emit(f"{indent}f64.const 0  ;; unresolved: {node.name}")
 
         elif isinstance(node, BinaryOp):
             self._gen_binop(node, indent)
@@ -425,12 +442,16 @@ class WATCodeGenerator:
 
         elif isinstance(node, CallExpr):
             fname = _name(node.func)
-            if fname not in _PRINT_NAMES:
+            if fname in _PRINT_NAMES:
+                self._emit(f"{indent}f64.const 0  ;; print() used as expression")
+            elif fname in self._defined_func_names:
+                # Known WAT function — emit args then call
                 for arg in node.args:
                     self._gen_expr(arg, indent)
                 self._emit(f"{indent}call ${fname}")
             else:
-                self._emit(f"{indent}f64.const 0  ;; print() used as expression")
+                # Closure, constructor, builtin, or other non-WAT callable
+                self._emit(f"{indent}f64.const 0  ;; unsupported call: {fname}(...)")
 
         else:
             self._emit(f"{indent}f64.const 0  ;; unsupported expr: {type(node).__name__}")

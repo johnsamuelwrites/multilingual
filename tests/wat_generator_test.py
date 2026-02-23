@@ -270,8 +270,11 @@ class WATExpressionTestSuite(unittest.TestCase):
         self.assertIn("i32.or", wat)
 
     def test_call_user_function(self):
-        """Calling a user function emits call $fname."""
+        """Calling a user function emits call $fname — function must be defined in the module."""
         wat = self.gen.generate(_prog(
+            FunctionDef("double", [Parameter("x")], [
+                ReturnStatement(BinaryOp(Identifier("x"), "*", NumeralLiteral("2")))
+            ]),
             ExpressionStatement(
                 CallExpr(Identifier("double"), [NumeralLiteral("3")])
             )
@@ -380,12 +383,16 @@ class WATStatementTestSuite(unittest.TestCase):
         self.assertIn("LocalStatement", wat)
 
     def test_expression_statement_non_print(self):
-        """An arbitrary expression statement must be evaluated and dropped."""
-        wat = self._wat(
+        """An expression statement calling a WAT function must be evaluated and dropped."""
+        # compute() must be defined in the same module for WAT call emission
+        wat = self.gen.generate(_prog(
+            FunctionDef("compute", [Parameter("n")], [
+                ReturnStatement(Identifier("n"))
+            ]),
             ExpressionStatement(
                 CallExpr(Identifier("compute"), [NumeralLiteral("1")])
             )
-        )
+        ))
         self.assertIn("call $compute", wat)
         self.assertIn("drop", wat)
 

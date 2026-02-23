@@ -543,7 +543,7 @@
     #resizer { cursor: row-resize; }
     #resizer::before { content: '···'; }
     #output-pane { border-left: none; border-top: 1px solid var(--border); }
-    .h-nav a:not(#theme-toggle) { display: none; }
+    .h-nav .nav-github { display: none; }
     .pipeline-flow { display: none; }
   }
   </style>
@@ -560,8 +560,8 @@
       <div class="h-sub">Code in 17 human languages · Pyodide WASM · WAT → browser WebAssembly</div>
     </div>
     <nav class="h-nav">
-      <a href="./">Docs</a>
-      <a href="https://github.com/johnsamuelwrites/multilingual" target="_blank" rel="noopener">GitHub</a>
+      <a id="home-link" class="nav-home" href="./">Home</a>
+      <a class="nav-github" href="https://github.com/johnsamuelwrites/multilingual" target="_blank" rel="noopener">GitHub</a>
       <button id="theme-toggle" title="Toggle light / dark mode" aria-label="Toggle theme">🌙</button>
     </nav>
   </header>
@@ -571,23 +571,23 @@
     <label for="lang-select">Language</label>
     <div class="lang-wrap">
       <select id="lang-select" title="Select programming language">
-        <option value="en">🇬🇧 English (en)</option>
-        <option value="fr">🇫🇷 Français (fr)</option>
-        <option value="es">🇪🇸 Español (es)</option>
-        <option value="de">🇩🇪 Deutsch (de)</option>
-        <option value="it">🇮🇹 Italiano (it)</option>
-        <option value="pt">🇵🇹 Português (pt)</option>
-        <option value="nl">🇳🇱 Nederlands (nl)</option>
-        <option value="pl">🇵🇱 Polski (pl)</option>
-        <option value="sv">🇸🇪 Svenska (sv)</option>
-        <option value="da">🇩🇰 Dansk (da)</option>
-        <option value="fi">🇫🇮 Suomi (fi)</option>
-        <option value="hi">🇮🇳 हिन्दी (hi)</option>
-        <option value="ar">🇸🇦 العربية (ar)</option>
-        <option value="bn">🇧🇩 বাংলা (bn)</option>
-        <option value="ta">🇮🇳 தமிழ் (ta)</option>
-        <option value="zh">🇨🇳 中文 (zh)</option>
-        <option value="ja">🇯🇵 日本語 (ja)</option>
+        <option value="en">English (en)</option>
+        <option value="fr">Français (fr)</option>
+        <option value="es">Español (es)</option>
+        <option value="de">Deutsch (de)</option>
+        <option value="it">Italiano (it)</option>
+        <option value="pt">Português (pt)</option>
+        <option value="nl">Nederlands (nl)</option>
+        <option value="pl">Polski (pl)</option>
+        <option value="sv">Svenska (sv)</option>
+        <option value="da">Dansk (da)</option>
+        <option value="fi">Suomi (fi)</option>
+        <option value="hi">हिन्दी (hi)</option>
+        <option value="ar">العربية (ar)</option>
+        <option value="bn">বাংলা (bn)</option>
+        <option value="ta">தமிழ் (ta)</option>
+        <option value="zh">中文 (zh)</option>
+        <option value="ja">日本語 (ja)</option>
       </select>
     </div>
 
@@ -997,6 +997,18 @@ const $pyView    = document.getElementById('python-view');
 const $watView   = document.getElementById('wat-view');
 const $wasmCon   = document.getElementById('wasm-exec-console');
 const $exampleLink = document.getElementById('complete-features-link');
+const $homeLink  = document.getElementById('home-link');
+
+function configureHomeLink() {
+  if (!$homeLink) return;
+  const path = window.location.pathname || '';
+  if (path.endsWith('/playground/')) {
+    $homeLink.href = '../';
+  } else {
+    $homeLink.href = './';
+  }
+}
+configureHomeLink();
 
 /* ──────────────────────────────────────────────────────────────────
    CodeMirror editor
@@ -1065,8 +1077,10 @@ function loadLang(lang) {
   editor.setValue(EXAMPLES[lang] || EXAMPLES.en);
   $badge.textContent = lang;
   editor.getWrapperElement().style.direction = lang === 'ar' ? 'rtl' : 'ltr';
+  editor.setOption('lineWrapping', lang === 'ar');
   applyEditorHighlighting(lang);
   updateCompleteFeaturesLink(lang);
+  editor.refresh();
 }
 $lang.addEventListener('change', () => loadLang($lang.value));
 
@@ -1081,7 +1095,7 @@ let languageKeywords = new Map();
 let unicodeWordRegex = null;
 
 try {
-  unicodeWordRegex = new RegExp('[\\p{L}\\p{N}_]', 'u');
+  unicodeWordRegex = new RegExp('[\\p{L}\\p{M}\\p{N}_]', 'u');
 } catch (_) {
   unicodeWordRegex = null;
 }
