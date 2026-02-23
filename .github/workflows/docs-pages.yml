@@ -31,10 +31,11 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install build mkdocs-material
 
-      - name: Build wheel for playground
+      - name: Build wheel and stage playground assets
         run: |
           python -m build --wheel
           mkdir -p docs/assets
+          cp multilingualprogramming/resources/usm/keywords.json docs/assets/keywords.json
           WHEEL_FILE=$(ls dist/*.whl | head -n 1 | xargs basename)
           cp "dist/${WHEEL_FILE}" "docs/assets/${WHEEL_FILE}"
           echo "{\"wheel\": \"${WHEEL_FILE}\"}" > docs/assets/wheel_info.json
