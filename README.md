@@ -60,6 +60,24 @@ Details:
 Source files for this language use the `.ml` extension (for example: `hello.ml`).
 Requires Python 3.12 or newer.
 
+### Try The Playground (No Install Required)
+
+You can try `multilingual` directly in your browser:
+
+- Playground: https://johnsamuel.info/multilingual/playground.html
+
+The playground lets you:
+
+- Write code in supported human languages
+- Run full execution in Pyodide
+- Inspect generated Python
+- Inspect generated WAT/WASM output
+- Inspect generated Rust bridge code (Wasmtime workflow)
+
+If you are evaluating the project, please test the playground with your language and open an issue with feedback:
+
+- Issues: https://github.com/johnsamuelwrites/multilingual/issues
+
 ### 1. Install
 
 PyPI package: https://pypi.org/project/multilingualprogramming/
@@ -305,6 +323,7 @@ afficher("a + b =", a + b)
 
 Use this README for setup and workflow; use `docs/` for design rationale and policy details.
 
+- Browser playground (interactive): https://johnsamuel.info/multilingual/playground.html
 - Usage guide: [USAGE.md](USAGE.md)
 - Examples guide: [examples/README.md](examples/README.md)
 - Detailed reference: [docs/reference.md](docs/reference.md)
