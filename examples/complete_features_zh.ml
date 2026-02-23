@@ -1,5 +1,5 @@
 导入 math
-从 math 导入 sqrt 作为 root_fn
+从 math 导入 sqrt 作为 根函数
 
 令 共享_计数器 = 3
 
@@ -9,11 +9,11 @@
     返回 共享_计数器
 
 函数 创建_计数器(开始值):
-    令 total = 开始值
+    令 总计 = 开始值
     函数 步进():
-        非局部 total
-        total = total + 1
-        返回 total
+        非局部 总计
+        总计 = 总计 + 1
+        返回 总计
     返回 步进
 
 令 下一个_计数器 = 创建_计数器(5)
@@ -62,7 +62,7 @@
 除了 ValueError 作为 处理_错误:
     处理_的 = 真
 最终:
-    令 根_值 = 整数(root_fn(16))
+    令 根_值 = 整数(根函数(16))
 
 令 临时_值 = 99
 删除 临时_值
@@ -133,139 +133,139 @@
 打印(委托_的)
 
 # Numeric literals
-令 shiliujinzhi_shu = 0xFF
-令 bajinzhi_shu = 0o17
-令 erjinzhi_shu = 0b1010
-令 kexue_jishu_shu = 1.5e3
+令 十六进制数 = 0xFF
+令 八进制数 = 0o17
+令 二进制数 = 0b1010
+令 科学计数 = 1.5e3
 
 # Augmented assignments
-令 zengliang_zhi = 10
-zengliang_zhi += 5
-zengliang_zhi -= 2
-zengliang_zhi *= 3
-zengliang_zhi //= 4
-zengliang_zhi %= 3
+令 增量值 = 10
+增量值 += 5
+增量值 -= 2
+增量值 *= 3
+增量值 //= 4
+增量值 %= 3
 
 # Bitwise operators
-令 bi_yu_zhi = 0b1010 & 0b1100
-令 bi_huo_zhi = 0b1010 | 0b0101
-令 bi_yihuo_zhi = 0b1010 ^ 0b1111
-令 zuoyi_zhi = 1 << 3
-令 youyi_zhi = 64 >> 2
+令 位与值 = 0b1010 & 0b1100
+令 位或值 = 0b1010 | 0b0101
+令 位异或值 = 0b1010 ^ 0b1111
+令 左移值 = 1 << 3
+令 右移值 = 64 >> 2
 
 # Chained assignment
-令 lianjia = lianyi = lianbing = 0
+令 链甲 = 链乙 = 链丙 = 0
 
 # Type annotations
-令 leixing_zhi: int = 99
+令 类型值: 整数 = 99
 
-函数 zhujie_hanshu(x: int, y: float) -> str:
-    返回 str(x + y)
+函数 注解函数(x: 整数, y: float) -> 字符串:
+    返回 字符串(x + y)
 
 # Ternary expression
-令 sanyuan_zhi = "yes" 如果 leixing_zhi > 0 否则 "no"
+令 三元值 = "yes" 如果 类型值 > 0 否则 "no"
 
 # Default params, *args, **kwargs
-函数 duocanshu_hanshu(base, extra=1, *args, **kwargs):
-    返回 base + extra + sum(args)
-令 duocanshu_jieguo = duocanshu_hanshu(10, 2, 3, 4, key=5)
+函数 多参数函数(基值, 附加=1, *参数, **命名参数):
+    返回 基值 + 附加 + 总和(参数)
+令 多参数结果 = 多参数函数(10, 2, 3, 4, 键=5)
 
 # Lambda
-令 pingfang_hanshu = 匿名 x: x * x
+令 平方函数 = 匿名 x: x * x
 
 # List/dict comprehensions 且 generator expression
-令 liebiao_tuidao = [x * 2 对于 x 里 range(4)]
-令 zidian_tuidao = {str(k): k * k 对于 k 里 range(3)}
-令 shengcheng_tuidao = list(x + 1 对于 x 里 range(3))
-令 qiantao_tuidao = [i + j 对于 i 里 range(2) 对于 j 里 range(2)]
-令 guolv_tuidao = [x 对于 x 里 range(6) 如果 x % 2 == 0]
+令 列表推导 = [x * 2 对于 x 里 范围(4)]
+令 字典推导 = {字符串(k): k * k 对于 k 里 范围(3)}
+令 生成推导 = 列表(x + 1 对于 x 里 范围(3))
+令 嵌套推导 = [i + j 对于 i 里 范围(2) 对于 j 里 范围(2)]
+令 过滤推导 = [x 对于 x 里 范围(6) 如果 x % 2 == 0]
 
 # 尝试/除了/否则
-令 changshi_fouze_zhi = 0
+令 尝试否则值 = 0
 尝试:
-    changshi_fouze_zhi = int("7")
+    尝试否则值 = 整数("7")
 除了 ValueError:
-    changshi_fouze_zhi = -1
+    尝试否则值 = -1
 否则:
-    changshi_fouze_zhi += 1
+    尝试否则值 += 1
 
 # Exception chaining
-令 lianshi_yichang = 假
+令 链式异常 = 假
 尝试:
     尝试:
         抛出 ValueError("v")
     除了 ValueError 作为 ve:
         抛出 RuntimeError("r") 从 ve
 除了 RuntimeError:
-    lianshi_yichang = 真
+    链式异常 = 真
 
 # Multiple 除了 handlers
-令 duo_yichang_zhi = 0
+令 多异常值 = 0
 尝试:
     抛出 TypeError("t")
 除了 ValueError:
-    duo_yichang_zhi = 1
+    多异常值 = 1
 除了 TypeError:
-    duo_yichang_zhi = 2
+    多异常值 = 2
 
 # Match/情况 使用 默认
-令 pipei_zhi = 2
-令 pipei_jieguo = "other"
-匹配 pipei_zhi:
+令 匹配值 = 2
+令 匹配结果 = "other"
+匹配 匹配值:
     情况 1:
-        pipei_jieguo = "one"
+        匹配结果 = "one"
     情况 2:
-        pipei_jieguo = "two"
+        匹配结果 = "two"
     默认:
-        pipei_jieguo = "默认"
+        匹配结果 = "默认"
 
 # Decorator
-函数 jiabeiqi(func):
-    函数 baozhuangqi(*args, **kwargs):
-        返回 func(*args, **kwargs) * 2
-    返回 baozhuangqi
+函数 加倍器(func):
+    函数 包装器(*参数, **命名参数):
+        返回 func(*参数, **命名参数) * 2
+    返回 包装器
 
-@jiabeiqi
-函数 shi():
+@加倍器
+函数 十():
     返回 10
 
-令 zhuangshi_jieguo = shi()
+令 装饰结果 = 十()
 
 # Multiple inheritance, static/类 methods, property
-类 HunruLei:
-    函数 hunhe(self):
+类 混入类:
+    函数 混合(self):
         返回 1
 
-类 JiLeiEr:
+类 基类二:
     函数 __init__(self, start):
         self.value = start
 
-类 ZuheLei(JiLeiEr, HunruLei):
+类 组合类(基类二, 混入类):
     @staticmethod
-    函数 biaoqian():
+    函数 标签():
         返回 "combined"
     @classmethod
-    函数 goujian(cls, v):
+    函数 构建(cls, v):
         返回 cls(v)
     @property
-    函数 shuangbei_shuxing(self):
+    函数 双倍属性(self):
         返回 self.value * 2
 
-令 zuhe_duixiang = ZuheLei.goujian(3)
-令 shuxing_zhi = zuhe_duixiang.shuangbei_shuxing
+令 组合对象 = 组合类.构建(3)
+令 属性值 = 组合对象.双倍属性
 
 # Docstring
-函数 dai_wendang():
+函数 带文档():
     """Has a docstring."""
     返回 真
 
-print(shiliujinzhi_shu, bajinzhi_shu, erjinzhi_shu, kexue_jishu_shu)
-print(zengliang_zhi, bi_yu_zhi, bi_huo_zhi, bi_yihuo_zhi, zuoyi_zhi, youyi_zhi)
-print(lianjia, lianyi, lianbing)
-print(leixing_zhi, zhujie_hanshu(3, 1.5), sanyuan_zhi)
-print(duocanshu_jieguo, pingfang_hanshu(5))
-print(liebiao_tuidao, zidian_tuidao, shengcheng_tuidao)
-print(qiantao_tuidao, guolv_tuidao)
-print(changshi_fouze_zhi, lianshi_yichang, duo_yichang_zhi)
-print(pipei_jieguo, zhuangshi_jieguo, shuxing_zhi)
-print(dai_wendang())
+打印(十六进制数, 八进制数, 二进制数, 科学计数)
+打印(增量值, 位与值, 位或值, 位异或值, 左移值, 右移值)
+打印(链甲, 链乙, 链丙)
+打印(类型值, 注解函数(3, 1.5), 三元值)
+打印(多参数结果, 平方函数(5))
+打印(列表推导, 字典推导, 生成推导)
+打印(嵌套推导, 过滤推导)
+打印(尝试否则值, 链式异常, 多异常值)
+打印(匹配结果, 装饰结果, 属性值)
+打印(带文档())

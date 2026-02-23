@@ -1,5 +1,5 @@
 आयात math
-से math आयात sqrt रूपमें root_fn
+से math आयात sqrt रूपमें मूल_फलन
 
 मान साझा_गणक = 3
 
@@ -9,11 +9,11 @@
     वापसी साझा_गणक
 
 परिभाषा बनाएं_गणक(शुरुआत):
-    मान total = शुरुआत
+    मान कुल = शुरुआत
     परिभाषा कदम():
-        अस्थानीय total
-        total = total + 1
-        वापसी total
+        अस्थानीय कुल
+        कुल = कुल + 1
+        वापसी कुल
     वापसी कदम
 
 मान अगला_गणक = बनाएं_गणक(5)
@@ -62,7 +62,7 @@
 अपवाद ValueError रूपमें संभाली_त्रुटि:
     संभाला = सत्य
 अंतमें:
-    मान मूल_मान = पूर्णांक(root_fn(16))
+    मान मूल_मान = पूर्णांक(मूल_फलन(16))
 
 मान अस्थायी_मान = 99
 हटाओ अस्थायी_मान
@@ -133,139 +133,139 @@
 प्रिंट(प्रतिनियोजित)
 
 # Numeric literals
-मान hex_sankhya = 0xFF
-मान asht_sankhya = 0o17
-मान dwi_sankhya = 0b1010
-मान vaigyanik_sankhya = 1.5e3
+मान हेक्स_संख्या = 0xFF
+मान अष्ट_संख्या = 0o17
+मान द्वि_संख्या = 0b1010
+मान वैज्ञानिक_संख्या = 1.5e3
 
 # Augmented assignments
-मान sanvardhit = 10
-sanvardhit += 5
-sanvardhit -= 2
-sanvardhit *= 3
-sanvardhit //= 4
-sanvardhit %= 3
+मान संवर्धित = 10
+संवर्धित += 5
+संवर्धित -= 2
+संवर्धित *= 3
+संवर्धित //= 4
+संवर्धित %= 3
 
 # Bitwise operators
-मान bit_aur = 0b1010 & 0b1100
-मान bit_ya = 0b1010 | 0b0101
-मान bit_xor = 0b1010 ^ 0b1111
-मान bit_baen = 1 << 3
-मान bit_daen = 64 >> 2
+मान बिट_और = 0b1010 & 0b1100
+मान बिट_या = 0b1010 | 0b0101
+मान बिट_एक्स = 0b1010 ^ 0b1111
+मान बिट_बायाँ = 1 << 3
+मान बिट_दायाँ = 64 >> 2
 
 # Chained assignment
-मान shrinkhala_k = shrinkhala_kh = shrinkhala_g = 0
+मान श्रृंखला_क = श्रृंखला_ख = श्रृंखला_ग = 0
 
 # Type annotations
-मान prakarit: int = 99
+मान प्रकारित: पूर्णांक = 99
 
-परिभाषा tippanit(x: int, y: float) -> str:
-    वापसी str(x + y)
+परिभाषा टिप्पणीकृत(x: पूर्णांक, y: float) -> शब्द:
+    वापसी शब्द(x + y)
 
 # Ternary expression
-मान triadhari = "yes" अगर prakarit > 0 वरना "no"
+मान त्रिआधारी = "yes" अगर प्रकारित > 0 वरना "no"
 
 # Default params, *args, **kwargs
-परिभाषा bahu_parameter(base, extra=1, *args, **kwargs):
-    वापसी base + extra + sum(args)
-मान bahu_parinam = bahu_parameter(10, 2, 3, 4, key=5)
+परिभाषा बहु_पैरामीटर(आधार, अतिरिक्त=1, *तर्क, **नामित_तर्क):
+    वापसी आधार + अतिरिक्त + योग(तर्क)
+मान बहु_परिणाम = बहु_पैरामीटर(10, 2, 3, 4, कुंजी=5)
 
 # Lambda
-मान varg = लैम्ब्डा x: x * x
+मान वर्ग_फल = लैम्ब्डा x: x * x
 
 # List/dict comprehensions और generator expression
-मान suchi_c = [x * 2 के_लिए x में range(4)]
-मान shabdakosh_c = {str(k): k * k के_लिए k में range(3)}
-मान janak_c = list(x + 1 के_लिए x में range(3))
-मान antarnihit_c = [i + j के_लिए i में range(2) के_लिए j में range(2)]
-मान chhanit_c = [x के_लिए x में range(6) अगर x % 2 == 0]
+मान सूची_सी = [x * 2 के_लिए x में परास(4)]
+मान शब्दकोश_सी = {शब्द(k): k * k के_लिए k में परास(3)}
+मान जनक_सी = सूची(x + 1 के_लिए x में परास(3))
+मान अंतर्निहित_सी = [i + j के_लिए i में परास(2) के_लिए j में परास(2)]
+मान छनित_सी = [x के_लिए x में परास(6) अगर x % 2 == 0]
 
 # प्रयास/अपवाद/वरना
-मान prayas_anyatha = 0
+मान प्रयास_अन्यथा = 0
 प्रयास:
-    prayas_anyatha = int("7")
+    प्रयास_अन्यथा = पूर्णांक("7")
 अपवाद ValueError:
-    prayas_anyatha = -1
+    प्रयास_अन्यथा = -1
 वरना:
-    prayas_anyatha += 1
+    प्रयास_अन्यथा += 1
 
 # Exception chaining
-मान shrinkhalit = असत्य
+मान श्रृंखलित = असत्य
 प्रयास:
     प्रयास:
         उठाओ ValueError("v")
     अपवाद ValueError रूपमें ve:
         उठाओ RuntimeError("r") से ve
 अपवाद RuntimeError:
-    shrinkhalit = सत्य
+    श्रृंखलित = सत्य
 
 # Multiple अपवाद handlers
-मान bahu_apavad = 0
+मान बहु_अपवाद = 0
 प्रयास:
     उठाओ TypeError("t")
 अपवाद ValueError:
-    bahu_apavad = 1
+    बहु_अपवाद = 1
 अपवाद TypeError:
-    bahu_apavad = 2
+    बहु_अपवाद = 2
 
 # Match/स्थिति साथ मूलभूत
-मान milan_man = 2
-मान milan_parinam = "other"
-मिलाओ milan_man:
+मान मिलान_मान = 2
+मान मिलान_परिणाम = "other"
+मिलाओ मिलान_मान:
     स्थिति 1:
-        milan_parinam = "one"
+        मिलान_परिणाम = "one"
     स्थिति 2:
-        milan_parinam = "two"
+        मिलान_परिणाम = "two"
     मूलभूत:
-        milan_parinam = "मूलभूत"
+        मिलान_परिणाम = "मूलभूत"
 
 # Decorator
-परिभाषा dwigunak(func):
-    परिभाषा avaran(*args, **kwargs):
-        वापसी func(*args, **kwargs) * 2
-    वापसी avaran
+परिभाषा द्विगुणक(func):
+    परिभाषा आवरण(*तर्क, **नामित_तर्क):
+        वापसी func(*तर्क, **नामित_तर्क) * 2
+    वापसी आवरण
 
-@dwigunak
-परिभाषा das():
+@द्विगुणक
+परिभाषा दस():
     वापसी 10
 
-मान sajja_parinam = das()
+मान सज्जा_परिणाम = दस()
 
 # Multiple inheritance, static/वर्ग methods, property
-वर्ग Mishran:
-    परिभाषा mishrit(self):
+वर्ग मिश्रण:
+    परिभाषा मिश्रित(self):
         वापसी 1
 
-वर्ग AadharDo:
+वर्ग आधारदो:
     परिभाषा __init__(self, start):
         self.value = start
 
-वर्ग Sanyukt(AadharDo, Mishran):
+वर्ग संयुक्त(आधारदो, मिश्रण):
     @staticmethod
-    परिभाषा lebal():
+    परिभाषा लेबल():
         वापसी "combined"
     @classmethod
-    परिभाषा nirman(cls, v):
+    परिभाषा निर्माण(cls, v):
         वापसी cls(v)
     @property
-    परिभाषा duguna(self):
+    परिभाषा दुगुना(self):
         वापसी self.value * 2
 
-मान sanyukt_vastu = Sanyukt.nirman(3)
-मान gun = sanyukt_vastu.duguna
+मान संयुक्त_वस्तु = संयुक्त.निर्माण(3)
+मान गुण = संयुक्त_वस्तु.दुगुना
 
 # Docstring
-परिभाषा dastavez_sahit():
+परिभाषा दस्तावेज_सहित():
     """Has a docstring."""
     वापसी सत्य
 
-print(hex_sankhya, asht_sankhya, dwi_sankhya, vaigyanik_sankhya)
-print(sanvardhit, bit_aur, bit_ya, bit_xor, bit_baen, bit_daen)
-print(shrinkhala_k, shrinkhala_kh, shrinkhala_g)
-print(prakarit, tippanit(3, 1.5), triadhari)
-print(bahu_parinam, varg(5))
-print(suchi_c, shabdakosh_c, janak_c)
-print(antarnihit_c, chhanit_c)
-print(prayas_anyatha, shrinkhalit, bahu_apavad)
-print(milan_parinam, sajja_parinam, gun)
-print(dastavez_sahit())
+प्रिंट(हेक्स_संख्या, अष्ट_संख्या, द्वि_संख्या, वैज्ञानिक_संख्या)
+प्रिंट(संवर्धित, बिट_और, बिट_या, बिट_एक्स, बिट_बायाँ, बिट_दायाँ)
+प्रिंट(श्रृंखला_क, श्रृंखला_ख, श्रृंखला_ग)
+प्रिंट(प्रकारित, टिप्पणीकृत(3, 1.5), त्रिआधारी)
+प्रिंट(बहु_परिणाम, वर्ग_फल(5))
+प्रिंट(सूची_सी, शब्दकोश_सी, जनक_सी)
+प्रिंट(अंतर्निहित_सी, छनित_सी)
+प्रिंट(प्रयास_अन्यथा, श्रृंखलित, बहु_अपवाद)
+प्रिंट(मिलान_परिणाम, सज्जा_परिणाम, गुण)
+प्रिंट(दस्तावेज_सहित())

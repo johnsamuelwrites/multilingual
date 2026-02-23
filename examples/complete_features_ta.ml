@@ -1,5 +1,5 @@
 இறக்கு math
-இருந்து math இறக்கு sqrt ஆக root_fn
+இருந்து math இறக்கு sqrt ஆக மூல_செயலி
 
 இருக்கட்டும் பகிரப்பட்ட_எண்ணி = 3
 
@@ -9,11 +9,11 @@
     திருப்பு பகிரப்பட்ட_எண்ணி
 
 வரையறு உருவாக்கு_எண்ணி(தொடக்கம்):
-    இருக்கட்டும் total = தொடக்கம்
+    இருக்கட்டும் மொத்தம் = தொடக்கம்
     வரையறு படி():
-        உள்ளூரல்லாத total
-        total = total + 1
-        திருப்பு total
+        உள்ளூரல்லாத மொத்தம்
+        மொத்தம் = மொத்தம் + 1
+        திருப்பு மொத்தம்
     திருப்பு படி
 
 இருக்கட்டும் அடுத்த_எண்ணி = உருவாக்கு_எண்ணி(5)
@@ -62,7 +62,7 @@
 விதிவிலக்கு ValueError ஆக கையாளப்பட்ட_பிழை:
     கையாளப்பட்ட = உண்மை
 இறுதியாக:
-    இருக்கட்டும் மூல_மதிப்பு = முழு(root_fn(16))
+    இருக்கட்டும் மூல_மதிப்பு = முழு(மூல_செயலி(16))
 
 இருக்கட்டும் தற்காலிக_மதிப்பு = 99
 அழி தற்காலிக_மதிப்பு
@@ -133,139 +133,139 @@
 அச்சிடு(பிரதிநிதியாக்கப்பட்ட)
 
 # Numeric literals
-இருக்கட்டும் hex_en = 0xFF
-இருக்கட்டும் oct_en = 0o17
-இருக்கட்டும் bin_en = 0b1010
-இருக்கட்டும் ariviyal_en = 1.5e3
+இருக்கட்டும் ஹெக்ஸ்_எண் = 0xFF
+இருக்கட்டும் ஆக்ட்_எண் = 0o17
+இருக்கட்டும் இரும_எண் = 0b1010
+இருக்கட்டும் அறிவியல்_எண் = 1.5e3
 
 # Augmented assignments
-இருக்கட்டும் adhigarippu = 10
-adhigarippu += 5
-adhigarippu -= 2
-adhigarippu *= 3
-adhigarippu //= 4
-adhigarippu %= 3
+இருக்கட்டும் அதிகரிப்பு = 10
+அதிகரிப்பு += 5
+அதிகரிப்பு -= 2
+அதிகரிப்பு *= 3
+அதிகரிப்பு //= 4
+அதிகரிப்பு %= 3
 
 # Bitwise operators
-இருக்கட்டும் bit_matrum = 0b1010 & 0b1100
-இருக்கட்டும் bit_allathu = 0b1010 | 0b0101
-இருக்கட்டும் bit_xor = 0b1010 ^ 0b1111
-இருக்கட்டும் bit_idam = 1 << 3
-இருக்கட்டும் bit_valam = 64 >> 2
+இருக்கட்டும் பிட்_மற்றும் = 0b1010 & 0b1100
+இருக்கட்டும் பிட்_அல்லது = 0b1010 | 0b0101
+இருக்கட்டும் பிட்_எக்ஸ் = 0b1010 ^ 0b1111
+இருக்கட்டும் பிட்_இடம் = 1 << 3
+இருக்கட்டும் பிட்_வலம் = 64 >> 2
 
 # Chained assignment
-இருக்கட்டும் saram_a = saram_aa = saram_i = 0
+இருக்கட்டும் சரம்_அ = சரம்_ஆ = சரம்_இ = 0
 
 # Type annotations
-இருக்கட்டும் vakaiyitta: int = 99
+இருக்கட்டும் வகைபடுத்திய: முழு = 99
 
-வரையறு kurippitta(x: int, y: float) -> str:
-    திருப்பு str(x + y)
+வரையறு குறிப்பிட்ட(x: முழு, y: float) -> சரம்:
+    திருப்பு சரம்(x + y)
 
 # Ternary expression
-இருக்கட்டும் mummunai = "yes" என்றால் vakaiyitta > 0 இல்லை "no"
+இருக்கட்டும் மும்முனை = "yes" என்றால் வகைபடுத்திய > 0 இல்லை "no"
 
 # Default params, *args, **kwargs
-வரையறு pala_alavurukkal(base, extra=1, *args, **kwargs):
-    திருப்பு base + extra + sum(args)
-இருக்கட்டும் pala_mudivu = pala_alavurukkal(10, 2, 3, 4, key=5)
+வரையறு பல_அளவுருக்கள்(அடி, கூடுதல்=1, *வாதங்கள், **பெயரிட்ட_வாதங்கள்):
+    திருப்பு அடி + கூடுதல் + கூட்டுத்தொகை(வாதங்கள்)
+இருக்கட்டும் பல_முடிவு = பல_அளவுருக்கள்(10, 2, 3, 4, விசை=5)
 
 # Lambda
-இருக்கட்டும் vargam = லாம்டா x: x * x
+இருக்கட்டும் வர்க்கம் = லாம்டா x: x * x
 
 # List/dict comprehensions மற்றும் generator expression
-இருக்கட்டும் pattiyal_c = [x * 2 ஒவ்வொரு x இல் range(4)]
-இருக்கட்டும் akarathi_c = {str(k): k * k ஒவ்வொரு k இல் range(3)}
-இருக்கட்டும் uruvakki_c = list(x + 1 ஒவ்வொரு x இல் range(3))
-இருக்கட்டும் utpothi_c = [i + j ஒவ்வொரு i இல் range(2) ஒவ்வொரு j இல் range(2)]
-இருக்கட்டும் vadikatti_c = [x ஒவ்வொரு x இல் range(6) என்றால் x % 2 == 0]
+இருக்கட்டும் பட்டியல்_சி = [x * 2 ஒவ்வொரு x இல் வரம்பு(4)]
+இருக்கட்டும் அகராதி_சி = {சரம்(k): k * k ஒவ்வொரு k இல் வரம்பு(3)}
+இருக்கட்டும் உருவாக்கி_சி = பட்டியல்(x + 1 ஒவ்வொரு x இல் வரம்பு(3))
+இருக்கட்டும் உட்பொதி_சி = [i + j ஒவ்வொரு i இல் வரம்பு(2) ஒவ்வொரு j இல் வரம்பு(2)]
+இருக்கட்டும் வடிகட்டி_சி = [x ஒவ்வொரு x இல் வரம்பு(6) என்றால் x % 2 == 0]
 
 # முயற்சி/விதிவிலக்கு/இல்லை
-இருக்கட்டும் muyarchi_illaiyenil = 0
+இருக்கட்டும் முயற்சி_இல்லையெனில் = 0
 முயற்சி:
-    muyarchi_illaiyenil = int("7")
+    முயற்சி_இல்லையெனில் = முழு("7")
 விதிவிலக்கு ValueError:
-    muyarchi_illaiyenil = -1
+    முயற்சி_இல்லையெனில் = -1
 இல்லை:
-    muyarchi_illaiyenil += 1
+    முயற்சி_இல்லையெனில் += 1
 
 # Exception chaining
-இருக்கட்டும் sangili = பொய்
+இருக்கட்டும் சங்கிலி = பொய்
 முயற்சி:
     முயற்சி:
         எழுப்பு ValueError("v")
     விதிவிலக்கு ValueError ஆக ve:
         எழுப்பு RuntimeError("r") இருந்து ve
 விதிவிலக்கு RuntimeError:
-    sangili = உண்மை
+    சங்கிலி = உண்மை
 
 # Multiple விதிவிலக்கு handlers
-இருக்கட்டும் pala_vidivilakku = 0
+இருக்கட்டும் பல_விதிவிலக்கு = 0
 முயற்சி:
     எழுப்பு TypeError("t")
 விதிவிலக்கு ValueError:
-    pala_vidivilakku = 1
+    பல_விதிவிலக்கு = 1
 விதிவிலக்கு TypeError:
-    pala_vidivilakku = 2
+    பல_விதிவிலக்கு = 2
 
 # Match/நிலை உடன் இயல்பு
-இருக்கட்டும் poruththa_madhippu = 2
-இருக்கட்டும் poruththa_mudivu = "other"
-பொருத்து poruththa_madhippu:
+இருக்கட்டும் பொருத்த_மதிப்பு = 2
+இருக்கட்டும் பொருத்த_முடிவு = "other"
+பொருத்து பொருத்த_மதிப்பு:
     நிலை 1:
-        poruththa_mudivu = "one"
+        பொருத்த_முடிவு = "one"
     நிலை 2:
-        poruththa_mudivu = "two"
+        பொருத்த_முடிவு = "two"
     இயல்பு:
-        poruththa_mudivu = "இயல்பு"
+        பொருத்த_முடிவு = "இயல்பு"
 
 # Decorator
-வரையறு irattippan(func):
-    வரையறு moodu(*args, **kwargs):
-        திருப்பு func(*args, **kwargs) * 2
-    திருப்பு moodu
+வரையறு இரட்டிப்பான்(func):
+    வரையறு மூடு(*வாதங்கள், **பெயரிட்ட_வாதங்கள்):
+        திருப்பு func(*வாதங்கள், **பெயரிட்ட_வாதங்கள்) * 2
+    திருப்பு மூடு
 
-@irattippan
-வரையறு pathu():
+@இரட்டிப்பான்
+வரையறு பத்து():
     திருப்பு 10
 
-இருக்கட்டும் alangara_mudivu = pathu()
+இருக்கட்டும் அலங்கார_முடிவு = பத்து()
 
 # Multiple inheritance, static/வகுப்பு methods, property
-வகுப்பு Kalavai:
-    வரையறு kalakku(self):
+வகுப்பு கலவை:
+    வரையறு கலக்கு(self):
         திருப்பு 1
 
-வகுப்பு AdipadaiIrandu:
+வகுப்பு அடிபடைஇரண்டு:
     வரையறு __init__(self, start):
         self.value = start
 
-வகுப்பு Inaindha(AdipadaiIrandu, Kalavai):
+வகுப்பு இணைந்த(அடிபடைஇரண்டு, கலவை):
     @staticmethod
-    வரையறு peyarsutti():
+    வரையறு பெயர்சுட்டி():
         திருப்பு "combined"
     @classmethod
-    வரையறு uruvakku(cls, v):
+    வரையறு உருவாக்கு(cls, v):
         திருப்பு cls(v)
     @property
-    வரையறு irattippu(self):
+    வரையறு இரட்டிப்பு(self):
         திருப்பு self.value * 2
 
-இருக்கட்டும் inaindha_porul = Inaindha.uruvakku(3)
-இருக்கட்டும் panbu = inaindha_porul.irattippu
+இருக்கட்டும் இணைந்த_பொருள் = இணைந்த.உருவாக்கு(3)
+இருக்கட்டும் பண்பு = இணைந்த_பொருள்.இரட்டிப்பு
 
 # Docstring
-வரையறு aavanathudan():
+வரையறு ஆவணத்துடன்():
     """Has a docstring."""
     திருப்பு உண்மை
 
-print(hex_en, oct_en, bin_en, ariviyal_en)
-print(adhigarippu, bit_matrum, bit_allathu, bit_xor, bit_idam, bit_valam)
-print(saram_a, saram_aa, saram_i)
-print(vakaiyitta, kurippitta(3, 1.5), mummunai)
-print(pala_mudivu, vargam(5))
-print(pattiyal_c, akarathi_c, uruvakki_c)
-print(utpothi_c, vadikatti_c)
-print(muyarchi_illaiyenil, sangili, pala_vidivilakku)
-print(poruththa_mudivu, alangara_mudivu, panbu)
-print(aavanathudan())
+அச்சிடு(ஹெக்ஸ்_எண், ஆக்ட்_எண், இரும_எண், அறிவியல்_எண்)
+அச்சிடு(அதிகரிப்பு, பிட்_மற்றும், பிட்_அல்லது, பிட்_எக்ஸ், பிட்_இடம், பிட்_வலம்)
+அச்சிடு(சரம்_அ, சரம்_ஆ, சரம்_இ)
+அச்சிடு(வகைபடுத்திய, குறிப்பிட்ட(3, 1.5), மும்முனை)
+அச்சிடு(பல_முடிவு, வர்க்கம்(5))
+அச்சிடு(பட்டியல்_சி, அகராதி_சி, உருவாக்கி_சி)
+அச்சிடு(உட்பொதி_சி, வடிகட்டி_சி)
+அச்சிடு(முயற்சி_இல்லையெனில், சங்கிலி, பல_விதிவிலக்கு)
+அச்சிடு(பொருத்த_முடிவு, அலங்கார_முடிவு, பண்பு)
+அச்சிடு(ஆவணத்துடன்())

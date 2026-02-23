@@ -1,5 +1,5 @@
 আমদানি math
-থেকে math আমদানি sqrt হিসাবে root_fn
+থেকে math আমদানি sqrt হিসাবে মূল_ফাংশন
 
 ধরি ভাগ_করা_গণক = 3
 
@@ -9,11 +9,11 @@
     ফেরত ভাগ_করা_গণক
 
 সংজ্ঞা তৈরি_গণক(শুরু):
-    ধরি total = শুরু
+    ধরি মোট = শুরু
     সংজ্ঞা ধাপ():
-        অস্থানীয় total
-        total = total + 1
-        ফেরত total
+        অস্থানীয় মোট
+        মোট = মোট + 1
+        ফেরত মোট
     ফেরত ধাপ
 
 ধরি পরবর্তী_গণক = তৈরি_গণক(5)
@@ -62,7 +62,7 @@
 ব্যতিক্রম ValueError হিসাবে পরিচালিত_ত্রুটি:
     পরিচালনা = সত্য
 অবশেষে:
-    ধরি মূল_মূল্য = পূর্ণসংখ্যা(root_fn(16))
+    ধরি মূল_মূল্য = পূর্ণসংখ্যা(মূল_ফাংশন(16))
 
 ধরি অস্থায়ী_মূল্য = 99
 মুছো অস্থায়ী_মূল্য
@@ -133,139 +133,139 @@
 ছাপাও(প্রতিনিধিত্ব)
 
 # Numeric literals
-ধরি hex_sankhya = 0xFF
-ধরি oct_sankhya = 0o17
-ধরি bin_sankhya = 0b1010
-ধরি bigganik_sankhya = 1.5e3
+ধরি হেক্স_সংখ্যা = 0xFF
+ধরি অক্ট_সংখ্যা = 0o17
+ধরি বাইনারি_সংখ্যা = 0b1010
+ধরি বৈজ্ঞানিক_সংখ্যা = 1.5e3
 
 # Augmented assignments
-ধরি bardhito = 10
-bardhito += 5
-bardhito -= 2
-bardhito *= 3
-bardhito //= 4
-bardhito %= 3
+ধরি বর্ধিত = 10
+বর্ধিত += 5
+বর্ধিত -= 2
+বর্ধিত *= 3
+বর্ধিত //= 4
+বর্ধিত %= 3
 
 # Bitwise operators
-ধরি bit_ebong = 0b1010 & 0b1100
-ধরি bit_othoba = 0b1010 | 0b0101
-ধরি bit_xor = 0b1010 ^ 0b1111
-ধরি bit_bam = 1 << 3
-ধরি bit_dan = 64 >> 2
+ধরি বিট_এবং = 0b1010 & 0b1100
+ধরি বিট_অথবা = 0b1010 | 0b0101
+ধরি বিট_এক্স = 0b1010 ^ 0b1111
+ধরি বিট_বাম = 1 << 3
+ধরি বিট_ডান = 64 >> 2
 
 # Chained assignment
-ধরি shrinkhal_a = shrinkhal_b = shrinkhal_c = 0
+ধরি শৃঙ্খল_ক = শৃঙ্খল_খ = শৃঙ্খল_গ = 0
 
 # Type annotations
-ধরি typito: int = 99
+ধরি টাইপিত: পূর্ণসংখ্যা = 99
 
-সংজ্ঞা tika_jukto(x: int, y: float) -> str:
-    ফেরত str(x + y)
+সংজ্ঞা টীকাযুক্ত(x: পূর্ণসংখ্যা, y: float) -> পাঠ্য:
+    ফেরত পাঠ্য(x + y)
 
 # Ternary expression
-ধরি trimukhi = "yes" যদি typito > 0 নাহলে "no"
+ধরি ত্রিমুখী = "yes" যদি টাইপিত > 0 নাহলে "no"
 
 # Default params, *args, **kwargs
-সংজ্ঞা bohu_param(base, extra=1, *args, **kwargs):
-    ফেরত base + extra + sum(args)
-ধরি bohu_fol = bohu_param(10, 2, 3, 4, key=5)
+সংজ্ঞা বহু_প্যারাম(ভিত্তি, অতিরিক্ত=1, *আর্গস, **নামযুক্ত_আর্গস):
+    ফেরত ভিত্তি + অতিরিক্ত + যোগফল(আর্গস)
+ধরি বহু_ফল = বহু_প্যারাম(10, 2, 3, 4, চাবি=5)
 
 # Lambda
-ধরি borgo = ল্যাম্বডা x: x * x
+ধরি বর্গ = ল্যাম্বডা x: x * x
 
 # List/dict comprehensions এবং generator expression
-ধরি talika_c = [x * 2 জন্য x মধ্যে range(4)]
-ধরি abhidhan_c = {str(k): k * k জন্য k মধ্যে range(3)}
-ধরি gen_c = list(x + 1 জন্য x মধ্যে range(3))
-ধরি nested_c = [i + j জন্য i মধ্যে range(2) জন্য j মধ্যে range(2)]
-ধরি filter_c = [x জন্য x মধ্যে range(6) যদি x % 2 == 0]
+ধরি তালিকা_সি = [x * 2 জন্য x মধ্যে পরিসর(4)]
+ধরি অভিধান_সি = {পাঠ্য(k): k * k জন্য k মধ্যে পরিসর(3)}
+ধরি জেনারেটর_সি = তালিকা(x + 1 জন্য x মধ্যে পরিসর(3))
+ধরি নেস্টেড_সি = [i + j জন্য i মধ্যে পরিসর(2) জন্য j মধ্যে পরিসর(2)]
+ধরি ফিল্টার_সি = [x জন্য x মধ্যে পরিসর(6) যদি x % 2 == 0]
 
 # চেষ্টা/ব্যতিক্রম/নাহলে
-ধরি chesta_na_hole = 0
+ধরি চেষ্টা_নাহলে = 0
 চেষ্টা:
-    chesta_na_hole = int("7")
+    চেষ্টা_নাহলে = পূর্ণসংখ্যা("7")
 ব্যতিক্রম ValueError:
-    chesta_na_hole = -1
+    চেষ্টা_নাহলে = -1
 নাহলে:
-    chesta_na_hole += 1
+    চেষ্টা_নাহলে += 1
 
 # Exception chaining
-ধরি shrinkhalito = মিথ্যা
+ধরি শৃঙ্খলিত = মিথ্যা
 চেষ্টা:
     চেষ্টা:
         তোলো ValueError("v")
     ব্যতিক্রম ValueError হিসাবে ve:
         তোলো RuntimeError("r") থেকে ve
 ব্যতিক্রম RuntimeError:
-    shrinkhalito = সত্য
+    শৃঙ্খলিত = সত্য
 
 # Multiple ব্যতিক্রম handlers
-ধরি bohu_byatikrom = 0
+ধরি বহু_ব্যতিক্রম = 0
 চেষ্টা:
     তোলো TypeError("t")
 ব্যতিক্রম ValueError:
-    bohu_byatikrom = 1
+    বহু_ব্যতিক্রম = 1
 ব্যতিক্রম TypeError:
-    bohu_byatikrom = 2
+    বহু_ব্যতিক্রম = 2
 
 # Match/ক্ষেত্র সাথে পূর্বনির্ধারিত
-ধরি match_man = 2
-ধরি match_fol = "other"
-মিলাও match_man:
+ধরি ম্যাচ_মান = 2
+ধরি ম্যাচ_ফল = "other"
+মিলাও ম্যাচ_মান:
     ক্ষেত্র 1:
-        match_fol = "one"
+        ম্যাচ_ফল = "one"
     ক্ষেত্র 2:
-        match_fol = "two"
+        ম্যাচ_ফল = "two"
     পূর্বনির্ধারিত:
-        match_fol = "পূর্বনির্ধারিত"
+        ম্যাচ_ফল = "পূর্বনির্ধারিত"
 
 # Decorator
-সংজ্ঞা dwigunok(func):
-    সংজ্ঞা morok(*args, **kwargs):
-        ফেরত func(*args, **kwargs) * 2
-    ফেরত morok
+সংজ্ঞা দ্বিগুণকারী(func):
+    সংজ্ঞা মোড়ক(*আর্গস, **নামযুক্ত_আর্গস):
+        ফেরত func(*আর্গস, **নামযুক্ত_আর্গস) * 2
+    ফেরত মোড়ক
 
-@dwigunok
-সংজ্ঞা dosh():
+@দ্বিগুণকারী
+সংজ্ঞা দশ():
     ফেরত 10
 
-ধরি sajja_fol = dosh()
+ধরি সাজ_ফল = দশ()
 
 # Multiple inheritance, static/শ্রেণি methods, property
-শ্রেণি Mishran:
-    সংজ্ঞা mishao(self):
+শ্রেণি মিশ্রণ:
+    সংজ্ঞা মেশাও(self):
         ফেরত 1
 
-শ্রেণি BhittiDui:
+শ্রেণি ভিত্তি_দুই:
     সংজ্ঞা __init__(self, start):
         self.value = start
 
-শ্রেণি Somonnito(BhittiDui, Mishran):
+শ্রেণি সমন্বিত(ভিত্তি_দুই, মিশ্রণ):
     @staticmethod
-    সংজ্ঞা lebel():
+    সংজ্ঞা লেবেল():
         ফেরত "combined"
     @classmethod
-    সংজ্ঞা nirman(cls, v):
+    সংজ্ঞা নির্মাণ(cls, v):
         ফেরত cls(v)
     @property
-    সংজ্ঞা dwigun(self):
+    সংজ্ঞা দ্বিগুণ(self):
         ফেরত self.value * 2
 
-ধরি somonnito_obj = Somonnito.nirman(3)
-ধরি gun = somonnito_obj.dwigun
+ধরি সমন্বিত_বস্তু = সমন্বিত.নির্মাণ(3)
+ধরি গুণ = সমন্বিত_বস্তু.দ্বিগুণ
 
 # Docstring
-সংজ্ঞা doc_soho():
+সংজ্ঞা ডকসহ():
     """Has a docstring."""
     ফেরত সত্য
 
-print(hex_sankhya, oct_sankhya, bin_sankhya, bigganik_sankhya)
-print(bardhito, bit_ebong, bit_othoba, bit_xor, bit_bam, bit_dan)
-print(shrinkhal_a, shrinkhal_b, shrinkhal_c)
-print(typito, tika_jukto(3, 1.5), trimukhi)
-print(bohu_fol, borgo(5))
-print(talika_c, abhidhan_c, gen_c)
-print(nested_c, filter_c)
-print(chesta_na_hole, shrinkhalito, bohu_byatikrom)
-print(match_fol, sajja_fol, gun)
-print(doc_soho())
+ছাপাও(হেক্স_সংখ্যা, অক্ট_সংখ্যা, বাইনারি_সংখ্যা, বৈজ্ঞানিক_সংখ্যা)
+ছাপাও(বর্ধিত, বিট_এবং, বিট_অথবা, বিট_এক্স, বিট_বাম, বিট_ডান)
+ছাপাও(শৃঙ্খল_ক, শৃঙ্খল_খ, শৃঙ্খল_গ)
+ছাপাও(টাইপিত, টীকাযুক্ত(3, 1.5), ত্রিমুখী)
+ছাপাও(বহু_ফল, বর্গ(5))
+ছাপাও(তালিকা_সি, অভিধান_সি, জেনারেটর_সি)
+ছাপাও(নেস্টেড_সি, ফিল্টার_সি)
+ছাপাও(চেষ্টা_নাহলে, শৃঙ্খলিত, বহু_ব্যতিক্রম)
+ছাপাও(ম্যাচ_ফল, সাজ_ফল, গুণ)
+ছাপাও(ডকসহ())
