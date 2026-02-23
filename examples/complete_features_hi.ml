@@ -131,3 +131,141 @@
 प्रिंट(क्रमबद्ध(वर्ग_समुच्चय))
 प्रिंट(शक्ति_परिणाम, divmod_परिणाम)
 प्रिंट(प्रतिनियोजित)
+
+# Numeric literals
+मान hex_sankhya = 0xFF
+मान asht_sankhya = 0o17
+मान dwi_sankhya = 0b1010
+मान vaigyanik_sankhya = 1.5e3
+
+# Augmented assignments
+मान sanvardhit = 10
+sanvardhit += 5
+sanvardhit -= 2
+sanvardhit *= 3
+sanvardhit //= 4
+sanvardhit %= 3
+
+# Bitwise operators
+मान bit_aur = 0b1010 & 0b1100
+मान bit_ya = 0b1010 | 0b0101
+मान bit_xor = 0b1010 ^ 0b1111
+मान bit_baen = 1 << 3
+मान bit_daen = 64 >> 2
+
+# Chained assignment
+मान shrinkhala_k = shrinkhala_kh = shrinkhala_g = 0
+
+# Type annotations
+मान prakarit: int = 99
+
+परिभाषा tippanit(x: int, y: float) -> str:
+    वापसी str(x + y)
+
+# Ternary expression
+मान triadhari = "yes" अगर prakarit > 0 वरना "no"
+
+# Default params, *args, **kwargs
+परिभाषा bahu_parameter(base, extra=1, *args, **kwargs):
+    वापसी base + extra + sum(args)
+मान bahu_parinam = bahu_parameter(10, 2, 3, 4, key=5)
+
+# Lambda
+मान varg = लैम्ब्डा x: x * x
+
+# List/dict comprehensions और generator expression
+मान suchi_c = [x * 2 के_लिए x में range(4)]
+मान shabdakosh_c = {str(k): k * k के_लिए k में range(3)}
+मान janak_c = list(x + 1 के_लिए x में range(3))
+मान antarnihit_c = [i + j के_लिए i में range(2) के_लिए j में range(2)]
+मान chhanit_c = [x के_लिए x में range(6) अगर x % 2 == 0]
+
+# प्रयास/अपवाद/वरना
+मान prayas_anyatha = 0
+प्रयास:
+    prayas_anyatha = int("7")
+अपवाद ValueError:
+    prayas_anyatha = -1
+वरना:
+    prayas_anyatha += 1
+
+# Exception chaining
+मान shrinkhalit = असत्य
+प्रयास:
+    प्रयास:
+        उठाओ ValueError("v")
+    अपवाद ValueError रूपमें ve:
+        उठाओ RuntimeError("r") से ve
+अपवाद RuntimeError:
+    shrinkhalit = सत्य
+
+# Multiple अपवाद handlers
+मान bahu_apavad = 0
+प्रयास:
+    उठाओ TypeError("t")
+अपवाद ValueError:
+    bahu_apavad = 1
+अपवाद TypeError:
+    bahu_apavad = 2
+
+# Match/स्थिति साथ मूलभूत
+मान milan_man = 2
+मान milan_parinam = "other"
+मिलाओ milan_man:
+    स्थिति 1:
+        milan_parinam = "one"
+    स्थिति 2:
+        milan_parinam = "two"
+    मूलभूत:
+        milan_parinam = "मूलभूत"
+
+# Decorator
+परिभाषा dwigunak(func):
+    परिभाषा avaran(*args, **kwargs):
+        वापसी func(*args, **kwargs) * 2
+    वापसी avaran
+
+@dwigunak
+परिभाषा das():
+    वापसी 10
+
+मान sajja_parinam = das()
+
+# Multiple inheritance, static/वर्ग methods, property
+वर्ग Mishran:
+    परिभाषा mishrit(self):
+        वापसी 1
+
+वर्ग AadharDo:
+    परिभाषा __init__(self, start):
+        self.value = start
+
+वर्ग Sanyukt(AadharDo, Mishran):
+    @staticmethod
+    परिभाषा lebal():
+        वापसी "combined"
+    @classmethod
+    परिभाषा nirman(cls, v):
+        वापसी cls(v)
+    @property
+    परिभाषा duguna(self):
+        वापसी self.value * 2
+
+मान sanyukt_vastu = Sanyukt.nirman(3)
+मान gun = sanyukt_vastu.duguna
+
+# Docstring
+परिभाषा dastavez_sahit():
+    """Has a docstring."""
+    वापसी सत्य
+
+print(hex_sankhya, asht_sankhya, dwi_sankhya, vaigyanik_sankhya)
+print(sanvardhit, bit_aur, bit_ya, bit_xor, bit_baen, bit_daen)
+print(shrinkhala_k, shrinkhala_kh, shrinkhala_g)
+print(prakarit, tippanit(3, 1.5), triadhari)
+print(bahu_parinam, varg(5))
+print(suchi_c, shabdakosh_c, janak_c)
+print(antarnihit_c, chhanit_c)
+print(prayas_anyatha, shrinkhalit, bahu_apavad)
+print(milan_parinam, sajja_parinam, gun)
+print(dastavez_sahit())
