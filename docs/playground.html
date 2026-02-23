@@ -933,10 +933,13 @@ function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
   document.getElementById('theme-toggle').textContent = theme === 'dark' ? '🌙' : '☀️';
   localStorage.setItem(THEME_KEY, theme);
-  // Switch CodeMirror editor theme
-  if (typeof editor !== 'undefined') {
+  // Switch CodeMirror theme. Guard with try/catch because applyTheme() is
+  // called by initTheme() before `const editor` is initialized (TDZ).
+  // CodeMirror reads data-theme from the DOM on creation, so skipping
+  // setOption() during init is safe — it only matters for live toggles.
+  try {
     editor.setOption('theme', theme === 'dark' ? 'dracula' : 'eclipse');
-  }
+  } catch (_) { /* editor not yet initialized */ }
 }
 
 (function initTheme() {
