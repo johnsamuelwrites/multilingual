@@ -26,7 +26,7 @@
   <script src="https://cdn.jsdelivr.net/pyodide/v0.26.0/full/pyodide.js"></script>
 
   <!-- wabt.js: WAT → binary WASM -->
-  <script src="https://cdn.jsdelivr.net/npm/wabt@1.0.36/wabt.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/wabt@1.0.36/index.js"></script>
 
   <!-- CodeMirror 5 -->
   <link rel="stylesheet"
@@ -112,6 +112,17 @@
   }
   a { color: var(--accent2); text-decoration: none; }
   a:hover { text-decoration: underline; }
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
 
   /* ── Animated Background ──────────────────────────────────────── */
   body::before {
@@ -121,7 +132,13 @@
       linear-gradient(var(--bg-grid) 1px, transparent 1px),
       linear-gradient(90deg, var(--bg-grid) 1px, transparent 1px);
     background-size: 48px 48px;
-    mask-image: radial-gradient(ellipse at center, black 40%, transparent 80%);
+  }
+  @supports ((-webkit-mask-image: radial-gradient(#000, transparent)) or
+             (mask-image: radial-gradient(#000, transparent))) {
+    body::before {
+      -webkit-mask-image: radial-gradient(ellipse at center, #000 40%, transparent 80%);
+      mask-image: radial-gradient(ellipse at center, #000 40%, transparent 80%);
+    }
   }
   body::after {
     content: '';
@@ -593,6 +610,7 @@
         <span class="lang-badge" id="lang-badge">en</span>
       </div>
       <div id="editor-wrapper">
+        <label for="code-area" class="sr-only">Source code editor</label>
         <textarea id="code-area"></textarea>
       </div>
     </div>
@@ -675,7 +693,11 @@
       Powered by
       <a href="https://pyodide.org" target="_blank" rel="noopener">Pyodide</a> (CPython 3.12 on WASM) ·
       <a href="https://github.com/WebAssembly/wabt" target="_blank" rel="noopener">wabt.js</a> (WAT → WASM) ·
-      <a href="https://codemirror.net" target="_blank" rel="noopener">CodeMirror</a>
+      <a href="https://codemirror.net" target="_blank" rel="noopener">CodeMirror</a> ·
+      <a id="complete-features-link"
+         href="https://github.com/johnsamuelwrites/multilingual/blob/main/examples/complete_features_en.ml"
+         target="_blank"
+         rel="noopener">Complete features (en)</a>
     </span>
     <span class="footer-pill">
       <span class="dot-sm"></span>
@@ -691,6 +713,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"
         crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"
+        crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/mode/overlay.min.js"
         crossorigin="anonymous"></script>
 
 <script>
@@ -966,6 +990,7 @@ const $outCon    = document.getElementById('output-console');
 const $pyView    = document.getElementById('python-view');
 const $watView   = document.getElementById('wat-view');
 const $wasmCon   = document.getElementById('wasm-exec-console');
+const $exampleLink = document.getElementById('complete-features-link');
 
 /* ──────────────────────────────────────────────────────────────────
    CodeMirror editor
@@ -1034,9 +1059,117 @@ function loadLang(lang) {
   editor.setValue(EXAMPLES[lang] || EXAMPLES.en);
   $badge.textContent = lang;
   editor.getWrapperElement().style.direction = lang === 'ar' ? 'rtl' : 'ltr';
+  applyEditorHighlighting(lang);
+  updateCompleteFeaturesLink(lang);
 }
 $lang.addEventListener('change', () => loadLang($lang.value));
+
+function updateCompleteFeaturesLink(lang) {
+  if (!$exampleLink) return;
+  const langCode = lang || 'en';
+  $exampleLink.href = `https://github.com/johnsamuelwrites/multilingual/blob/main/examples/complete_features_${langCode}.ml`;
+  $exampleLink.textContent = `Complete features (${langCode})`;
+}
+
+let languageKeywords = new Map();
+
+function normalizeKeywordEntry(value) {
+  if (Array.isArray(value)) return value;
+  return typeof value === 'string' ? [value] : [];
+}
+
+function extractKeywordsForLanguage(keywordSpec, lang) {
+  const collected = new Set();
+  const categories = keywordSpec && keywordSpec.categories ? keywordSpec.categories : {};
+  Object.values(categories).forEach(group => {
+    Object.values(group).forEach(mapping => {
+      normalizeKeywordEntry(mapping[lang]).forEach(word => {
+        if (typeof word === 'string') {
+          const trimmed = word.trim();
+          if (trimmed) collected.add(trimmed);
+        }
+      });
+    });
+  });
+  return [...collected].sort((a, b) => b.length - a.length);
+}
+
+async function fetchKeywordSpec() {
+  const candidates = [
+    './assets/keywords.json',
+    '../multilingualprogramming/resources/usm/keywords.json',
+    './multilingualprogramming/resources/usm/keywords.json',
+    'https://raw.githubusercontent.com/johnsamuelwrites/multilingual/main/multilingualprogramming/resources/usm/keywords.json',
+  ];
+
+  for (const url of candidates) {
+    try {
+      const resp = await fetch(url, { cache: 'no-cache' });
+      if (!resp.ok) continue;
+      return await resp.json();
+    } catch (_) {
+      /* try next candidate */
+    }
+  }
+  return null;
+}
+
+function buildKeywordOverlay(keywords) {
+  const isWordChar = (ch) => !!ch && /[\p{L}\p{N}_]/u.test(ch);
+  const sorted = keywords.slice().sort((a, b) => b.length - a.length);
+
+  return {
+    token(stream) {
+      const line = stream.string;
+      const start = stream.pos;
+      const prev = start > 0 ? line.charAt(start - 1) : '';
+      if (isWordChar(prev)) {
+        stream.next();
+        return null;
+      }
+
+      for (const keyword of sorted) {
+        if (!line.startsWith(keyword, start)) continue;
+        const next = line.charAt(start + keyword.length);
+        if (!isWordChar(next)) {
+          stream.pos += keyword.length;
+          return 'keyword';
+        }
+      }
+
+      stream.next();
+      return null;
+    },
+  };
+}
+
+function applyEditorHighlighting(lang) {
+  const keywords = languageKeywords.get(lang);
+
+  if (!keywords || !keywords.length || lang === 'en') {
+    editor.setOption('mode', 'python');
+    return;
+  }
+
+  const overlay = buildKeywordOverlay(keywords);
+  const base = CodeMirror.getMode(editor.options, 'python');
+  editor.setOption('mode', CodeMirror.overlayMode(base, overlay, true));
+}
+
+async function initLanguageKeywords() {
+  const spec = await fetchKeywordSpec();
+  if (!spec) {
+    console.warn('Could not load keywords.json; using default python highlighting.');
+    return;
+  }
+
+  ($lang ? Array.from($lang.options).map(opt => opt.value) : []).forEach(code => {
+    languageKeywords.set(code, extractKeywordsForLanguage(spec, code));
+  });
+}
+
 loadLang('en');
+initLanguageKeywords().then(() => applyEditorHighlighting($lang.value));
 
 /* ──────────────────────────────────────────────────────────────────
    Status helpers
@@ -1127,12 +1260,51 @@ from multilingualprogramming.parser.parser import Parser
 `);
 }
 
+function getWabtFactory() {
+  if (typeof globalThis.WabtModule === 'function') return globalThis.WabtModule;
+  if (typeof globalThis.wabt === 'function') return globalThis.wabt;
+  return null;
+}
+
+function loadExternalScript(src) {
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = src;
+    script.async = true;
+    script.crossOrigin = 'anonymous';
+    script.onload = resolve;
+    script.onerror = () => reject(new Error(`Failed to load ${src}`));
+    document.head.appendChild(script);
+  });
+}
+
 /* ── wabt.js init ──────────────────────────────────────────────── */
 async function initWabt() {
-  if (typeof WabtModule !== 'function') {
-    throw new Error('WabtModule not found — wabt.js may not have loaded');
+  const existingFactory = getWabtFactory();
+  if (existingFactory) {
+    wabt = await existingFactory();
+    return;
   }
-  wabt = await WabtModule();
+
+  const fallbackSources = [
+    'https://unpkg.com/wabt@1.0.36/index.js',
+    'https://cdn.jsdelivr.net/npm/wabt@1.0.36/index.js',
+  ];
+
+  for (const src of fallbackSources) {
+    try {
+      await loadExternalScript(src);
+      const factory = getWabtFactory();
+      if (factory) {
+        wabt = await factory();
+        return;
+      }
+    } catch (_) {
+      /* try next source */
+    }
+  }
+
+  throw new Error('Unable to load wabt.js from available CDNs');
 }
 
 /* ──────────────────────────────────────────────────────────────────
