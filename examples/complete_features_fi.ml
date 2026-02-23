@@ -131,3 +131,141 @@ tulosta(a, jaljella, init, b, c, keskiosa, d)
 tulosta(jarjestetty(neliot_jarjestelma))
 tulosta(potenssi_tulos, divmod_tulos)
 tulosta(delegoitu)
+
+# Numeric literals
+olkoon heks_luku = 0xFF
+olkoon okta_luku = 0o17
+olkoon bin_luku = 0b1010
+olkoon sci_luku = 1.5e3
+
+# Augmented assignments
+olkoon kasvatettu = 10
+kasvatettu += 5
+kasvatettu -= 2
+kasvatettu *= 3
+kasvatettu //= 4
+kasvatettu %= 3
+
+# Bitwise operators
+olkoon bitti_ja = 0b1010 & 0b1100
+olkoon bitti_tai = 0b1010 | 0b0101
+olkoon bitti_xor = 0b1010 ^ 0b1111
+olkoon bitti_vasen = 1 << 3
+olkoon bitti_oikea = 64 >> 2
+
+# Chained assignment
+olkoon ketju_a = ketju_b = ketju_c = 0
+
+# Type annotations
+olkoon tyypitetty: kokonaisluku = 99
+
+maarittele annotoitu(x: kokonaisluku, y: liukuluku) -> merkkijono:
+    palauta merkkijono(x + y)
+
+# Ternary expression
+olkoon kolmihaara = "yes" jos tyypitetty > 0 muuten "no"
+
+# Default params, *args, **kwargs
+maarittele usea_parametri(base, extra=1, *args, **kwargs):
+    palauta base + extra + summa(args)
+olkoon usea_tulos = usea_parametri(10, 2, 3, 4, key=5)
+
+# Lambda
+olkoon nelio = lambda x: x * x
+
+# List/dict comprehensions and generator expression
+olkoon lista_c = [x * 2 jokaiselle x sisalla vali(4)]
+olkoon sanakirja_c = {merkkijono(k): k * k jokaiselle k sisalla vali(3)}
+olkoon gen_c = lista(x + 1 jokaiselle x sisalla vali(3))
+olkoon sisakkais_c = [i + j jokaiselle i sisalla vali(2) jokaiselle j sisalla vali(2)]
+olkoon suodatin_c = [x jokaiselle x sisalla vali(6) jos x % 2 == 0]
+
+# try/except/else
+olkoon yrita_muuten = 0
+yrita:
+    yrita_muuten = kokonaisluku("7")
+paitsi ValueError:
+    yrita_muuten = -1
+muuten:
+    yrita_muuten += 1
+
+# Exception chaining
+olkoon ketjutettu = Epatosi
+yrita:
+    yrita:
+        nosta ValueError("v")
+    paitsi ValueError nimella ve:
+        nosta RuntimeError("r") kohteesta ve
+paitsi RuntimeError:
+    ketjutettu = Tosi
+
+# Multiple except handlers
+olkoon moni_poikkeus = 0
+yrita:
+    nosta TypeError("t")
+paitsi ValueError:
+    moni_poikkeus = 1
+paitsi TypeError:
+    moni_poikkeus = 2
+
+# Match/case with default
+olkoon sovitus_arvo = 2
+olkoon sovitus_tulos = "other"
+taysmatch sovitus_arvo:
+    tapaus 1:
+        sovitus_tulos = "one"
+    tapaus 2:
+        sovitus_tulos = "two"
+    oletus:
+        sovitus_tulos = "default"
+
+# Decorator
+maarittele tuplaaja(func):
+    maarittele kiedo(*args, **kwargs):
+        palauta func(*args, **kwargs) * 2
+    palauta kiedo
+
+@tuplaaja
+maarittele kymmenen():
+    palauta 10
+
+olkoon deko_tulos = kymmenen()
+
+# Multiple inheritance, static/class methods, property
+luokka Sekoitus:
+    maarittele sekoita(self):
+        palauta 1
+
+luokka PerusKaksi:
+    maarittele __init__(self, start):
+        self.value = start
+
+luokka Yhdistetty(PerusKaksi, Sekoitus):
+    @staticmethod
+    maarittele nimike():
+        palauta "combined"
+    @classmethod
+    maarittele rakenna(cls, v):
+        palauta cls(v)
+    @property
+    maarittele tuplattu(self):
+        palauta self.value * 2
+
+olkoon yhd_obj = Yhdistetty.rakenna(3)
+olkoon ominaisuus = yhd_obj.tuplattu
+
+# Docstring
+maarittele doc_kanssa():
+    """A docstring."""
+    palauta Tosi
+
+tulosta(heks_luku, okta_luku, bin_luku, sci_luku)
+tulosta(kasvatettu, bitti_ja, bitti_tai, bitti_xor, bitti_vasen, bitti_oikea)
+tulosta(ketju_a, ketju_b, ketju_c)
+tulosta(tyypitetty, annotoitu(3, 1.5), kolmihaara)
+tulosta(usea_tulos, nelio(5))
+tulosta(lista_c, sanakirja_c, gen_c)
+tulosta(sisakkais_c, suodatin_c)
+tulosta(yrita_muuten, ketjutettu, moni_poikkeus)
+tulosta(sovitus_tulos, deko_tulos, ominaisuus)
+tulosta(doc_kanssa())

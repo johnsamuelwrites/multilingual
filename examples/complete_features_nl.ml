@@ -131,3 +131,141 @@ afdrukken(a, rest, init, b, c, midden, d)
 afdrukken(gesorteerd(gekwadrateerde_verzameling))
 afdrukken(macht_resultaat, divmod_resultaat)
 afdrukken(gedelegeerd)
+
+# Numeric literals
+laat hex_getal = 0xFF
+laat oct_getal = 0o17
+laat bin_getal = 0b1010
+laat sci_getal = 1.5e3
+
+# Augmented assignments
+laat verhoogd = 10
+verhoogd += 5
+verhoogd -= 2
+verhoogd *= 3
+verhoogd //= 4
+verhoogd %= 3
+
+# Bitwise operators
+laat bit_en = 0b1010 & 0b1100
+laat bit_of = 0b1010 | 0b0101
+laat bit_xor = 0b1010 ^ 0b1111
+laat bit_links = 1 << 3
+laat bit_rechts = 64 >> 2
+
+# Chained assignment
+laat keten_a = keten_b = keten_c = 0
+
+# Type annotations
+laat getypt: geheel = 99
+
+definieer geannoteerd(x: geheel, y: drijvend) -> tekenreeks:
+    retourneer tekenreeks(x + y)
+
+# Ternary expression
+laat ternair = "yes" als getypt > 0 anders "no"
+
+# Default params, *args, **kwargs
+definieer multi_params_nl(base, extra=1, *args, **kwargs):
+    retourneer base + extra + som(args)
+laat multi_resultaat = multi_params_nl(10, 2, 3, 4, key=5)
+
+# Lambda
+laat kwadraat = lambda x: x * x
+
+# List/dict comprehensions and generator expression
+laat lijst_c = [x * 2 voor x in bereik(4)]
+laat dict_c = {tekenreeks(k): k * k voor k in bereik(3)}
+laat gen_c = lijst(x + 1 voor x in bereik(3))
+laat genest_c = [i + j voor i in bereik(2) voor j in bereik(2)]
+laat filter_c = [x voor x in bereik(6) als x % 2 == 0]
+
+# try/except/else
+laat probeer_anders = 0
+probeer:
+    probeer_anders = geheel("7")
+behalve ValueError:
+    probeer_anders = -1
+anders:
+    probeer_anders += 1
+
+# Exception chaining
+laat gekoppeld = Onwaar
+probeer:
+    probeer:
+        werp ValueError("v")
+    behalve ValueError zoals ve:
+        werp RuntimeError("r") van ve
+behalve RuntimeError:
+    gekoppeld = Waar
+
+# Multiple except handlers
+laat multi_uitz = 0
+probeer:
+    werp TypeError("t")
+behalve ValueError:
+    multi_uitz = 1
+behalve TypeError:
+    multi_uitz = 2
+
+# Match/case with default
+laat match_waarde = 2
+laat match_resultaat = "other"
+vergelijk match_waarde:
+    geval 1:
+        match_resultaat = "one"
+    geval 2:
+        match_resultaat = "two"
+    standaard:
+        match_resultaat = "default"
+
+# Decorator
+definieer verdubbelaar(func):
+    definieer omhul(*args, **kwargs):
+        retourneer func(*args, **kwargs) * 2
+    retourneer omhul
+
+@verdubbelaar
+definieer tien():
+    retourneer 10
+
+laat deco_resultaat = tien()
+
+# Multiple inheritance, static/class methods, property
+klasse MixInNl:
+    definieer meng(self):
+        retourneer 1
+
+klasse BasisTwee:
+    definieer __init__(self, start):
+        self.value = start
+
+klasse Gecombineerd(BasisTwee, MixInNl):
+    @staticmethod
+    definieer label_nl():
+        retourneer "combined"
+    @classmethod
+    definieer bouw(cls, v):
+        retourneer cls(v)
+    @property
+    definieer verdubbeld(self):
+        retourneer self.value * 2
+
+laat comb_obj = Gecombineerd.bouw(3)
+laat eigenschap = comb_obj.verdubbeld
+
+# Docstring
+definieer met_doc():
+    """A docstring."""
+    retourneer Waar
+
+afdrukken(hex_getal, oct_getal, bin_getal, sci_getal)
+afdrukken(verhoogd, bit_en, bit_of, bit_xor, bit_links, bit_rechts)
+afdrukken(keten_a, keten_b, keten_c)
+afdrukken(getypt, geannoteerd(3, 1.5), ternair)
+afdrukken(multi_resultaat, kwadraat(5))
+afdrukken(lijst_c, dict_c, gen_c)
+afdrukken(genest_c, filter_c)
+afdrukken(probeer_anders, gekoppeld, multi_uitz)
+afdrukken(match_resultaat, deco_resultaat, eigenschap)
+afdrukken(met_doc())

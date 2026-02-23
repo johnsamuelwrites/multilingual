@@ -131,3 +131,141 @@ drukuj(a, reszta, init, b, c, srodek, d)
 drukuj(posortowane(zbior_kwadratow))
 drukuj(wynik_potegowania, wynik_divmod)
 drukuj(delegowany)
+
+# Numeric literals
+niech liczba_hex = 0xFF
+niech liczba_oct = 0o17
+niech liczba_bin = 0b1010
+niech liczba_sci = 1.5e3
+
+# Augmented assignments
+niech zwiekszony = 10
+zwiekszony += 5
+zwiekszony -= 2
+zwiekszony *= 3
+zwiekszony //= 4
+zwiekszony %= 3
+
+# Bitwise operators
+niech bit_i = 0b1010 & 0b1100
+niech bit_lub = 0b1010 | 0b0101
+niech bit_xor = 0b1010 ^ 0b1111
+niech bit_lewo = 1 << 3
+niech bit_prawo = 64 >> 2
+
+# Chained assignment
+niech lancuch_a = lancuch_b = lancuch_c = 0
+
+# Type annotations
+niech typowany: calkowita = 99
+
+funkcja adnotowany(x: calkowita, y: zmiennoprzecinkowa) -> tekst:
+    zwroc tekst(x + y)
+
+# Ternary expression
+niech trojargument = "yes" jesli typowany > 0 inaczej "no"
+
+# Default params, *args, **kwargs
+funkcja wiele_parametrow(base, extra=1, *args, **kwargs):
+    zwroc base + extra + suma(args)
+niech wynik_wielu = wiele_parametrow(10, 2, 3, 4, key=5)
+
+# Lambda
+niech kwadrat = lambda x: x * x
+
+# List/dict comprehensions and generator expression
+niech lista_c = [x * 2 dla x w zakres(4)]
+niech slownik_c = {tekst(k): k * k dla k w zakres(3)}
+niech gen_c = lista(x + 1 dla x w zakres(3))
+niech zagniezdzony_c = [i + j dla i w zakres(2) dla j w zakres(2)]
+niech filtr_c = [x dla x w zakres(6) jesli x % 2 == 0]
+
+# try/except/else
+niech sprobuj_inaczej = 0
+sprobuj:
+    sprobuj_inaczej = calkowita("7")
+wyjatek ValueError:
+    sprobuj_inaczej = -1
+inaczej:
+    sprobuj_inaczej += 1
+
+# Exception chaining
+niech lancuchowany = Falsz
+sprobuj:
+    sprobuj:
+        podnies ValueError("v")
+    wyjatek ValueError jako ve:
+        podnies RuntimeError("r") zmodulu ve
+wyjatek RuntimeError:
+    lancuchowany = Prawda
+
+# Multiple except handlers
+niech wiele_wyjatkow = 0
+sprobuj:
+    podnies TypeError("t")
+wyjatek ValueError:
+    wiele_wyjatkow = 1
+wyjatek TypeError:
+    wiele_wyjatkow = 2
+
+# Match/case with default
+niech wartosc_dopas = 2
+niech wynik_dopas = "other"
+dopasuj wartosc_dopas:
+    przypadek 1:
+        wynik_dopas = "one"
+    przypadek 2:
+        wynik_dopas = "two"
+    domyslnie:
+        wynik_dopas = "default"
+
+# Decorator
+funkcja podwajacz(func):
+    funkcja owin(*args, **kwargs):
+        zwroc func(*args, **kwargs) * 2
+    zwroc owin
+
+@podwajacz
+funkcja dziesiec():
+    zwroc 10
+
+niech wynik_deko = dziesiec()
+
+# Multiple inheritance, static/class methods, property
+klasa Domieszka:
+    funkcja domieszaj(self):
+        zwroc 1
+
+klasa BazaDwa:
+    funkcja __init__(self, start):
+        self.value = start
+
+klasa Polaczony(BazaDwa, Domieszka):
+    @staticmethod
+    funkcja etykieta():
+        zwroc "combined"
+    @classmethod
+    funkcja zbuduj(cls, v):
+        zwroc cls(v)
+    @property
+    funkcja podwojony(self):
+        zwroc self.value * 2
+
+niech polacz_obj = Polaczony.zbuduj(3)
+niech wlasciwosc = polacz_obj.podwojony
+
+# Docstring
+funkcja z_dok():
+    """A docstring."""
+    zwroc Prawda
+
+drukuj(liczba_hex, liczba_oct, liczba_bin, liczba_sci)
+drukuj(zwiekszony, bit_i, bit_lub, bit_xor, bit_lewo, bit_prawo)
+drukuj(lancuch_a, lancuch_b, lancuch_c)
+drukuj(typowany, adnotowany(3, 1.5), trojargument)
+drukuj(wynik_wielu, kwadrat(5))
+drukuj(lista_c, slownik_c, gen_c)
+drukuj(zagniezdzony_c, filtr_c)
+drukuj(sprobuj_inaczej, lancuchowany, wiele_wyjatkow)
+drukuj(wynik_dopas, wynik_deko, wlasciwosc)
+drukuj(z_dok())
