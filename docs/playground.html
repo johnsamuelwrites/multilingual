@@ -1162,10 +1162,13 @@ function applyKeywordOnlyMode(lang, keywords) {
   const modeName = `ml-keywords-${lang}`;
   if (!CodeMirror.modes[modeName]) {
     const keywordSet = new Set(keywords);
+    const isDigit = (ch) => !!ch && ch >= '0' && ch <= '9';
+    const isOperator = (ch) => !!ch && /[+\-*/%=<>!&|^~:,.[\](){}]/.test(ch);
     CodeMirror.defineMode(modeName, () => ({
       token(stream) {
         const ch = stream.peek();
-        if (!ch) {
+        if (!ch) return null;
+        if (/\s/.test(ch)) {
           stream.next();
           return null;
         }
@@ -1190,12 +1193,20 @@ function applyKeywordOnlyMode(lang, keywords) {
           }
           return 'string';
         }
+        if (isDigit(ch)) {
+          stream.eatWhile(/[0-9._]/);
+          return 'number';
+        }
         if (isWordChar(ch)) {
           let word = '';
           while (!stream.eol() && isWordChar(stream.peek())) {
             word += stream.next();
           }
           return keywordSet.has(word) ? 'keyword' : null;
+        }
+        if (isOperator(ch)) {
+          stream.next();
+          return 'operator';
         }
         stream.next();
         return null;
@@ -1213,13 +1224,7 @@ function applyEditorHighlighting(lang) {
     return;
   }
 
-  if (typeof CodeMirror.overlayMode === 'function') {
-    const overlay = buildKeywordOverlay(keywords);
-    const base = CodeMirror.getMode(editor.options, 'python');
-    editor.setOption('mode', CodeMirror.overlayMode(base, overlay, true));
-    return;
-  }
-
+  // Use a dedicated mode for multilingual keywords to avoid overlay edge cases.
   applyKeywordOnlyMode(lang, keywords);
 }
 
