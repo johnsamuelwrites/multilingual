@@ -46,7 +46,8 @@ class REPL:
     _COMMAND_CATALOG = None
     _OPERATOR_CATALOG = None
 
-    def __init__(self, language=None, show_python=False):
+    def __init__(self, language=None, show_python=False, show_wat=False,
+                 show_rust=False):
         """
         Initialize the REPL.
 
@@ -54,9 +55,13 @@ class REPL:
             language: Source language code (e.g., "en", "fr").
                      If None, auto-detect from input.
             show_python: If True, display generated Python before execution.
+            show_wat: If True, display generated WAT code before execution.
+            show_rust: If True, display generated Rust/Wasmtime code before execution.
         """
         self.language = language
         self.show_python = show_python
+        self.show_wat = show_wat
+        self.show_rust = show_rust
         self._globals = {}
         self._init_globals()
 
@@ -258,12 +263,32 @@ class REPL:
             generator = PythonCodeGenerator()
             python_source = generator.generate(program)
 
-            if self.show_python:
-                return f"[Python] {python_source.strip()}\n" + self._exec(
-                    python_source
-                )
+            prefix = ""
 
-            return self._exec(python_source)
+            if self.show_wat:
+                try:
+                    from multilingualprogramming.codegen.wat_generator import (
+                        WATCodeGenerator,
+                    )
+                    wat_source = WATCodeGenerator().generate(program)
+                    prefix += f"[WAT]\n{wat_source.strip()}\n"
+                except Exception as wat_exc:
+                    prefix += f"[WAT error] {wat_exc}\n"
+
+            if self.show_rust:
+                try:
+                    from multilingualprogramming.codegen.wasm_generator import (
+                        WasmCodeGenerator,
+                    )
+                    rust_source = WasmCodeGenerator().generate(program)
+                    prefix += f"[Rust/Wasmtime]\n{rust_source.strip()}\n"
+                except Exception as rust_exc:
+                    prefix += f"[Rust/Wasmtime error] {rust_exc}\n"
+
+            if self.show_python:
+                prefix += f"[Python] {python_source.strip()}\n"
+
+            return prefix + self._exec(python_source)
 
         except Exception as exc:
             return f"Error: {exc}\n"
@@ -398,6 +423,16 @@ class REPL:
             self.show_python = not self.show_python
             state = "on" if self.show_python else "off"
             print(f"Show Python: {state}")
+            return True
+        if cmd == "wat":
+            self.show_wat = not self.show_wat
+            state = "on" if self.show_wat else "off"
+            print(f"Show WAT: {state}")
+            return True
+        if cmd == "rust":
+            self.show_rust = not self.show_rust
+            state = "on" if self.show_rust else "off"
+            print(f"Show Rust/Wasmtime: {state}")
             return True
         if cmd == "reset":
             self._globals.clear()

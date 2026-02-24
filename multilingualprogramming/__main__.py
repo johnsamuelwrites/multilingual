@@ -59,7 +59,12 @@ def cmd_run(args):
 
 def cmd_repl(args):
     """Start the interactive REPL."""
-    repl = REPL(language=args.lang, show_python=args.show_python)
+    repl = REPL(
+        language=args.lang,
+        show_python=args.show_python,
+        show_wat=args.show_wat,
+        show_rust=args.show_rust,
+    )
     repl.run()
 
 
@@ -183,6 +188,14 @@ def main():
         "--show-python", action="store_true",
         help="Display generated Python code before execution",
     )
+    repl_parser.add_argument(
+        "--show-wat", action="store_true",
+        help="Display generated WAT (WebAssembly Text) code before execution",
+    )
+    repl_parser.add_argument(
+        "--show-rust", action="store_true",
+        help="Display generated Rust/Wasmtime bridge code before execution",
+    )
 
     # compile subcommand
     compile_parser = subparsers.add_parser(
@@ -221,6 +234,8 @@ def main():
         # Default: start REPL
         args.lang = None
         args.show_python = False
+        args.show_wat = False
+        args.show_rust = False
         cmd_repl(args)
 
 

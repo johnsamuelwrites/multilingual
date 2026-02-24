@@ -137,6 +137,12 @@ multilingual repl --lang fr
 
 # Optional: show generated Python while executing
 multilingual repl --show-python
+
+# Optional: show generated WAT (WebAssembly Text) code while executing
+multilingual repl --show-wat
+
+# Optional: show generated Rust/Wasmtime bridge code while executing
+multilingual repl --show-rust
 ```
 
 Inside the REPL, type code and press Enter to execute.
@@ -181,6 +187,8 @@ REPL commands:
 - `:help` show commands
 - `:language <code>` switch language
 - `:python` toggle generated Python display
+- `:wat` toggle generated WAT (WebAssembly Text) display
+- `:rust` toggle generated Rust/Wasmtime bridge code display
 - `:reset` clear session state
 - `:kw [XX]` show language keywords
 - `:ops [XX]` show operators and symbols
