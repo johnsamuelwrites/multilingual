@@ -267,6 +267,7 @@ class REPL:
 
             if self.show_wat:
                 try:
+                    # pylint: disable-next=import-outside-toplevel
                     from multilingualprogramming.codegen.wat_generator import (
                         WATCodeGenerator,
                     )
@@ -277,6 +278,7 @@ class REPL:
 
             if self.show_rust:
                 try:
+                    # pylint: disable-next=import-outside-toplevel
                     from multilingualprogramming.codegen.wasm_generator import (
                         WasmCodeGenerator,
                     )
