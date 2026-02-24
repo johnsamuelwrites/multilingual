@@ -122,7 +122,10 @@ def main():
     """Run the CLI entry point and dispatch subcommands."""
     parser = argparse.ArgumentParser(
         prog="multilingual",
-        description="Multilingual Programming Language CLI",
+        description=(
+            "Multilingual Programming Language CLI "
+            "(default command starts interactive REPL)"
+        ),
     )
     parser.add_argument(
         "--version", action="version",

@@ -126,7 +126,10 @@ imprimir("Hola mundo")
 Start REPL:
 
 ```bash
-# 1) Default mode (English keywords)
+# 0) Direct interactive mode (like `python`)
+multilingual
+
+# 1) Explicit REPL command (same behavior as above)
 multilingual repl
 
 # 2) French mode
@@ -137,6 +140,7 @@ multilingual repl --show-python
 ```
 
 Inside the REPL, type code and press Enter to execute.
+Both `multilingual` and `multilingual repl` start the same REPL.
 
 Default mode example (English):
 

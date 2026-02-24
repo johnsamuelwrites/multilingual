@@ -428,6 +428,7 @@ class REPL:
         print(f"Multilingual Programming REPL v{__version__} "
               f"[language={lang_label}]")
         print(
+            "Start with 'multilingual' (default) or 'multilingual repl'.\n"
             f"Type ':help' for commands. Use ':quit' (or Ctrl+C) to exit. "
             f"EOF key is terminal-dependent ({eof_hint}).\n"
         )
