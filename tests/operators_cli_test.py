@@ -7,6 +7,7 @@
 """Tests for operators, assertions, chained assignment, CLI, and REPL."""
 
 import unittest
+import sys
 from argparse import Namespace
 from unittest.mock import patch
 
@@ -337,6 +338,36 @@ class CLITestSuite(unittest.TestCase):
             with self.assertRaises(SystemExit) as exc:
                 cmd_smoke(args)
         self.assertEqual(exc.exception.code, 1)
+
+    def test_main_direct_ml_file_dispatches_to_cmd_run(self):
+        with patch.object(main_module, "cmd_run") as run_mock:
+            with patch.object(main_module, "cmd_repl") as repl_mock:
+                with patch.object(sys, "argv", [
+                    "multilingual",
+                    "examples/arithmetics_en.ml",
+                ]):
+                    main_module.main()
+
+        run_mock.assert_called_once()
+        repl_mock.assert_not_called()
+        args = run_mock.call_args.args[0]
+        self.assertEqual(args.file, "examples/arithmetics_en.ml")
+        self.assertIsNone(args.lang)
+
+    def test_main_direct_ml_file_supports_lang_option(self):
+        with patch.object(main_module, "cmd_run") as run_mock:
+            with patch.object(sys, "argv", [
+                "multilingual",
+                "examples/arithmetics_fr.ml",
+                "--lang",
+                "fr",
+            ]):
+                main_module.main()
+
+        run_mock.assert_called_once()
+        args = run_mock.call_args.args[0]
+        self.assertEqual(args.file, "examples/arithmetics_fr.ml")
+        self.assertEqual(args.lang, "fr")
 
 
 # ---------------------------------------------------------------

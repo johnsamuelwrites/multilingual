@@ -9,6 +9,7 @@ CLI entry point for the multilingual programming language.
 
 Usage:
     python -m multilingualprogramming                     # Start REPL
+    python -m multilingualprogramming <file>.ml          # Execute a source file
     python -m multilingualprogramming run <file>           # Execute a file
     python -m multilingualprogramming repl [--lang XX]     # Start REPL
     python -m multilingualprogramming compile <file>       # Show generated Python
@@ -118,13 +119,43 @@ def cmd_smoke(args):
         sys.exit(1)
 
 
+def _maybe_dispatch_direct_file_run(argv):
+    """Dispatch `multilingual <file>.ml [--lang XX]` to `cmd_run`."""
+    if not argv:
+        return False
+
+    first = argv[0]
+    if first.startswith("-"):
+        return False
+    if not first.lower().endswith(".ml"):
+        return False
+
+    parser = argparse.ArgumentParser(
+        prog="multilingual",
+        description="Execute a multilingual source file",
+    )
+    parser.add_argument("file", help="Path to the source file")
+    parser.add_argument(
+        "--lang", default=None,
+        help="Source language code (e.g., en, fr, hi). Auto-detect if omitted.",
+    )
+    args = parser.parse_args(argv)
+    cmd_run(args)
+    return True
+
+
 def main():
     """Run the CLI entry point and dispatch subcommands."""
+    argv = sys.argv[1:]
+    if _maybe_dispatch_direct_file_run(argv):
+        return
+
     parser = argparse.ArgumentParser(
         prog="multilingual",
         description=(
             "Multilingual Programming Language CLI "
-            "(default command starts interactive REPL)"
+            "(default command starts interactive REPL; "
+            "pass <file>.ml to run directly)"
         ),
     )
     parser.add_argument(

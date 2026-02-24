@@ -203,12 +203,19 @@ print("Hello world")
 Run it:
 
 ```bash
+multilingual hello.ml
+```
+
+Equivalent explicit form:
+
+```bash
 multilingual run hello.ml
 ```
 
 Optional (force language instead of auto-detect):
 
 ```bash
+multilingual hello.ml --lang fr
 multilingual run hello.ml --lang fr
 ```
 
