@@ -5,7 +5,7 @@
 ### For 10x Performance Gain
 ```bash
 pip install multilingualprogramming[wasm]
-# That's it! Automatic 10-100x speedup on compute-intensive operations
+# Then benchmark your workload; speedups are workload-dependent.
 ```
 
 ### For Maximum Performance
@@ -43,7 +43,7 @@ selector = BackendSelector()  # Backend.AUTO is default
 result = selector.call_function("matrix_multiply", a, b)
 ```
 
-**Speed**: 50-100x faster on compute-heavy ops
+**Speed**: Can be significantly faster on compute-heavy ops (benchmark-dependent)
 **Use When**: Production code, maximum portability
 **Requirement**: `pip install multilingualprogramming[wasm]`
 
@@ -87,16 +87,16 @@ result = selector.call_function("matrix_multiply", a, b)
 
 ### 1. Choose the Right Operation
 
-**High speedup (50-100x) - Use WASM/NumPy**:
+**High speedup potential - Use WASM/NumPy**:
 ```python
 # Matrix multiplication (n > 100)
-result = matrix_multiply(a, b)  # 100x faster
+result = matrix_multiply(a, b)  # Often much faster on large matrices
 
 # Cryptographic operations
-encrypted = xor_cipher(plaintext, key)  # 100x faster
+encrypted = xor_cipher(plaintext, key)  # Can be much faster for large payloads
 
 # Scientific computing
-pi = estimate_pi_monte_carlo(1000000)  # 100x faster
+pi = estimate_pi_monte_carlo(1000000)  # Can be much faster for large iterations
 ```
 
 **Moderate speedup (10x) - Use WASM/NumPy**:
@@ -147,7 +147,7 @@ a = [[1.0 for _ in range(100)] for _ in range(100)]
 b = [[2.0 for _ in range(100)] for _ in range(100)]
 
 # Use larger matrices to get better speedup
-result = matrix_multiply(a, b)  # 100x faster
+result = matrix_multiply(a, b)  # Often much faster on large matrices
 
 # Small matrices have overhead
 a_small = [[1, 2], [3, 4]]
@@ -244,17 +244,10 @@ benchmark("matrix_multiply", None, a, b)
 ### 6. Configuration Tuning
 
 ```python
-# Force specific backend
-import os
-os.environ['MULTILINGUAL_BACKEND'] = 'wasm'  # or 'python' or 'auto'
-
-# Or in code
+# Select backend explicitly in code
 from multilingualprogramming.runtime.backend_selector import BackendSelector, Backend
 selector = BackendSelector(prefer_backend=Backend.WASM)
-
-# Control caching
-selector.enable_module_cache = True  # Cache loaded modules (default)
-selector.enable_function_cache = True  # Cache function pointers
+# Options: Backend.AUTO, Backend.WASM, Backend.PYTHON
 ```
 
 ---
@@ -388,7 +381,7 @@ results = [fibonacci(5) for _ in range(100)]  # 100 slow calls
 
 # Do:
 # Compute something larger where WASM overhead is amortized
-large_result = fibonacci(1000)  # Single call, 100x faster
+large_result = fibonacci(1000)  # Single heavy call, often faster
 ```
 
 ### Symptom: Memory Errors with WASM
@@ -484,4 +477,4 @@ monitor.report()
 ---
 
 **Version**: PyPI Distribution Final
-**Status**: ✅ Production Ready
+**Status**: Stable; validate performance in your target environment.

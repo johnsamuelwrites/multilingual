@@ -2,7 +2,7 @@ site_name: Multilingual Programming
 site_description: >-
   A programming language that lets you write in 17 human languages —
   powered by a Python interpreter, WASM backend, and a browser playground.
-site_url: https://johnsamuelwrites.github.io/multilingual/
+site_url: https://johnsamuel.info/multilingual/
 repo_url: https://github.com/johnsamuelwrites/multilingual
 repo_name: johnsamuelwrites/multilingual
 edit_uri: edit/main/docs/

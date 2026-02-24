@@ -9,7 +9,7 @@ The format is inspired by Keep a Changelog, and this project follows SemVer.
 ## [0.4.0] - 2026-02-22
 
 ### Added
-- **WASM Backend**: WebAssembly compilation target with 50-100x performance gains on compute-intensive operations
+- **WASM Backend**: WebAssembly compilation target with significant performance gains on compute-intensive operations (benchmark-dependent)
 - **Python ↔ WASM Bridge**: Type conversion and memory management for seamless interop between Python and WASM
 - **Smart Backend Selector**: Auto-detection and transparent routing between WASM and Python fallback execution paths
 - **Python Fallback Implementations**: 25+ pure Python implementations for guaranteed compatibility across all platforms
@@ -20,7 +20,7 @@ The format is inspired by Keep a Changelog, and this project follows SemVer.
 
 ### Changed
 - **Python Version Support**: 3.12+ (advanced features)
-- **Performance Profile**: CPU-bound operations now execute 50-100x faster via WASM backend
+- **Performance Profile**: CPU-bound operations can execute substantially faster via WASM backend (benchmark-dependent)
 - **Dependency Model**: WASM support now optional via `[wasm]` extra; numpy support optional via `[performance]`
 
 ### Fixed

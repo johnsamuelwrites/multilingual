@@ -73,9 +73,9 @@
 ### Documentation
 - Simplified and reorganized top-level documentation.
 - Updated `README.md` with a clearer multilingual-first introduction and improved REPL guidance.
-- Added extensive multilingual REPL smoke-test examples in `docs/README.md`.
+- Added extensive multilingual REPL smoke-test examples in `docs/reference.md`.
 - Added `docs/language_onboarding.md` documenting the data-driven process for adding new languages.
-- Improved cross-linking between `README.md`, `USAGE.md`, and `docs/README.md`.
+- Improved cross-linking between `README.md`, `USAGE.md`, and `docs/reference.md`.
 - Moved detailed execution/AST examples and full example command list into `USAGE.md`.
 
 ### Quality and Validation

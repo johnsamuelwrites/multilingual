@@ -14,7 +14,7 @@ This guide explains how the WASM backend works and how to develop with it.
 Application Code
     ↓
 BackendSelector
-    ├→ Backend.WASM: Use WebAssembly (50-100x faster)
+    ├→ Backend.WASM: Use WebAssembly (performance gain depends on workload)
     ├→ Backend.PYTHON: Use Python fallback (always works)
     └→ Backend.AUTO: Auto-detect (smart default)
         ├→ WASM available? → Use WASM
@@ -293,18 +293,16 @@ PyPI Distribution
 ### Building WASM Binaries
 
 ```bash
-# Setup build environment
-cargo install cranelift-cli
+# Install development dependencies (includes WASM runtime)
+pip install -e ".[dev,wasm]"
 
-# Build single module
-./build_wasm.sh matrix_operations
-
-# Build all modules
-./build_wasm.sh --all
-
-# Build with optimizations
-./build_wasm.sh --optimize matrix_operations
+# Validate WASM codegen and backend integration
+pytest tests/wasm_codegen_poc_test.py -v
+pytest tests/wasm_comprehensive_test.py -v
 ```
+
+At this time, the repository does not provide a top-level `build_wasm.sh` helper.
+WASM assets are generated/validated through the codegen pipeline and tests.
 
 ---
 
@@ -451,4 +449,4 @@ print(f"Speedup: {py_time/wasm_time:.1f}x")
 ---
 
 **Version**: PyPI Distribution Final
-**Status**: ✅ Production Ready
+**Status**: Stable; benchmark and validate in your deployment environment.

@@ -54,7 +54,7 @@ multilg = "multilingualprogramming.__main__:main"
 
 [project.urls]
 Homepage = "https://github.com/johnsamuelwrites/multilingual"
-Documentation = "https://johnsamuelwrites.github.io/multilingual/"
+Documentation = "https://johnsamuel.info/multilingual/"
 Repository = "https://github.com/johnsamuelwrites/multilingual"
 Issues = "https://github.com/johnsamuelwrites/multilingual/issues"
 Changelog = "https://github.com/johnsamuelwrites/multilingual/blob/main/CHANGELOG.md"

@@ -6,7 +6,7 @@ This document describes how the project ensures comprehensive testing of both WA
 
 The multilingual programming language supports two execution backends:
 
-1. **WASM Backend**: WebAssembly compilation for 50-100x performance gains on compute-intensive operations
+1. **WASM Backend**: WebAssembly compilation for potentially large performance gains on compute-intensive operations
 2. **Python Fallback**: Pure Python implementations for guaranteed compatibility across all platforms
 
 Both backends must produce **identical results** while potentially differing in **performance**.
@@ -276,7 +276,7 @@ JSON 100 objects   5.2ms
 
 ### WASM Backend
 
-Target performance - 50-100x faster on compute-intensive operations:
+Target performance (benchmark-dependent; varies by hardware/workload):
 
 ```
 Operation          Time (WASM)   Speedup

@@ -67,8 +67,8 @@ When relevant, also update:
 
 - Add short examples in:
   - `README.md`
-  - `docs/README.md`
-  - `docs/programmation_fr.md` (or add equivalent docs for your language)
+  - `docs/reference.md`
+  - `docs/fr/programmation.md` (or add equivalent docs for your language)
 
 ## Local Checks
 
