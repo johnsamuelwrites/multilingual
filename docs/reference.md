@@ -12,7 +12,7 @@ Python compatibility baseline:
 
 Version and release status:
 - Package version: `multilingualprogramming/version.py`
-- Release notes: [`CHANGELOG.md`](../CHANGELOG.md)
+- Release notes: [`CHANGELOG.md`](CHANGELOG.md)
 
 ## Supported Languages
 
@@ -385,7 +385,7 @@ imprimir(soma)
 
 Runnable examples are documented in:
 
-- [examples/README.md](../examples/README.md)
+- [examples/README.md](_generated/examples/README.md)
 
 Complete feature coverage examples:
 
@@ -438,8 +438,8 @@ python -m pylint $(git ls-files '*.py')
 - Development and debugging guide: [development.md](development.md)
 - Python compatibility matrix: [compatibility_matrix.md](compatibility_matrix.md)
 - Python 3.12 compatibility roadmap: [compatibility_roadmap.md](compatibility_roadmap.md)
-- Usage snippets: [USAGE.md](../USAGE.md)
-- Examples guide: [examples/README.md](../examples/README.md)
+- Usage snippets: [USAGE.md](_generated/USAGE.md)
+- Examples guide: [examples/README.md](_generated/examples/README.md)
 - French programming guide: [fr/programmation.md](fr/programmation.md)
 - Language onboarding: [language_onboarding.md](language_onboarding.md)
 

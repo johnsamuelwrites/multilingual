@@ -449,7 +449,7 @@ Sortie attendue:
 
 ## 10. Documentation associee
 
-- Guide usage: [USAGE.md](../../USAGE.md)
+- Guide usage: [USAGE.md](../_generated/USAGE.md)
 - Reference technique: [README docs](../reference.md)
 - Vue design (architecture + roadmap): [design.md](../design.md)
 - Onboarding nouvelles langues: [language_onboarding.md](../language_onboarding.md)
