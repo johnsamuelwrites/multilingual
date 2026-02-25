@@ -19,6 +19,7 @@ Usage:
 
 import argparse
 import sys
+from pathlib import Path
 
 from multilingualprogramming.codegen.executor import ProgramExecutor
 from multilingualprogramming.codegen.python_generator import PythonCodeGenerator
@@ -45,8 +46,30 @@ def cmd_run(args):
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
 
+    # Determine package context so that relative imports work.
+    # Walk up from the file's directory while __init__.ml files exist;
+    # that chain of directories forms the package name.  The directory
+    # above the outermost package becomes the sys.path entry.
+    resolved = Path(args.file).resolve()
+    pkg_parts = []
+    current = resolved.parent
+    while (current / "__init__.ml").is_file():
+        pkg_parts.append(current.name)
+        current = current.parent
+    pkg_parts.reverse()
+    package_name = ".".join(pkg_parts) if pkg_parts else None
+
+    # The path entry is either the package root (when inside a package)
+    # or the script's own directory (top-level script).
+    path_entry = str(current if pkg_parts else resolved.parent)
+    if path_entry not in sys.path:
+        sys.path.insert(0, path_entry)
+
+    # Pass __package__ so the import system can resolve relative imports.
+    run_globals = {"__package__": package_name} if package_name else {}
+
     executor = ProgramExecutor(language=args.lang)
-    result = executor.execute(source)
+    result = executor.execute(source, globals_dict=run_globals or None)
 
     if result.output:
         sys.stdout.write(result.output)
@@ -135,16 +158,16 @@ def _maybe_dispatch_direct_file_run(argv):
     if not first.lower().endswith(".ml"):
         return False
 
-    parser = argparse.ArgumentParser(
+    arg_parser = argparse.ArgumentParser(
         prog="multilingual",
         description="Execute a multilingual source file",
     )
-    parser.add_argument("file", help="Path to the source file")
-    parser.add_argument(
+    arg_parser.add_argument("file", help="Path to the source file")
+    arg_parser.add_argument(
         "--lang", default=None,
         help="Source language code (e.g., en, fr, hi). Auto-detect if omitted.",
     )
-    args = parser.parse_args(argv)
+    args = arg_parser.parse_args(argv)
     cmd_run(args)
     return True
 

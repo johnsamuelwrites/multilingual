@@ -382,10 +382,20 @@ multilingual run examples/complete_features_fr.ml --lang fr
 - `:help` afficher l'aide
 - `:language fr` forcer la langue francaise
 - `:python` activer/desactiver l'affichage du Python genere
+- `:wat` activer/desactiver l'affichage du code WAT (WebAssembly Text) genere (alias `:wasm`)
+- `:rust` activer/desactiver l'affichage du bridge Rust/Wasmtime genere (alias `:wasmtime`)
 - `:reset` vider l'etat de la session
 - `:kw [XX]` lister les mots-cles
 - `:ops [XX]` lister les symboles et operateurs
 - `:q` quitter
+
+Drapeaux de demarrage equivalents :
+
+```bash
+multilingual repl --lang fr --show-python   # afficher Python au demarrage
+multilingual repl --lang fr --show-wat      # afficher WAT au demarrage
+multilingual repl --lang fr --show-rust     # afficher Rust/Wasmtime au demarrage
+```
 
 ## 6. Architecture technique (ce qui se passe en interne)
 
@@ -449,6 +459,9 @@ Sortie attendue:
 
 ## 10. Documentation associee
 
+- **Mots-cles complets** (tous les mots-cles + alias built-ins): [mots_cles.md](mots_cles.md)
+- **Modules et projets multi-fichiers** (packages, imports, tests): [modules.md](modules.md)
+- **Backends WAT/WASM** (`:wat`, `:rust`, playground): [wasm.md](wasm.md)
 - Guide usage: [USAGE.md](../_generated/USAGE.md)
 - Reference technique: [README docs](../reference.md)
 - Vue design (architecture + roadmap): [design.md](../design.md)

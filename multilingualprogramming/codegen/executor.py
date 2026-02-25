@@ -166,6 +166,13 @@ class ProgramExecutor:
         builtins_ns = RuntimeBuiltins(language).namespace()
         exec_globals = dict(builtins_ns)
 
+        # Python's import system requires __name__ and __package__ to be
+        # present in the globals dict before any relative import is attempted.
+        # Set safe defaults; callers can override via globals_dict.
+        exec_globals.setdefault("__name__", "__main__")
+        exec_globals.setdefault("__package__", None)
+        exec_globals.setdefault("__spec__", None)
+
         if globals_dict:
             exec_globals.update(globals_dict)
 
