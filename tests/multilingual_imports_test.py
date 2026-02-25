@@ -367,6 +367,7 @@ class CLIImportTestSuite(unittest.TestCase):
              str(file_path), "--lang", "fr"],
             capture_output=True,
             text=True,
+            check=False,
         )
 
     def test_cli_run_resolves_sibling_module(self):
