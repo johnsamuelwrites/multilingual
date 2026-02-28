@@ -46,6 +46,7 @@ Host imports expected by the generated module:
 
 from copy import deepcopy
 import json
+import re
 
 from multilingualprogramming.parser.ast_nodes import (
     VariableDeclaration,
@@ -292,6 +293,9 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
         self._class_attr_call_names: dict[str, str] = {}
         # Best-effort local variable -> class-name tracking (for obj.method calls).
         self._var_class_types: dict[str, str] = {}
+        # Source identifier -> safe WAT symbol name.
+        self._wat_symbols: dict[str, str] = {}
+        self._used_wat_symbols: set[str] = set()
 
     # -----------------------------------------------------------------------
     # Public API
@@ -313,6 +317,8 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
         self._class_ctor_names = {}
         self._class_attr_call_names = {}
         self._var_class_types = {}
+        self._wat_symbols = {}
+        self._used_wat_symbols = set()
 
         if isinstance(program, CoreIRProgram):
             program = program.ast
@@ -547,6 +553,28 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
         self._label_count += 1
         return self._label_count
 
+    def _wat_symbol(self, name: str) -> str:
+        """Return a deterministic, WAT-safe symbol for a source identifier."""
+        key = str(name)
+        if key in self._wat_symbols:
+            return self._wat_symbols[key]
+
+        safe = re.sub(r"[^A-Za-z0-9_.$]", "_", key)
+        if not safe:
+            safe = "sym"
+        if safe[0].isdigit():
+            safe = f"n_{safe}"
+
+        candidate = safe
+        suffix = 2
+        while candidate in self._used_wat_symbols:
+            candidate = f"{safe}_{suffix}"
+            suffix += 1
+
+        self._used_wat_symbols.add(candidate)
+        self._wat_symbols[key] = candidate
+        return candidate
+
     # -----------------------------------------------------------------------
     # Function generation helpers
     # -----------------------------------------------------------------------
@@ -643,12 +671,13 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
         body_instrs = list(self._instrs)
         local_names = sorted(self._locals - set(param_names))
 
-        lines = [f'  (func ${func_name} (export "{func_name}")']
+        wat_func_name = self._wat_symbol(func_name)
+        lines = [f'  (func ${wat_func_name} (export "{func_name}")']
         for pn in param_names:
-            lines.append(f"    (param ${pn} f64)")
+            lines.append(f"    (param ${self._wat_symbol(pn)} f64)")
         lines.append("    (result f64)")
         for ln in local_names:
-            lines.append(f"    (local ${ln} f64)")
+            lines.append(f"    (local ${self._wat_symbol(ln)} f64)")
         lines.extend(body_instrs)
         lines.append("    f64.const 0  ;; implicit return")
         lines.append("  )")
@@ -670,11 +699,17 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
     def _build_stream_buffer_helpers(self, func_name: str) -> str:
         """Emit stream helpers that write point pairs (x, y) into linear memory."""
         lines = [
-            f"  (func ${func_name}_point_count (export \"{func_name}_point_count\")",
+            (
+                f"  (func ${self._wat_symbol(func_name + '_point_count')} "
+                f"(export \"{func_name}_point_count\")"
+            ),
             "    (result i32)",
             "    i32.const 256",
             "  )",
-            f"  (func ${func_name}_write_points (export \"{func_name}_write_points\")",
+            (
+                f"  (func ${self._wat_symbol(func_name + '_write_points')} "
+                f"(export \"{func_name}_write_points\")"
+            ),
             "    (param $ptr i32)",
             "    (param $len i32)",
             "    (result i32)",
@@ -739,7 +774,7 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
 
         lines = ['  (func $__main (export "__main")']
         for ln in local_names:
-            lines.append(f"    (local ${ln} f64)")
+            lines.append(f"    (local ${self._wat_symbol(ln)} f64)")
         lines.extend(body_instrs)
         lines.append("  )")
 
@@ -763,7 +798,7 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
             self._locals.add(name)
             self._emit(f"{indent};; let {name} = ...")
             self._gen_expr(stmt.value, indent)
-            self._emit(f"{indent}local.set ${name}")
+            self._emit(f"{indent}local.set ${self._wat_symbol(name)}")
             inferred_class = self._infer_class_name(stmt.value)
             if inferred_class:
                 self._var_class_types[name] = inferred_class
@@ -779,7 +814,7 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
                 if op == "=":
                     self._emit(f"{indent};; {name} = ...")
                     self._gen_expr(stmt.value, indent)
-                    self._emit(f"{indent}local.set ${name}")
+                    self._emit(f"{indent}local.set ${self._wat_symbol(name)}")
                     inferred_class = self._infer_class_name(stmt.value)
                     if inferred_class:
                         self._var_class_types[name] = inferred_class
@@ -791,10 +826,10 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
                                  "*=": "f64.mul", "/=": "f64.div"}
                     wat_op = _compound.get(op, "f64.add")
                     self._emit(f"{indent};; {name} {op} ...")
-                    self._emit(f"{indent}local.get ${name}")
+                    self._emit(f"{indent}local.get ${self._wat_symbol(name)}")
                     self._gen_expr(stmt.value, indent)
                     self._emit(f"{indent}{wat_op}")
-                    self._emit(f"{indent}local.set ${name}")
+                    self._emit(f"{indent}local.set ${self._wat_symbol(name)}")
                     if name in self._var_class_types:
                         del self._var_class_types[name]
             else:
@@ -824,27 +859,27 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
                     # Known WAT function — emit args then call
                     self._emit(f"{indent};; call {fname}(...)")
                     self._gen_call_args(expr, indent, fname)
-                    self._emit(f"{indent}call ${fname}")
+                    self._emit(f"{indent}call ${self._wat_symbol(fname)}")
                     self._emit(f"{indent}drop")
                 elif fname in self._class_ctor_names:
                     ctor = self._class_ctor_names[fname]
                     self._emit(f"{indent};; ctor {fname}(...) -> {ctor}(...)")
                     self._emit(f"{indent}f64.const 0  ;; implicit self")
                     self._gen_call_args(expr, indent, ctor, skip_params=1)
-                    self._emit(f"{indent}call ${ctor}")
+                    self._emit(f"{indent}call ${self._wat_symbol(ctor)}")
                     self._emit(f"{indent}drop")
                 elif fname in self._class_attr_call_names:
                     lowered = self._class_attr_call_names[fname]
                     self._emit(f"{indent};; class call {fname}(...)")
                     self._gen_call_args(expr, indent, lowered)
-                    self._emit(f"{indent}call ${lowered}")
+                    self._emit(f"{indent}call ${self._wat_symbol(lowered)}")
                     self._emit(f"{indent}drop")
                 elif self._class_method_target_from_call(expr):
                     lowered = self._class_method_target_from_call(expr)
                     self._emit(f"{indent};; instance call {fname}(...)")
                     self._emit(f"{indent}f64.const 0  ;; implicit self")
                     self._gen_call_args(expr, indent, lowered, skip_params=1)
-                    self._emit(f"{indent}call ${lowered}")
+                    self._emit(f"{indent}call ${self._wat_symbol(lowered)}")
                     self._emit(f"{indent}drop")
                 else:
                     # Closure, constructor, builtin, or other non-WAT callable
@@ -943,7 +978,7 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
 
         elif isinstance(node, Identifier):
             if node.name in self._locals:
-                self._emit(f"{indent}local.get ${node.name}")
+                self._emit(f"{indent}local.get ${self._wat_symbol(node.name)}")
             else:
                 # Name not declared as a local — could be a closure, class, or
                 # module-level name that WAT cannot represent; emit 0 as placeholder.
@@ -984,21 +1019,21 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
             elif fname in self._defined_func_names:
                 # Known WAT function — emit args then call
                 self._gen_call_args(node, indent, fname)
-                self._emit(f"{indent}call ${fname}")
+                self._emit(f"{indent}call ${self._wat_symbol(fname)}")
             elif fname in self._class_ctor_names:
                 ctor = self._class_ctor_names[fname]
                 self._emit(f"{indent}f64.const 0  ;; implicit self")
                 self._gen_call_args(node, indent, ctor, skip_params=1)
-                self._emit(f"{indent}call ${ctor}")
+                self._emit(f"{indent}call ${self._wat_symbol(ctor)}")
             elif fname in self._class_attr_call_names:
                 lowered = self._class_attr_call_names[fname]
                 self._gen_call_args(node, indent, lowered)
-                self._emit(f"{indent}call ${lowered}")
+                self._emit(f"{indent}call ${self._wat_symbol(lowered)}")
             elif self._class_method_target_from_call(node):
                 lowered = self._class_method_target_from_call(node)
                 self._emit(f"{indent}f64.const 0  ;; implicit self")
                 self._gen_call_args(node, indent, lowered, skip_params=1)
-                self._emit(f"{indent}call ${lowered}")
+                self._emit(f"{indent}call ${self._wat_symbol(lowered)}")
             else:
                 # Closure, constructor, builtin, or other non-WAT callable
                 self._emit(f"{indent}f64.const 0  ;; unsupported call: {fname}(...)")
@@ -1085,9 +1120,9 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
                 tmp_name = f"__mod_left_{self._new_label()}"
                 self._locals.add(tmp_name)
                 self._gen_expr(node.left, indent)
-                self._emit(f"{indent}local.set ${tmp_name}")
-                self._emit(f"{indent}local.get ${tmp_name}")
-                self._emit(f"{indent}local.get ${tmp_name}")
+                self._emit(f"{indent}local.set ${self._wat_symbol(tmp_name)}")
+                self._emit(f"{indent}local.get ${self._wat_symbol(tmp_name)}")
+                self._emit(f"{indent}local.get ${self._wat_symbol(tmp_name)}")
                 self._gen_expr(node.right, indent)
                 self._emit(f"{indent}f64.div")
                 self._emit(f"{indent}f64.floor")
@@ -1204,9 +1239,9 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
         n = self._new_label()
         blk = f"for_blk_{n}"
         lp = f"for_lp_{n}"
-        re = f"__re{n}"      # holds range end
+        range_end_local = f"__re{n}"      # holds range end
         self._loop_stack.append((blk, lp))
-        self._locals.add(re)
+        self._locals.add(range_end_local)
 
         # Determine iterator variable name
         target = stmt.target
@@ -1236,21 +1271,21 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
         if range_end is not None:
             self._emit(f"{indent};; for {iter_var} in range(...)")
             self._gen_expr(range_start, indent)
-            self._emit(f"{indent}local.set ${iter_var}")
+            self._emit(f"{indent}local.set ${self._wat_symbol(iter_var)}")
             self._gen_expr(range_end, indent)
-            self._emit(f"{indent}local.set ${re}")
+            self._emit(f"{indent}local.set ${self._wat_symbol(range_end_local)}")
 
             self._emit(f"{indent}block ${blk}")
             self._emit(f"{indent}  loop ${lp}")
-            self._emit(f"{indent}    local.get ${iter_var}")
-            self._emit(f"{indent}    local.get ${re}")
+            self._emit(f"{indent}    local.get ${self._wat_symbol(iter_var)}")
+            self._emit(f"{indent}    local.get ${self._wat_symbol(range_end_local)}")
             self._emit(f"{indent}    f64.ge")
             self._emit(f"{indent}    br_if ${blk}")
             self._gen_stmts(stmt.body, indent + "    ")
-            self._emit(f"{indent}    local.get ${iter_var}")
+            self._emit(f"{indent}    local.get ${self._wat_symbol(iter_var)}")
             self._emit(f"{indent}    f64.const 1")
             self._emit(f"{indent}    f64.add")
-            self._emit(f"{indent}    local.set ${iter_var}")
+            self._emit(f"{indent}    local.set ${self._wat_symbol(iter_var)}")
             self._emit(f"{indent}    br ${lp}")
             self._emit(f"{indent}  end  ;; loop")
             self._emit(f"{indent}end  ;; block (for)")

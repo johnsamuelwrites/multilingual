@@ -83,6 +83,11 @@ jobs:
       run: |
         python -m pytest tests -k wasm -v --tb=short --timeout=60
 
+    - name: Validate complete_features examples as WAT/WASM artifacts
+      if: matrix.backend == 'wasm' && matrix.primary
+      run: |
+        python -m pytest tests/complete_features_wasm_execution_test.py -v --tb=short --timeout=180
+
 
     - name: Compile generated Rust to WASM
       if: matrix.backend == 'wasm'
