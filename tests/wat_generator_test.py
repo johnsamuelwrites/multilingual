@@ -6,6 +6,7 @@
 
 """Tests for the WAT (WebAssembly Text) code generator."""
 # pylint: disable=duplicate-code
+# pylint: disable=mixed-line-endings
 
 import unittest
 import importlib.util
@@ -1324,7 +1325,7 @@ class WATClassWasmExecutionTestSuite(unittest.TestCase):
         self.gen = WATCodeGenerator()
 
     def _run_main(self, prog):
-        import wasmtime  # pylint: disable=import-outside-toplevel
+        import wasmtime  # pylint: disable=import-outside-toplevel,import-error
         wat = self.gen.generate(prog)
         engine = wasmtime.Engine()
         wasm_bytes = wasmtime.wat2wasm(wat)
@@ -1332,6 +1333,19 @@ class WATClassWasmExecutionTestSuite(unittest.TestCase):
         store = wasmtime.Store(engine)
         printed = []
         linker = wasmtime.Linker(engine)
+
+        def _noop():
+            return None
+
+        def _noop_print_str(_ptr, _length):
+            return None
+
+        def _capture_f64(value):
+            printed.append(value)
+
+        def _capture_bool(value):
+            printed.append(bool(value))
+
         linker.define(
             store,
             "env",
@@ -1339,7 +1353,7 @@ class WATClassWasmExecutionTestSuite(unittest.TestCase):
             wasmtime.Func(
                 store,
                 wasmtime.FuncType([wasmtime.ValType.i32(), wasmtime.ValType.i32()], []),
-                lambda _ptr, _length: None,
+                _noop_print_str,
             ),
         )
         linker.define(
@@ -1349,7 +1363,7 @@ class WATClassWasmExecutionTestSuite(unittest.TestCase):
             wasmtime.Func(
                 store,
                 wasmtime.FuncType([wasmtime.ValType.f64()], []),
-                lambda value: printed.append(value),
+                _capture_f64,
             ),
         )
         linker.define(
@@ -1359,20 +1373,20 @@ class WATClassWasmExecutionTestSuite(unittest.TestCase):
             wasmtime.Func(
                 store,
                 wasmtime.FuncType([wasmtime.ValType.i32()], []),
-                lambda value: printed.append(bool(value)),
+                _capture_bool,
             ),
         )
         linker.define(
             store,
             "env",
             "print_sep",
-            wasmtime.Func(store, wasmtime.FuncType([], []), lambda: None),
+            wasmtime.Func(store, wasmtime.FuncType([], []), _noop),
         )
         linker.define(
             store,
             "env",
             "print_newline",
-            wasmtime.Func(store, wasmtime.FuncType([], []), lambda: None),
+            wasmtime.Func(store, wasmtime.FuncType([], []), _noop),
         )
         instance = linker.instantiate(store, module)
         instance.exports(store)["__main"](store)
@@ -1412,7 +1426,12 @@ class WATClassWasmExecutionTestSuite(unittest.TestCase):
             ExpressionStatement(
                 CallExpr(
                     Identifier("print"),
-                    [CallExpr(AttributeAccess(Identifier("Math"), "double"), [NumeralLiteral("4")])],
+                    [
+                        CallExpr(
+                            AttributeAccess(Identifier("Math"), "double"),
+                            [NumeralLiteral("4")],
+                        )
+                    ],
                 )
             ),
         )
@@ -1441,7 +1460,12 @@ class WATClassWasmExecutionTestSuite(unittest.TestCase):
             ExpressionStatement(
                 CallExpr(
                     Identifier("print"),
-                    [CallExpr(AttributeAccess(Identifier("c"), "inc"), [NumeralLiteral("4")])],
+                    [
+                        CallExpr(
+                            AttributeAccess(Identifier("c"), "inc"),
+                            [NumeralLiteral("4")],
+                        )
+                    ],
                 )
             ),
         )

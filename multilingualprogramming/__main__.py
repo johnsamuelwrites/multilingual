@@ -17,6 +17,7 @@ Usage:
     python -m multilingualprogramming smoke --lang fr      # Validate one language pack
     python -m multilingualprogramming smoke --all          # Validate all language packs
 """
+# pylint: disable=mixed-line-endings
 
 import argparse
 import json
@@ -244,7 +245,7 @@ def _maybe_dispatch_direct_file_run(argv):
     return True
 
 
-def main():
+def main():  # pylint: disable=too-many-statements
     """Run the CLI entry point and dispatch subcommands."""
     argv = sys.argv[1:]
     if _maybe_dispatch_direct_file_run(argv):

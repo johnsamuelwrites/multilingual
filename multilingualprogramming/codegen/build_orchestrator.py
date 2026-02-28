@@ -19,7 +19,7 @@ from multilingualprogramming.codegen.wat_generator import WATCodeGenerator
 
 
 @dataclass
-class BuildOutputs:
+class BuildOutputs:  # pylint: disable=too-many-instance-attributes
     """Resolved output file paths for build artifacts."""
 
     wat: Path
@@ -32,7 +32,7 @@ class BuildOutputs:
     build_lock: Path
 
 
-class BuildOrchestrator:
+class BuildOrchestrator:  # pylint: disable=too-many-instance-attributes
     """Atomic, lock-guarded, deterministic artifact build."""
 
     def __init__(self, output_dir: str | Path):

@@ -5,6 +5,7 @@
 #
 
 """Numeric primitives for geometry-heavy workloads."""
+# pylint: disable=missing-function-docstring
 
 from dataclasses import dataclass
 from math import sqrt
