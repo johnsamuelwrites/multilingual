@@ -1314,6 +1314,122 @@ class WATIntegrationTestSuite(unittest.TestCase):
         self.assertEqual(wat.count("call $print_sep"), 2)
 
 
+class WATOopObjectModelTestSuite(unittest.TestCase):
+    """Verify WAT OOP object model: field layout, f64.store/load, heap alloc."""
+
+    def setUp(self):
+        self.gen = WATCodeGenerator()
+
+    def _wat(self, *stmts):
+        return self.gen.generate(_prog(*stmts))
+
+    def _counter_class(self, extra_methods=None):
+        """Counter class with self.value = start in __init__."""
+        methods = [
+            FunctionDef(
+                "__init__",
+                [_param("self"), _param("start")],
+                [Assignment(
+                    AttributeAccess(Identifier("self"), "value"),
+                    Identifier("start"),
+                )],
+            ),
+        ]
+        if extra_methods:
+            methods.extend(extra_methods)
+        return ClassDef("Counter", [], methods)
+
+    def test_self_attr_store_emits_f64_store(self):
+        """self.value = start inside __init__ must emit f64.store."""
+        wat = self._wat(self._counter_class())
+        self.assertIn("f64.store", wat)
+
+    def test_self_attr_load_emits_f64_load(self):
+        """return self.value in a getter must emit f64.load."""
+        getter = FunctionDef(
+            "get",
+            [_param("self")],
+            [ReturnStatement(AttributeAccess(Identifier("self"), "value"))],
+        )
+        wat = self._wat(self._counter_class(extra_methods=[getter]))
+        self.assertIn("f64.load", wat)
+
+    def test_stateful_constructor_emits_heap_alloc(self):
+        """Counter(10) for a stateful class must emit global.get $__heap_ptr."""
+        wat = self._wat(
+            self._counter_class(),
+            VariableDeclaration(
+                "c",
+                CallExpr(Identifier("Counter"), [NumeralLiteral("10")]),
+            ),
+        )
+        self.assertIn("global.get $__heap_ptr", wat)
+
+    def test_stateless_class_keeps_old_behavior(self):
+        """A class with no self.attr assignments keeps f64.const 0 as self."""
+        stateless = ClassDef(
+            "Math",
+            [],
+            [
+                FunctionDef(
+                    "__init__",
+                    [_param("self")],
+                    [ReturnStatement(NumeralLiteral("0"))],
+                ),
+            ],
+        )
+        wat = self._wat(
+            stateless,
+            ExpressionStatement(CallExpr(Identifier("Math"), [])),
+        )
+        self.assertIn("f64.const 0  ;; implicit self", wat)
+        self.assertNotIn("global.get $__heap_ptr", wat)
+
+    def test_field_byte_offset_correct(self):
+        """Second field in a two-field class must use i32.const 8."""
+        two_field = ClassDef(
+            "Point",
+            [],
+            [
+                FunctionDef(
+                    "__init__",
+                    [_param("self"), _param("x"), _param("y")],
+                    [
+                        Assignment(
+                            AttributeAccess(Identifier("self"), "x"),
+                            Identifier("x"),
+                        ),
+                        Assignment(
+                            AttributeAccess(Identifier("self"), "y"),
+                            Identifier("y"),
+                        ),
+                    ],
+                ),
+            ],
+        )
+        wat = self._wat(two_field)
+        # First field (x) uses i32.const 0; second field (y) uses i32.const 8.
+        self.assertIn("i32.const 0", wat)
+        self.assertIn("i32.const 8", wat)
+
+    def test_external_attr_read_emits_f64_load(self):
+        """c.value in __main__ for a known class variable must emit f64.load."""
+        wat = self._wat(
+            self._counter_class(),
+            VariableDeclaration(
+                "c",
+                CallExpr(Identifier("Counter"), [NumeralLiteral("10")]),
+            ),
+            ExpressionStatement(
+                CallExpr(
+                    Identifier("print"),
+                    [AttributeAccess(Identifier("c"), "value")],
+                )
+            ),
+        )
+        self.assertIn("f64.load", wat)
+
+
 @unittest.skipUnless(
     importlib.util.find_spec("wasmtime") is not None,
     "wasmtime not installed",
@@ -1471,6 +1587,147 @@ class WATClassWasmExecutionTestSuite(unittest.TestCase):
         )
         printed = self._run_main(prog)
         self.assertEqual(printed, [5.0])
+
+    def test_stateful_counter_stores_and_reads_value(self):
+        """Counter(10).get() must return 10.0 via field store/load."""
+        prog = _prog(
+            ClassDef(
+                "Counter",
+                [],
+                [
+                    FunctionDef(
+                        "__init__",
+                        [_param("self"), _param("start")],
+                        [
+                            Assignment(
+                                AttributeAccess(Identifier("self"), "value"),
+                                Identifier("start"),
+                            )
+                        ],
+                    ),
+                    FunctionDef(
+                        "get",
+                        [_param("self")],
+                        [ReturnStatement(AttributeAccess(Identifier("self"), "value"))],
+                    ),
+                ],
+            ),
+            VariableDeclaration(
+                "c",
+                CallExpr(Identifier("Counter"), [NumeralLiteral("10")]),
+            ),
+            ExpressionStatement(
+                CallExpr(
+                    Identifier("print"),
+                    [CallExpr(AttributeAccess(Identifier("c"), "get"), [])],
+                )
+            ),
+        )
+        printed = self._run_main(prog)
+        self.assertEqual(printed, [10.0])
+
+    def test_stateful_counter_mutates_value(self):
+        """Counter.increment (self.value += 1) must mutate the stored field."""
+        prog = _prog(
+            ClassDef(
+                "Counter",
+                [],
+                [
+                    FunctionDef(
+                        "__init__",
+                        [_param("self"), _param("start")],
+                        [
+                            Assignment(
+                                AttributeAccess(Identifier("self"), "value"),
+                                Identifier("start"),
+                            )
+                        ],
+                    ),
+                    FunctionDef(
+                        "increment",
+                        [_param("self")],
+                        [
+                            Assignment(
+                                AttributeAccess(Identifier("self"), "value"),
+                                BinaryOp(
+                                    AttributeAccess(Identifier("self"), "value"),
+                                    "+",
+                                    NumeralLiteral("1"),
+                                ),
+                            )
+                        ],
+                    ),
+                    FunctionDef(
+                        "get",
+                        [_param("self")],
+                        [ReturnStatement(AttributeAccess(Identifier("self"), "value"))],
+                    ),
+                ],
+            ),
+            VariableDeclaration(
+                "c",
+                CallExpr(Identifier("Counter"), [NumeralLiteral("10")]),
+            ),
+            ExpressionStatement(
+                CallExpr(AttributeAccess(Identifier("c"), "increment"), [])
+            ),
+            ExpressionStatement(
+                CallExpr(
+                    Identifier("print"),
+                    [CallExpr(AttributeAccess(Identifier("c"), "get"), [])],
+                )
+            ),
+        )
+        printed = self._run_main(prog)
+        self.assertEqual(printed, [11.0])
+
+    def test_two_instances_have_independent_state(self):
+        """Two Counter instances must have independent memory regions."""
+        prog = _prog(
+            ClassDef(
+                "Counter",
+                [],
+                [
+                    FunctionDef(
+                        "__init__",
+                        [_param("self"), _param("start")],
+                        [
+                            Assignment(
+                                AttributeAccess(Identifier("self"), "value"),
+                                Identifier("start"),
+                            )
+                        ],
+                    ),
+                    FunctionDef(
+                        "get",
+                        [_param("self")],
+                        [ReturnStatement(AttributeAccess(Identifier("self"), "value"))],
+                    ),
+                ],
+            ),
+            VariableDeclaration(
+                "a",
+                CallExpr(Identifier("Counter"), [NumeralLiteral("1")]),
+            ),
+            VariableDeclaration(
+                "b",
+                CallExpr(Identifier("Counter"), [NumeralLiteral("2")]),
+            ),
+            ExpressionStatement(
+                CallExpr(
+                    Identifier("print"),
+                    [CallExpr(AttributeAccess(Identifier("a"), "get"), [])],
+                )
+            ),
+            ExpressionStatement(
+                CallExpr(
+                    Identifier("print"),
+                    [CallExpr(AttributeAccess(Identifier("b"), "get"), [])],
+                )
+            ),
+        )
+        printed = self._run_main(prog)
+        self.assertEqual(printed, [1.0, 2.0])
 
 
 if __name__ == "__main__":

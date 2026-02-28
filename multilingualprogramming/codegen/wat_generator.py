@@ -296,6 +296,11 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
         # Source identifier -> safe WAT symbol name.
         self._wat_symbols: dict[str, str] = {}
         self._used_wat_symbols: set[str] = set()
+        # OOP object model: field layout and sizes per class.
+        self._class_field_layouts: dict[str, dict[str, int]] = {}
+        self._class_obj_sizes: dict[str, int] = {}
+        # Name of the class currently being emitted (set in _emit_class).
+        self._current_class: str | None = None
 
     # -----------------------------------------------------------------------
     # Public API
@@ -319,6 +324,9 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
         self._var_class_types = {}
         self._wat_symbols = {}
         self._used_wat_symbols = set()
+        self._class_field_layouts = {}
+        self._class_obj_sizes = {}
+        self._current_class = None
 
         if isinstance(program, CoreIRProgram):
             program = program.ast
@@ -528,6 +536,11 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
         if self._data:
             escaped = "".join(f"\\{b:02x}" for b in self._data)
             lines.append(f'  (data (i32.const 0) "{escaped}")')
+        # Emit bump-allocator global for the object heap when any stateful class exists.
+        has_stateful = any(size > 0 for size in self._class_obj_sizes.values())
+        if has_stateful:
+            heap_base = max((len(self._data) + 7) // 8 * 8, 64)
+            lines.append(f'  (global $__heap_ptr (mut i32) (i32.const {heap_base}))')
         lines.extend(self._funcs)
         lines.append(")")
         return "\n".join(lines)
@@ -604,11 +617,14 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
                 self._gen_expr(arg, indent)
 
     def _save_func_state(self):
-        saved = (self._instrs, self._locals, self._loop_stack, self._var_class_types)
+        saved = (self._instrs, self._locals, self._loop_stack,
+                 self._var_class_types, self._current_class)
         self._instrs = []
         self._locals = set()
         self._loop_stack = []
         self._var_class_types = {}
+        # _current_class is NOT reset here: _emit_class sets it before each method
+        # and it must persist into the method body.
         return saved
 
     @staticmethod
@@ -630,9 +646,54 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
                 self._class_attr_call_names[f"{class_name}.{method_name}"] = lowered
                 if method_name == "__init__":
                     self._class_ctor_names[class_name] = lowered
+            # Build field layout for the object model (stateful classes).
+            fields = self._collect_class_fields(cls)
+            self._class_field_layouts[class_name] = fields
+            self._class_obj_sizes[class_name] = len(fields) * 8
+
+    def _collect_class_fields(self, class_def: ClassDef) -> dict[str, int]:
+        """Scan all method bodies for self.attr = ... to build field layout.
+
+        Returns an ordered dict {field_name: byte_offset}.  Each f64 field is
+        8 bytes.  Fields are ordered by first-seen assignment.
+        """
+        fields: dict[str, int] = {}
+
+        def _scan(stmts):
+            for stmt in (stmts or []):
+                if isinstance(stmt, Assignment):
+                    t = stmt.target
+                    if (isinstance(t, AttributeAccess)
+                            and isinstance(t.obj, Identifier)
+                            and t.obj.name == "self"
+                            and t.attr not in fields):
+                        fields[t.attr] = len(fields) * 8
+                elif isinstance(stmt, IfStatement):
+                    _scan(stmt.body)
+                    for _, eb in (stmt.elif_clauses or []):
+                        _scan(eb)
+                    _scan(stmt.else_body)
+                elif isinstance(stmt, (WhileLoop, ForLoop)):
+                    _scan(stmt.body)
+                elif isinstance(stmt, FunctionDef):
+                    _scan(stmt.body)
+
+        for member in (class_def.body or []):
+            if isinstance(member, FunctionDef):
+                _scan(member.body)
+        return fields
+
+    def _resolve_field(self, class_name: str, field_name: str) -> int | None:
+        """Return byte offset of field_name in class_name, or None if unknown."""
+        return (self._class_field_layouts.get(class_name) or {}).get(field_name)
+
+    def _is_stateful_class(self, class_name: str) -> bool:
+        """Return True if the class has at least one self.attr field."""
+        return bool(self._class_obj_sizes.get(class_name, 0))
 
     def _restore_func_state(self, saved):
-        self._instrs, self._locals, self._loop_stack, self._var_class_types = saved
+        (self._instrs, self._locals, self._loop_stack,
+         self._var_class_types, self._current_class) = saved
 
     def _infer_class_name(self, expr) -> str | None:
         """Infer class name for simple object-like values tracked in WAT lowering."""
@@ -690,11 +751,43 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
     def _emit_class(self, class_def: ClassDef):
         """Lower class methods to standalone WAT functions."""
         class_name = _name(class_def.name)
+        self._current_class = class_name          # set context for field-access lowering
         for member in (class_def.body or []):
             if isinstance(member, FunctionDef):
                 method_name = _name(member.name)
                 lowered_name = self._mangle_class_method_name(class_name, method_name)
                 self._emit_function(member, emitted_name=lowered_name)
+        self._current_class = None                # clear after all methods emitted
+
+    def _emit_stateful_ctor(self, class_name: str, ctor: str,
+                             call_expr, indent: str, keep_ref: bool):
+        """Emit WAT for allocating a stateful object instance and calling __init__.
+
+        Advances $__heap_ptr by the object size, then calls __init__ with the
+        old heap-ptr value as self (encoded as f64).  If keep_ref is True, also
+        pushes the object pointer as f64 onto the stack (expression context).
+        """
+        obj_size = self._class_obj_sizes[class_name]
+        self._emit(f"{indent};; alloc {class_name} ({obj_size} bytes)")
+        # Advance heap pointer; old value = object base address.
+        self._emit(f"{indent}global.get $__heap_ptr")
+        self._emit(f"{indent}i32.const {obj_size}")
+        self._emit(f"{indent}i32.add")
+        self._emit(f"{indent}global.set $__heap_ptr")
+        # self = heap_ptr - obj_size = original base address.
+        self._emit(f"{indent}global.get $__heap_ptr")
+        self._emit(f"{indent}i32.const {obj_size}")
+        self._emit(f"{indent}i32.sub")
+        self._emit(f"{indent}f64.convert_i32_u  ;; self ptr as f64")
+        self._gen_call_args(call_expr, indent, ctor, skip_params=1)
+        self._emit(f"{indent}call ${self._wat_symbol(ctor)}")
+        self._emit(f"{indent}drop  ;; discard __init__ return value")
+        if keep_ref:
+            # Expression context: push object reference as f64.
+            self._emit(f"{indent}global.get $__heap_ptr")
+            self._emit(f"{indent}i32.const {obj_size}")
+            self._emit(f"{indent}i32.sub")
+            self._emit(f"{indent}f64.convert_i32_u  ;; object ref as f64")
 
     def _build_stream_buffer_helpers(self, func_name: str) -> str:
         """Emit stream helpers that write point pairs (x, y) into linear memory."""
@@ -832,6 +925,54 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
                     self._emit(f"{indent}local.set ${self._wat_symbol(name)}")
                     if name in self._var_class_types:
                         del self._var_class_types[name]
+            elif (isinstance(target, AttributeAccess)
+                  and isinstance(target.obj, Identifier)):
+                # obj.attr = val  (handles self.attr inside methods and
+                # c.attr = val for tracked class variables)
+                obj_name = target.obj.name
+                attr = target.attr
+                if obj_name == "self" and self._current_class:
+                    cls = self._current_class
+                else:
+                    cls = self._var_class_types.get(obj_name)
+                offset = self._resolve_field(cls, attr) if cls else None
+                if offset is not None:
+                    op = stmt.op
+                    if op == "=":
+                        self._emit(f"{indent};; {obj_name}.{attr} = ...")
+                        self._emit(f"{indent}local.get ${self._wat_symbol(obj_name)}")
+                        self._emit(f"{indent}i32.trunc_f64_u")
+                        self._emit(f"{indent}i32.const {offset}")
+                        self._emit(f"{indent}i32.add")
+                        self._gen_expr(stmt.value, indent)
+                        self._emit(f"{indent}f64.store")
+                    else:
+                        # Compound assignment: obj.attr += val
+                        # Load old value, apply op, save to tmp f64 local, store.
+                        _compound = {"+=": "f64.add", "-=": "f64.sub",
+                                     "*=": "f64.mul", "/=": "f64.div"}
+                        wat_op = _compound.get(op, "f64.add")
+                        tmp = f"__attr_val_{self._new_label()}"
+                        self._locals.add(tmp)
+                        self._emit(f"{indent};; {obj_name}.{attr} {op} ...")
+                        # Load current field value
+                        self._emit(f"{indent}local.get ${self._wat_symbol(obj_name)}")
+                        self._emit(f"{indent}i32.trunc_f64_u")
+                        self._emit(f"{indent}i32.const {offset}")
+                        self._emit(f"{indent}i32.add")
+                        self._emit(f"{indent}f64.load")
+                        self._gen_expr(stmt.value, indent)
+                        self._emit(f"{indent}{wat_op}")
+                        self._emit(f"{indent}local.set ${self._wat_symbol(tmp)}")
+                        # Store new value (recompute address)
+                        self._emit(f"{indent}local.get ${self._wat_symbol(obj_name)}")
+                        self._emit(f"{indent}i32.trunc_f64_u")
+                        self._emit(f"{indent}i32.const {offset}")
+                        self._emit(f"{indent}i32.add")
+                        self._emit(f"{indent}local.get ${self._wat_symbol(tmp)}")
+                        self._emit(f"{indent}f64.store")
+                else:
+                    self._emit(f"{indent};; (complex assignment target — unsupported in WAT)")
             else:
                 self._emit(f"{indent};; (complex assignment target — unsupported in WAT)")
 
@@ -863,11 +1004,15 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
                     self._emit(f"{indent}drop")
                 elif fname in self._class_ctor_names:
                     ctor = self._class_ctor_names[fname]
-                    self._emit(f"{indent};; ctor {fname}(...) -> {ctor}(...)")
-                    self._emit(f"{indent}f64.const 0  ;; implicit self")
-                    self._gen_call_args(expr, indent, ctor, skip_params=1)
-                    self._emit(f"{indent}call ${self._wat_symbol(ctor)}")
-                    self._emit(f"{indent}drop")
+                    if self._is_stateful_class(fname):
+                        self._emit(f"{indent};; ctor {fname}(...) [stateful]")
+                        self._emit_stateful_ctor(fname, ctor, expr, indent, keep_ref=False)
+                    else:
+                        self._emit(f"{indent};; ctor {fname}(...) -> {ctor}(...)")
+                        self._emit(f"{indent}f64.const 0  ;; implicit self")
+                        self._gen_call_args(expr, indent, ctor, skip_params=1)
+                        self._emit(f"{indent}call ${self._wat_symbol(ctor)}")
+                        self._emit(f"{indent}drop")
                 elif fname in self._class_attr_call_names:
                     lowered = self._class_attr_call_names[fname]
                     self._emit(f"{indent};; class call {fname}(...)")
@@ -876,8 +1021,13 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
                     self._emit(f"{indent}drop")
                 elif self._class_method_target_from_call(expr):
                     lowered = self._class_method_target_from_call(expr)
+                    obj_expr = expr.func.obj
+                    cls = self._var_class_types.get(_name(obj_expr))
                     self._emit(f"{indent};; instance call {fname}(...)")
-                    self._emit(f"{indent}f64.const 0  ;; implicit self")
+                    if cls and self._is_stateful_class(cls):
+                        self._gen_expr(obj_expr, indent)   # push actual f64 pointer
+                    else:
+                        self._emit(f"{indent}f64.const 0  ;; implicit self")
                     self._gen_call_args(expr, indent, lowered, skip_params=1)
                     self._emit(f"{indent}call ${self._wat_symbol(lowered)}")
                     self._emit(f"{indent}drop")
@@ -1022,21 +1172,51 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
                 self._emit(f"{indent}call ${self._wat_symbol(fname)}")
             elif fname in self._class_ctor_names:
                 ctor = self._class_ctor_names[fname]
-                self._emit(f"{indent}f64.const 0  ;; implicit self")
-                self._gen_call_args(node, indent, ctor, skip_params=1)
-                self._emit(f"{indent}call ${self._wat_symbol(ctor)}")
+                if self._is_stateful_class(fname):
+                    self._emit_stateful_ctor(fname, ctor, node, indent, keep_ref=True)
+                else:
+                    self._emit(f"{indent}f64.const 0  ;; implicit self")
+                    self._gen_call_args(node, indent, ctor, skip_params=1)
+                    self._emit(f"{indent}call ${self._wat_symbol(ctor)}")
             elif fname in self._class_attr_call_names:
                 lowered = self._class_attr_call_names[fname]
                 self._gen_call_args(node, indent, lowered)
                 self._emit(f"{indent}call ${self._wat_symbol(lowered)}")
             elif self._class_method_target_from_call(node):
                 lowered = self._class_method_target_from_call(node)
-                self._emit(f"{indent}f64.const 0  ;; implicit self")
+                obj_expr = node.func.obj
+                cls = self._var_class_types.get(_name(obj_expr))
+                if cls and self._is_stateful_class(cls):
+                    self._gen_expr(obj_expr, indent)   # push actual f64 pointer
+                else:
+                    self._emit(f"{indent}f64.const 0  ;; implicit self")
                 self._gen_call_args(node, indent, lowered, skip_params=1)
                 self._emit(f"{indent}call ${self._wat_symbol(lowered)}")
             else:
                 # Closure, constructor, builtin, or other non-WAT callable
                 self._emit(f"{indent}f64.const 0  ;; unsupported call: {fname}(...)")
+
+        elif (isinstance(node, AttributeAccess)
+              and isinstance(node.obj, Identifier)):
+            # self.attr or known_var.attr — lower to f64.load from object memory.
+            obj_name = node.obj.name
+            if obj_name == "self" and self._current_class:
+                cls = self._current_class
+            else:
+                cls = self._var_class_types.get(obj_name)
+            offset = self._resolve_field(cls, node.attr) if cls else None
+            if offset is not None:
+                self._emit(f"{indent};; load {obj_name}.{node.attr}")
+                self._emit(f"{indent}local.get ${self._wat_symbol(obj_name)}")
+                self._emit(f"{indent}i32.trunc_f64_u")
+                self._emit(f"{indent}i32.const {offset}")
+                self._emit(f"{indent}i32.add")
+                self._emit(f"{indent}f64.load")
+            else:
+                self._emit(
+                    f"{indent}f64.const 0  ;; unsupported expr: "
+                    f"AttributeAccess {obj_name}.{node.attr}"
+                )
 
         else:
             self._emit(f"{indent}f64.const 0  ;; unsupported expr: {type(node).__name__}")
