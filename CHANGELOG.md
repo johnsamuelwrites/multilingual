@@ -5,6 +5,13 @@ All notable changes to this project should be documented in this file.
 The format is inspired by Keep a Changelog, and this project follows SemVer.
 
 ## [Unreleased]
+
+
+## v0.5.1
+- Update documentation
+
+## v0.5.0
+
 ### Added
 - **Class lowering in WAT backend**: Top-level `ClassDef` methods now lower to standalone WAT exports with deterministic mangled names.
 - **Constructor and method call lowering**:
@@ -28,6 +35,8 @@ The format is inspired by Keep a Changelog, and this project follows SemVer.
   - Fixed incorrect argument mapping for implicit `self` in constructor/instance lowering that could leave stack values and produce invalid WASM.
 - **Tooling quality**:
   - Updated test/config and corpus fixtures to remove warning noise and stabilize CI signal.
+- **Release docs**:
+  - Documented PyPI file-name immutability and the correct recovery path for `HTTP 400 File already exists` uploads.
 
 ## [0.4.0]
 ### Added

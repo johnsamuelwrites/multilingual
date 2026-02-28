@@ -1,5 +1,8 @@
 # Release Notes
 
+## v0.5.1
+- Update documentation
+
 ## v0.5.0 
 
 ### Class Support in WAT/WASM
