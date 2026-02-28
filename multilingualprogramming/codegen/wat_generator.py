@@ -378,6 +378,16 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
         return {
             "abi_version": 1,
             "backend": "wat",
+            "tuple_lowering": {
+                "preferred": "out_params",
+                "supported": ["multi_value", "out_params"],
+                "out_params_memory_layout": {
+                    "length_type": "i32",
+                    "element_type": "f64",
+                    "header_bytes": 4,
+                    "element_size_bytes": 8,
+                },
+            },
             "exports": exports,
             "required_host_imports": deepcopy(_WAT_HOST_IMPORT_SIGNATURES),
             "memory_layout": {

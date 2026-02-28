@@ -28,6 +28,7 @@ multilingual wat-abi path/to/program.ml --lang en
 multilingual wat-host-shim path/to/program.ml --lang en
 multilingual wat-renderer-template path/to/program.ml --lang en
 multilingual encoding-check-generated path/to/program.ml --lang en
+multilingual build-wasm-bundle path/to/program.ml --lang en --out-dir build/wasm
 ```
 
 ## Manifest Shape
@@ -36,6 +37,16 @@ multilingual encoding-check-generated path/to/program.ml --lang en
 {
   "abi_version": 1,
   "backend": "wat",
+  "tuple_lowering": {
+    "preferred": "out_params",
+    "supported": ["multi_value", "out_params"],
+    "out_params_memory_layout": {
+      "length_type": "i32",
+      "element_type": "f64",
+      "header_bytes": 4,
+      "element_size_bytes": 8
+    }
+  },
   "exports": [
     {
       "name": "compute",
@@ -117,3 +128,13 @@ implemented with real point-writing logic in backend-specific lowering.
 
 Use `encoding-check-generated` to fail fast on replacement characters and common
 mojibake markers in generated Python/WAT/ABI outputs.
+
+## Deterministic Bundle Build
+
+`build-wasm-bundle` is the authoritative build command for frontend integration.
+It writes `module.wat`, `abi_manifest.json`, `host_shim.js`,
+`renderer_template.js`, and `transpiled.py` with:
+
+- lock-guarded build execution (`.multilingual-build.lock`)
+- atomic writes (temp file + `os.replace`)
+- deterministic JSON output (`sort_keys=True`)

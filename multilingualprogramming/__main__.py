@@ -13,6 +13,7 @@ Usage:
     python -m multilingualprogramming run <file>           # Execute a file
     python -m multilingualprogramming repl [--lang XX]     # Start REPL
     python -m multilingualprogramming compile <file>       # Show generated Python
+    python -m multilingualprogramming build-wasm-bundle <file>  # Build WAT/ABI bundle
     python -m multilingualprogramming smoke --lang fr      # Validate one language pack
     python -m multilingualprogramming smoke --all          # Validate all language packs
 """
@@ -26,6 +27,7 @@ from multilingualprogramming.codegen.encoding_guard import (
     assert_clean_utf8_file,
     assert_clean_text_encoding,
 )
+from multilingualprogramming.codegen.build_orchestrator import BuildOrchestrator
 from multilingualprogramming.codegen.executor import ProgramExecutor
 from multilingualprogramming.codegen.python_generator import PythonCodeGenerator
 from multilingualprogramming.codegen.repl import REPL
@@ -203,6 +205,18 @@ def cmd_encoding_check_generated(args):
     print("[PASS] generated_abi_json")
 
 
+def cmd_build_wasm_bundle(args):
+    """Build deterministic WAT artifact bundle with atomic writes."""
+    program = _parse_program_from_file(args.file, args.lang)
+    orchestrator = BuildOrchestrator(args.out_dir)
+    outputs = orchestrator.build_from_program(program)
+    print(f"[PASS] {outputs.transpiled_python}")
+    print(f"[PASS] {outputs.wat}")
+    print(f"[PASS] {outputs.abi_manifest}")
+    print(f"[PASS] {outputs.host_shim_js}")
+    print(f"[PASS] {outputs.renderer_template_js}")
+
+
 def _maybe_dispatch_direct_file_run(argv):
     """Dispatch `multilingual <file>.ml [--lang XX]` to `cmd_run`."""
     if not argv:
@@ -344,6 +358,20 @@ def main():
         help="Source language code (e.g., en, fr, hi). Auto-detect if omitted.",
     )
 
+    build_bundle_parser = subparsers.add_parser(
+        "build-wasm-bundle",
+        help="Build deterministic WAT artifacts (WAT, ABI, JS shim, renderer)",
+    )
+    build_bundle_parser.add_argument("file", help="Path to the source file")
+    build_bundle_parser.add_argument(
+        "--lang", default=None,
+        help="Source language code (e.g., en, fr, hi). Auto-detect if omitted.",
+    )
+    build_bundle_parser.add_argument(
+        "--out-dir", default="build/wasm",
+        help="Output directory for generated artifacts (default: build/wasm)",
+    )
+
     args = parser.parse_args()
 
     if args.command == "run":
@@ -364,6 +392,8 @@ def main():
         cmd_encoding_check(args)
     elif args.command == "encoding-check-generated":
         cmd_encoding_check_generated(args)
+    elif args.command == "build-wasm-bundle":
+        cmd_build_wasm_bundle(args)
     else:
         # Default: start REPL
         args.lang = None

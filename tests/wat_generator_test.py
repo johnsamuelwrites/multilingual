@@ -144,6 +144,7 @@ class WATABIManifestTestSuite(unittest.TestCase):
         self.assertEqual(exports[0]["arg_types"], ["f64", "f64"])
         self.assertEqual(exports[0]["return_type"], "f64")
         self.assertEqual(exports[0]["mode"], "scalar_field")
+        self.assertEqual(manifest["tuple_lowering"]["preferred"], "out_params")
 
     def test_manifest_extracts_render_mode_decorator(self):
         fn = FunctionDef(

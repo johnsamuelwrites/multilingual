@@ -18,6 +18,11 @@ from typing import Dict, Any, Callable, Optional
 from enum import Enum
 import sys
 from multilingualprogramming.wasm.loader import WasmModule
+from multilingualprogramming.wasm.tuple_abi import (
+    TupleLoweringMode,
+    lower_tuple_value,
+    restore_tuple_value,
+)
 from multilingualprogramming.runtime.python_fallbacks import FALLBACK_REGISTRY
 
 try:
@@ -55,6 +60,7 @@ class BackendSelector:
         self._python_fallback = None
         self._wasm_module = None
         self._performance_stats: Dict[str, Dict[str, float]] = {}
+        self._tuple_lowering_mode = TupleLoweringMode.OUT_PARAMS
         self._use_wasm = self._determine_backend()
 
         # Set up default Python fallback using FALLBACK_REGISTRY
@@ -102,6 +108,10 @@ class BackendSelector:
         """
         self._backend = backend
         self._use_wasm = self._determine_backend()
+
+    def set_tuple_lowering_mode(self, mode: TupleLoweringMode) -> None:
+        """Set tuple ABI lowering mode."""
+        self._tuple_lowering_mode = mode
 
     def is_wasm_available(self) -> bool:
         """Check if WASM is available and being used."""
@@ -212,7 +222,7 @@ class BackendSelector:
                 wasm_args.append(int(arg))
             elif isinstance(arg, (list, tuple)):
                 # Handle arrays - WASM Bridge
-                wasm_args.append(arg)
+                wasm_args.append(lower_tuple_value(arg, self._tuple_lowering_mode))
             else:
                 wasm_args.append(arg)
         return tuple(wasm_args)
@@ -228,7 +238,7 @@ class BackendSelector:
             Python-compatible result
         """
         # WASM Bridge will implement full type conversion
-        return result
+        return restore_tuple_value(result, self._tuple_lowering_mode)
 
     def get_performance_stats(self, function_name: str) -> Optional[Dict[str, float]]:
         """

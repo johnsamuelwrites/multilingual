@@ -16,6 +16,13 @@ import json
 from pathlib import Path
 
 from multilingualprogramming.keyword.keyword_registry import KeywordRegistry
+from multilingualprogramming.runtime.numeric_primitives import (
+    Vec2,
+    ComplexScalar,
+    FastRNG,
+    BoundedArray,
+    MinDistanceAccumulator,
+)
 
 
 class RuntimeBuiltins:
@@ -194,6 +201,12 @@ class RuntimeBuiltins:
         # Async built-in functions (Python 3.10+)
         "aiter": aiter,
         "anext": anext,
+        # Numeric helpers for fractal/geometry workloads
+        "Vec2": Vec2,
+        "ComplexScalar": ComplexScalar,
+        "FastRNG": FastRNG,
+        "BoundedArray": BoundedArray,
+        "MinDistanceAccumulator": MinDistanceAccumulator,
     }
 
     # Non-callable special values available in exec() namespace

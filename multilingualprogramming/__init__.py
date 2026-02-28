@@ -36,6 +36,13 @@ from multilingualprogramming.codegen.executor import ProgramExecutor, ExecutionR
 from multilingualprogramming.codegen.repl import REPL
 from multilingualprogramming.core.ir import CoreIRProgram
 from multilingualprogramming.core.lowering import lower_to_core_ir
+from multilingualprogramming.runtime.numeric_primitives import (
+    Vec2,
+    ComplexScalar,
+    FastRNG,
+    BoundedArray,
+    MinDistanceAccumulator,
+)
 from multilingualprogramming.imports import (
     enable_multilingual_imports, disable_multilingual_imports,
 )
@@ -71,6 +78,11 @@ __all__ = [
     "REPL",
     "CoreIRProgram",
     "lower_to_core_ir",
+    "Vec2",
+    "ComplexScalar",
+    "FastRNG",
+    "BoundedArray",
+    "MinDistanceAccumulator",
     "enable_multilingual_imports",
     "disable_multilingual_imports",
 ]
