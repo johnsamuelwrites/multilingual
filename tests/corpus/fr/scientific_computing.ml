@@ -49,7 +49,7 @@ fonction estimer_pi_monte_carlo(num_échantillons: entier) -> nombre:
 
 fonction écart_type(valeurs: liste) -> nombre:
     """Calculer l'écart-type d'une liste de valeurs."""
-    si longueur(valeurs) est 0:
+    si longueur(valeurs) == 0:
         retourne 0.0
 
     # Calculer la moyenne
@@ -71,7 +71,7 @@ fonction écart_type(valeurs: liste) -> nombre:
 
 fonction calculer_statistiques(valeurs: liste) -> objet:
     """Calculer diverses statistiques pour un ensemble de données."""
-    si longueur(valeurs) est 0:
+    si longueur(valeurs) == 0:
         retourne {"moyenne": 0, "écart_type": 0, "min": 0, "max": 0}
 
     # Moyenne
@@ -123,7 +123,7 @@ fonction approximation_factorielle(n: entier) -> nombre:
     """Approximer n! en utilisant l'approximation de Stirling."""
     si n <= 0:
         retourne 1.0
-    si n est 1:
+    si n == 1:
         retourne 1.0
 
     # Stirling: n! ≈ sqrt(2πn) * (n/e)^n

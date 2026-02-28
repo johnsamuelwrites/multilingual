@@ -122,7 +122,7 @@ class MembershipIdentityTestSuite(unittest.TestCase):
         self.assertEqual(r.output.strip(), "True")
 
     def test_is_not_none(self):
-        r = _execute('print("hello" is not None)\n')
+        r = _execute('let x = "hello"\nprint(x is not None)\n')
         self.assertTrue(r.success)
         self.assertEqual(r.output.strip(), "True")
 

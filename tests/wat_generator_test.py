@@ -8,6 +8,7 @@
 # pylint: disable=duplicate-code
 
 import unittest
+import importlib.util
 
 from multilingualprogramming.parser.ast_nodes import (
     Program,
@@ -21,6 +22,7 @@ from multilingualprogramming.parser.ast_nodes import (
     BooleanOp,
     CompareOp,
     CallExpr,
+    AttributeAccess,
     VariableDeclaration,
     Assignment,
     ExpressionStatement,
@@ -34,6 +36,7 @@ from multilingualprogramming.parser.ast_nodes import (
     WhileLoop,
     ForLoop,
     FunctionDef,
+    ClassDef,
     Parameter,
 )
 from multilingualprogramming.codegen.wat_generator import WATCodeGenerator
@@ -538,6 +541,119 @@ class WATStatementTestSuite(unittest.TestCase):
         """continue outside any loop must emit a comment, not crash."""
         wat = self._wat(ContinueStatement())
         self.assertIn(";; continue (no enclosing loop)", wat)
+
+    def test_class_methods_lowered_to_wat_functions(self):
+        """Top-level class methods should be lowered to standalone WAT functions."""
+        wat = self._wat(
+            ClassDef(
+                "Counter",
+                [],
+                [
+                    FunctionDef(
+                        "__init__",
+                        [_param("self"), _param("start")],
+                        [ReturnStatement(Identifier("start"))],
+                    ),
+                ],
+            )
+        )
+        self.assertIn('(func $Counter____init__ (export "Counter____init__")', wat)
+        self.assertNotIn("unsupported statement: ClassDef", wat)
+
+    def test_class_constructor_call_lowers_to_init_function(self):
+        """ClassName(...) should lower to the class __init__ WAT function call."""
+        wat = self._wat(
+            ClassDef(
+                "Counter",
+                [],
+                [
+                    FunctionDef(
+                        "__init__",
+                        [_param("self"), _param("start")],
+                        [ReturnStatement(Identifier("start"))],
+                    ),
+                ],
+            ),
+            ExpressionStatement(CallExpr(Identifier("Counter"), [NumeralLiteral("3")])),
+        )
+        self.assertIn("f64.const 0  ;; implicit self", wat)
+        self.assertIn("call $Counter____init__", wat)
+
+    def test_class_attribute_call_lowers_to_mangled_method(self):
+        """Class.method(...) should lower to the mangled method function call."""
+        wat = self._wat(
+            ClassDef(
+                "Math",
+                [],
+                [
+                    FunctionDef(
+                        "double",
+                        [_param("x")],
+                        [ReturnStatement(BinaryOp(Identifier("x"), "*", NumeralLiteral("2")))]
+                    ),
+                ],
+            ),
+            ExpressionStatement(
+                CallExpr(
+                    AttributeAccess(Identifier("Math"), "double"),
+                    [NumeralLiteral("4")],
+                )
+            ),
+        )
+        self.assertIn("call $Math__double", wat)
+
+    def test_instance_method_call_lowers_via_constructor_assignment(self):
+        """obj = Class(...); obj.method(...) should lower using tracked class type."""
+        wat = self._wat(
+            ClassDef(
+                "Counter",
+                [],
+                [
+                    FunctionDef(
+                        "__init__",
+                        [_param("self"), _param("start")],
+                        [ReturnStatement(Identifier("start"))],
+                    ),
+                    FunctionDef(
+                        "inc",
+                        [_param("self"), _param("x")],
+                        [ReturnStatement(BinaryOp(Identifier("x"), "+", NumeralLiteral("1")))],
+                    ),
+                ],
+            ),
+            VariableDeclaration("c", CallExpr(Identifier("Counter"), [NumeralLiteral("1")])),
+            ExpressionStatement(
+                CallExpr(AttributeAccess(Identifier("c"), "inc"), [NumeralLiteral("3")])
+            ),
+        )
+        self.assertIn("call $Counter__inc", wat)
+
+    def test_instance_method_call_stops_lowering_after_reassignment(self):
+        """Reassigning obj to a non-instance value should clear class-method lowering."""
+        wat = self._wat(
+            ClassDef(
+                "Counter",
+                [],
+                [
+                    FunctionDef(
+                        "__init__",
+                        [_param("self"), _param("start")],
+                        [ReturnStatement(Identifier("start"))],
+                    ),
+                    FunctionDef(
+                        "inc",
+                        [_param("self"), _param("x")],
+                        [ReturnStatement(BinaryOp(Identifier("x"), "+", NumeralLiteral("1")))],
+                    ),
+                ],
+            ),
+            VariableDeclaration("c", CallExpr(Identifier("Counter"), [NumeralLiteral("1")])),
+            Assignment(Identifier("c"), NumeralLiteral("0")),
+            ExpressionStatement(
+                CallExpr(AttributeAccess(Identifier("c"), "inc"), [NumeralLiteral("3")])
+            ),
+        )
+        self.assertIn("unsupported call: c.inc(...)", wat)
 
 
 # ---------------------------------------------------------------------------
@@ -1195,6 +1311,142 @@ class WATIntegrationTestSuite(unittest.TestCase):
         self.assertIn("call $print_str", wat)
         # Two separators between three args
         self.assertEqual(wat.count("call $print_sep"), 2)
+
+
+@unittest.skipUnless(
+    importlib.util.find_spec("wasmtime") is not None,
+    "wasmtime not installed",
+)
+class WATClassWasmExecutionTestSuite(unittest.TestCase):
+    """Compile generated WAT to WASM and execute class-related flows."""
+
+    def setUp(self):
+        self.gen = WATCodeGenerator()
+
+    def _run_main(self, prog):
+        import wasmtime  # pylint: disable=import-outside-toplevel
+        wat = self.gen.generate(prog)
+        engine = wasmtime.Engine()
+        wasm_bytes = wasmtime.wat2wasm(wat)
+        module = wasmtime.Module(engine, wasm_bytes)
+        store = wasmtime.Store(engine)
+        printed = []
+        linker = wasmtime.Linker(engine)
+        linker.define(
+            store,
+            "env",
+            "print_str",
+            wasmtime.Func(
+                store,
+                wasmtime.FuncType([wasmtime.ValType.i32(), wasmtime.ValType.i32()], []),
+                lambda _ptr, _length: None,
+            ),
+        )
+        linker.define(
+            store,
+            "env",
+            "print_f64",
+            wasmtime.Func(
+                store,
+                wasmtime.FuncType([wasmtime.ValType.f64()], []),
+                lambda value: printed.append(value),
+            ),
+        )
+        linker.define(
+            store,
+            "env",
+            "print_bool",
+            wasmtime.Func(
+                store,
+                wasmtime.FuncType([wasmtime.ValType.i32()], []),
+                lambda value: printed.append(bool(value)),
+            ),
+        )
+        linker.define(
+            store,
+            "env",
+            "print_sep",
+            wasmtime.Func(store, wasmtime.FuncType([], []), lambda: None),
+        )
+        linker.define(
+            store,
+            "env",
+            "print_newline",
+            wasmtime.Func(store, wasmtime.FuncType([], []), lambda: None),
+        )
+        instance = linker.instantiate(store, module)
+        instance.exports(store)["__main"](store)
+        return printed
+
+    def test_constructor_statement_compiles_and_runs(self):
+        prog = _prog(
+            ClassDef(
+                "Counter",
+                [],
+                [
+                    FunctionDef(
+                        "__init__",
+                        [_param("self"), _param("start")],
+                        [ReturnStatement(Identifier("start"))],
+                    ),
+                ],
+            ),
+            ExpressionStatement(CallExpr(Identifier("Counter"), [NumeralLiteral("1")])),
+        )
+        printed = self._run_main(prog)
+        self.assertEqual(printed, [])
+
+    def test_class_method_call_runs(self):
+        prog = _prog(
+            ClassDef(
+                "Math",
+                [],
+                [
+                    FunctionDef(
+                        "double",
+                        [_param("x")],
+                        [ReturnStatement(BinaryOp(Identifier("x"), "*", NumeralLiteral("2")))],
+                    ),
+                ],
+            ),
+            ExpressionStatement(
+                CallExpr(
+                    Identifier("print"),
+                    [CallExpr(AttributeAccess(Identifier("Math"), "double"), [NumeralLiteral("4")])],
+                )
+            ),
+        )
+        printed = self._run_main(prog)
+        self.assertEqual(printed, [8.0])
+
+    def test_instance_method_call_runs(self):
+        prog = _prog(
+            ClassDef(
+                "Counter",
+                [],
+                [
+                    FunctionDef(
+                        "__init__",
+                        [_param("self"), _param("start")],
+                        [ReturnStatement(Identifier("start"))],
+                    ),
+                    FunctionDef(
+                        "inc",
+                        [_param("self"), _param("x")],
+                        [ReturnStatement(BinaryOp(Identifier("x"), "+", NumeralLiteral("1")))],
+                    ),
+                ],
+            ),
+            VariableDeclaration("c", CallExpr(Identifier("Counter"), [NumeralLiteral("1")])),
+            ExpressionStatement(
+                CallExpr(
+                    Identifier("print"),
+                    [CallExpr(AttributeAccess(Identifier("c"), "inc"), [NumeralLiteral("4")])],
+                )
+            ),
+        )
+        printed = self._run_main(prog)
+        self.assertEqual(printed, [5.0])
 
 
 if __name__ == "__main__":

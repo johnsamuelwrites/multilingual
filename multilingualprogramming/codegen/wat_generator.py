@@ -60,6 +60,7 @@ from multilingualprogramming.parser.ast_nodes import (
     WhileLoop,
     ForLoop,
     FunctionDef,
+    ClassDef,
     BinaryOp,
     UnaryOp,
     BooleanOp,
@@ -284,6 +285,12 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
         self._func_real_params: dict[str, list] = {}
         # Maps function name → render mode metadata
         self._func_render_modes: dict[str, str] = {}
+        # Maps class names to lowered constructor names (Class(...) -> call ctor)
+        self._class_ctor_names: dict[str, str] = {}
+        # Maps "Class.method" display names to lowered WAT function names.
+        self._class_attr_call_names: dict[str, str] = {}
+        # Best-effort local variable -> class-name tracking (for obj.method calls).
+        self._var_class_types: dict[str, str] = {}
 
     # -----------------------------------------------------------------------
     # Public API
@@ -302,12 +309,16 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
         self._defined_func_names = set()
         self._func_real_params = {}
         self._func_render_modes = {}
+        self._class_ctor_names = {}
+        self._class_attr_call_names = {}
+        self._var_class_types = {}
 
         if isinstance(program, CoreIRProgram):
             program = program.ast
 
         funcs = [s for s in program.body if isinstance(s, FunctionDef)]
-        top = [s for s in program.body if not isinstance(s, FunctionDef)]
+        classes = [s for s in program.body if isinstance(s, ClassDef)]
+        top = [s for s in program.body if not isinstance(s, (FunctionDef, ClassDef))]
 
         # Record which function names will actually be compiled to WAT and build
         # a map of each function's real WAT parameter names (excluding Python
@@ -318,9 +329,12 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
             fname = _name(f.name)
             self._func_real_params[fname] = _real_params(f)
             self._func_render_modes[fname] = _extract_render_mode(f)
+        self._collect_class_lowering(classes)
 
         for func in funcs:
             self._emit_function(func)
+        for cls in classes:
+            self._emit_class(cls)
 
         if top:
             self._emit_main(top)
@@ -532,7 +546,7 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
     # Function generation helpers
     # -----------------------------------------------------------------------
 
-    def _gen_call_args(self, call_expr: CallExpr, indent: str, fname: str):
+    def _gen_call_args(self, call_expr: CallExpr, indent: str, fname: str, skip_params: int = 0):
         """Push argument values for a call to a known WAT function.
 
         Resolves keyword arguments by matching them against the function's
@@ -543,7 +557,8 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
         if real_params:
             # Full-fidelity mapping: match each WAT param slot to its argument.
             kwargs = dict(call_expr.keywords or [])
-            for i, pname in enumerate(real_params):
+            effective_params = real_params[skip_params:]
+            for i, pname in enumerate(effective_params):
                 if i < len(call_expr.args):
                     self._gen_expr(call_expr.args[i], indent)
                 elif pname in kwargs:
@@ -556,20 +571,64 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
                 self._gen_expr(arg, indent)
 
     def _save_func_state(self):
-        saved = (self._instrs, self._locals, self._loop_stack)
+        saved = (self._instrs, self._locals, self._loop_stack, self._var_class_types)
         self._instrs = []
         self._locals = set()
         self._loop_stack = []
+        self._var_class_types = {}
         return saved
 
-    def _restore_func_state(self, saved):
-        self._instrs, self._locals, self._loop_stack = saved
+    @staticmethod
+    def _mangle_class_method_name(class_name: str, method_name: str) -> str:
+        return f"{class_name}__{method_name}"
 
-    def _emit_function(self, func_def: FunctionDef):
+    def _collect_class_lowering(self, classes: list[ClassDef]):
+        """Pre-collect lowered names for class methods and constructors."""
+        for cls in classes:
+            class_name = _name(cls.name)
+            for member in (cls.body or []):
+                if not isinstance(member, FunctionDef):
+                    continue
+                method_name = _name(member.name)
+                lowered = self._mangle_class_method_name(class_name, method_name)
+                self._defined_func_names.add(lowered)
+                self._func_real_params[lowered] = _real_params(member)
+                self._func_render_modes[lowered] = _extract_render_mode(member)
+                self._class_attr_call_names[f"{class_name}.{method_name}"] = lowered
+                if method_name == "__init__":
+                    self._class_ctor_names[class_name] = lowered
+
+    def _restore_func_state(self, saved):
+        self._instrs, self._locals, self._loop_stack, self._var_class_types = saved
+
+    def _infer_class_name(self, expr) -> str | None:
+        """Infer class name for simple object-like values tracked in WAT lowering."""
+        if isinstance(expr, CallExpr):
+            called_name = _name(expr.func)
+            if called_name in self._class_ctor_names:
+                return called_name
+        if isinstance(expr, Identifier):
+            return self._var_class_types.get(expr.name)
+        return None
+
+    def _class_method_target_from_call(self, call_expr: CallExpr) -> str | None:
+        """Resolve obj.method(...) to lowered class method using tracked var types."""
+        func = call_expr.func
+        if not isinstance(func, AttributeAccess):
+            return None
+        obj = func.obj
+        if not isinstance(obj, Identifier):
+            return None
+        class_name = self._var_class_types.get(obj.name)
+        if not class_name:
+            return None
+        return self._class_attr_call_names.get(f"{class_name}.{func.attr}")
+
+    def _emit_function(self, func_def: FunctionDef, emitted_name: str | None = None):
         """Generate WAT for a user-defined function."""
         saved = self._save_func_state()
 
-        func_name = _name(func_def.name)
+        func_name = emitted_name or _name(func_def.name)
         # Use only the real WAT params — excludes '/', '*' separators and *args/**kwargs.
         param_names = _real_params(func_def)
         self._locals = set(param_names)
@@ -593,6 +652,15 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
         if self._func_render_modes.get(func_name) in _STREAM_RENDER_MODES:
             self._funcs.append(self._build_stream_buffer_helpers(func_name))
         self._restore_func_state(saved)
+
+    def _emit_class(self, class_def: ClassDef):
+        """Lower class methods to standalone WAT functions."""
+        class_name = _name(class_def.name)
+        for member in (class_def.body or []):
+            if isinstance(member, FunctionDef):
+                method_name = _name(member.name)
+                lowered_name = self._mangle_class_method_name(class_name, method_name)
+                self._emit_function(member, emitted_name=lowered_name)
 
     def _build_stream_buffer_helpers(self, func_name: str) -> str:
         """Emit stream helpers that write point pairs (x, y) into linear memory."""
@@ -691,6 +759,11 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
             self._emit(f"{indent};; let {name} = ...")
             self._gen_expr(stmt.value, indent)
             self._emit(f"{indent}local.set ${name}")
+            inferred_class = self._infer_class_name(stmt.value)
+            if inferred_class:
+                self._var_class_types[name] = inferred_class
+            elif name in self._var_class_types:
+                del self._var_class_types[name]
 
         elif isinstance(stmt, Assignment):
             target = stmt.target
@@ -702,6 +775,11 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
                     self._emit(f"{indent};; {name} = ...")
                     self._gen_expr(stmt.value, indent)
                     self._emit(f"{indent}local.set ${name}")
+                    inferred_class = self._infer_class_name(stmt.value)
+                    if inferred_class:
+                        self._var_class_types[name] = inferred_class
+                    elif name in self._var_class_types:
+                        del self._var_class_types[name]
                 else:
                     # Compound assignment: a += b → a = a op b
                     _compound = {"+=": "f64.add", "-=": "f64.sub",
@@ -712,6 +790,8 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
                     self._gen_expr(stmt.value, indent)
                     self._emit(f"{indent}{wat_op}")
                     self._emit(f"{indent}local.set ${name}")
+                    if name in self._var_class_types:
+                        del self._var_class_types[name]
             else:
                 self._emit(f"{indent};; (complex assignment target — unsupported in WAT)")
 
@@ -740,6 +820,26 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
                     self._emit(f"{indent};; call {fname}(...)")
                     self._gen_call_args(expr, indent, fname)
                     self._emit(f"{indent}call ${fname}")
+                    self._emit(f"{indent}drop")
+                elif fname in self._class_ctor_names:
+                    ctor = self._class_ctor_names[fname]
+                    self._emit(f"{indent};; ctor {fname}(...) -> {ctor}(...)")
+                    self._emit(f"{indent}f64.const 0  ;; implicit self")
+                    self._gen_call_args(expr, indent, ctor, skip_params=1)
+                    self._emit(f"{indent}call ${ctor}")
+                    self._emit(f"{indent}drop")
+                elif fname in self._class_attr_call_names:
+                    lowered = self._class_attr_call_names[fname]
+                    self._emit(f"{indent};; class call {fname}(...)")
+                    self._gen_call_args(expr, indent, lowered)
+                    self._emit(f"{indent}call ${lowered}")
+                    self._emit(f"{indent}drop")
+                elif self._class_method_target_from_call(expr):
+                    lowered = self._class_method_target_from_call(expr)
+                    self._emit(f"{indent};; instance call {fname}(...)")
+                    self._emit(f"{indent}f64.const 0  ;; implicit self")
+                    self._gen_call_args(expr, indent, lowered, skip_params=1)
+                    self._emit(f"{indent}call ${lowered}")
                     self._emit(f"{indent}drop")
                 else:
                     # Closure, constructor, builtin, or other non-WAT callable
@@ -880,6 +980,20 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
                 # Known WAT function — emit args then call
                 self._gen_call_args(node, indent, fname)
                 self._emit(f"{indent}call ${fname}")
+            elif fname in self._class_ctor_names:
+                ctor = self._class_ctor_names[fname]
+                self._emit(f"{indent}f64.const 0  ;; implicit self")
+                self._gen_call_args(node, indent, ctor, skip_params=1)
+                self._emit(f"{indent}call ${ctor}")
+            elif fname in self._class_attr_call_names:
+                lowered = self._class_attr_call_names[fname]
+                self._gen_call_args(node, indent, lowered)
+                self._emit(f"{indent}call ${lowered}")
+            elif self._class_method_target_from_call(node):
+                lowered = self._class_method_target_from_call(node)
+                self._emit(f"{indent}f64.const 0  ;; implicit self")
+                self._gen_call_args(node, indent, lowered, skip_params=1)
+                self._emit(f"{indent}call ${lowered}")
             else:
                 # Closure, constructor, builtin, or other non-WAT callable
                 self._emit(f"{indent}f64.const 0  ;; unsupported call: {fname}(...)")
