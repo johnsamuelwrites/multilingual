@@ -181,7 +181,7 @@ result = func(a, b)
 | Operation | Overhead | When Worth It |
 |-----------|----------|---------------|
 | WASM module load | 10-50ms | Once, cached |
-| WASM function call | 0.1-1ms | Operations > 1ms |
+| WASM function call | ~0.031ms | Operations > ~0.05ms |
 | Type conversion | 0.01-0.1ms | Depends on data |
 | Python call | <0.001ms | Very fast |
 
@@ -207,13 +207,13 @@ JSON 10MB:     Python 200ms   WASM 20ms   (10x benefit)
 
 #### 1. Write Multilingual Code
 
-```python
+```text
 # myfunction.ml
-def expensive_operation(n: integer) -> integer:
+déf expensive_operation(n: entier) -> entier:
     result = 0
     pour i dans intervalle(n * n):
         result = result + (i * i) // (i + 1)
-    retourne result
+    retour result
 
 expensive_operation(1000000)
 ```
@@ -290,19 +290,21 @@ Wheel Package (.whl)
 PyPI Distribution
 ```
 
-### Building WASM Binaries
+### Building WASM Binaries [PLANNED]
+
+> **Note:** The `build_wasm.sh` script and the Cranelift compilation step are not yet implemented. The commands below describe the intended workflow for a future release.
 
 ```bash
 # Setup build environment
 cargo install cranelift-cli
 
-# Build single module
+# Build single module (planned)
 ./build_wasm.sh matrix_operations
 
-# Build all modules
+# Build all modules (planned)
 ./build_wasm.sh --all
 
-# Build with optimizations
+# Build with optimizations (planned)
 ./build_wasm.sh --optimize matrix_operations
 ```
 
@@ -314,7 +316,7 @@ cargo install cranelift-cli
 
 ```
 ┌─────────────────────────────────────────┐
-│  WebAssembly Linear Memory (1GB)       │
+│  WebAssembly Linear Memory (64MB)      │
 ├─────────────────────────────────────────┤
 │  Stack (grows upward)   ↑               │
 │                                         │
@@ -366,7 +368,7 @@ from multilingualprogramming.wasm.loader import WasmModule
 
 # Load and inspect module
 module = WasmModule.load("path/to/module.wasm")
-print(module.get_wasm_functions())  # List exported functions
+print(module.get_exported_functions())  # List exported functions
 
 # Test function directly
 result = module.call("test_function", arg1, arg2)
@@ -405,7 +407,7 @@ print(f"Speedup: {py_time/wasm_time:.1f}x")
 ## Best Practices
 
 ### DO:
-- ✅ Use WASM for compute-intensive operations (> 1ms)
+- ✅ Use WASM for compute-intensive operations (> ~0.05ms)
 - ✅ Batch operations to amortize WASM call overhead
 - ✅ Cache WASM modules (WasmModuleCache does this)
 - ✅ Test both Python and WASM paths
@@ -413,7 +415,7 @@ print(f"Speedup: {py_time/wasm_time:.1f}x")
 - ✅ Use auto-detection (Backend.AUTO) in production
 
 ### DON'T:
-- ❌ Use WASM for simple operations (< 1ms)
+- ❌ Use WASM for simple operations (< ~0.05ms)
 - ❌ Create new WASM module per call
 - ❌ Assume WASM available (always test fallback)
 - ❌ Pass very large data structures to WASM

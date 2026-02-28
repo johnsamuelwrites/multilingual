@@ -415,6 +415,20 @@ from multilingualprogramming import (
 )
 ```
 
+Signatures des constructeurs importants:
+
+```python
+# Lexer : source est le premier argument positionnel (pas un argument nommé)
+lexer = Lexer(source_code, language="fr")   # correct
+# lexer = Lexer(language="fr")              # TypeError — source manquant
+
+# ProgramExecutor : language doit être passé à __init__, pas à transpile/execute
+executor = ProgramExecutor(language="fr")
+python_code = executor.transpile(source_code)   # correct
+# executor = ProgramExecutor()
+# executor.transpile(source_code, language="fr")  # TypeError
+```
+
 Autres modules utiles:
 
 - numeriques: `MPNumeral`, `UnicodeNumeral`, `RomanNumeral`, `ComplexNumeral`, `FractionNumeral`;
@@ -446,6 +460,21 @@ Sortie attendue:
 - Verifier les mots-cles disponibles via `:kw fr`.
 - Activer `--show-python` au debug pour comprendre la transpilation.
 - Ecrire des tests de bout en bout avec `ProgramExecutor` pour valider la semantique.
+
+### Utilisation correcte de `ProgramExecutor`
+
+`language` doit etre passe au constructeur (`__init__`), pas a `transpile()` ou `execute()`:
+
+```python
+# Correct
+executor = ProgramExecutor(language="fr")
+python_code = executor.transpile(source_code)
+result = executor.execute(source_code)
+
+# Incorrect — provoque un TypeError
+executor = ProgramExecutor()
+executor.transpile(source_code, language="fr")   # TypeError
+```
 
 ## 10. Documentation associee
 

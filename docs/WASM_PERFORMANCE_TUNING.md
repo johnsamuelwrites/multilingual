@@ -244,18 +244,14 @@ benchmark("matrix_multiply", None, a, b)
 ### 6. Configuration Tuning
 
 ```python
-# Force specific backend
-import os
-os.environ['MULTILINGUAL_BACKEND'] = 'wasm'  # or 'python' or 'auto'
-
-# Or in code
+# Force specific backend via code
 from multilingualprogramming.runtime.backend_selector import BackendSelector, Backend
-selector = BackendSelector(prefer_backend=Backend.WASM)
-
-# Control caching
-selector.enable_module_cache = True  # Cache loaded modules (default)
-selector.enable_function_cache = True  # Cache function pointers
+selector = BackendSelector(prefer_backend=Backend.WASM)   # force WASM
+selector = BackendSelector(prefer_backend=Backend.PYTHON)  # force Python
+selector = BackendSelector()                               # auto (default)
 ```
+
+> **Note:** The `MULTILINGUAL_BACKEND` environment variable and the `enable_module_cache` / `enable_function_cache` attributes on `BackendSelector` are not implemented in the current codebase. Use the `prefer_backend` constructor argument to select the backend.
 
 ---
 
@@ -376,25 +372,27 @@ if not selector.is_wasm_available():
     print("          or verify WASM files in package")
 ```
 
+> **Silent fallback warning:** When `Backend.WASM` is requested but no compiled `.wasm` binary exists for the requested function (e.g. because the WASM corpus is not yet built), `BackendSelector` silently falls through to the Python implementation with no error or warning. The call succeeds and returns a correct result, but WASM is not actually used. Always check `selector.is_wasm_available()` and confirm that the relevant `.wasm` file is present if you expect WASM execution.
+
 ### Symptom: Slower Than Python
 
 ```python
 # This happens with small operations
-# WASM call overhead (1ms) > operation time (0.1ms)
+# WASM call overhead (~0.031ms) > operation time (e.g. 0.01ms)
 
 # Solution: Batch operations
 # Instead of:
-results = [fibonacci(5) for _ in range(100)]  # 100 slow calls
+results = [fibonacci(5) for _ in range(100)]  # 100 small WASM calls
 
 # Do:
 # Compute something larger where WASM overhead is amortized
-large_result = fibonacci(1000)  # Single call, 100x faster
+large_result = fibonacci(1000)  # Single call, overhead amortized
 ```
 
 ### Symptom: Memory Errors with WASM
 
 ```python
-# WASM has 1GB linear memory limit
+# WASM has 64MB linear memory limit (1024 pages × 64KB)
 # If you hit this:
 # 1. Check matrix sizes: max ~10000x10000 for floats
 # 2. Stream processing instead of all-at-once
@@ -458,7 +456,7 @@ monitor.report()
 ## Best Practices Summary
 
 ✅ **DO**:
-1. Use WASM for operations > 1ms
+1. Use WASM for operations > ~0.05ms
 2. Batch operations to amortize overhead
 3. Monitor actual performance with benchmarks
 4. Use auto-detection in production

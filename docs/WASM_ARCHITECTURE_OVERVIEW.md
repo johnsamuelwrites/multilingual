@@ -4,7 +4,7 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│               Multilingual Programming Language v0.4            │
+│               Multilingual Programming Language v0.4.0          │
 │                    (WASM Infrastructure: WASM Edition)                     │
 └─────────────────────────────────────────────────────────────────┘
                               │
@@ -48,11 +48,13 @@
                 │                    ┌───────▼────────┐
                 │                    │ Cranelift      │
                 │                    │ Compiler       │
+                │                    │  [PLANNED]     │
                 │                    └───────┬────────┘
                 │                            │
                 │                    ┌───────▼────────┐
                 │                    │ WASM Binary    │
                 │                    │ (.wasm files)  │
+                │                    │  [PLANNED]     │
                 │                    └───────┬────────┘
                 │                            │
                 └─────────────┬──────────────┘
@@ -89,6 +91,10 @@
                     │  Results / Output  │
                     └────────────────────┘
 ```
+
+---
+
+> **Pipeline status (v0.4.0):** `WasmCodeGenerator.generate()` produces Rust intermediate code, but the generated function bodies are stubs (placeholder comments, `return 0`). Type mapping always returns `WasmI32` regardless of actual parameter type. `WasmBuildConfig.build()` returns `None` — the Cranelift compilation step and WASM binary output are not yet implemented. No pre-built `.wasm` corpus binaries are shipped with the package.
 
 ---
 
@@ -241,36 +247,38 @@ class ImageOperations:
 
 ---
 
-### 5. WASM Corpus: WASM Corpus Projects
+### 5. WASM Corpus: WASM Corpus Projects [PLANNED]
 
-**5 Real-World Projects** × **4 Languages** = **20 Files**
+> **Note:** The WASM corpus binaries described below do not yet exist in the repository. No `.wasm` files are shipped with the package. The Python fallback implementations (Section 4) are available; the compiled WASM equivalents are planned for a future release.
+
+**Planned: 5 Real-World Projects** × **4 Languages** = **20 Files**
 
 **Projects**:
 
 1. **Matrix Operations**
    - Matrix multiplication (100×100 to 1000×1000)
    - Transpose and determinant
-   - Expected speedup: **100x**
+   - Projected speedup: **~100x** (for large matrices)
 
 2. **Cryptography**
    - XOR cipher, Caesar cipher
    - Hash function, password verification
-   - Expected speedup: **100x**
+   - Projected speedup: **~100x**
 
 3. **Image Processing**
    - Blur filter, edge detection
    - Histogram calculation
-   - Expected speedup: **50x**
+   - Projected speedup: **~50x**
 
 4. **JSON Parsing**
    - Parse/stringify large JSON
    - Data transformation
-   - Expected speedup: **10x**
+   - Projected speedup: **~10x**
 
 5. **Scientific Computing**
    - Monte Carlo simulations
    - Numerical integration
-   - Expected speedup: **100x**
+   - Projected speedup: **~100x**
 
 ---
 
@@ -305,8 +313,8 @@ multilingualprogramming-0.4.0-py3-none-any.whl
 │   ├── codegen/
 │   │   └── wasm_generator.py (200+ lines)
 │   ├── wasm/
-│   │   ├── loader.py (250+ lines)
-│   │   └── *.wasm (compiled binaries)
+│   │   └── loader.py (250+ lines)
+│   │   # Note: no *.wasm binaries are included yet (see WASM Corpus section)
 │   ├── runtime/
 │   │   ├── backend_selector.py (300+ lines)
 │   │   └── python_fallbacks.py (400+ lines)
@@ -317,9 +325,7 @@ multilingualprogramming-0.4.0-py3-none-any.whl
 │   ├── WASM_PERFORMANCE_TUNING.md
 │   ├── ARCHITECTURE_OVERVIEW.md
 │   ├── TROUBLESHOOTING.md
-│   ├── FAQ.md
-│   ├── MIGRATION.md
-│   └── ...
+│   └── FAQ.md
 ├── tests/
 │   ├── wasm_corpus_test.py
 │   └── wasm_comprehensive_test.py
@@ -329,16 +335,18 @@ multilingualprogramming-0.4.0-py3-none-any.whl
 **Installation Options**:
 
 ```bash
-pip install multilingualprogramming              # Python only (50MB)
-pip install multilingualprogramming[wasm]        # + WASM (150MB)
-pip install multilingualprogramming[performance] # + WASM + NumPy (250MB)
+pip install multilingualprogramming              # Python only
+pip install multilingualprogramming[wasm]        # + wasmtime runtime
+pip install multilingualprogramming[performance] # + wasmtime + NumPy
 ```
+
+> **Note:** The installation size figures previously listed (50 MB / 150 MB / 250 MB) assumed a pre-built WASM binary corpus that is not yet included. Actual installed size is significantly smaller.
 
 ---
 
 ### 8. Documentation Suite: Final Documentation
 
-**4 Documentation Files**:
+**3 Documentation Files**:
 
 1. **ARCHITECTURE_OVERVIEW.md** (this file)
    - System design
@@ -354,11 +362,6 @@ pip install multilingualprogramming[performance] # + WASM + NumPy (250MB)
    - Frequently asked questions
    - Best practices
    - Use cases
-
-4. **MIGRATION.md**
-   - v0.3 → v0.4 migration
-   - Breaking changes
-   - Upgrade path
 
 ---
 
@@ -411,24 +414,26 @@ Result: Always works! ✓
 
 ### Speedup by Operation
 
+> **Note:** Speedup is highly operation-dependent. Arithmetic-heavy loops (e.g. Mandelbrot) measure approximately **2.4×** in practice. The figures below reflect projected speedups for heavy data-parallel operations; they are not universally applicable.
+
 | Operation | Size | Python | WASM | Speedup |
 |-----------|------|--------|------|---------|
-| Matrix multiply | 1000×1000 | 5.0s | 50ms | **100x** |
-| JSON parse | 10MB | 200ms | 20ms | **10x** |
-| XOR cipher | 1MB | 100ms | 1ms | **100x** |
-| Fibonacci | n=30 | 200ms | 2ms | **100x** |
-| Blur filter | 4K image | 2s | 40ms | **50x** |
+| Matrix multiply | 1000×1000 | 5.0s | 50ms | **~100x** (projected) |
+| JSON parse | 10MB | 200ms | 20ms | **~10x** (projected) |
+| XOR cipher | 1MB | 100ms | 1ms | **~100x** (projected) |
+| Fibonacci | n=30 | 200ms | 2ms | **~100x** (projected) |
+| Blur filter | 4K image | 2s | 40ms | **~50x** (projected) |
 
 ### Overhead Analysis
 
 ```
 WASM Call Overhead:
   Module load: 10-50ms (cached)
-  Function call: 0.1-1ms
+  Function call: ~0.031ms (measured; Python FFI → WASM)
   Type conversion: 0.01-0.1ms per arg
 
 Break-even point:
-  Operation must be > 1ms to justify WASM overhead
+  Operation must be > ~0.05ms to justify WASM overhead
 ```
 
 ---
@@ -444,7 +449,7 @@ Garbage collected
 
 ### WASM Linear Memory
 ```
-1GB contiguous linear memory
+64MB contiguous linear memory
 Manually managed by WASM code
 Pages: 1024 (64KB each = 64MB)
 Structure:
@@ -498,13 +503,13 @@ AST
     │   Code Generation → Python Executor
     │   (Always works, slower)
     │
-    └─ Path 2: WASM
-        Code Generation → Rust → Cranelift → WASM Binary
-        (Faster, requires compilation & wasmtime)
+    └─ Path 2: WASM [PARTIALLY IMPLEMENTED — see pipeline status note]
+        Code Generation → Rust (stub bodies) → Cranelift [PLANNED] → WASM Binary [PLANNED]
+        (Faster for data-parallel ops when fully implemented; requires wasmtime)
     ↓
 Backend Selector
     (Auto-detect best path)
-    ├─ WASM available → Use WASM (100x faster)
+    ├─ WASM available → Use WASM (2–100x faster depending on operation)
     └─ Else → Use Python (always works)
     ↓
 Execution
@@ -645,7 +650,7 @@ Fallback path should be as fast as possible
 WASM Infrastructure delivers a **2-path execution model** with **transparent backend selection**:
 
 - ✅ **Always works** (Python fallback)
-- ✅ **50-100x faster** (WASM when available)
+- ✅ **Faster** (WASM when available; ~2–5x for general loops, up to ~50–100x for heavy data-parallel operations)
 - ✅ **No code changes** (automatic selection)
 - ✅ **Cross-platform** (Windows/Linux/macOS)
 - ✅ **Production-ready** (33+ tests, comprehensive docs)
