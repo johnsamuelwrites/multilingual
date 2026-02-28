@@ -1,5 +1,35 @@
 # Release Notes
 
+## v0.5.0 
+
+### Class Support in WAT/WASM
+- Extended `WATCodeGenerator` to lower class methods to standalone WAT functions.
+- Added lowering for constructor-style calls (`ClassName(...)`) to class `__init__` with implicit `self`.
+- Added lowering for class attribute calls (`Class.method(...)`) and simple instance method calls (`obj.method(...)`) when object type can be inferred from local assignments.
+- Added targeted regressions for class lowering and call lowering in `tests/wat_generator_test.py`.
+
+### Complete Features: Real WASM Executability Gate
+- Added `tests/complete_features_wasm_execution_test.py` to validate all `examples/complete_features_*.ml` end-to-end:
+  - parse multilingual source
+  - generate WAT
+  - compile WAT to binary WASM
+  - write `.wat` and `.wasm` artifacts
+  - instantiate and execute `__main` in Wasmtime
+- Added Wasmtime fuel metering in this test to bound runtime for heavy complete-feature programs while preserving executable validation.
+
+### Unicode Identifier Reliability
+- Added deterministic WAT symbol sanitization for generated function/local/parameter identifiers.
+- Preserved original exported function names while using WAT-safe internal `$symbols`.
+- Fixed previously failing WAT→WASM compilation paths for non-ASCII identifiers (for example Arabic identifiers in complete-feature examples).
+
+### CI Workflow Updates
+- Updated `.github/workflows/wasm-backends-test.yml` to include a primary-job gate that runs complete-feature WAT/WASM artifact + execution validation.
+- This adds a dedicated regression barrier for executable WASM quality, not just WAT text validity.
+
+### Quality and Stability
+- Full test suite status after integration: `1778 passed, 2 skipped`.
+- Pylint checks on touched files remain clean (`10.00/10` in targeted runs).
+
 ## v0.4.0 
 
 ### WAT/WASM Code Generation

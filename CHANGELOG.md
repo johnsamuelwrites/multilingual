@@ -5,6 +5,30 @@ All notable changes to this project should be documented in this file.
 The format is inspired by Keep a Changelog, and this project follows SemVer.
 
 ## [Unreleased]
+### Added
+- **Class lowering in WAT backend**: Top-level `ClassDef` methods now lower to standalone WAT exports with deterministic mangled names.
+- **Constructor and method call lowering**:
+  - `ClassName(...)` lowers to class `__init__` in WAT with implicit `self` handling.
+  - `Class.method(...)` lowers to mangled class method exports.
+  - `obj = Class(...); obj.method(...)` lowers via lightweight local class-type tracking.
+- **Executable WASM validation for complete features**:
+  - New test `tests/complete_features_wasm_execution_test.py` compiles every `examples/complete_features_*.ml` from WAT to binary WASM, materializes `.wat/.wasm` artifacts, instantiates modules, and executes `__main`.
+- **CI workflow gate for complete-feature WASM execution**:
+  - `.github/workflows/wasm-backends-test.yml` now runs the new complete-feature WAT/WASM execution test on primary WASM jobs.
+
+### Changed
+- **WAT symbol emission now Unicode-safe**:
+  - Function, parameter, and local identifiers are sanitized to valid WAT symbols while preserving original export names.
+  - Fixes WAT→WASM compilation failures for non-Latin identifiers in multilingual examples.
+- **WASM execution test runtime bounded**:
+  - Added Wasmtime fuel metering in complete-feature execution tests to prevent long CI hangs while still validating instantiation and execution.
+
+### Fixed
+- **WAT/WASM class regressions**:
+  - Fixed incorrect argument mapping for implicit `self` in constructor/instance lowering that could leave stack values and produce invalid WASM.
+- **Tooling quality**:
+  - Updated test/config and corpus fixtures to remove warning noise and stabilize CI signal.
+
 ## [0.4.0]
 ### Added
 - **WATCodeGenerator**: New backend compiling the multilingual AST directly to WebAssembly Text (WAT); fully tested via `tests/complete_features_wat_test.py` across all 17 languages.
