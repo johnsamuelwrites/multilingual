@@ -9,6 +9,7 @@
 import json
 import os
 import time
+import hashlib
 from dataclasses import dataclass
 from pathlib import Path
 from tempfile import NamedTemporaryFile
@@ -26,6 +27,8 @@ class BuildOutputs:
     host_shim_js: Path
     renderer_template_js: Path
     transpiled_python: Path
+    build_graph: Path
+    build_lockfile: Path
     build_lock: Path
 
 
@@ -41,6 +44,8 @@ class BuildOrchestrator:
             host_shim_js=self.output_dir / "host_shim.js",
             renderer_template_js=self.output_dir / "renderer_template.js",
             transpiled_python=self.output_dir / "transpiled.py",
+            build_graph=self.output_dir / "build_graph.json",
+            build_lockfile=self.output_dir / "build.lock.json",
             build_lock=self.output_dir / ".multilingual-build.lock",
         )
 
@@ -85,6 +90,31 @@ class BuildOrchestrator:
             manifest = wat_generator.generate_abi_manifest(program)
             host_shim = wat_generator.generate_js_host_shim(manifest)
             renderer_template = wat_generator.generate_renderer_template(manifest)
+            source_digest = hashlib.sha256(python_source.encode("utf-8")).hexdigest()
+
+            build_graph = {
+                "version": 1,
+                "nodes": {
+                    "program": [],
+                    "transpiled_python": ["program"],
+                    "module_wat": ["program"],
+                    "abi_manifest": ["program", "module_wat"],
+                    "host_shim_js": ["abi_manifest"],
+                    "renderer_template_js": ["abi_manifest"],
+                },
+            }
+            build_lockfile = {
+                "version": 1,
+                "source_digest_sha256": source_digest,
+                "artifacts": {
+                    "transpiled_python": self.outputs.transpiled_python.name,
+                    "module_wat": self.outputs.wat.name,
+                    "abi_manifest": self.outputs.abi_manifest.name,
+                    "host_shim_js": self.outputs.host_shim_js.name,
+                    "renderer_template_js": self.outputs.renderer_template_js.name,
+                    "build_graph": self.outputs.build_graph.name,
+                },
+            }
 
             self._atomic_write_text(self.outputs.transpiled_python, python_source)
             self._atomic_write_text(self.outputs.wat, wat_source)
@@ -94,6 +124,14 @@ class BuildOrchestrator:
             )
             self._atomic_write_text(self.outputs.host_shim_js, host_shim)
             self._atomic_write_text(self.outputs.renderer_template_js, renderer_template)
+            self._atomic_write_text(
+                self.outputs.build_graph,
+                json.dumps(build_graph, ensure_ascii=False, indent=2, sort_keys=True),
+            )
+            self._atomic_write_text(
+                self.outputs.build_lockfile,
+                json.dumps(build_lockfile, ensure_ascii=False, indent=2, sort_keys=True),
+            )
             return self.outputs
         finally:
             self._release_lock()

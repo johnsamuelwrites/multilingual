@@ -215,6 +215,8 @@ def cmd_build_wasm_bundle(args):
     print(f"[PASS] {outputs.abi_manifest}")
     print(f"[PASS] {outputs.host_shim_js}")
     print(f"[PASS] {outputs.renderer_template_js}")
+    print(f"[PASS] {outputs.build_graph}")
+    print(f"[PASS] {outputs.build_lockfile}")
 
 
 def _maybe_dispatch_direct_file_run(argv):

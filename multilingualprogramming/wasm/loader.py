@@ -15,6 +15,10 @@ WASM Bridge: Python ↔ WASM Bridge
 from pathlib import Path
 from typing import Dict, Any, Callable, Optional, Union
 import sys
+from multilingualprogramming.wasm.tuple_memory import (
+    pack_tuple_out_params,
+    unpack_tuple_out_params,
+)
 
 try:
     import wasmtime
@@ -190,6 +194,15 @@ class WasmModule:
                 data_ptr[offset + i] = byte
         except Exception as e:
             raise RuntimeError(f"Failed to write WASM memory: {e}") from e
+
+    def write_tuple_out_params(self, offset: int, values: tuple[float, ...]) -> None:
+        """Pack and write tuple out-params to linear memory."""
+        self.write_memory(offset, pack_tuple_out_params(values))
+
+    def read_tuple_out_params(self, offset: int, max_bytes: int) -> tuple[float, ...]:
+        """Read and unpack tuple out-params from linear memory."""
+        raw = self.get_memory_buffer(offset, max_bytes)
+        return unpack_tuple_out_params(raw)
 
 
 class WasmModuleCache:

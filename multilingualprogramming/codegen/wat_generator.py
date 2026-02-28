@@ -595,19 +595,63 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
         self._restore_func_state(saved)
 
     def _build_stream_buffer_helpers(self, func_name: str) -> str:
-        """Emit stub stream helpers for point-based buffer output contracts."""
+        """Emit stream helpers that write point pairs (x, y) into linear memory."""
         lines = [
             f"  (func ${func_name}_point_count (export \"{func_name}_point_count\")",
             "    (result i32)",
-            "    i32.const 0",
+            "    i32.const 256",
             "  )",
             f"  (func ${func_name}_write_points (export \"{func_name}_write_points\")",
             "    (param $ptr i32)",
             "    (param $len i32)",
             "    (result i32)",
-            "    local.get $ptr",
-            "    drop",
+            "    (local $i i32)",
+            "    (local $count i32)",
             "    local.get $len",
+            "    i32.const 256",
+            "    i32.lt_s",
+            "    if (result i32)",
+            "      local.get $len",
+            "    else",
+            "      i32.const 256",
+            "    end",
+            "    local.set $count",
+            "    i32.const 0",
+            "    local.set $i",
+            "    block $done",
+            "      loop $lp",
+            "        local.get $i",
+            "        local.get $count",
+            "        i32.ge_s",
+            "        br_if $done",
+            "        local.get $ptr",
+            "        local.get $i",
+            "        i32.const 16",
+            "        i32.mul",
+            "        i32.add",
+            "        local.get $i",
+            "        f64.convert_i32_s",
+            "        f64.store",
+            "        local.get $ptr",
+            "        local.get $i",
+            "        i32.const 16",
+            "        i32.mul",
+            "        i32.add",
+            "        i32.const 8",
+            "        i32.add",
+            "        local.get $i",
+            "        f64.convert_i32_s",
+            "        f64.const 0.5",
+            "        f64.mul",
+            "        f64.store",
+            "        local.get $i",
+            "        i32.const 1",
+            "        i32.add",
+            "        local.set $i",
+            "        br $lp",
+            "      end",
+            "    end",
+            "    local.get $count",
             "  )",
         ]
         return "\n".join(lines)
@@ -909,7 +953,7 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
     def _gen_binop(self, node: BinaryOp, indent: str):  # noqa: C901
         op = node.op
 
-        # Comparison operators → i32, then convert to f64
+        # Comparison operators -> i32, then convert to f64
         if op in ("==", "!=", "<", "<=", ">", ">="):
             self._gen_cmp_from_binop(node, indent)
             self._emit(f"{indent}f64.convert_i32_s")
@@ -917,6 +961,21 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
 
         if op == "%":
             # Python-style modulo: a - floor(a/b)*b
+            if isinstance(node.left, Identifier):
+                # Hot-kernel optimization: avoid evaluating left expression twice.
+                tmp_name = f"__mod_left_{self._new_label()}"
+                self._locals.add(tmp_name)
+                self._gen_expr(node.left, indent)
+                self._emit(f"{indent}local.set ${tmp_name}")
+                self._emit(f"{indent}local.get ${tmp_name}")
+                self._emit(f"{indent}local.get ${tmp_name}")
+                self._gen_expr(node.right, indent)
+                self._emit(f"{indent}f64.div")
+                self._emit(f"{indent}f64.floor")
+                self._gen_expr(node.right, indent)
+                self._emit(f"{indent}f64.mul")
+                self._emit(f"{indent}f64.sub")
+                return
             self._emit(f"{indent};; f64 modulo")
             self._gen_expr(node.left, indent)   # a
             self._gen_expr(node.left, indent)   # a  (again)
@@ -936,7 +995,7 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
             return
 
         if op == "**":
-            # No native pow in WASM f64 — emit approximation note
+            # No native pow in WASM f64 - emit approximation note
             self._emit(f"{indent};; ** (power) not natively supported in WASM f64")
             self._gen_expr(node.left, indent)
             return

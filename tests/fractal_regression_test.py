@@ -57,6 +57,16 @@ def _ascii_snapshot(values: list[int], width: int, charset: str = " .:-=+*#%@") 
     return "\n".join(rows)
 
 
+def _pgm_bytes(values: list[int], width: int, height: int) -> bytes:
+    max_v = max(values) or 1
+    pixels = bytearray()
+    for v in values:
+        gray = int((v / max_v) * 255)
+        pixels.append(gray & 0xFF)
+    header = f"P5\n{width} {height}\n255\n".encode("ascii")
+    return header + bytes(pixels)
+
+
 class FractalRegressionTestSuite(unittest.TestCase):
     """Golden numeric and image-like regression checks."""
 
@@ -104,6 +114,16 @@ class FractalRegressionTestSuite(unittest.TestCase):
         self.assertLessEqual(max(xs), 3.0)
         self.assertGreaterEqual(min(ys), -1.0)
         self.assertLessEqual(max(ys), 12.0)
+
+    def test_escape_grid_pgm_snapshot_hash(self):
+        width, height = 48, 36
+        values = _escape_time_grid(width=width, height=height)
+        pgm = _pgm_bytes(values, width=width, height=height)
+        digest = hashlib.sha256(pgm).hexdigest()
+        self.assertEqual(
+            digest,
+            "2abc6fa019693453b76d7c774ec50649c8d1576cff0f2e23763c144c817fd95c",
+        )
 
 
 if __name__ == "__main__":

@@ -35,6 +35,8 @@ class BuildOrchestratorTestSuite(unittest.TestCase):
             self.assertTrue(outputs.abi_manifest.exists())
             self.assertTrue(outputs.host_shim_js.exists())
             self.assertTrue(outputs.renderer_template_js.exists())
+            self.assertTrue(outputs.build_graph.exists())
+            self.assertTrue(outputs.build_lockfile.exists())
 
     def test_build_is_deterministic_for_same_input(self):
         source = "def f(x):\n    return x + 1\nprint(f(2))\n"
@@ -44,9 +46,12 @@ class BuildOrchestratorTestSuite(unittest.TestCase):
             orchestrator = BuildOrchestrator(out)
             first = orchestrator.build_from_program(program)
             first_manifest = first.abi_manifest.read_text(encoding="utf-8")
+            first_lock = first.build_lockfile.read_text(encoding="utf-8")
             second = orchestrator.build_from_program(program)
             second_manifest = second.abi_manifest.read_text(encoding="utf-8")
+            second_lock = second.build_lockfile.read_text(encoding="utf-8")
             self.assertEqual(first_manifest, second_manifest)
+            self.assertEqual(first_lock, second_lock)
 
 
 if __name__ == "__main__":

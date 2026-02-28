@@ -121,8 +121,8 @@ If missing or invalid, mode defaults to `scalar_field`.
 - `<name>_point_count() -> i32`
 - `<name>_write_points(ptr: i32, len: i32) -> i32`
 
-These helper exports define the ABI pattern for stream rendering and can be
-implemented with real point-writing logic in backend-specific lowering.
+These helper exports now write concrete `(x, y)` pairs (f64/f64, 16-byte stride)
+into linear memory for up to 256 points and return the number of written points.
 
 ## Encoding Guard
 
@@ -138,3 +138,16 @@ It writes `module.wat`, `abi_manifest.json`, `host_shim.js`,
 - lock-guarded build execution (`.multilingual-build.lock`)
 - atomic writes (temp file + `os.replace`)
 - deterministic JSON output (`sort_keys=True`)
+- explicit build graph (`build_graph.json`) and lockfile (`build.lock.json`)
+
+## Tuple Interop
+
+The manifest includes canonical tuple lowering policy:
+
+- `preferred: out_params`
+- `supported: ["multi_value", "out_params"]`
+
+Out-param tuple memory layout uses:
+
+- `i32` element count header (4 bytes)
+- followed by `f64` elements (8 bytes each)

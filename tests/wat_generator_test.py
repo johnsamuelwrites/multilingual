@@ -203,6 +203,7 @@ class WATStreamBufferExportsTestSuite(unittest.TestCase):
         self.assertIn('(export "draw_write_points")', wat)
         self.assertIn("(param $ptr i32)", wat)
         self.assertIn("(param $len i32)", wat)
+        self.assertIn("f64.store", wat)
 
 
 class WATFrontendTemplateTestSuite(unittest.TestCase):
