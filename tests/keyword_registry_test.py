@@ -388,11 +388,11 @@ class KeywordRegistryTestSuite(unittest.TestCase):
 
         self.assertIn("RETURN", concepts)
 
-        # 14 control_flow + 10 definitions + 7 logical + 4 error_handling
+        # 14 control_flow + 10 definitions + 8 logical + 4 error_handling
 
-        # + 6 variables + 6 types + 2 io = 49 total
+        # + 6 variables + 6 types + 2 io = 50 total (NOT_IN added to logical)
 
-        self.assertEqual(len(concepts), 49)
+        self.assertEqual(len(concepts), 50)
 
 
 

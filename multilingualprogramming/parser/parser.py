@@ -223,6 +223,19 @@ class Parser:
         while self._current().type in (TokenType.NEWLINE, TokenType.COMMENT):
             self._advance()
 
+    def _skip_bracket_newlines(self):
+        """Skip NEWLINE, INDENT, DEDENT and COMMENT tokens inside bracket pairs.
+
+        The lexer emits INDENT/DEDENT based on indentation even inside brackets.
+        Call this after opening brackets, after commas, and before closing brackets
+        to allow multi-line list/dict/set/call/tuple literals.
+        """
+        while self._current().type in (
+            TokenType.NEWLINE, TokenType.COMMENT,
+            TokenType.INDENT, TokenType.DEDENT,
+        ):
+            self._advance()
+
     def _error(self, message_key, err_token, **kwargs) -> NoReturn:
         """Raise a ParseError with a multilingual message."""
         kwargs.setdefault("line", err_token.line)
@@ -1198,6 +1211,10 @@ class Parser:
                 self._advance()
                 right = self._parse_bitwise_or()
                 comparators.append(("in", right))
+            elif self._match_concept("NOT_IN"):
+                self._advance()  # consume NOT_IN (single compound token)
+                right = self._parse_bitwise_or()
+                comparators.append(("not in", right))
             elif self._match_concept("NOT") and self._peek_concept("IN"):
                 self._advance()  # consume NOT
                 self._advance()  # consume IN
@@ -1368,7 +1385,7 @@ class Parser:
         args = []
         keywords = []
         seen_keyword = False
-        self._skip_newlines()
+        self._skip_bracket_newlines()
 
         if not self._match_delimiter(")"):
             first_kind = self._parse_argument(args, keywords)
@@ -1388,7 +1405,7 @@ class Parser:
                                 line=tok.line, column=tok.column)
             while self._match_delimiter(","):
                 self._advance()
-                self._skip_newlines()
+                self._skip_bracket_newlines()
                 if self._match_delimiter(")"):
                     break
                 arg_kind = self._parse_argument(args, keywords)
@@ -1397,9 +1414,9 @@ class Parser:
                 elif arg_kind == "positional" and seen_keyword:
                     self._error("UNEXPECTED_TOKEN", self._current(),
                                 token="positional argument after keyword argument")
-                self._skip_newlines()
+                self._skip_bracket_newlines()
 
-        self._skip_newlines()
+        self._skip_bracket_newlines()
         self._expect_delimiter(")")
         return CallExpr(func, args, keywords,
                         line=tok.line, column=tok.column)
@@ -1513,11 +1530,13 @@ class Parser:
         # Parenthesized expression or generator expression
         if self._match_delimiter("("):
             open_tok = self._advance()
+            self._skip_bracket_newlines()
             if self._match_delimiter(")"):
                 # Empty tuple ()
                 return TupleLiteral([], line=open_tok.line,
                                     column=open_tok.column)
             expr = self._parse_expression()
+            self._skip_bracket_newlines()
             # Check for generator expression: (expr FOR ...)
             if self._match_concept("LOOP_FOR"):
                 result = self._parse_comprehension_tail(
@@ -1529,12 +1548,16 @@ class Parser:
                 elements = [expr]
                 while self._match_delimiter(","):
                     self._advance()
+                    self._skip_bracket_newlines()
                     if self._match_delimiter(")"):
                         break
                     elements.append(self._parse_expression())
+                    self._skip_bracket_newlines()
+                self._skip_bracket_newlines()
                 self._expect_delimiter(")")
                 return TupleLiteral(elements, line=open_tok.line,
                                     column=open_tok.column)
+            self._skip_bracket_newlines()
             self._expect_delimiter(")")
             return expr
 
@@ -1656,6 +1679,7 @@ class Parser:
     def _parse_list_literal(self):
         """Parse: [ expr, expr, ... ] or [expr for target in iter [if cond]]."""
         tok = self._advance()  # consume [
+        self._skip_bracket_newlines()
         if self._match_delimiter("]"):
             self._advance()  # consume ]
             return ListLiteral([], line=tok.line, column=tok.column)
@@ -1671,15 +1695,18 @@ class Parser:
         elements = [first]
         while self._match_delimiter(","):
             self._advance()
+            self._skip_bracket_newlines()
             if self._match_delimiter("]"):
                 break
             elements.append(self._parse_expression())
+        self._skip_bracket_newlines()
         self._expect_delimiter("]")
         return ListLiteral(elements, line=tok.line, column=tok.column)
 
     def _parse_brace_literal(self):
         """Parse dict or set literal, including dict unpacking."""
         tok = self._advance()  # consume {
+        self._skip_bracket_newlines()
         if self._match_delimiter("}"):
             self._advance()  # consume }
             return DictLiteral([], line=tok.line, column=tok.column)
@@ -1689,6 +1716,7 @@ class Parser:
             entries = [self._parse_dict_unpack_entry()]
             while self._match_delimiter(","):
                 self._advance()
+                self._skip_bracket_newlines()
                 if self._match_delimiter("}"):
                     break
                 if self._match_operator("**"):
@@ -1698,6 +1726,7 @@ class Parser:
                     self._expect_delimiter(":")
                     value = self._parse_expression()
                     entries.append((key, value))
+            self._skip_bracket_newlines()
             self._expect_delimiter("}")
             return DictLiteral(entries, line=tok.line, column=tok.column)
 
@@ -1717,6 +1746,7 @@ class Parser:
             entries = [(first, value)]
             while self._match_delimiter(","):
                 self._advance()
+                self._skip_bracket_newlines()
                 if self._match_delimiter("}"):
                     break
                 if self._match_operator("**"):
@@ -1726,6 +1756,7 @@ class Parser:
                 self._expect_delimiter(":")
                 value = self._parse_expression()
                 entries.append((key, value))
+            self._skip_bracket_newlines()
             self._expect_delimiter("}")
             return DictLiteral(entries, line=tok.line, column=tok.column)
 
@@ -1737,9 +1768,11 @@ class Parser:
         elements = [first]
         while self._match_delimiter(","):
             self._advance()
+            self._skip_bracket_newlines()
             if self._match_delimiter("}"):
                 break
             elements.append(self._parse_expression())
+        self._skip_bracket_newlines()
         self._expect_delimiter("}")
         return SetLiteral(elements, line=tok.line, column=tok.column)
 

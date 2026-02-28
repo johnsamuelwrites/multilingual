@@ -306,3 +306,36 @@ class RuntimeBuiltins:
                     ns[alias] = builtin_obj
 
         return ns
+
+
+def make_exec_globals(language="en", extra=None):
+    """Return a ready-to-use globals dict for exec() with localized builtins.
+
+    Convenience wrapper for users who transpile multilingual source to Python
+    and then call exec() directly (rather than via ProgramExecutor).
+
+    Args:
+        language: Source language code (e.g., "en", "fr", "hi"). Determines
+                  which localized builtin names (afficher, longueur, ...) are
+                  added on top of the universal Python builtins.
+        extra:    Optional dict of additional names to merge in. Keys from
+                  *extra* take precedence over the builtins namespace.
+
+    Returns:
+        dict suitable for use as the globals argument to exec().
+
+    Example::
+
+        python_src = ProgramExecutor(language="fr").transpile(french_source)
+        g = make_exec_globals("fr")
+        exec(python_src, g)
+        # g now contains any names defined by the executed code.
+    """
+    ns = RuntimeBuiltins(language).namespace()
+    # Required by Python's import machinery when exec'd code uses imports.
+    ns.setdefault("__name__", "__main__")
+    ns.setdefault("__package__", None)
+    ns.setdefault("__spec__", None)
+    if extra:
+        ns.update(extra)
+    return ns

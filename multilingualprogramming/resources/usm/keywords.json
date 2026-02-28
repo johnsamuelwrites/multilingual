@@ -330,7 +330,8 @@
         "en": "def",
         "fr": [
           "déf",
-          "def"
+          "def",
+          "fonction"
         ],
         "es": "def",
         "de": "def",
@@ -595,6 +596,25 @@
         "sv": "inte",
         "da": "ikke",
         "fi": "ei"
+      },
+      "NOT_IN": {
+        "en": "not in",
+        "fr": ["pas dans", "pas_dans", "non dans", "not in"],
+        "es": ["no en", "no_en"],
+        "de": ["nicht in", "nicht_in"],
+        "hi": ["नहीं में", "नहीं_में"],
+        "ar": ["ليس في", "ليس_في"],
+        "bn": ["না মধ্যে", "না_মধ্যে"],
+        "ta": ["இல் இல்லை", "இல்_இல்லை"],
+        "zh": "不在",
+        "ja": "中にない",
+        "it": ["non in", "non_in"],
+        "pt": ["não em", "nao em"],
+        "pl": ["nie w", "nie_w"],
+        "nl": ["niet in", "niet_in"],
+        "sv": ["inte i"],
+        "da": ["ikke i"],
+        "fi": ["ei sisalla", "ei_sisalla"]
       },
       "TRUE": {
         "en": "True",

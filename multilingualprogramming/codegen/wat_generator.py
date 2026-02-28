@@ -67,6 +67,7 @@ from multilingualprogramming.parser.ast_nodes import (
     StringLiteral,
     BooleanLiteral,
     NoneLiteral,
+    AttributeAccess,
 )
 from multilingualprogramming.numeral.mp_numeral import MPNumeral
 from multilingualprogramming.core.ir import CoreIRProgram
@@ -93,6 +94,51 @@ _RANGE_NAMES = frozenset({
     "परास", "مدى", "পরিসর", "வரம்பு", "范围", "範囲",
 })
 
+# abs() → WAT f64.abs  (1 argument)
+_ABS_NAMES = frozenset({
+    "abs",
+    # French
+    "valeurabsolue", "valeur_absolue",
+    # Spanish
+    "valorabsoluto", "valor_absoluto",
+    # German
+    "betrag",
+    # Italian
+    "valoreassoluto",
+    # Portuguese
+    "valorabsoluto",
+    # Polish
+    "wartoscbezwzgledna",
+    # Dutch
+    "absoluutewaarde",
+    # Hindi
+    "निरपेक्षमान",
+    # Arabic
+    "قيمةمطلقة",
+    # Chinese / Japanese
+    "绝对值", "絶対値",
+})
+
+# min() → WAT f64.min  (2 arguments; more args unsupported)
+_MIN_NAMES = frozenset({
+    "min",
+    "minimum", "minimo", "minimum", "minimo",
+    # localized aliases from builtins_aliases.json
+    "minimum",  # fr
+    "न्यूनतम",  # hi
+    "الحد_الأدنى", "الحدالأدنى",  # ar
+    "最小",  # zh / ja
+})
+
+# max() → WAT f64.max  (2 arguments; more args unsupported)
+_MAX_NAMES = frozenset({
+    "max",
+    "maximum", "maximo", "massimo", "maximo",
+    "अधिकतम",  # hi
+    "الحد_الأقصى", "الحدالأقصى",  # ar
+    "最大",  # zh / ja
+})
+
 
 # ---------------------------------------------------------------------------
 # Helper: extract name string from an AST name node or raw str
@@ -103,6 +149,9 @@ def _name(node) -> str:
         return node
     if isinstance(node, Identifier):
         return node.name
+    if isinstance(node, AttributeAccess):
+        # e.g. module.func → "module.func" for display purposes
+        return f"{_name(node.obj)}.{node.attr}"
     if hasattr(node, "name"):
         return node.name
     return str(node)
@@ -369,6 +418,20 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
                 fname = _name(expr.func)
                 if fname in _PRINT_NAMES:
                     self._gen_print(expr, indent)
+                elif fname in _ABS_NAMES and len(expr.args) == 1:
+                    self._gen_expr(expr.args[0], indent)
+                    self._emit(f"{indent}f64.abs")
+                    self._emit(f"{indent}drop")
+                elif fname in _MIN_NAMES and len(expr.args) == 2:
+                    self._gen_expr(expr.args[0], indent)
+                    self._gen_expr(expr.args[1], indent)
+                    self._emit(f"{indent}f64.min")
+                    self._emit(f"{indent}drop")
+                elif fname in _MAX_NAMES and len(expr.args) == 2:
+                    self._gen_expr(expr.args[0], indent)
+                    self._gen_expr(expr.args[1], indent)
+                    self._emit(f"{indent}f64.max")
+                    self._emit(f"{indent}drop")
                 elif fname in self._defined_func_names:
                     # Known WAT function — emit args then call
                     self._emit(f"{indent};; call {fname}(...)")
@@ -496,6 +559,20 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
             fname = _name(node.func)
             if fname in _PRINT_NAMES:
                 self._emit(f"{indent}f64.const 0  ;; print() used as expression")
+            elif fname in _ABS_NAMES and len(node.args) == 1:
+                # abs(x) → f64.abs
+                self._gen_expr(node.args[0], indent)
+                self._emit(f"{indent}f64.abs")
+            elif fname in _MIN_NAMES and len(node.args) == 2:
+                # min(a, b) → f64.min
+                self._gen_expr(node.args[0], indent)
+                self._gen_expr(node.args[1], indent)
+                self._emit(f"{indent}f64.min")
+            elif fname in _MAX_NAMES and len(node.args) == 2:
+                # max(a, b) → f64.max
+                self._gen_expr(node.args[0], indent)
+                self._gen_expr(node.args[1], indent)
+                self._emit(f"{indent}f64.max")
             elif fname in self._defined_func_names:
                 # Known WAT function — emit args then call
                 self._gen_call_args(node, indent, fname)
@@ -760,3 +837,31 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
             return str(float(raw))
         except (ValueError, TypeError):
             return "0.0"
+
+
+# ---------------------------------------------------------------------------
+# Module-level utility
+# ---------------------------------------------------------------------------
+
+_STUB_MARKER = ";; unsupported call:"
+
+
+def has_stub_calls(wat_text: str) -> bool:
+    """Return True if *wat_text* contains any unsupported-call stub lines.
+
+    A WAT module that contains stub lines (emitted for constructs the generator
+    cannot lower — closures, constructors, cross-module attribute calls, etc.)
+    will produce incorrect numeric results at runtime even if every function is
+    properly exported.  Use this check to distinguish a fully-functional export
+    from a stub-containing one:
+
+    Example::
+
+        gen = WATCodeGenerator()
+        wat = gen.generate(core_program)
+        if has_stub_calls(wat):
+            print("WARNING: generated WAT contains unsupported-call stubs")
+        else:
+            print("WAT module is fully functional")
+    """
+    return _STUB_MARKER in wat_text
