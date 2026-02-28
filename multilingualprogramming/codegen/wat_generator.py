@@ -43,6 +43,8 @@ Host imports expected by the generated module:
   (import "env" "print_newline" (func))
 """
 
+from copy import deepcopy
+
 from multilingualprogramming.parser.ast_nodes import (
     VariableDeclaration,
     Assignment,
@@ -159,6 +161,42 @@ def _name(node) -> str:
 # and keyword-only (*) boundaries — these are not real WAT parameters.
 _PARAM_SEPARATORS = frozenset(("/", "*"))
 
+_RENDER_MODE_DECORATOR_NAMES = frozenset({"render_mode", "mode_rendu"})
+_SUPPORTED_RENDER_MODES = frozenset({"scalar_field", "point_stream", "polyline"})
+
+_WAT_HOST_IMPORT_SIGNATURES = [
+    {
+        "module": "env",
+        "name": "print_str",
+        "param_types": ["i32", "i32"],
+        "return_type": "void",
+    },
+    {
+        "module": "env",
+        "name": "print_f64",
+        "param_types": ["f64"],
+        "return_type": "void",
+    },
+    {
+        "module": "env",
+        "name": "print_bool",
+        "param_types": ["i32"],
+        "return_type": "void",
+    },
+    {
+        "module": "env",
+        "name": "print_sep",
+        "param_types": [],
+        "return_type": "void",
+    },
+    {
+        "module": "env",
+        "name": "print_newline",
+        "param_types": [],
+        "return_type": "void",
+    },
+]
+
 
 def _real_params(func_def: FunctionDef) -> list:
     """Return the real WAT parameter names for *func_def*.
@@ -176,6 +214,24 @@ def _real_params(func_def: FunctionDef) -> list:
             continue
         result.append(pname)
     return result
+
+
+def _extract_render_mode(func_def: FunctionDef) -> str:
+    """Extract @render_mode("...") metadata from function decorators."""
+    for decorator in (func_def.decorators or []):
+        if not isinstance(decorator, CallExpr):
+            continue
+        if _name(decorator.func) not in _RENDER_MODE_DECORATOR_NAMES:
+            continue
+        if not decorator.args:
+            continue
+        first_arg = decorator.args[0]
+        if not isinstance(first_arg, StringLiteral):
+            continue
+        mode = first_arg.value.strip()
+        if mode in _SUPPORTED_RENDER_MODES:
+            return mode
+    return "scalar_field"
 
 
 # ---------------------------------------------------------------------------
@@ -244,6 +300,52 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
             self._emit_main(top)
 
         return self._build_module()
+
+    def generate_abi_manifest(self, program) -> dict:
+        """Generate ABI manifest metadata for frontend/runtime integration."""
+        if isinstance(program, CoreIRProgram):
+            program = program.ast
+
+        funcs = [s for s in program.body if isinstance(s, FunctionDef)]
+        top = [s for s in program.body if not isinstance(s, FunctionDef)]
+
+        exports = []
+        for func in funcs:
+            params = _real_params(func)
+            exports.append({
+                "name": _name(func.name),
+                "arg_types": ["f64"] * len(params),
+                "return_type": "f64",
+                "mode": _extract_render_mode(func),
+            })
+
+        if top:
+            exports.append({
+                "name": "__main",
+                "arg_types": [],
+                "return_type": "void",
+                "mode": "scalar_field",
+            })
+
+        return {
+            "abi_version": 1,
+            "backend": "wat",
+            "exports": exports,
+            "required_host_imports": deepcopy(_WAT_HOST_IMPORT_SIGNATURES),
+            "memory_layout": {
+                "primitive_types": {
+                    "f64": {"size_bytes": 8, "alignment_bytes": 8},
+                    "i32": {"size_bytes": 4, "alignment_bytes": 4},
+                },
+                "collections": {
+                    "array<f64>": {
+                        "element_type": "f64",
+                        "element_size_bytes": 8,
+                        "offset_formula": "base + index * 8",
+                    }
+                },
+            },
+        }
 
     # -----------------------------------------------------------------------
     # Module assembly

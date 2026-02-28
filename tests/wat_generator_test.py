@@ -119,6 +119,54 @@ class WATModuleStructureTestSuite(unittest.TestCase):
         self.assertIn("$x", wat)
 
 
+class WATABIManifestTestSuite(unittest.TestCase):
+    """Validate ABI manifest emitted by WATCodeGenerator."""
+
+    def test_manifest_contains_required_host_import_signatures(self):
+        manifest = WATCodeGenerator().generate_abi_manifest(_prog())
+        imports = manifest["required_host_imports"]
+        names = {entry["name"] for entry in imports}
+        self.assertEqual(
+            names,
+            {"print_str", "print_f64", "print_bool", "print_sep", "print_newline"},
+        )
+
+    def test_manifest_tracks_export_signatures(self):
+        fn = FunctionDef(
+            Identifier("compute"),
+            [_param("x"), _param("y")],
+            [ReturnStatement(NumeralLiteral("1"))],
+        )
+        manifest = WATCodeGenerator().generate_abi_manifest(_prog(fn))
+        exports = manifest["exports"]
+        self.assertEqual(len(exports), 1)
+        self.assertEqual(exports[0]["name"], "compute")
+        self.assertEqual(exports[0]["arg_types"], ["f64", "f64"])
+        self.assertEqual(exports[0]["return_type"], "f64")
+        self.assertEqual(exports[0]["mode"], "scalar_field")
+
+    def test_manifest_extracts_render_mode_decorator(self):
+        fn = FunctionDef(
+            Identifier("draw"),
+            [_param("x")],
+            [ReturnStatement(NumeralLiteral("0"))],
+            decorators=[
+                CallExpr(Identifier("render_mode"), [StringLiteral("point_stream")])
+            ],
+        )
+        manifest = WATCodeGenerator().generate_abi_manifest(_prog(fn))
+        export = manifest["exports"][0]
+        self.assertEqual(export["name"], "draw")
+        self.assertEqual(export["mode"], "point_stream")
+
+    def test_manifest_includes_main_for_top_level_statements(self):
+        manifest = WATCodeGenerator().generate_abi_manifest(
+            _prog(VariableDeclaration("x", NumeralLiteral("1")))
+        )
+        export_names = [entry["name"] for entry in manifest["exports"]]
+        self.assertIn("__main", export_names)
+
+
 # ---------------------------------------------------------------------------
 # Expression generation
 # ---------------------------------------------------------------------------

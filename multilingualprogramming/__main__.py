@@ -18,12 +18,14 @@ Usage:
 """
 
 import argparse
+import json
 import sys
 from pathlib import Path
 
 from multilingualprogramming.codegen.executor import ProgramExecutor
 from multilingualprogramming.codegen.python_generator import PythonCodeGenerator
 from multilingualprogramming.codegen.repl import REPL
+from multilingualprogramming.codegen.wat_generator import WATCodeGenerator
 from multilingualprogramming.keyword.language_pack_validator import (
     LanguagePackValidator,
 )
@@ -147,6 +149,29 @@ def cmd_smoke(args):
         sys.exit(1)
 
 
+def cmd_wat_abi(args):
+    """Parse source and emit the generated WAT ABI manifest JSON."""
+    try:
+        with open(args.file, encoding="utf-8") as f:
+            source = f.read()
+    except FileNotFoundError:
+        print(f"Error: file not found: {args.file}", file=sys.stderr)
+        sys.exit(1)
+    except OSError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    lang = args.lang
+    lexer = Lexer(source, language=lang)
+    tokens = lexer.tokenize()
+    detected_lang = lexer.language or lang or "en"
+    parser = Parser(tokens, source_language=detected_lang)
+    program = parser.parse()
+
+    manifest = WATCodeGenerator().generate_abi_manifest(program)
+    print(json.dumps(manifest, ensure_ascii=False, indent=2))
+
+
 def _maybe_dispatch_direct_file_run(argv):
     """Dispatch `multilingual <file>.ml [--lang XX]` to `cmd_run`."""
     if not argv:
@@ -243,6 +268,15 @@ def main():
         help="Validate all supported languages",
     )
 
+    wat_abi_parser = subparsers.add_parser(
+        "wat-abi", help="Emit WAT ABI manifest JSON for a source file"
+    )
+    wat_abi_parser.add_argument("file", help="Path to the source file")
+    wat_abi_parser.add_argument(
+        "--lang", default=None,
+        help="Source language code (e.g., en, fr, hi). Auto-detect if omitted.",
+    )
+
     args = parser.parse_args()
 
     if args.command == "run":
@@ -253,6 +287,8 @@ def main():
         cmd_compile(args)
     elif args.command == "smoke":
         cmd_smoke(args)
+    elif args.command == "wat-abi":
+        cmd_wat_abi(args)
     else:
         # Default: start REPL
         args.lang = None
