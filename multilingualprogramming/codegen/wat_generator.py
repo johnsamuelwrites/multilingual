@@ -44,6 +44,7 @@ Host imports expected by the generated module:
 """
 
 from copy import deepcopy
+import json
 
 from multilingualprogramming.parser.ast_nodes import (
     VariableDeclaration,
@@ -163,6 +164,8 @@ _PARAM_SEPARATORS = frozenset(("/", "*"))
 
 _RENDER_MODE_DECORATOR_NAMES = frozenset({"render_mode", "mode_rendu"})
 _SUPPORTED_RENDER_MODES = frozenset({"scalar_field", "point_stream", "polyline"})
+_STREAM_RENDER_MODES = frozenset({"point_stream", "polyline"})
+_BUFFER_OUTPUT_DECORATOR_NAMES = frozenset({"buffer_output", "sortie_tampon"})
 
 _WAT_HOST_IMPORT_SIGNATURES = [
     {
@@ -234,6 +237,24 @@ def _extract_render_mode(func_def: FunctionDef) -> str:
     return "scalar_field"
 
 
+def _extract_buffer_output(func_def: FunctionDef) -> str:
+    """Extract @buffer_output("...") metadata; defaults to 'points'."""
+    for decorator in (func_def.decorators or []):
+        if not isinstance(decorator, CallExpr):
+            continue
+        if _name(decorator.func) not in _BUFFER_OUTPUT_DECORATOR_NAMES:
+            continue
+        if not decorator.args:
+            continue
+        first_arg = decorator.args[0]
+        if not isinstance(first_arg, StringLiteral):
+            continue
+        output_kind = first_arg.value.strip()
+        if output_kind:
+            return output_kind
+    return "points"
+
+
 # ---------------------------------------------------------------------------
 # WATCodeGenerator
 # ---------------------------------------------------------------------------
@@ -261,6 +282,8 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
         self._defined_func_names: set[str] = set()
         # Maps function name → ordered list of real WAT param names (separators excluded)
         self._func_real_params: dict[str, list] = {}
+        # Maps function name → render mode metadata
+        self._func_render_modes: dict[str, str] = {}
 
     # -----------------------------------------------------------------------
     # Public API
@@ -278,6 +301,7 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
         self._funcs = []
         self._defined_func_names = set()
         self._func_real_params = {}
+        self._func_render_modes = {}
 
         if isinstance(program, CoreIRProgram):
             program = program.ast
@@ -291,7 +315,9 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
         # direct WAT equivalent and must not appear as call arguments).
         self._defined_func_names = {_name(f.name) for f in funcs}
         for f in funcs:
-            self._func_real_params[_name(f.name)] = _real_params(f)
+            fname = _name(f.name)
+            self._func_real_params[fname] = _real_params(f)
+            self._func_render_modes[fname] = _extract_render_mode(f)
 
         for func in funcs:
             self._emit_function(func)
@@ -312,12 +338,34 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
         exports = []
         for func in funcs:
             params = _real_params(func)
-            exports.append({
-                "name": _name(func.name),
+            fname = _name(func.name)
+            render_mode = _extract_render_mode(func)
+            export_entry = {
+                "name": fname,
                 "arg_types": ["f64"] * len(params),
                 "return_type": "f64",
-                "mode": _extract_render_mode(func),
-            })
+                "mode": render_mode,
+            }
+            if render_mode in _STREAM_RENDER_MODES:
+                output_kind = _extract_buffer_output(func)
+                export_entry["stream_output"] = {
+                    "kind": output_kind,
+                    "count_export": f"{fname}_point_count",
+                    "writer_export": f"{fname}_write_points",
+                    "writer_signature": {
+                        "arg_types": ["i32", "i32"],
+                        "return_type": "i32",
+                    },
+                    "item_layout": {
+                        "kind": "struct",
+                        "stride_bytes": 16,
+                        "fields": [
+                            {"name": "x", "type": "f64", "offset_bytes": 0},
+                            {"name": "y", "type": "f64", "offset_bytes": 8},
+                        ],
+                    },
+                }
+            exports.append(export_entry)
 
         if top:
             exports.append({
@@ -346,6 +394,87 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
                 },
             },
         }
+
+    def generate_js_host_shim(self, manifest: dict) -> str:
+        """Generate a JavaScript host-import shim from an ABI manifest."""
+        imports = manifest.get("required_host_imports", [])
+        lines = [
+            "// Auto-generated host shim from multilingual WASM ABI manifest",
+            "export function createEnvHost(memoryRef = { current: null }) {",
+            "  const textDecoder = new TextDecoder('utf-8');",
+            "  function readUtf8(ptr, len) {",
+            "    const memory = memoryRef.current;",
+            "    if (!memory) return '';",
+            "    const bytes = new Uint8Array(memory.buffer, ptr, len);",
+            "    return textDecoder.decode(bytes);",
+            "  }",
+            "",
+            "  return {",
+            "    env: {",
+        ]
+        for entry in imports:
+            name = entry["name"]
+            if name == "print_str":
+                lines.append("      print_str: (ptr, len) => { console.log(readUtf8(ptr, len)); },")
+            elif name == "print_f64":
+                lines.append("      print_f64: (value) => { console.log(value); },")
+            elif name == "print_bool":
+                lines.append("      print_bool: (value) => { console.log(Boolean(value)); },")
+            elif name == "print_sep":
+                lines.append("      print_sep: () => { /* spacing hook */ },")
+            elif name == "print_newline":
+                lines.append("      print_newline: () => { /* newline hook */ },")
+            else:
+                lines.append(f"      {name}: (...args) => {{ console.warn('Unhandled import {name}', args); }},")
+        lines.extend([
+            "    },",
+            "  };",
+            "}",
+        ])
+        return "\n".join(lines)
+
+    def generate_renderer_template(self, manifest: dict) -> str:
+        """Generate a frontend renderer skeleton from ABI manifest metadata."""
+        exports = manifest.get("exports", [])
+        export_map_literal = json.dumps(
+            {
+                entry["name"]: {
+                    "mode": entry.get("mode", "scalar_field"),
+                    "stream_output": entry.get("stream_output"),
+                }
+                for entry in exports
+            },
+            indent=2,
+        )
+        lines = [
+            "// Auto-generated renderer skeleton from multilingual WASM ABI manifest",
+            "export const ABI_EXPORTS = " + export_map_literal + ";",
+            "",
+            "export async function loadWasmModule(url, importsFactory) {",
+            "  const memoryRef = { current: null };",
+            "  const imports = importsFactory(memoryRef);",
+            "  const result = await WebAssembly.instantiateStreaming(fetch(url), imports);",
+            "  const exports = result.instance.exports;",
+            "  memoryRef.current = exports.memory || null;",
+            "  return { instance: result.instance, exports, memoryRef };",
+            "}",
+            "",
+            "export function renderByMode(ctx, abiName, exports, args = []) {",
+            "  const abi = ABI_EXPORTS[abiName];",
+            "  if (!abi) throw new Error(`Unknown ABI export: ${abiName}`);",
+            "  if (abi.mode === 'scalar_field') {",
+            "    return exports[abiName](...args);",
+            "  }",
+            "  if (abi.mode === 'point_stream' || abi.mode === 'polyline') {",
+            "    const stream = abi.stream_output;",
+            "    if (!stream) throw new Error(`Missing stream metadata for ${abiName}`);",
+            "    const count = exports[stream.count_export]();",
+            "    return { count, writer: stream.writer_export };",
+            "  }",
+            "  throw new Error(`Unsupported render mode: ${abi.mode}`);",
+            "}",
+        ]
+        return "\n".join(lines)
 
     # -----------------------------------------------------------------------
     # Module assembly
@@ -451,7 +580,27 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
         lines.append("  )")
 
         self._funcs.append("\n".join(lines))
+        if self._func_render_modes.get(func_name) in _STREAM_RENDER_MODES:
+            self._funcs.append(self._build_stream_buffer_helpers(func_name))
         self._restore_func_state(saved)
+
+    def _build_stream_buffer_helpers(self, func_name: str) -> str:
+        """Emit stub stream helpers for point-based buffer output contracts."""
+        lines = [
+            f"  (func ${func_name}_point_count (export \"{func_name}_point_count\")",
+            "    (result i32)",
+            "    i32.const 0",
+            "  )",
+            f"  (func ${func_name}_write_points (export \"{func_name}_write_points\")",
+            "    (param $ptr i32)",
+            "    (param $len i32)",
+            "    (result i32)",
+            "    local.get $ptr",
+            "    drop",
+            "    local.get $len",
+            "  )",
+        ]
+        return "\n".join(lines)
 
     def _emit_main(self, stmts: list):
         """Generate the exported __main entry-point function."""

@@ -22,6 +22,10 @@ import json
 import sys
 from pathlib import Path
 
+from multilingualprogramming.codegen.encoding_guard import (
+    assert_clean_utf8_file,
+    assert_clean_text_encoding,
+)
 from multilingualprogramming.codegen.executor import ProgramExecutor
 from multilingualprogramming.codegen.python_generator import PythonCodeGenerator
 from multilingualprogramming.codegen.repl import REPL
@@ -35,18 +39,30 @@ from multilingualprogramming.parser.parser import Parser
 from multilingualprogramming.version import __version__
 
 
-def cmd_run(args):
-    """Execute a multilingual source file."""
-
+def _read_source_file(path: str) -> str:
     try:
-        with open(args.file, encoding="utf-8") as f:
-            source = f.read()
+        with open(path, encoding="utf-8") as f:
+            return f.read()
     except FileNotFoundError:
-        print(f"Error: file not found: {args.file}", file=sys.stderr)
+        print(f"Error: file not found: {path}", file=sys.stderr)
         sys.exit(1)
     except OSError as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
+
+
+def _parse_program_from_file(path: str, lang: str | None):
+    source = _read_source_file(path)
+    lexer = Lexer(source, language=lang)
+    tokens = lexer.tokenize()
+    detected_lang = lexer.language or lang or "en"
+    parser = Parser(tokens, source_language=detected_lang)
+    return parser.parse()
+
+
+def cmd_run(args):
+    """Execute a multilingual source file."""
+    source = _read_source_file(args.file)
 
     # Determine package context so that relative imports work.
     # Walk up from the file's directory while __init__.ml files exist;
@@ -95,24 +111,7 @@ def cmd_repl(args):
 
 def cmd_compile(args):
     """Compile a source file and print the generated Python."""
-
-    try:
-        with open(args.file, encoding="utf-8") as f:
-            source = f.read()
-    except FileNotFoundError:
-        print(f"Error: file not found: {args.file}", file=sys.stderr)
-        sys.exit(1)
-    except OSError as e:
-        print(f"Error: {e}", file=sys.stderr)
-        sys.exit(1)
-
-    lang = args.lang
-    lexer = Lexer(source, language=lang)
-    tokens = lexer.tokenize()
-    detected_lang = lexer.language or lang or "en"
-
-    parser = Parser(tokens, source_language=detected_lang)
-    program = parser.parse()
+    program = _parse_program_from_file(args.file, args.lang)
 
     generator = PythonCodeGenerator()
     python_source = generator.generate(program)
@@ -151,25 +150,57 @@ def cmd_smoke(args):
 
 def cmd_wat_abi(args):
     """Parse source and emit the generated WAT ABI manifest JSON."""
-    try:
-        with open(args.file, encoding="utf-8") as f:
-            source = f.read()
-    except FileNotFoundError:
-        print(f"Error: file not found: {args.file}", file=sys.stderr)
-        sys.exit(1)
-    except OSError as e:
-        print(f"Error: {e}", file=sys.stderr)
-        sys.exit(1)
-
-    lang = args.lang
-    lexer = Lexer(source, language=lang)
-    tokens = lexer.tokenize()
-    detected_lang = lexer.language or lang or "en"
-    parser = Parser(tokens, source_language=detected_lang)
-    program = parser.parse()
-
+    program = _parse_program_from_file(args.file, args.lang)
     manifest = WATCodeGenerator().generate_abi_manifest(program)
     print(json.dumps(manifest, ensure_ascii=False, indent=2))
+
+
+def cmd_wat_host_shim(args):
+    """Emit JS host-import shim from generated WAT ABI manifest."""
+    program = _parse_program_from_file(args.file, args.lang)
+    generator = WATCodeGenerator()
+    manifest = generator.generate_abi_manifest(program)
+    print(generator.generate_js_host_shim(manifest))
+
+
+def cmd_wat_renderer_template(args):
+    """Emit JS renderer skeleton from generated WAT ABI manifest."""
+    program = _parse_program_from_file(args.file, args.lang)
+    generator = WATCodeGenerator()
+    manifest = generator.generate_abi_manifest(program)
+    print(generator.generate_renderer_template(manifest))
+
+
+def cmd_encoding_check(args):
+    """Validate UTF-8/no-mojibake policy for provided files."""
+    failed = False
+    for fpath in args.files:
+        try:
+            assert_clean_utf8_file(fpath)
+            print(f"[PASS] {fpath}")
+        except (OSError, UnicodeDecodeError, ValueError) as exc:
+            failed = True
+            print(f"[FAIL] {fpath}: {exc}", file=sys.stderr)
+    if failed:
+        sys.exit(1)
+
+
+def cmd_encoding_check_generated(args):
+    """Validate generated compiler outputs for encoding regressions."""
+    program = _parse_program_from_file(args.file, args.lang)
+    wat_generator = WATCodeGenerator()
+    py_source = PythonCodeGenerator().generate(program)
+    wat_source = wat_generator.generate(program)
+    abi_json = json.dumps(
+        wat_generator.generate_abi_manifest(program), ensure_ascii=False, indent=2
+    )
+
+    assert_clean_text_encoding("generated_python", py_source)
+    assert_clean_text_encoding("generated_wat", wat_source)
+    assert_clean_text_encoding("generated_abi_json", abi_json)
+    print("[PASS] generated_python")
+    print("[PASS] generated_wat")
+    print("[PASS] generated_abi_json")
 
 
 def _maybe_dispatch_direct_file_run(argv):
@@ -277,6 +308,42 @@ def main():
         help="Source language code (e.g., en, fr, hi). Auto-detect if omitted.",
     )
 
+    wat_host_parser = subparsers.add_parser(
+        "wat-host-shim",
+        help="Emit JS host shim from WAT ABI manifest for a source file",
+    )
+    wat_host_parser.add_argument("file", help="Path to the source file")
+    wat_host_parser.add_argument(
+        "--lang", default=None,
+        help="Source language code (e.g., en, fr, hi). Auto-detect if omitted.",
+    )
+
+    wat_renderer_parser = subparsers.add_parser(
+        "wat-renderer-template",
+        help="Emit JS renderer skeleton from WAT ABI manifest for a source file",
+    )
+    wat_renderer_parser.add_argument("file", help="Path to the source file")
+    wat_renderer_parser.add_argument(
+        "--lang", default=None,
+        help="Source language code (e.g., en, fr, hi). Auto-detect if omitted.",
+    )
+
+    encoding_check_parser = subparsers.add_parser(
+        "encoding-check",
+        help="Validate UTF-8 and no-mojibake markers for files",
+    )
+    encoding_check_parser.add_argument("files", nargs="+", help="Files to validate")
+
+    encoding_generated_parser = subparsers.add_parser(
+        "encoding-check-generated",
+        help="Validate generated Python/WAT/ABI outputs for a source file",
+    )
+    encoding_generated_parser.add_argument("file", help="Path to the source file")
+    encoding_generated_parser.add_argument(
+        "--lang", default=None,
+        help="Source language code (e.g., en, fr, hi). Auto-detect if omitted.",
+    )
+
     args = parser.parse_args()
 
     if args.command == "run":
@@ -289,6 +356,14 @@ def main():
         cmd_smoke(args)
     elif args.command == "wat-abi":
         cmd_wat_abi(args)
+    elif args.command == "wat-host-shim":
+        cmd_wat_host_shim(args)
+    elif args.command == "wat-renderer-template":
+        cmd_wat_renderer_template(args)
+    elif args.command == "encoding-check":
+        cmd_encoding_check(args)
+    elif args.command == "encoding-check-generated":
+        cmd_encoding_check_generated(args)
     else:
         # Default: start REPL
         args.lang = None

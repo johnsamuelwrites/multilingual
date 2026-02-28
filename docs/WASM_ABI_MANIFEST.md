@@ -25,6 +25,9 @@ manifest = WATCodeGenerator().generate_abi_manifest(program_ast)
 
 ```bash
 multilingual wat-abi path/to/program.ml --lang en
+multilingual wat-host-shim path/to/program.ml --lang en
+multilingual wat-renderer-template path/to/program.ml --lang en
+multilingual encoding-check-generated path/to/program.ml --lang en
 ```
 
 ## Manifest Shape
@@ -39,6 +42,26 @@ multilingual wat-abi path/to/program.ml --lang en
       "arg_types": ["f64", "f64"],
       "return_type": "f64",
       "mode": "scalar_field"
+    },
+    {
+      "name": "draw",
+      "arg_types": ["f64"],
+      "return_type": "f64",
+      "mode": "point_stream",
+      "stream_output": {
+        "kind": "points",
+        "count_export": "draw_point_count",
+        "writer_export": "draw_write_points",
+        "writer_signature": {"arg_types": ["i32", "i32"], "return_type": "i32"},
+        "item_layout": {
+          "kind": "struct",
+          "stride_bytes": 16,
+          "fields": [
+            {"name": "x", "type": "f64", "offset_bytes": 0},
+            {"name": "y", "type": "f64", "offset_bytes": 8}
+          ]
+        }
+      }
     },
     {
       "name": "__main",
@@ -81,3 +104,16 @@ def draw(...):
 ```
 
 If missing or invalid, mode defaults to `scalar_field`.
+
+`point_stream` and `polyline` modes additionally expose stub buffer helpers:
+
+- `<name>_point_count() -> i32`
+- `<name>_write_points(ptr: i32, len: i32) -> i32`
+
+These helper exports define the ABI pattern for stream rendering and can be
+implemented with real point-writing logic in backend-specific lowering.
+
+## Encoding Guard
+
+Use `encoding-check-generated` to fail fast on replacement characters and common
+mojibake markers in generated Python/WAT/ABI outputs.

@@ -158,6 +158,9 @@ class WATABIManifestTestSuite(unittest.TestCase):
         export = manifest["exports"][0]
         self.assertEqual(export["name"], "draw")
         self.assertEqual(export["mode"], "point_stream")
+        self.assertIn("stream_output", export)
+        self.assertEqual(export["stream_output"]["writer_export"], "draw_write_points")
+        self.assertEqual(export["stream_output"]["count_export"], "draw_point_count")
 
     def test_manifest_includes_main_for_top_level_statements(self):
         manifest = WATCodeGenerator().generate_abi_manifest(
@@ -165,6 +168,66 @@ class WATABIManifestTestSuite(unittest.TestCase):
         )
         export_names = [entry["name"] for entry in manifest["exports"]]
         self.assertIn("__main", export_names)
+
+    def test_manifest_extracts_buffer_output_kind(self):
+        fn = FunctionDef(
+            Identifier("draw"),
+            [_param("x")],
+            [ReturnStatement(NumeralLiteral("0"))],
+            decorators=[
+                CallExpr(Identifier("render_mode"), [StringLiteral("polyline")]),
+                CallExpr(Identifier("buffer_output"), [StringLiteral("segments")]),
+            ],
+        )
+        manifest = WATCodeGenerator().generate_abi_manifest(_prog(fn))
+        export = manifest["exports"][0]
+        self.assertEqual(export["mode"], "polyline")
+        self.assertEqual(export["stream_output"]["kind"], "segments")
+
+
+class WATStreamBufferExportsTestSuite(unittest.TestCase):
+    """Verify stream helper exports are emitted for stream render modes."""
+
+    def test_stream_render_mode_emits_buffer_helpers(self):
+        fn = FunctionDef(
+            Identifier("draw"),
+            [_param("x")],
+            [ReturnStatement(NumeralLiteral("0"))],
+            decorators=[
+                CallExpr(Identifier("render_mode"), [StringLiteral("point_stream")])
+            ],
+        )
+        wat = WATCodeGenerator().generate(_prog(fn))
+        self.assertIn('(export "draw_point_count")', wat)
+        self.assertIn('(export "draw_write_points")', wat)
+        self.assertIn("(param $ptr i32)", wat)
+        self.assertIn("(param $len i32)", wat)
+
+
+class WATFrontendTemplateTestSuite(unittest.TestCase):
+    """Verify frontend template generation from ABI manifest."""
+
+    def test_generate_js_host_shim_contains_env_imports(self):
+        manifest = WATCodeGenerator().generate_abi_manifest(_prog())
+        shim = WATCodeGenerator().generate_js_host_shim(manifest)
+        self.assertIn("createEnvHost", shim)
+        self.assertIn("print_str", shim)
+        self.assertIn("print_f64", shim)
+
+    def test_generate_renderer_template_contains_mode_dispatch(self):
+        fn = FunctionDef(
+            Identifier("draw"),
+            [_param("x")],
+            [ReturnStatement(NumeralLiteral("0"))],
+            decorators=[
+                CallExpr(Identifier("render_mode"), [StringLiteral("point_stream")])
+            ],
+        )
+        manifest = WATCodeGenerator().generate_abi_manifest(_prog(fn))
+        template = WATCodeGenerator().generate_renderer_template(manifest)
+        self.assertIn("renderByMode", template)
+        self.assertIn("point_stream", template)
+        self.assertIn("draw_write_points", template)
 
 
 # ---------------------------------------------------------------------------

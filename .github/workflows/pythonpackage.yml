@@ -32,6 +32,7 @@ jobs:
         pip install .
         python -m multilingualprogramming --version
         python -m multilingualprogramming smoke --all
+        python -m multilingualprogramming encoding-check-generated examples/complete_features_en.ml --lang en
     - name: Test unittests and get code coverage
       run: |
         pytest --cov=multilingualprogramming tests/ -v
