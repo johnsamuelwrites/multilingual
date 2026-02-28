@@ -9,7 +9,7 @@ from multilingualprogramming.runtime.backend_selector import BackendSelector
 
 selector = BackendSelector()
 print(f"WASM Available: {selector.is_wasm_available()}")
-print(f"Current Backend: {selector.backend}")
+print(f"Selector: {selector}")
 ```
 
 If `WASM Available: False` → See [WASM Not Available](#issue-2-wasm-not-available)
@@ -437,8 +437,9 @@ selector = BackendSelector()
 
 # Check availability
 print(f"WASM available: {selector.is_wasm_available()}")
-print(f"Current backend: {selector.backend}")
-print(f"Python 3.12+: {selector._check_python_version()}")
+print(f"Selector: {selector}")
+import sys
+print(f"Python 3.12+: {sys.version_info >= (3, 12)}")
 
 # Check module loading
 try:

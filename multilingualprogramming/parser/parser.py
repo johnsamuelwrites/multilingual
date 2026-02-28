@@ -935,15 +935,33 @@ class Parser:
         )
 
     def _parse_from_import_statement(self):
-        """Parse: FROM module IMPORT name [AS alias], ..."""
-        tok = self._advance()  # consume FROM
-        module_tok = self._expect_identifier()
-        module = module_tok.value
+        """Parse: FROM [dots] module IMPORT name [AS alias], ...
 
+        Leading dots represent relative imports:
+          depuis . importer X      → level=1, module=""
+          depuis .. importer X     → level=2, module=""
+          depuis .sous importer X  → level=1, module="sous"
+        """
+        tok = self._advance()  # consume FROM
+
+        # Count leading dots for relative imports
+        level = 0
         while self._match_delimiter("."):
             self._advance()
-            next_tok = self._expect_identifier()
-            module += "." + next_tok.value
+            level += 1
+
+        # Module name is optional when level > 0 (e.g. `depuis . importer X`)
+        module = ""
+        if self._match_concept("IMPORT"):
+            if level == 0:
+                self._error("UNEXPECTED_TOKEN", self._current())
+        else:
+            module_tok = self._expect_identifier()
+            module = module_tok.value
+            while self._match_delimiter("."):
+                self._advance()
+                next_tok = self._expect_identifier()
+                module += "." + next_tok.value
 
         self._expect_concept("IMPORT")
 
@@ -952,7 +970,8 @@ class Parser:
             self._advance()
             return FromImportStatement(
                 module, [("*", None)],
-                line=tok.line, column=tok.column
+                line=tok.line, column=tok.column,
+                level=level,
             )
 
         names = []
@@ -976,7 +995,8 @@ class Parser:
 
         return FromImportStatement(
             module, names,
-            line=tok.line, column=tok.column
+            line=tok.line, column=tok.column,
+            level=level,
         )
 
     # ------------------------------------------------------------------

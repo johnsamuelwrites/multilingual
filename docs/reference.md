@@ -10,7 +10,9 @@ Python compatibility baseline:
 - [compatibility_matrix.md](compatibility_matrix.md)
 - [compatibility_roadmap.md](compatibility_roadmap.md)
 
-Current version: `0.3.0`
+Version and release status:
+- Package version: `multilingualprogramming/version.py`
+- Release notes: [`CHANGELOG.md`](CHANGELOG.md)
 
 ## Supported Languages
 
@@ -179,13 +181,17 @@ Run interactive mode:
 python -m multilingualprogramming repl
 python -m multilingualprogramming repl --lang fr
 python -m multilingualprogramming repl --show-python
+python -m multilingualprogramming repl --show-wat
+python -m multilingualprogramming repl --show-rust
 ```
 
 REPL commands:
 
 - `:help`
 - `:language <code>`
-- `:python`
+- `:python` — toggle generated Python display
+- `:wat` — toggle generated WAT (WebAssembly Text) display
+- `:rust` — toggle generated Rust/Wasmtime bridge code display
 - `:reset`
 - `:kw [XX]`
 - `:ops [XX]`
@@ -387,9 +393,7 @@ Runnable examples are documented in:
 
 Complete feature coverage examples:
 
-- `examples/complete_features_en.ml`
-- `examples/complete_features_fr.ml`
-- `examples/complete_features_es.ml`
+- `examples/complete_features_*.ml` (one file per supported language)
 
 Run:
 

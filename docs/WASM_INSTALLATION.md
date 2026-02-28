@@ -2,10 +2,10 @@
 
 ## Overview
 
-The Multilingual Programming Language includes **optional WebAssembly (WASM) support** for 50-100x performance improvements on compute-intensive operations while maintaining 100% Python compatibility through automatic fallback.
+The Multilingual Programming Language includes **optional WebAssembly (WASM) support** for potentially significant performance improvements on compute-intensive operations while maintaining Python compatibility through automatic fallback.
 
 **Key Features**:
-- ✅ 50-100x speedup for matrix ops, crypto, scientific computing
+- ✅ Potential speedups for matrix ops, crypto, and scientific computing (benchmark-dependent)
 - ✅ Zero code changes required - transparent backend selection
 - ✅ Automatic Python fallback if WASM unavailable
 - ✅ Works on Windows, Linux, macOS
@@ -40,8 +40,8 @@ pip install multilingualprogramming[wasm]
 
 **Features**:
 - ✅ Full language support
-- ✅ 50-100x acceleration on matrix, crypto, scientific computing
-- ✅ 10x acceleration on JSON parsing
+- ✅ Potential acceleration on matrix, crypto, and scientific computing
+- ✅ Potential acceleration on JSON parsing (workload-dependent)
 - ✅ Automatic fallback to Python
 
 **Requirements**:
@@ -154,7 +154,7 @@ print(f"   Architecture: {platform.machine()}")
 selector = BackendSelector()
 print(f"\n2. WASM Support:")
 print(f"   Available: {selector.is_wasm_available()}")
-print(f"   Current Backend: {selector.backend}")
+print(f"   Selector: {selector}")
 
 # Fallback check
 print(f"\n3. Fallback Functions:")
@@ -174,7 +174,7 @@ except Exception as e:
 
 print("\n" + "="*60)
 if selector.is_wasm_available():
-    print("✓ WASM support enabled - you'll see 50-100x speedups!")
+    print("✓ WASM support enabled - benchmark your workload for observed speedups.")
 else:
     print("⚠ WASM not available - using Python fallback")
     print("  To enable WASM: pip install wasmtime")
@@ -221,7 +221,7 @@ selector = BackendSelector(prefer_backend=Backend.PYTHON)
 3. Check current backend:
    ```python
    selector = BackendSelector()
-   print(f"Current: {selector.backend}")
+   print(f"Current selector: {selector}")
    ```
 
 ### Issue: ImportError on Windows
@@ -263,14 +263,13 @@ except RuntimeError as e:
 ### Environment Variables
 
 ```bash
-# Force Python backend
-export MULTILINGUAL_BACKEND=python
+# Backend selection for runtime is controlled in code:
+#   BackendSelector(prefer_backend=Backend.AUTO | Backend.WASM | Backend.PYTHON)
 
-# Force WASM backend (will fail if unavailable)
-export MULTILINGUAL_BACKEND=wasm
-
-# Enable verbose logging
-export MULTILINGUAL_DEBUG=1
+# For test suites only (tests/conftest.py):
+export WASM_BACKEND=auto      # default
+export WASM_BACKEND=wasm      # force WASM tests
+export WASM_BACKEND=fallback  # force Python fallback tests
 ```
 
 ---
@@ -278,6 +277,8 @@ export MULTILINGUAL_DEBUG=1
 ## Performance Expectations
 
 ### Speedup by Operation
+
+> The numbers below are illustrative benchmark results, not guaranteed performance.
 
 | Operation | Python | WASM | Speedup |
 |-----------|--------|------|---------|
@@ -290,7 +291,7 @@ export MULTILINGUAL_DEBUG=1
 
 ### When You'll See Benefits
 
-**High speedup (50-100x)**:
+**High speedup potential (benchmark-dependent)**:
 - Matrix operations with n > 100
 - Cryptographic operations
 - Scientific computing (Monte Carlo, numerical integration)
@@ -339,7 +340,7 @@ pip uninstall multilingualprogramming
 
 | Component | Requirement |
 |-----------|-------------|
-| Python | 3.9+ |
+| Python | 3.12+ |
 | RAM | 512 MB |
 | Disk | 150 MB (with WASM) |
 | OS | Windows, Linux, macOS |
@@ -362,8 +363,8 @@ pip install -e ".[dev,wasm]"
 pytest tests/wasm_corpus_test.py
 pytest tests/wasm_comprehensive_test.py
 
-# Build WASM modules (requires Rust + cranelift)
-./build_wasm.sh
+# Validate WASM codegen and backend wiring
+pytest tests/wasm_codegen_poc_test.py
 ```
 
 ---
@@ -390,7 +391,7 @@ pytest tests/wasm_comprehensive_test.py
 
 ### Documentation
 
-- 📖 [Main Documentation](https://johnsamuelwrites.github.io/multilingual/)
+- 📖 [Main Documentation](https://johnsamuel.info/multilingual/)
 - 📖 [WASM Developer Guide](./WASM_DEVELOPMENT.md)
 - 📖 [Performance Tuning](./WASM_PERFORMANCE_TUNING.md)
 
@@ -428,4 +429,4 @@ print(f"WASM: {BackendSelector().is_wasm_available()}")
 
 **Version**: PyPI Distribution Final
 **Last Updated**: February 22, 2026
-**Status**: ✅ Production Ready
+**Status**: Stable; validate for your workload/platform requirements.

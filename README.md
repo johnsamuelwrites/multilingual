@@ -60,6 +60,24 @@ Details:
 Source files for this language use the `.ml` extension (for example: `hello.ml`).
 Requires Python 3.12 or newer.
 
+### Try The Playground (No Install Required)
+
+You can try `multilingual` directly in your browser:
+
+- Playground: https://johnsamuel.info/multilingual/playground.html
+
+The playground lets you:
+
+- Write code in supported human languages
+- Run full execution in Pyodide
+- Inspect generated Python
+- Inspect generated WAT/WASM output
+- Inspect generated Rust bridge code (Wasmtime workflow)
+
+If you are evaluating the project, please test the playground with your language and open an issue with feedback:
+
+- Issues: https://github.com/johnsamuelwrites/multilingual/issues
+
 ### 1. Install
 
 PyPI package: https://pypi.org/project/multilingualprogramming/
@@ -108,7 +126,10 @@ imprimir("Hola mundo")
 Start REPL:
 
 ```bash
-# 1) Default mode (English keywords)
+# 0) Direct interactive mode (like `python`)
+multilingual
+
+# 1) Explicit REPL command (same behavior as above)
 multilingual repl
 
 # 2) French mode
@@ -116,9 +137,16 @@ multilingual repl --lang fr
 
 # Optional: show generated Python while executing
 multilingual repl --show-python
+
+# Optional: show generated WAT (WebAssembly Text) code while executing
+multilingual repl --show-wat
+
+# Optional: show generated Rust/Wasmtime bridge code while executing
+multilingual repl --show-rust
 ```
 
 Inside the REPL, type code and press Enter to execute.
+Both `multilingual` and `multilingual repl` start the same REPL.
 
 Default mode example (English):
 
@@ -159,6 +187,8 @@ REPL commands:
 - `:help` show commands
 - `:language <code>` switch language
 - `:python` toggle generated Python display
+- `:wat` toggle generated WAT (WebAssembly Text) display
+- `:rust` toggle generated Rust/Wasmtime bridge code display
 - `:reset` clear session state
 - `:kw [XX]` show language keywords
 - `:ops [XX]` show operators and symbols
@@ -181,12 +211,19 @@ print("Hello world")
 Run it:
 
 ```bash
+multilingual hello.ml
+```
+
+Equivalent explicit form:
+
+```bash
 multilingual run hello.ml
 ```
 
 Optional (force language instead of auto-detect):
 
 ```bash
+multilingual hello.ml --lang fr
 multilingual run hello.ml --lang fr
 ```
 
@@ -305,6 +342,7 @@ afficher("a + b =", a + b)
 
 Use this README for setup and workflow; use `docs/` for design rationale and policy details.
 
+- Browser playground (interactive): https://johnsamuel.info/multilingual/playground.html
 - Usage guide: [USAGE.md](USAGE.md)
 - Examples guide: [examples/README.md](examples/README.md)
 - Detailed reference: [docs/reference.md](docs/reference.md)

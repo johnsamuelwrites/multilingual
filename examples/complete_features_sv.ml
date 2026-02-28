@@ -131,3 +131,141 @@ skriv(a, rest, init, b, c, mellan, d)
 skriv(sorterad(kvadrerad_mangd))
 skriv(potens_resultat, divmod_resultat)
 skriv(delegerad)
+
+# Numeric literals
+lat hex_tal = 0xFF
+lat okt_tal = 0o17
+lat bin_tal = 0b1010
+lat sci_tal = 1.5e3
+
+# Augmented assignments
+lat okad = 10
+okad += 5
+okad -= 2
+okad *= 3
+okad //= 4
+okad %= 3
+
+# Bitwise operators
+lat bit_och = 0b1010 & 0b1100
+lat bit_eller = 0b1010 | 0b0101
+lat bit_xor = 0b1010 ^ 0b1111
+lat bit_vanster = 1 << 3
+lat bit_hoger = 64 >> 2
+
+# Chained assignment
+lat kedja_a = kedja_b = kedja_c = 0
+
+# Type annotations
+lat typad: heltal = 99
+
+definiera annoterad(x: heltal, y: flyttal) -> strang:
+    retur strang(x + y)
+
+# Ternary expression
+lat ternar = "yes" om typad > 0 annars "no"
+
+# Default params, *args, **kwargs
+definiera flera_parametrar(base, extra=1, *args, **kwargs):
+    retur base + extra + summa(args)
+lat flera_resultat = flera_parametrar(10, 2, 3, 4, key=5)
+
+# Lambda
+lat kvadrat = lambda x: x * x
+
+# List/dict comprehensions and generator expression
+lat lista_c = [x * 2 for x i intervall(4)]
+lat dict_c = {strang(k): k * k for k i intervall(3)}
+lat gen_c = lista(x + 1 for x i intervall(3))
+lat nastlad_c = [n + m for n i intervall(2) for m i intervall(2)]
+lat filter_c = [x for x i intervall(6) om x % 2 == 0]
+
+# try/except/else
+lat prova_annars = 0
+forsok:
+    prova_annars = heltal("7")
+utom ValueError:
+    prova_annars = -1
+annars:
+    prova_annars += 1
+
+# Exception chaining
+lat kedjad = Falskt
+forsok:
+    forsok:
+        kasta ValueError("v")
+    utom ValueError som ve:
+        kasta RuntimeError("r") fran ve
+utom RuntimeError:
+    kedjad = Sant
+
+# Multiple except handlers
+lat flera_undantag = 0
+forsok:
+    kasta TypeError("t")
+utom ValueError:
+    flera_undantag = 1
+utom TypeError:
+    flera_undantag = 2
+
+# Match/case with default
+lat match_varde = 2
+lat match_resultat = "other"
+matcha match_varde:
+    fall 1:
+        match_resultat = "one"
+    fall 2:
+        match_resultat = "two"
+    standard:
+        match_resultat = "default"
+
+# Decorator
+definiera fordubblare(func):
+    definiera omslag(*args, **kwargs):
+        retur func(*args, **kwargs) * 2
+    retur omslag
+
+@fordubblare
+definiera tio():
+    retur 10
+
+lat deko_resultat = tio()
+
+# Multiple inheritance, static/class methods, property
+klass Blandning:
+    definiera blanda(self):
+        retur 1
+
+klass BasTva:
+    definiera __init__(self, start):
+        self.value = start
+
+klass Kombinerad(BasTva, Blandning):
+    @staticmethod
+    definiera etikett():
+        retur "combined"
+    @classmethod
+    definiera bygg(cls, v):
+        retur cls(v)
+    @property
+    definiera dubblad(self):
+        retur self.value * 2
+
+lat komb_obj = Kombinerad.bygg(3)
+lat egenskap = komb_obj.dubblad
+
+# Docstring
+definiera med_doc():
+    """A docstring."""
+    retur Sant
+
+skriv(hex_tal, okt_tal, bin_tal, sci_tal)
+skriv(okad, bit_och, bit_eller, bit_xor, bit_vanster, bit_hoger)
+skriv(kedja_a, kedja_b, kedja_c)
+skriv(typad, annoterad(3, 1.5), ternar)
+skriv(flera_resultat, kvadrat(5))
+skriv(lista_c, dict_c, gen_c)
+skriv(nastlad_c, filter_c)
+skriv(prova_annars, kedjad, flera_undantag)
+skriv(match_resultat, deko_resultat, egenskap)
+skriv(med_doc())

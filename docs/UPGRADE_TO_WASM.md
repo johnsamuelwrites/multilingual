@@ -6,7 +6,7 @@
 
 - ✅ 100% backward compatible
 - ✅ No code changes required
-- ✅ Instant access to 50-100x speedups
+- ✅ Potential speedups on compute-intensive workloads (benchmark-dependent)
 - ✅ Automatic Python fallback
 
 ---
@@ -34,7 +34,7 @@ from multilingualprogramming.runtime.backend_selector import BackendSelector
 
 selector = BackendSelector()
 print(f"WASM Enabled: {selector.is_wasm_available()}")
-# If True, you're getting 50-100x speedups!
+# If True, WASM is enabled; benchmark your workload for actual speedup.
 ```
 
 ---
@@ -44,7 +44,7 @@ print(f"WASM Enabled: {selector.is_wasm_available()}")
 ### New Features
 
 1. **WASM Backend**
-   - 50-100x performance improvement
+   - Performance can improve significantly on compute-intensive operations (benchmark-dependent)
    - Transparent, automatic selection
    - Python fallback always available
 
@@ -81,7 +81,7 @@ print(f"WASM Enabled: {selector.is_wasm_available()}")
 | Standard library | ✅ | ✅ | Enhanced |
 | Code syntax | ✅ | ✅ | No changes |
 | Tests | ✅ | ✅+ | 33+ new tests |
-| Performance | ✅ | ✅✅✅ | 50-100x faster |
+| Performance | ✅ | ✅✅✅ | Workload-dependent; benchmark recommended |
 | WASM support | ❌ | ✅ | **NEW** |
 
 ---
@@ -137,12 +137,11 @@ ast = parser.parse()
 generator = PythonCodeGenerator()
 code = generator.generate(ast)
 executor = ProgramExecutor()
-executor.execute(code)
-output = executor.get_output()
-print(output)  # Takes 2+ seconds
+result = executor.execute(source)
+print(result.output)  # Takes 2+ seconds
 ```
 
-### After (v0.4) - Automatic 100x Speedup!
+### After (v0.4) - Automatic WASM Acceleration
 
 ```python
 # Your existing v0.3 code works unchanged!
@@ -168,9 +167,8 @@ ast = parser.parse()
 generator = PythonCodeGenerator()
 code = generator.generate(ast)
 executor = ProgramExecutor()
-executor.execute(code)
-output = executor.get_output()
-print(output)  # Now takes 20ms! (100x faster!)
+result = executor.execute(source)
+print(result.output)  # Performance varies by workload and hardware.
 ```
 
 **No code changes needed!** WASM acceleration is automatic.
@@ -403,7 +401,7 @@ pip install "multilingualprogramming==0.3.0"
 - [ ] Verify WASM: `python -c "from multilingualprogramming.runtime.backend_selector import BackendSelector; print(BackendSelector().is_wasm_available())"`
 - [ ] Review new documentation
 - [ ] Benchmark your critical paths
-- [ ] Celebrate 50-100x speedups! 🎉
+- [ ] Benchmark critical paths and record observed speedups
 
 ---
 
@@ -444,15 +442,15 @@ pip install "multilingualprogramming==0.3.0"
 | Code compatibility | ✅ 100% |
 | Breaking changes | ✅ None |
 | Required code changes | ✅ None |
-| Performance gain | ✅ 50-100x |
+| Performance gain | ✅ Workload-dependent |
 | Installation difficulty | ✅ Easy (1 command) |
 | Rollback difficulty | ✅ Easy (1 command) |
 
-**Result**: Painless upgrade with massive performance gains! 🚀
+**Result**: Backward-compatible upgrade path with optional WASM acceleration.
 
 ---
 
 **Version**: Documentation Suite Final
 **Release**: v0.4.0
-**Status**: ✅ Production Ready
+**Status**: Stable; validate performance and compatibility in your target environment.
 **Support**: [GitHub Issues](https://github.com/johnsamuelwrites/multilingual/issues)

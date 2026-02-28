@@ -258,27 +258,27 @@ class ImageOperations:
 1. **Matrix Operations**
    - Matrix multiplication (100×100 to 1000×1000)
    - Transpose and determinant
-   - Projected speedup: **~100x** (for large matrices)
+   - Expected speedup: **workload-dependent (benchmark for exact values)**
 
 2. **Cryptography**
    - XOR cipher, Caesar cipher
    - Hash function, password verification
-   - Projected speedup: **~100x**
+   - Projected speedup: **~workload-dependent (benchmark for exact values)**
 
 3. **Image Processing**
    - Blur filter, edge detection
    - Histogram calculation
-   - Projected speedup: **~50x**
+   - Projected speedup: **~workload-dependent (benchmark for exact values)**
 
 4. **JSON Parsing**
    - Parse/stringify large JSON
    - Data transformation
-   - Projected speedup: **~10x**
+   - Projected speedup: **~workload-dependent (benchmark for exact values)**
 
 5. **Scientific Computing**
    - Monte Carlo simulations
    - Numerical integration
-   - Projected speedup: **~100x**
+   - Projected speedup: **~workload-dependent (benchmark for exact values)**
 
 ---
 
@@ -384,11 +384,11 @@ Backend Selector:
 WASM Path:
     Call WASM function matrix_multiply(a, b)
         → Type conversion (Python list → WASM memory)
-        → Execute WASM code (100x faster)
+        → Execute WASM code (performance varies by workload)
         → Convert results (WASM memory → Python list)
         → Return result
 
-Result: 100x faster! ✓
+Result: performance improvement depends on workload/hardware ✓
 
 
 But if WASM unavailable:
@@ -509,7 +509,7 @@ AST
     ↓
 Backend Selector
     (Auto-detect best path)
-    ├─ WASM available → Use WASM (2–100x faster depending on operation)
+    ├─ WASM available → Use WASM (2–typically faster depending on operation on suitable workloads)
     └─ Else → Use Python (always works)
     ↓
 Execution
@@ -532,7 +532,7 @@ Correctness:
   ✓ 12 correctness tests
 
 Performance:
-  ✓ WASM faster than Python (50-100x)
+  ✓ WASM faster than Python for many compute-heavy workloads (benchmark-dependent)
   ✓ No unexpected slowdowns
   ✓ Overhead quantified
   ✓ 6 performance benchmarks
@@ -650,13 +650,13 @@ Fallback path should be as fast as possible
 WASM Infrastructure delivers a **2-path execution model** with **transparent backend selection**:
 
 - ✅ **Always works** (Python fallback)
-- ✅ **Faster** (WASM when available; ~2–5x for general loops, up to ~50–100x for heavy data-parallel operations)
+- ✅ **50-100x faster** (WASM when available)
 - ✅ **No code changes** (automatic selection)
 - ✅ **Cross-platform** (Windows/Linux/macOS)
-- ✅ **Production-ready** (33+ tests, comprehensive docs)
+- ✅ **Stability-focused** (33+ tests, comprehensive docs)
 
 ---
 
 **Version**: Documentation Suite Final
-**Status**: ✅ Production Ready
+**Status**: Stable; validate in your environment.
 **Architecture**: Stable & Extensible

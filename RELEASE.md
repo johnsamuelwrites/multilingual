@@ -1,6 +1,38 @@
 # Release Notes
 
-## v0.3.0 (Current)
+## v0.4.0 
+
+### WAT/WASM Code Generation
+- New `WATCodeGenerator` compiles the multilingual AST directly to WebAssembly Text (WAT).
+- Browser playground shows the generated WAT and executes it via wabt.js + native `WebAssembly.instantiate()`.
+- Playground also shows the generated Rust/Wasmtime bridge scaffold for local compilation.
+- Regression tests validate WAT output across all 17 languages (`tests/complete_features_wat_test.py`).
+
+### WASM Backend
+- WebAssembly compilation target with performance gains on compute-intensive operations.
+- Python ↔ WASM bridge for type conversion and memory management.
+- Smart backend selector for auto-detection and transparent fallback to Python.
+- 25+ pure Python fallback implementations for guaranteed cross-platform compatibility.
+- 20 multilingual WASM corpus projects in 4 languages each.
+- Documentation suite: WASM architecture overview, installation guides, performance tuning, troubleshooting, and FAQ.
+
+### REPL Code-View Commands
+- `:wat` (`:wasm`) — toggle display of generated WAT before execution.
+- `:rust` (`:wasmtime`) — toggle display of generated Rust/Wasmtime bridge code before execution.
+- `--show-wat` and `--show-rust` startup flags for the `repl` subcommand mirror the interactive toggles.
+- Extends the existing `:python` / `--show-python` pattern uniformly across all three backends.
+
+### Python 3.12 Feature Completion
+- All 17 `complete_features_XX.ml` example files now cover the full Python 3.12 feature checklist: numeric literals, augmented and bitwise assignments, chained assignment, type annotations, ternary expressions, default/variadic parameters, lambdas, list/dict/generator/nested/filtered comprehensions, `try/except/else`, exception chaining, multiple handlers, `match/case/default`, decorators, multiple inheritance, static/class methods, properties, and docstrings.
+- Keyword-variable name clashes (Spanish `y` = AND, Danish/Swedish `i` = IN) resolved in example files.
+
+### Quality and Fixes
+- Fixed broken relative links (`../CHANGELOG.md`, `../USAGE.md`, `../examples/README.md`) in `docs/reference.md` and `docs/fr/programmation.md`.
+- CLI `multilingual run <file>.ml` correctly handles `.ml` file execution.
+- New tests: `language_completeness_cli_test.py`, `operators_cli_test.py`.
+- 1671 tests passing, 2 skipped (WASM Rust compile requires `rustc` wasm32 target).
+
+## v0.3.0
 
 ### Complete Features Repository
 - Created comprehensive `examples/complete_features_XX.ml` files for all 17 supported languages.
@@ -73,9 +105,9 @@
 ### Documentation
 - Simplified and reorganized top-level documentation.
 - Updated `README.md` with a clearer multilingual-first introduction and improved REPL guidance.
-- Added extensive multilingual REPL smoke-test examples in `docs/README.md`.
+- Added extensive multilingual REPL smoke-test examples in `docs/reference.md`.
 - Added `docs/language_onboarding.md` documenting the data-driven process for adding new languages.
-- Improved cross-linking between `README.md`, `USAGE.md`, and `docs/README.md`.
+- Improved cross-linking between `README.md`, `USAGE.md`, and `docs/reference.md`.
 - Moved detailed execution/AST examples and full example command list into `USAGE.md`.
 
 ### Quality and Validation

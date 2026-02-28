@@ -30,6 +30,7 @@ from multilingualprogramming.parser.semantic_analyzer import (
 )
 from multilingualprogramming.parser.error_messages import ErrorMessageRegistry
 from multilingualprogramming.codegen.python_generator import PythonCodeGenerator
+from multilingualprogramming.codegen.wat_generator import WATCodeGenerator
 from multilingualprogramming.codegen.runtime_builtins import RuntimeBuiltins
 from multilingualprogramming.codegen.executor import ProgramExecutor, ExecutionResult
 from multilingualprogramming.codegen.repl import REPL
@@ -63,6 +64,7 @@ __all__ = [
     "SemanticAnalyzer",
     "ErrorMessageRegistry",
     "PythonCodeGenerator",
+    "WATCodeGenerator",
     "RuntimeBuiltins",
     "ProgramExecutor",
     "ExecutionResult",

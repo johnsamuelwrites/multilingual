@@ -5,7 +5,7 @@ The project provides several independent modules.
 ## Related Docs
 
 - Quick start: [README.md](README.md)
-- Detailed reference: [docs/README.md](docs/README.md)
+- Detailed reference: [docs/reference.md](docs/reference.md)
 
 ## Numerals
 

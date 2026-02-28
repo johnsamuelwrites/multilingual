@@ -131,3 +131,141 @@ imprima(a, resto, init, b, c, meio, d)
 imprima(ordenado(conjunto_quadrados))
 imprima(resultado_potencia, resultado_divmod)
 imprima(delegado)
+
+# Numeric literals
+seja num_hex = 0xFF
+seja num_oct = 0o17
+seja num_bin = 0b1010
+seja num_cient = 1.5e3
+
+# Augmented assignments
+seja aumentado = 10
+aumentado += 5
+aumentado -= 2
+aumentado *= 3
+aumentado //= 4
+aumentado %= 3
+
+# Bitwise operators
+seja bit_e = 0b1010 & 0b1100
+seja bit_ou = 0b1010 | 0b0101
+seja bit_xor = 0b1010 ^ 0b1111
+seja bit_esq = 1 << 3
+seja bit_dir = 64 >> 2
+
+# Chained assignment
+seja cadeia_a = cadeia_b = cadeia_c = 0
+
+# Type annotations
+seja tipado: inteiro = 99
+
+defina anotado(x: inteiro, y: real) -> texto:
+    retorne texto(x + y)
+
+# Ternary expression
+seja ternario = "yes" se tipado > 0 senão "no"
+
+# Default params, *args, **kwargs
+defina multi_parametros(base, extra=1, *args, **kwargs):
+    retorne base + extra + soma(args)
+seja resultado_multi = multi_parametros(10, 2, 3, 4, key=5)
+
+# Lambda
+seja quadrado = lambda x: x * x
+
+# List/dict comprehensions and generator expression
+seja lista_c = [x * 2 para x em intervalo(4)]
+seja dict_c = {texto(k): k * k para k em intervalo(3)}
+seja gen_c = lista(x + 1 para x em intervalo(3))
+seja aninhado_c = [i + j para i em intervalo(2) para j em intervalo(2)]
+seja filtro_c = [x para x em intervalo(6) se x % 2 == 0]
+
+# try/except/else
+seja tente_senao = 0
+tente:
+    tente_senao = inteiro("7")
+exceto ValueError:
+    tente_senao = -1
+senão:
+    tente_senao += 1
+
+# Exception chaining
+seja encadeado = Falso
+tente:
+    tente:
+        lance ValueError("v")
+    exceto ValueError como ve:
+        lance RuntimeError("r") de ve
+exceto RuntimeError:
+    encadeado = Verdadeiro
+
+# Multiple except handlers
+seja multi_excecao = 0
+tente:
+    lance TypeError("t")
+exceto ValueError:
+    multi_excecao = 1
+exceto TypeError:
+    multi_excecao = 2
+
+# Match/case with default
+seja valor_match = 2
+seja resultado_match = "other"
+corresponda valor_match:
+    caso 1:
+        resultado_match = "one"
+    caso 2:
+        resultado_match = "two"
+    padrao:
+        resultado_match = "default"
+
+# Decorator
+defina duplicador(func):
+    defina envoltorio(*args, **kwargs):
+        retorne func(*args, **kwargs) * 2
+    retorne envoltorio
+
+@duplicador
+defina dez():
+    retorne 10
+
+seja resultado_deco = dez()
+
+# Multiple inheritance, static/class methods, property
+classe Mistura:
+    defina mistura(self):
+        retorne 1
+
+classe BaseDois:
+    defina __init__(self, start):
+        self.value = start
+
+classe Combinado(BaseDois, Mistura):
+    @staticmethod
+    defina rotulo():
+        retorne "combined"
+    @classmethod
+    defina construir(cls, v):
+        retorne cls(v)
+    @property
+    defina dobrado(self):
+        retorne self.value * 2
+
+seja combinado_obj = Combinado.construir(3)
+seja propriedade = combinado_obj.dobrado
+
+# Docstring
+defina com_doc():
+    """A docstring."""
+    retorne Verdadeiro
+
+imprima(num_hex, num_oct, num_bin, num_cient)
+imprima(aumentado, bit_e, bit_ou, bit_xor, bit_esq, bit_dir)
+imprima(cadeia_a, cadeia_b, cadeia_c)
+imprima(tipado, anotado(3, 1.5), ternario)
+imprima(resultado_multi, quadrado(5))
+imprima(lista_c, dict_c, gen_c)
+imprima(aninhado_c, filtro_c)
+imprima(tente_senao, encadeado, multi_excecao)
+imprima(resultado_match, resultado_deco, propriedade)
+imprima(com_doc())

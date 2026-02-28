@@ -1,0 +1,1750 @@
+<!DOCTYPE html>
+<!--
+  SPDX-FileCopyrightText: 2024 John Samuel <johnsamuelwrites@gmail.com>
+  SPDX-License-Identifier: GPL-3.0-or-later
+
+  Interactive Playground — Multilingual Programming Language
+  Architecture
+  ────────────
+  • Pyodide  — CPython 3.12 compiled to WASM; runs the full interpreter.
+  • WATCodeGenerator — walks the AST inside Pyodide; emits valid WAT.
+  • wabt.js  — WABT on WASM; compiles WAT → binary, run by the browser.
+-->
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Multilingual Programming — Interactive Playground</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+
+  <!-- Pyodide -->
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.26.0/full/pyodide.js"></script>
+
+  <!-- wabt.js: WAT → binary WASM -->
+  <script src="https://cdn.jsdelivr.net/npm/wabt@1.0.36/index.js"></script>
+
+  <!-- CodeMirror 5 -->
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css"
+        crossorigin="anonymous">
+  <link rel="stylesheet" id="cm-theme-dark"
+        href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css"
+        crossorigin="anonymous">
+  <link rel="stylesheet" id="cm-theme-light"
+        href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/eclipse.min.css"
+        crossorigin="anonymous">
+
+  <style>
+  /* ════════════════════════════════════════════════════════════════
+     CSS Design Tokens — dark mode (default)
+  ════════════════════════════════════════════════════════════════ */
+  :root,
+  [data-theme="dark"] {
+    --bg:          #060614;
+    --bg-grid:     rgba(100, 90, 220, 0.04);
+    --surface:     rgba(13, 13, 40, 0.82);
+    --surface2:    rgba(18, 18, 52, 0.90);
+    --surface3:    rgba(22, 22, 58, 0.95);
+    --border:      rgba(124, 106, 247, 0.18);
+    --border2:     rgba(124, 106, 247, 0.10);
+    --accent:      #7c6af7;
+    --accent-glow: rgba(124, 106, 247, 0.40);
+    --accent2:     #00d4ff;
+    --accent2-glow:rgba(0, 212, 255, 0.25);
+    --green:       #4ade80;
+    --red:         #f87171;
+    --yellow:      #fbbf24;
+    --text:        #e2e8f0;
+    --text-dim:    #64748b;
+    --text-muted:  #94a3b8;
+    --code-bg:     #0a0a1e;
+    --editor-bg:   #282a36;
+    --cm-theme:    dracula;
+    --radius:      10px;
+    --radius-sm:   6px;
+    --shadow:      0 4px 24px rgba(0,0,0,0.5);
+    --shadow-glow: 0 0 30px var(--accent-glow);
+    --mono: 'JetBrains Mono', 'Fira Code', monospace;
+    --sans: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  [data-theme="light"] {
+    --bg:          #f0f4ff;
+    --bg-grid:     rgba(99, 102, 241, 0.05);
+    --surface:     rgba(255, 255, 255, 0.90);
+    --surface2:    rgba(248, 250, 255, 0.95);
+    --surface3:    rgba(241, 245, 255, 1.00);
+    --border:      rgba(99, 102, 241, 0.20);
+    --border2:     rgba(99, 102, 241, 0.10);
+    --accent:      #4f46e5;
+    --accent-glow: rgba(79, 70, 229, 0.25);
+    --accent2:     #0891b2;
+    --accent2-glow:rgba(8, 145, 178, 0.20);
+    --green:       #16a34a;
+    --red:         #dc2626;
+    --yellow:      #d97706;
+    --text:        #1e293b;
+    --text-dim:    #64748b;
+    --text-muted:  #475569;
+    --code-bg:     #f8fafc;
+    --editor-bg:   #f8f8f2;
+    --cm-theme:    eclipse;
+    --radius:      10px;
+    --radius-sm:   6px;
+    --shadow:      0 4px 24px rgba(0,0,0,0.08);
+    --shadow-glow: 0 0 20px var(--accent-glow);
+    --mono: 'JetBrains Mono', 'Fira Code', monospace;
+    --sans: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  /* ── Reset ────────────────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    height: 100%; font-family: var(--sans);
+    background: var(--bg); color: var(--text);
+    line-height: 1.5; overflow: hidden;
+    transition: background 0.3s ease, color 0.3s ease;
+  }
+  a { color: var(--accent2); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /* ── Animated Background ──────────────────────────────────────── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background-image:
+      linear-gradient(var(--bg-grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--bg-grid) 1px, transparent 1px);
+    background-size: 48px 48px;
+  }
+  @supports ((-webkit-mask-image: radial-gradient(#000, transparent)) or
+             (mask-image: radial-gradient(#000, transparent))) {
+    body::before {
+      -webkit-mask-image: radial-gradient(ellipse at center, #000 40%, transparent 80%);
+      mask-image: radial-gradient(ellipse at center, #000 40%, transparent 80%);
+    }
+  }
+  body::after {
+    content: '';
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background:
+      radial-gradient(ellipse at 20% 20%, var(--accent-glow) 0%, transparent 45%),
+      radial-gradient(ellipse at 80% 80%, var(--accent2-glow) 0%, transparent 45%);
+    animation: orb-drift 10s ease-in-out infinite alternate;
+    opacity: 0.6;
+  }
+  @keyframes orb-drift {
+    from { transform: translate(0,  0 ) scale(1.00); }
+    to   { transform: translate(20px, -15px) scale(1.08); }
+  }
+
+  /* ── App Shell ────────────────────────────────────────────────── */
+  #app {
+    display: flex; flex-direction: column; height: 100vh;
+    position: relative; z-index: 1;
+  }
+
+  /* ── Glassmorphism ────────────────────────────────────────────── */
+  .glass {
+    background: var(--surface);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border-bottom: 1px solid var(--border);
+    transition: background 0.3s ease, border-color 0.3s ease;
+  }
+
+  /* ── Header ───────────────────────────────────────────────────── */
+  header {
+    padding: .5rem 1.2rem;
+    display: flex; align-items: center; gap: 1rem;
+    flex-shrink: 0;
+  }
+  .h-logo {
+    width: 38px; height: 38px; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.3rem; line-height: 1;
+    box-shadow: 0 0 16px var(--accent-glow);
+  }
+  .h-text { flex: 1; min-width: 0; }
+  .h-title {
+    font-size: .95rem; font-weight: 700; letter-spacing: -.01em;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .h-sub {
+    font-size: .68rem; color: var(--text-dim);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .h-nav {
+    display: flex; align-items: center; gap: .5rem;
+    flex-shrink: 0;
+  }
+  .h-nav a {
+    font-size: .8rem; color: var(--text-muted);
+    padding: .3rem .6rem; border-radius: var(--radius-sm);
+    transition: color 0.15s, background 0.15s;
+  }
+  .h-nav a:hover {
+    color: var(--text); background: var(--border2);
+    text-decoration: none;
+  }
+
+  /* theme toggle */
+  #theme-toggle {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); width: 34px; height: 34px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 1rem;
+    transition: background 0.2s, border-color 0.2s, transform 0.15s;
+  }
+  #theme-toggle:hover { background: var(--border); transform: scale(1.1) rotate(15deg); }
+
+  /* ── Toolbar ──────────────────────────────────────────────────── */
+  #toolbar {
+    padding: .45rem 1rem;
+    display: flex; align-items: center; gap: .75rem;
+    flex-wrap: wrap; flex-shrink: 0;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+  }
+  #toolbar label {
+    font-size: .73rem; font-weight: 500;
+    color: var(--text-dim); white-space: nowrap;
+    text-transform: uppercase; letter-spacing: .06em;
+  }
+
+  /* Language select — custom styled */
+  .lang-wrap {
+    position: relative; display: flex; align-items: center;
+  }
+  .lang-wrap::before {
+    content: '🌐';
+    position: absolute; left: .6rem; font-size: .85rem;
+    pointer-events: none; z-index: 1;
+  }
+  #lang-select {
+    appearance: none; -webkit-appearance: none;
+    background: var(--surface3); color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: .32rem 2.2rem .32rem 2.2rem;
+    font-size: .85rem; font-family: var(--sans);
+    cursor: pointer; min-width: 185px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  #lang-select:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+  .lang-wrap::after {
+    content: '▾';
+    position: absolute; right: .8rem; font-size: .75rem;
+    color: var(--text-dim); pointer-events: none;
+  }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex; align-items: center; gap: .35rem;
+    padding: .36rem .9rem; border: none; border-radius: 24px;
+    font-size: .85rem; font-weight: 600; font-family: var(--sans);
+    cursor: pointer; transition: transform 0.15s, box-shadow 0.2s, opacity 0.15s;
+    white-space: nowrap;
+  }
+  .btn:active { transform: scale(.96); }
+  .btn:disabled { opacity: .38; cursor: not-allowed; }
+
+  #run-btn {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #fff;
+    box-shadow: 0 2px 16px var(--accent-glow);
+    position: relative; overflow: hidden;
+  }
+  #run-btn::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, transparent, rgba(255,255,255,0.15));
+    opacity: 0; transition: opacity 0.2s;
+  }
+  #run-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 24px var(--accent-glow), 0 0 40px var(--accent2-glow);
+  }
+  #run-btn:hover:not(:disabled)::before { opacity: 1; }
+
+  #clear-btn {
+    background: var(--surface3); color: var(--text-muted);
+    border: 1px solid var(--border);
+  }
+  #clear-btn:hover { background: var(--border); color: var(--text); }
+
+  /* Status bar */
+  #status-bar {
+    margin-left: auto;
+    display: flex; align-items: center; gap: .45rem;
+    font-size: .75rem; color: var(--text-dim);
+    white-space: nowrap;
+  }
+  .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--text-dim); flex-shrink: 0;
+    transition: background 0.3s;
+  }
+  .dot.loading { background: var(--yellow); animation: ripple-pulse 1.1s ease-in-out infinite; }
+  .dot.ready   { background: var(--green);  box-shadow: 0 0 6px var(--green); }
+  .dot.error   { background: var(--red);    box-shadow: 0 0 6px var(--red); }
+  .dot.running { background: var(--accent2);animation: ripple-pulse 0.7s ease-in-out infinite; }
+  @keyframes ripple-pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.3;transform:scale(.8)} }
+
+  /* ── Main split pane ──────────────────────────────────────────── */
+  #main {
+    display: grid; grid-template-columns: 1fr 4px 1fr;
+    flex: 1; min-height: 0;
+  }
+
+  /* ── Panes ────────────────────────────────────────────────────── */
+  .pane {
+    display: flex; flex-direction: column; min-height: 0;
+    background: var(--surface);
+    border: none;
+  }
+
+  .pane-header {
+    padding: .32rem .9rem;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    font-size: .7rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: .07em;
+    color: var(--text-dim);
+    display: flex; align-items: center; gap: .5rem;
+    flex-shrink: 0;
+  }
+  .pane-icon { color: var(--accent2); font-style: normal; }
+  .lang-badge {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #fff; border-radius: 20px;
+    padding: 1px 8px; font-size: .65rem; font-weight: 700;
+    letter-spacing: .05em;
+    box-shadow: 0 0 8px var(--accent-glow);
+  }
+
+  /* ── Resizer ──────────────────────────────────────────────────── */
+  #resizer {
+    background: var(--border);
+    cursor: col-resize;
+    transition: background 0.2s;
+    position: relative;
+  }
+  #resizer::before {
+    content: '⋮';
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%,-50%);
+    color: var(--text-dim); font-size: .9rem;
+    pointer-events: none; opacity: 0;
+    transition: opacity 0.2s;
+  }
+  #resizer:hover, #resizer.dragging {
+    background: var(--accent);
+    box-shadow: 0 0 12px var(--accent-glow);
+  }
+  #resizer:hover::before, #resizer.dragging::before { opacity: 1; }
+
+  /* ── Editor ───────────────────────────────────────────────────── */
+  #editor-pane { border-right: none; }
+  #editor-wrapper { flex: 1; overflow: auto; min-height: 0; }
+  #editor-wrapper .CodeMirror {
+    height: 100%; font-family: var(--mono); font-size: 13.5px;
+    line-height: 1.65;
+  }
+  #editor-wrapper .CodeMirror span.cm-keyword  { color: #ff79c6 !important; font-weight: 600; }
+  #editor-wrapper .CodeMirror span.cm-string   { color: #50fa7b !important; }
+  #editor-wrapper .CodeMirror span.cm-comment  { color: #6272a4 !important; font-style: italic; }
+  #editor-wrapper .CodeMirror span.cm-number   { color: #bd93f9 !important; }
+  #editor-wrapper .CodeMirror span.cm-operator { color: #8be9fd !important; }
+  [data-theme="dark"]  #editor-wrapper .CodeMirror { background: #1c1e2e; }
+  [data-theme="light"] #editor-wrapper .CodeMirror { background: #fefefe; }
+
+  /* ── Output pane ──────────────────────────────────────────────── */
+  #output-pane { border-left: 1px solid var(--border); }
+
+  /* ── Tabs ─────────────────────────────────────────────────────── */
+  .tabs {
+    display: flex; align-items: stretch;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0; position: relative; overflow: hidden;
+  }
+  .tab-btn {
+    display: flex; align-items: center; gap: .4rem;
+    padding: .48rem 1rem; background: none; border: none;
+    font-size: .75rem; font-weight: 600; font-family: var(--sans);
+    color: var(--text-dim); cursor: pointer;
+    text-transform: uppercase; letter-spacing: .06em;
+    position: relative; transition: color 0.2s;
+    white-space: nowrap;
+  }
+  .tab-btn:hover { color: var(--text-muted); }
+  .tab-btn.active { color: var(--accent2); }
+  .tab-btn.active::after {
+    content: '';
+    position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 2px 2px 0 0;
+    animation: tab-slide-in 0.22s ease;
+  }
+  @keyframes tab-slide-in {
+    from { transform: scaleX(0); opacity: 0; }
+    to   { transform: scaleX(1); opacity: 1; }
+  }
+  .tab-icon { font-size: .85rem; }
+
+  .tab-panel { display: none; flex: 1; overflow: auto; padding: .75rem; min-height: 0; }
+  .tab-panel.active { display: flex; flex-direction: column; gap: .6rem; }
+
+  /* ── Console / Code views ─────────────────────────────────────── */
+  .console, .code-view {
+    flex: 1;
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: .85rem 1rem;
+    font-family: var(--mono); font-size: 13px; line-height: 1.75;
+    white-space: pre-wrap; overflow: auto; color: var(--text);
+    transition: background 0.3s, border-color 0.3s;
+    position: relative;
+  }
+  .code-view { white-space: pre; tab-size: 4; }
+  .console.has-error   { color: var(--red); }
+  .console.has-warning { color: var(--yellow); }
+  .console.empty       { color: var(--text-dim); font-style: italic; }
+
+  /* Scanline overlay on console in dark mode */
+  [data-theme="dark"] .console::before {
+    content: '';
+    position: absolute; inset: 0; pointer-events: none;
+    background: repeating-linear-gradient(
+      0deg, transparent 0px, transparent 3px,
+      rgba(0,0,0,0.04) 3px, rgba(0,0,0,0.04) 4px
+    );
+    border-radius: inherit;
+  }
+
+  /* Blinking cursor at end of console output */
+  .console::after {
+    content: '▌';
+    color: var(--accent2);
+    animation: blink-cursor 1.2s step-end infinite;
+    font-size: .85em;
+  }
+  .console.empty::after, .console.has-error::after, .console.has-warning::after { display: none; }
+  @keyframes blink-cursor { 0%,100%{opacity:1} 50%{opacity:0} }
+
+  /* ── WAT panel layout ─────────────────────────────────────────── */
+  #panel-wat { flex-direction: column; gap: .55rem; }
+
+  /* Pipeline diagram */
+  .pipeline-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: .65rem .9rem;
+    flex-shrink: 0;
+    position: relative; overflow: hidden;
+  }
+  .pipeline-box::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(124,106,247,.07) 0%, rgba(0,212,255,.05) 100%);
+    pointer-events: none;
+  }
+  .pipeline-title {
+    font-size: .7rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .08em; color: var(--accent2); margin-bottom: .4rem;
+  }
+  .pipeline-flow {
+    display: flex; align-items: center; gap: 0;
+    flex-wrap: wrap; gap: .15rem;
+    font-family: var(--mono); font-size: .68rem; line-height: 1;
+  }
+  .pip-node {
+    background: var(--surface3); border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: .25rem .5rem; color: var(--text-muted);
+    white-space: nowrap;
+  }
+  .pip-node.hl { color: var(--accent2); border-color: var(--accent2); box-shadow: 0 0 6px var(--accent2-glow); }
+  .pip-arrow {
+    color: var(--text-dim); padding: 0 .1rem;
+    font-size: .75rem;
+  }
+
+  .wat-label {
+    font-size: .68rem; text-transform: uppercase; letter-spacing: .08em;
+    color: var(--text-dim); flex-shrink: 0;
+    display: flex; align-items: center; gap: .4rem;
+  }
+  .wasm-badge {
+    display: inline-flex; align-items: center; gap: .3rem;
+    background: rgba(0, 212, 255, .1); border: 1px solid rgba(0, 212, 255, .3);
+    border-radius: 4px; padding: 2px 7px;
+    font-size: .65rem; color: var(--accent2); font-weight: 700;
+    box-shadow: 0 0 6px var(--accent2-glow);
+  }
+
+  #wat-split {
+    display: flex; flex-direction: column; gap: .5rem;
+    flex: 1; min-height: 0; overflow: hidden;
+  }
+  #wat-code-wrap  { flex: 3; min-height: 0; display: flex; flex-direction: column; gap: .25rem; }
+  #wasm-exec-wrap { flex: 1; min-height: 80px; display: flex; flex-direction: column; gap: .25rem; }
+  #wat-view, #wasm-exec-console { min-height: 0; }
+
+  /* ── Footer ───────────────────────────────────────────────────── */
+  footer {
+    background: var(--surface2);
+    border-top: 1px solid var(--border);
+    padding: .32rem 1.2rem;
+    font-size: .7rem; color: var(--text-dim);
+    display: flex; align-items: center; justify-content: space-between;
+    flex-shrink: 0; gap: 1rem; flex-wrap: wrap;
+  }
+  footer a { color: var(--text-dim); transition: color 0.15s; }
+  footer a:hover { color: var(--accent2); text-decoration: none; }
+  .footer-pill {
+    display: inline-flex; align-items: center; gap: .3rem;
+    background: var(--border2); border-radius: 20px;
+    padding: 2px 8px;
+  }
+  .footer-pill .dot-sm {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--green); box-shadow: 0 0 4px var(--green);
+  }
+
+  /* ── Responsive ───────────────────────────────────────────────── */
+  @media (max-width: 800px) {
+    #main { grid-template-columns: 1fr; grid-template-rows: 48vh 4px 1fr; }
+    #resizer { cursor: row-resize; }
+    #resizer::before { content: '···'; }
+    #output-pane { border-left: none; border-top: 1px solid var(--border); }
+    .h-nav .nav-github { display: none; }
+    .pipeline-flow { display: none; }
+  }
+  </style>
+</head>
+
+<body>
+<div id="app">
+
+  <!-- ── Header ─────────────────────────────────────────────────── -->
+  <header class="glass">
+    <div class="h-logo">🌍</div>
+    <div class="h-text">
+      <div class="h-title">Multilingual Programming Language</div>
+      <div class="h-sub">Code in 17 human languages · Pyodide WASM · WAT → browser WebAssembly</div>
+    </div>
+    <nav class="h-nav">
+      <a id="home-link" class="nav-home" href="./">Home</a>
+      <a class="nav-github" href="https://github.com/johnsamuelwrites/multilingual" target="_blank" rel="noopener">GitHub</a>
+      <button id="theme-toggle" title="Toggle light / dark mode" aria-label="Toggle theme">🌙</button>
+    </nav>
+  </header>
+
+  <!-- ── Toolbar ────────────────────────────────────────────────── -->
+  <div id="toolbar">
+    <label for="lang-select">Language</label>
+    <div class="lang-wrap">
+      <select id="lang-select" title="Select programming language">
+        <option value="en">English (en)</option>
+        <option value="fr">Français (fr)</option>
+        <option value="es">Español (es)</option>
+        <option value="de">Deutsch (de)</option>
+        <option value="it">Italiano (it)</option>
+        <option value="pt">Português (pt)</option>
+        <option value="nl">Nederlands (nl)</option>
+        <option value="pl">Polski (pl)</option>
+        <option value="sv">Svenska (sv)</option>
+        <option value="da">Dansk (da)</option>
+        <option value="fi">Suomi (fi)</option>
+        <option value="hi">हिन्दी (hi)</option>
+        <option value="ar">العربية (ar)</option>
+        <option value="bn">বাংলা (bn)</option>
+        <option value="ta">தமிழ் (ta)</option>
+        <option value="zh">中文 (zh)</option>
+        <option value="ja">日本語 (ja)</option>
+      </select>
+    </div>
+
+    <button id="run-btn"   class="btn" disabled title="Run (Ctrl+Enter / Cmd+Enter)">
+      ▶ Run
+    </button>
+    <button id="clear-btn" class="btn" title="Clear output">
+      ✕ Clear
+    </button>
+
+    <div id="status-bar">
+      <span class="dot loading" id="status-dot"></span>
+      <span id="status-text">Loading runtimes…</span>
+    </div>
+  </div>
+
+  <!-- ── Main ───────────────────────────────────────────────────── -->
+  <div id="main">
+
+    <!-- Editor pane -->
+    <div id="editor-pane" class="pane">
+      <div class="pane-header">
+        <em class="pane-icon">✎</em>
+        Source Code
+        <span class="lang-badge" id="lang-badge">en</span>
+      </div>
+      <div id="editor-wrapper">
+        <label for="code-area" class="sr-only">Source code editor</label>
+        <textarea id="code-area"></textarea>
+      </div>
+    </div>
+
+    <!-- Drag resizer -->
+    <div id="resizer"></div>
+
+    <!-- Output pane -->
+    <div id="output-pane" class="pane">
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="output">
+          <span class="tab-icon">◉</span> Output
+        </button>
+        <button class="tab-btn" data-tab="python">
+          <span class="tab-icon">⟨/⟩</span> Python
+        </button>
+        <button class="tab-btn" data-tab="wat">
+          <span class="tab-icon">⬡</span> WAT / WASM
+        </button>
+        <button class="tab-btn" data-tab="rust">
+          <span class="tab-icon">🦀</span> Rust / Wasmtime
+        </button>
+      </div>
+
+      <!-- Output tab -->
+      <div class="tab-panel active" id="panel-output">
+        <pre id="output-console" class="console empty">Output will appear here after clicking ▶ Run.</pre>
+      </div>
+
+      <!-- Python tab -->
+      <div class="tab-panel" id="panel-python">
+        <pre id="python-view" class="code-view">Generated Python source will appear here.</pre>
+      </div>
+
+      <!-- WAT / WASM tab -->
+      <div class="tab-panel" id="panel-wat">
+
+        <!-- Pipeline diagram -->
+        <div class="pipeline-box">
+          <div class="pipeline-title">⬡ WebAssembly Code Generation Pipeline</div>
+          <div class="pipeline-flow">
+            <span class="pip-node">Source (.ml)</span>
+            <span class="pip-arrow">→</span>
+            <span class="pip-node">Lexer</span>
+            <span class="pip-arrow">→</span>
+            <span class="pip-node">Parser</span>
+            <span class="pip-arrow">→</span>
+            <span class="pip-node">AST</span>
+            <span class="pip-arrow">→</span>
+            <span class="pip-node hl">WATCodeGenerator</span>
+            <span class="pip-arrow">→</span>
+            <span class="pip-node hl">.wat</span>
+            <span class="pip-arrow">→</span>
+            <span class="pip-node hl">wabt.js</span>
+            <span class="pip-arrow">→</span>
+            <span class="pip-node hl">binary .wasm</span>
+            <span class="pip-arrow">→</span>
+            <span class="pip-node hl">WebAssembly.instantiate()</span>
+          </div>
+        </div>
+
+        <div id="wat-split">
+          <div id="wat-code-wrap">
+            <div class="wat-label">Generated WAT source</div>
+            <pre id="wat-view" class="code-view">WAT source will appear here after clicking ▶ Run.</pre>
+          </div>
+          <div id="wasm-exec-wrap">
+            <div class="wat-label">
+              <span class="wasm-badge">⚙ WASM</span>
+              Native browser WebAssembly execution output
+            </div>
+            <pre id="wasm-exec-console" class="console empty">WASM execution output will appear here.</pre>
+          </div>
+        </div>
+      </div><!-- #panel-wat -->
+
+      <!-- Rust / Wasmtime tab -->
+      <div class="tab-panel" id="panel-rust">
+        <div class="pipeline-box">
+          <div class="pipeline-title">🦀 Rust bridge generated for Wasmtime workflows</div>
+        </div>
+        <div id="wat-split">
+          <div id="wat-code-wrap">
+            <div class="wat-label">Generated Rust bridge source</div>
+            <pre id="rust-view" class="code-view">Generated Rust source will appear here after clicking ▶ Run.</pre>
+          </div>
+          <div id="wasm-exec-wrap">
+            <div class="wat-label">Wasmtime run hints</div>
+            <pre id="rust-run-console" class="console empty">Local run instructions will appear here.</pre>
+          </div>
+        </div>
+      </div><!-- #panel-rust -->
+
+    </div><!-- #output-pane -->
+  </div><!-- #main -->
+
+  <!-- ── Footer ─────────────────────────────────────────────────── -->
+  <footer>
+    <span>
+      Powered by
+      <a href="https://pyodide.org" target="_blank" rel="noopener">Pyodide</a> (CPython 3.12 on WASM) ·
+      <a href="https://github.com/WebAssembly/wabt" target="_blank" rel="noopener">wabt.js</a> (WAT → WASM) ·
+      <a href="https://codemirror.net" target="_blank" rel="noopener">CodeMirror</a> ·
+      <a id="complete-features-link"
+         href="https://github.com/johnsamuelwrites/multilingual/blob/main/examples/complete_features_en.ml"
+         target="_blank"
+         rel="noopener"
+         title="Open complete feature example for the selected language">📘 Complete features (en) ✨</a>
+    </span>
+    <span class="footer-pill">
+      <span class="dot-sm"></span>
+      <a href="https://github.com/johnsamuelwrites/multilingual" target="_blank" rel="noopener">
+        Source · GPL-3.0-or-later
+      </a>
+    </span>
+  </footer>
+
+</div><!-- #app -->
+
+<!-- CodeMirror 5 -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"
+        crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"
+        crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/mode/overlay.min.js"
+        crossorigin="anonymous"></script>
+
+<script>
+"use strict";
+
+/* ──────────────────────────────────────────────────────────────────
+   Language examples — one per supported human language.
+   Keywords follow the USM defined in resources/usm/keywords.json.
+────────────────────────────────────────────────────────────────── */
+const EXAMPLES = {
+  en: `# English — arithmetic and loops
+let a = 10
+let b = 3
+
+print("a + b =", a + b)
+print("a - b =", a - b)
+print("a * b =", a * b)
+print("a / b =", a / b)
+print("a % b =", a % b)
+
+for i in range(1, 5):
+    print(i, "squared =", i * i)
+`,
+  fr: `# Français — arithmétique et boucles
+soit a = 10
+soit b = 3
+
+afficher("a + b =", a + b)
+afficher("a - b =", a - b)
+afficher("a * b =", a * b)
+afficher("a / b =", a / b)
+afficher("a % b =", a % b)
+
+pour i dans intervalle(1, 5):
+    afficher(i, "au carré =", i * i)
+`,
+  es: `# Español — aritmética y bucles
+sea a = 10
+sea b = 3
+
+imprimir("a + b =", a + b)
+imprimir("a - b =", a - b)
+imprimir("a * b =", a * b)
+imprimir("a / b =", a / b)
+imprimir("a % b =", a % b)
+
+para i en rango(1, 5):
+    imprimir(i, "al cuadrado =", i * i)
+`,
+  de: `# Deutsch — Arithmetik und Schleifen
+sei a = 10
+sei b = 3
+
+ausgeben("a + b =", a + b)
+ausgeben("a - b =", a - b)
+ausgeben("a * b =", a * b)
+ausgeben("a / b =", a / b)
+ausgeben("a % b =", a % b)
+
+für i in bereich(1, 5):
+    ausgeben(i, "Quadrat =", i * i)
+`,
+  it: `# Italiano — aritmetica e cicli
+sia a = 10
+sia b = 3
+
+stampa("a + b =", a + b)
+stampa("a - b =", a - b)
+stampa("a * b =", a * b)
+stampa("a / b =", a / b)
+stampa("a % b =", a % b)
+
+per x in intervallo(1, 5):
+    stampa(x, "al quadrato =", x * x)
+`,
+  pt: `# Português — aritmética e ciclos
+seja a = 10
+seja b = 3
+
+imprima("a + b =", a + b)
+imprima("a - b =", a - b)
+imprima("a * b =", a * b)
+imprima("a / b =", a / b)
+imprima("a % b =", a % b)
+
+para x em intervalo(1, 5):
+    imprima(x, "ao quadrado =", x * x)
+`,
+  nl: `# Nederlands — rekenen en lussen
+laat a = 10
+laat b = 3
+
+afdrukken("a + b =", a + b)
+afdrukken("a - b =", a - b)
+afdrukken("a * b =", a * b)
+afdrukken("a / b =", a / b)
+afdrukken("a % b =", a % b)
+
+voor x in bereik(1, 5):
+    afdrukken(x, "kwadraat =", x * x)
+`,
+  pl: `# Polski — arytmetyka i pętle
+niech a = 10
+niech b = 3
+
+drukuj("a + b =", a + b)
+drukuj("a - b =", a - b)
+drukuj("a * b =", a * b)
+drukuj("a / b =", a / b)
+drukuj("a % b =", a % b)
+
+dla x w zakres(1, 5):
+    drukuj(x, "kwadrat =", x * x)
+`,
+  sv: `# Svenska — aritmetik och loopar
+lat a = 10
+lat b = 3
+
+skriv("a + b =", a + b)
+skriv("a - b =", a - b)
+skriv("a * b =", a * b)
+skriv("a / b =", a / b)
+skriv("a % b =", a % b)
+
+for x i intervall(1, 5):
+    skriv(x, "i kvadrat =", x * x)
+`,
+  da: `# Dansk — aritmetik og løkker
+lad a = 10
+lad b = 3
+
+skriv("a + b =", a + b)
+skriv("a - b =", a - b)
+skriv("a * b =", a * b)
+skriv("a / b =", a / b)
+skriv("a % b =", a % b)
+
+for x i interval(1, 5):
+    skriv(x, "i anden =", x * x)
+`,
+  fi: `# Suomi — aritmetiikka ja silmukat
+olkoon a = 10
+olkoon b = 3
+
+tulosta("a + b =", a + b)
+tulosta("a - b =", a - b)
+tulosta("a * b =", a * b)
+tulosta("a / b =", a / b)
+tulosta("a % b =", a % b)
+
+jokaiselle x sisalla vali(1, 5):
+    tulosta(x, "toiseen =", x * x)
+`,
+  hi: `# हिन्दी — अंकगणित और लूप
+मान a = 10
+मान b = 3
+
+छापो("a + b =", a + b)
+छापो("a - b =", a - b)
+छापो("a * b =", a * b)
+छापो("a / b =", a / b)
+छापो("a % b =", a % b)
+
+के_लिए x में परास(1, 5):
+    छापो(x, "वर्ग =", x * x)
+`,
+  ar: `# العربية — الحساب والحلقات
+ليكن a = 10
+ليكن b = 3
+
+اطبع("a + b =", a + b)
+اطبع("a - b =", a - b)
+اطبع("a * b =", a * b)
+اطبع("a / b =", a / b)
+اطبع("a % b =", a % b)
+
+لكل x في مدى(1, 5):
+    اطبع(x, "تربيع =", x * x)
+`,
+  bn: `# বাংলা — গাণিতিক হিসাব ও লুপ
+ধরি a = 10
+ধরি b = 3
+
+ছাপাও("a + b =", a + b)
+ছাপাও("a - b =", a - b)
+ছাপাও("a * b =", a * b)
+ছাপাও("a / b =", a / b)
+ছাপাও("a % b =", a % b)
+
+জন্য x মধ্যে পরিসর(1, 5):
+    ছাপাও(x, "বর্গ =", x * x)
+`,
+  ta: `# தமிழ் — கணக்கீடு மற்றும் சுழல்கள்
+இருக்கட்டும் a = 10
+இருக்கட்டும் b = 3
+
+அச்சிடு("a + b =", a + b)
+அச்சிடு("a - b =", a - b)
+அச்சிடு("a * b =", a * b)
+அச்சிடு("a / b =", a / b)
+அச்சிடு("a % b =", a % b)
+
+ஒவ்வொரு x இல் வரம்பு(1, 5):
+    அச்சிடு(x, "வர்க்கம் =", x * x)
+`,
+  zh: `# 中文 — 算术运算和循环
+令 a = 10
+令 b = 3
+
+打印("a + b =", a + b)
+打印("a - b =", a - b)
+打印("a * b =", a * b)
+打印("a / b =", a / b)
+打印("a % b =", a % b)
+
+对于 x 里 范围(1, 5):
+    打印(x, "的平方 =", x * x)
+`,
+  ja: `# 日本語 — 算術演算とループ
+変数 a = 10
+変数 b = 3
+
+表示("a + b =", a + b)
+表示("a - b =", a - b)
+表示("a * b =", a * b)
+表示("a / b =", a / b)
+表示("a % b =", a % b)
+
+毎 x 中 範囲(1, 5):
+    表示(x, "の2乗 =", x * x)
+`,
+};
+
+/* ──────────────────────────────────────────────────────────────────
+   Theme toggle
+────────────────────────────────────────────────────────────────── */
+const THEME_KEY = 'ml-playground-theme';
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  document.getElementById('theme-toggle').textContent = theme === 'dark' ? '🌙' : '☀️';
+  localStorage.setItem(THEME_KEY, theme);
+  // Switch CodeMirror theme. Guard with try/catch because applyTheme() is
+  // called by initTheme() before `const editor` is initialized (TDZ).
+  // CodeMirror reads data-theme from the DOM on creation, so skipping
+  // setOption() during init is safe — it only matters for live toggles.
+  try {
+    editor.setOption('theme', theme === 'dark' ? 'dracula' : 'eclipse');
+  } catch (_) { /* editor not yet initialized */ }
+}
+
+(function initTheme() {
+  const stored = localStorage.getItem(THEME_KEY);
+  const preferred = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  applyTheme(stored || preferred);
+})();
+
+document.getElementById('theme-toggle').addEventListener('click', () => {
+  const current = document.documentElement.getAttribute('data-theme');
+  applyTheme(current === 'dark' ? 'light' : 'dark');
+});
+
+/* ──────────────────────────────────────────────────────────────────
+   DOM refs
+────────────────────────────────────────────────────────────────── */
+const $lang      = document.getElementById('lang-select');
+const $runBtn    = document.getElementById('run-btn');
+const $clearBtn  = document.getElementById('clear-btn');
+const $dot       = document.getElementById('status-dot');
+const $status    = document.getElementById('status-text');
+const $badge     = document.getElementById('lang-badge');
+const $outCon    = document.getElementById('output-console');
+const $pyView    = document.getElementById('python-view');
+const $watView   = document.getElementById('wat-view');
+const $wasmCon   = document.getElementById('wasm-exec-console');
+const $rustView  = document.getElementById('rust-view');
+const $rustRunCon = document.getElementById('rust-run-console');
+const $exampleLink = document.getElementById('complete-features-link');
+const $homeLink  = document.getElementById('home-link');
+
+function configureHomeLink() {
+  if (!$homeLink) return;
+  const path = window.location.pathname || '';
+  if (path.endsWith('/playground/')) {
+    $homeLink.href = '../';
+  } else {
+    $homeLink.href = './';
+  }
+}
+configureHomeLink();
+
+/* ──────────────────────────────────────────────────────────────────
+   CodeMirror editor
+────────────────────────────────────────────────────────────────── */
+const currentTheme = document.documentElement.getAttribute('data-theme');
+const editor = CodeMirror.fromTextArea(
+  document.getElementById('code-area'),
+  {
+    mode: 'python',
+    theme: currentTheme === 'dark' ? 'dracula' : 'eclipse',
+    lineNumbers: true,
+    indentUnit: 4, tabSize: 4, indentWithTabs: false,
+    lineWrapping: false, autofocus: true,
+    extraKeys: { 'Ctrl-Enter': runCode, 'Cmd-Enter': runCode },
+  }
+);
+
+function resizeEditor() {
+  const w = document.getElementById('editor-wrapper');
+  editor.setSize('100%', w.clientHeight);
+}
+window.addEventListener('resize', resizeEditor);
+setTimeout(resizeEditor, 60);
+
+/* ──────────────────────────────────────────────────────────────────
+   Drag-to-resize split pane
+────────────────────────────────────────────────────────────────── */
+(function initResizer() {
+  const resizer   = document.getElementById('resizer');
+  const main      = document.getElementById('main');
+  const editorP   = document.getElementById('editor-pane');
+  const outputP   = document.getElementById('output-pane');
+  let   dragging  = false;
+
+  resizer.addEventListener('mousedown', e => {
+    dragging = true;
+    resizer.classList.add('dragging');
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    const rect = main.getBoundingClientRect();
+    const pct  = ((e.clientX - rect.left) / rect.width * 100).toFixed(1);
+    const clamped = Math.max(20, Math.min(80, pct));
+    main.style.gridTemplateColumns = `${clamped}fr 4px ${100 - clamped}fr`;
+    resizeEditor();
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (!dragging) return;
+    dragging = false;
+    resizer.classList.remove('dragging');
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+    resizeEditor();
+  });
+})();
+
+/* ──────────────────────────────────────────────────────────────────
+   Language selection
+────────────────────────────────────────────────────────────────── */
+function loadLang(lang) {
+  editor.setValue(EXAMPLES[lang] || EXAMPLES.en);
+  $badge.textContent = lang;
+  editor.getWrapperElement().style.direction = lang === 'ar' ? 'rtl' : 'ltr';
+  editor.setOption('lineWrapping', lang === 'ar');
+  applyEditorHighlighting(lang);
+  updateCompleteFeaturesLink(lang);
+  editor.refresh();
+}
+$lang.addEventListener('change', () => loadLang($lang.value));
+
+function updateCompleteFeaturesLink(lang) {
+  if (!$exampleLink) return;
+  const langCode = lang || 'en';
+  $exampleLink.href = `https://github.com/johnsamuelwrites/multilingual/blob/main/examples/complete_features_${langCode}.ml`;
+  $exampleLink.textContent = `📘 Complete features (${langCode}) ✨`;
+}
+
+let languageKeywords = new Map();
+let unicodeWordRegex = null;
+
+try {
+  unicodeWordRegex = new RegExp('[\\p{L}\\p{M}\\p{N}_]', 'u');
+} catch (_) {
+  unicodeWordRegex = null;
+}
+
+function isWordChar(ch) {
+  if (!ch) return false;
+  if (unicodeWordRegex) return unicodeWordRegex.test(ch);
+  return /[A-Za-z0-9_]/.test(ch) || (ch.codePointAt(0) > 127 && !/\s/.test(ch));
+}
+
+function normalizeKeywordEntry(value) {
+  if (Array.isArray(value)) return value;
+  return typeof value === 'string' ? [value] : [];
+}
+
+function extractKeywordsForLanguage(keywordSpec, lang) {
+  const collected = new Set();
+  const categories = keywordSpec && keywordSpec.categories ? keywordSpec.categories : {};
+  Object.values(categories).forEach(group => {
+    Object.values(group).forEach(mapping => {
+      normalizeKeywordEntry(mapping[lang]).forEach(word => {
+        if (typeof word === 'string') {
+          const trimmed = word.trim();
+          if (trimmed) collected.add(trimmed);
+        }
+      });
+    });
+  });
+  return [...collected].sort((a, b) => b.length - a.length);
+}
+
+async function fetchKeywordSpec() {
+  const candidates = [
+    './assets/keywords.json',
+    '../assets/keywords.json',
+    'assets/keywords.json',
+    '../multilingualprogramming/resources/usm/keywords.json',
+    './multilingualprogramming/resources/usm/keywords.json',
+    'https://raw.githubusercontent.com/johnsamuelwrites/multilingual/main/multilingualprogramming/resources/usm/keywords.json',
+  ];
+
+  for (const url of candidates) {
+    try {
+      const resp = await fetch(url, { cache: 'no-cache' });
+      if (!resp.ok) continue;
+      return await resp.json();
+    } catch (_) {
+      /* try next candidate */
+    }
+  }
+  return null;
+}
+
+function buildKeywordOverlay(keywords) {
+  const sorted = keywords.slice().sort((a, b) => b.length - a.length);
+
+  return {
+    token(stream) {
+      const line = stream.string;
+      const start = stream.pos;
+      const prev = start > 0 ? line.charAt(start - 1) : '';
+      if (isWordChar(prev)) {
+        stream.next();
+        return null;
+      }
+
+      for (const keyword of sorted) {
+        if (!line.startsWith(keyword, start)) continue;
+        const next = line.charAt(start + keyword.length);
+        if (!isWordChar(next)) {
+          stream.pos += keyword.length;
+          return 'keyword';
+        }
+      }
+
+      stream.next();
+      return null;
+    },
+  };
+}
+
+function applyKeywordOnlyMode(lang, keywords) {
+  const modeName = `ml-keywords-${lang}`;
+  if (!CodeMirror.modes[modeName]) {
+    const keywordSet = new Set(keywords);
+    const isDigit = (ch) => !!ch && ch >= '0' && ch <= '9';
+    const isOperator = (ch) => !!ch && /[+\-*/%=<>!&|^~:,.[\](){}]/.test(ch);
+    CodeMirror.defineMode(modeName, () => ({
+      token(stream) {
+        const ch = stream.peek();
+        if (!ch) return null;
+        if (/\s/.test(ch)) {
+          stream.next();
+          return null;
+        }
+        if (ch === '#') {
+          stream.skipToEnd();
+          return 'comment';
+        }
+        if (ch === '"' || ch === "'") {
+          const quote = stream.next();
+          let escaped = false;
+          while (!stream.eol()) {
+            const c = stream.next();
+            if (escaped) {
+              escaped = false;
+              continue;
+            }
+            if (c === '\\') {
+              escaped = true;
+              continue;
+            }
+            if (c === quote) break;
+          }
+          return 'string';
+        }
+        if (isDigit(ch)) {
+          stream.eatWhile(/[0-9._]/);
+          return 'number';
+        }
+        if (isWordChar(ch)) {
+          let word = '';
+          while (!stream.eol() && isWordChar(stream.peek())) {
+            word += stream.next();
+          }
+          return keywordSet.has(word) ? 'keyword' : null;
+        }
+        if (isOperator(ch)) {
+          stream.next();
+          return 'operator';
+        }
+        stream.next();
+        return null;
+      },
+    }));
+  }
+  editor.setOption('mode', modeName);
+  editor.refresh();
+}
+
+function applyEditorHighlighting(lang) {
+  const keywords = languageKeywords.get(lang);
+
+  if (!keywords || !keywords.length || lang === 'en') {
+    editor.setOption('mode', 'python');
+    editor.refresh();
+    return;
+  }
+
+  // Use a dedicated mode for multilingual keywords to avoid overlay edge cases.
+  applyKeywordOnlyMode(lang, keywords);
+}
+
+async function initLanguageKeywords() {
+  const spec = await fetchKeywordSpec();
+  if (!spec) {
+    console.warn('Could not load keywords.json; using default python highlighting.');
+    return;
+  }
+
+  ($lang ? Array.from($lang.options).map(opt => opt.value) : []).forEach(code => {
+    languageKeywords.set(code, extractKeywordsForLanguage(spec, code));
+  });
+}
+
+loadLang('en');
+initLanguageKeywords().then(() => applyEditorHighlighting($lang.value));
+
+/* ──────────────────────────────────────────────────────────────────
+   Status helpers
+────────────────────────────────────────────────────────────────── */
+function setStatus(msg, state) {
+  $status.textContent = msg;
+  $dot.className = 'dot ' + state;
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   Tab switching
+────────────────────────────────────────────────────────────────── */
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+  });
+});
+
+/* ──────────────────────────────────────────────────────────────────
+   Runtime state
+────────────────────────────────────────────────────────────────── */
+let pyodide = null;
+let wabt    = null;
+let ready   = false;
+
+/* ──────────────────────────────────────────────────────────────────
+   Initialise both runtimes in parallel
+────────────────────────────────────────────────────────────────── */
+async function initRuntimes() {
+  setStatus('Loading Pyodide and wabt.js…', 'loading');
+  $runBtn.disabled = true;
+
+  try {
+    const [pyRes, wabtRes] = await Promise.allSettled([
+      initPyodide(),
+      initWabt(),
+    ]);
+
+    if (pyRes.status === 'rejected')   throw new Error('Pyodide: ' + pyRes.reason);
+    if (wabtRes.status === 'rejected') console.warn('wabt.js failed:', wabtRes.reason);
+
+    ready = true;
+    $runBtn.disabled = false;
+    const wabtNote = wabt ? '' : ' (wabt unavailable — WAT execution disabled)';
+    setStatus('Ready ✓  Pyodide + wabt.js' + wabtNote, 'ready');
+  } catch (err) {
+    setStatus('Init error: ' + err.message, 'error');
+    console.error(err);
+  }
+}
+
+/* ── Pyodide init ──────────────────────────────────────────────── */
+async function initPyodide() {
+  pyodide = await loadPyodide({
+    indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.26.0/full/',
+  });
+  setStatus('Pyodide ready — installing packages…', 'loading');
+  await pyodide.loadPackage('micropip');
+  const micropip = pyodide.pyimport('micropip');
+  await micropip.install('roman');
+  await micropip.install('python-dateutil');
+
+  // Try local wheel first, fall back to PyPI
+  let installed = false;
+  try {
+    const resp = await fetch('./assets/wheel_info.json');
+    if (resp.ok) {
+      const info = await resp.json();
+      const url = new URL('./assets/' + info.wheel, window.location.href).href;
+      await micropip.install(url);
+      installed = true;
+    }
+  } catch (_) { /* wheel_info.json not present */ }
+
+  if (!installed) {
+    await micropip.install('multilingualprogramming');
+  }
+
+  // Warm-up import
+  await pyodide.runPythonAsync(`
+from multilingualprogramming.codegen.executor import ProgramExecutor
+from multilingualprogramming.codegen.wat_generator import WATCodeGenerator
+from multilingualprogramming.codegen.wasm_generator import WasmCodeGenerator
+from multilingualprogramming.lexer.lexer import Lexer
+from multilingualprogramming.parser.parser import Parser
+`);
+}
+
+function getWabtFactory() {
+  if (typeof globalThis.WabtModule === 'function') return globalThis.WabtModule;
+  if (typeof globalThis.wabt === 'function') return globalThis.wabt;
+  return null;
+}
+
+function loadExternalScript(src) {
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = src;
+    script.async = true;
+    script.crossOrigin = 'anonymous';
+    script.onload = resolve;
+    script.onerror = () => reject(new Error(`Failed to load ${src}`));
+    document.head.appendChild(script);
+  });
+}
+
+/* ── wabt.js init ──────────────────────────────────────────────── */
+async function initWabt() {
+  const existingFactory = getWabtFactory();
+  if (existingFactory) {
+    wabt = await existingFactory();
+    return;
+  }
+
+  const fallbackSources = [
+    'https://unpkg.com/wabt@1.0.36/index.js',
+    'https://cdn.jsdelivr.net/npm/wabt@1.0.36/index.js',
+  ];
+
+  for (const src of fallbackSources) {
+    try {
+      await loadExternalScript(src);
+      const factory = getWabtFactory();
+      if (factory) {
+        wabt = await factory();
+        return;
+      }
+    } catch (_) {
+      /* try next source */
+    }
+  }
+
+  throw new Error('Unable to load wabt.js from available CDNs');
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   Run: execute in Pyodide + generate WAT + run WAT in native WASM
+────────────────────────────────────────────────────────────────── */
+async function runCode() {
+  if (!ready) return;
+  const code = editor.getValue();
+  if (!code.trim()) return;
+
+  $runBtn.disabled = true;
+  setStatus('Running…', 'running');
+
+  // Reset all panels
+  $outCon.className = 'console';   $outCon.textContent = '';
+  $pyView.textContent = '';
+  $watView.textContent = '';
+  $wasmCon.className = 'console';  $wasmCon.textContent = '';
+  $rustView.textContent = '';
+  $rustRunCon.className = 'console';
+  $rustRunCon.textContent = '';
+
+  const lang = $lang.value;   // explicit language selected by the user
+
+  try {
+    // ── 1. Pyodide execution (full language, all features) ────────
+    // Pass both source and the selected language so the lexer never
+    // falls back to cross-language keyword matching (which would, e.g.,
+    // treat the German variable "i" as the Swedish/Danish IN keyword).
+    // If parsing fails with the selected language, we try other languages
+    // in turn so a user running English code with French selected still
+    // gets a useful result (with a language-mismatch notice).
+    pyodide.globals.set('_user_code', code);
+    pyodide.globals.set('_user_lang', lang);
+
+    await pyodide.runPythonAsync(`
+from multilingualprogramming.codegen.executor import ProgramExecutor
+
+_ALL_LANGS = ['en', 'fr', 'de', 'es', 'hi', 'ta', 'nl', 'pt', 'ar',
+              'zh', 'ja', 'ru', 'sv', 'fi', 'it', 'da', 'la']
+
+_exec   = ProgramExecutor(language=_user_lang)
+_result = _exec.execute(_user_code)
+_detected_lang = _user_lang
+
+# If parsing failed, try other languages as fallback (language mismatch)
+if not _result.success and _result.errors and any('ParseError' in str(e) for e in _result.errors):
+    for _try_lang in _ALL_LANGS:
+        if _try_lang == _user_lang:
+            continue
+        _try_exec = ProgramExecutor(language=_try_lang)
+        _try_result = _try_exec.execute(_user_code)
+        if _try_result.success:
+            _result = _try_result
+            _detected_lang = _try_lang
+            break
+
+_out    = _result.output or ''
+_psrc   = _result.python_source or ''
+_errs   = '\\n'.join(_result.errors) if _result.errors else ''
+_ok     = _result.success
+`);
+
+    const out          = pyodide.globals.get('_out');
+    const psrc         = pyodide.globals.get('_psrc');
+    const errs         = pyodide.globals.get('_errs');
+    const ok           = pyodide.globals.get('_ok');
+    const detectedLang = pyodide.globals.get('_detected_lang');
+
+    // Language mismatch: auto-switch dropdown + show notice
+    if (detectedLang && detectedLang !== lang) {
+      $lang.value = detectedLang;
+      loadLang(detectedLang);
+      $outCon.className = 'console has-warning';
+      $outCon.textContent =
+        `ℹ Language auto-detected as '${detectedLang}' (was '${lang}'). ` +
+        `Language selector updated.\n\n` + (out || '(no output)');
+      $pyView.textContent = psrc || '(no Python source generated)';
+    } else if (!ok && errs) {
+      $outCon.className = 'console has-error';
+      $outCon.textContent = '⚠ ' + errs;
+      $pyView.textContent = psrc || '(no Python source generated)';
+    } else if (out) {
+      $outCon.textContent = out;
+      $pyView.textContent = psrc || '(no Python source generated)';
+    } else {
+      $outCon.className = 'console empty';
+      $outCon.textContent = '(no output)';
+      $pyView.textContent = psrc || '(no Python source generated)';
+    }
+
+    // ── 2. WAT generation via WATCodeGenerator ────────────────────
+    // Use _detected_lang (may differ from _user_lang after auto-detection).
+    await pyodide.runPythonAsync(`
+from multilingualprogramming.codegen.wat_generator import WATCodeGenerator
+from multilingualprogramming.lexer.lexer import Lexer
+from multilingualprogramming.parser.parser import Parser
+
+try:
+    _lex   = Lexer(_user_code, language=_detected_lang)
+    _toks  = _lex.tokenize()
+    _par   = Parser(_toks, source_language=_detected_lang)
+    _prog  = _par.parse()
+    _wgen  = WATCodeGenerator()
+    _wat   = _wgen.generate(_prog)
+    _wat_err = ''
+except Exception as _we:
+    _wat     = ''
+    _wat_err = str(_we)
+`);
+
+    const watSrc  = pyodide.globals.get('_wat');
+    const watErr  = pyodide.globals.get('_wat_err');
+
+    if (watErr && !watSrc) {
+      $watView.textContent = ';; WATCodeGenerator error:\n;; ' + watErr;
+      $wasmCon.className = 'console has-error';
+      $wasmCon.textContent = '⚠ WAT generation failed: ' + watErr;
+    } else {
+      $watView.textContent = watSrc;
+
+      // ── 3. Compile WAT → binary WASM with wabt.js ────────────────
+      if (wabt && watSrc) {
+        await runWat(watSrc);
+      } else if (!wabt) {
+        $wasmCon.className = 'console has-error';
+        $wasmCon.textContent = '⚠ wabt.js did not load — WAT execution unavailable.\n'
+          + 'You can paste the WAT above into https://webassembly.github.io/wabt/demo/wat2wasm/';
+      }
+    }
+
+    // ── 4. Rust bridge generation (for Wasmtime workflows) ───────
+    await pyodide.runPythonAsync(`
+from multilingualprogramming.codegen.wasm_generator import WasmCodeGenerator
+from multilingualprogramming.lexer.lexer import Lexer
+from multilingualprogramming.parser.parser import Parser
+
+try:
+    _lex_r   = Lexer(_user_code, language=_detected_lang)
+    _toks_r  = _lex_r.tokenize()
+    _par_r   = Parser(_toks_r, source_language=_detected_lang)
+    _prog_r  = _par_r.parse()
+    _rgen    = WasmCodeGenerator()
+    _rust    = _rgen.generate(_prog_r)
+    _rust_err = ''
+except Exception as _re:
+    _rust     = ''
+    _rust_err = str(_re)
+`);
+
+    const rustSrc = pyodide.globals.get('_rust');
+    const rustErr = pyodide.globals.get('_rust_err');
+
+    if (rustErr && !rustSrc) {
+      $rustView.textContent = '// Rust generator error:\n// ' + rustErr;
+      $rustRunCon.className = 'console has-error';
+      $rustRunCon.textContent = '⚠ Rust bridge generation failed: ' + rustErr;
+    } else if (rustSrc) {
+      $rustView.textContent = rustSrc;
+      $rustRunCon.className = 'console';
+      $rustRunCon.textContent =
+`How to run with Wasmtime locally:
+1. Save this Rust source as src/lib.rs in a Rust crate.
+2. Build to WASM:
+   cargo build --release --target wasm32-unknown-unknown
+3. Run with Wasmtime (example exported symbol):
+   wasmtime run --invoke __multilingual_wasm_version target/wasm32-unknown-unknown/release/<crate_name>.wasm
+
+Note: this generated Rust is a bridge scaffold (function bodies are placeholders).`;
+    } else {
+      $rustView.textContent = '(no Rust source generated)';
+      $rustRunCon.className = 'console empty';
+      $rustRunCon.textContent = 'Local run instructions will appear here.';
+    }
+
+    setStatus('Done ✓', 'ready');
+  } catch (err) {
+    $outCon.className = 'console has-error';
+    $outCon.textContent = '⚠ ' + err.message;
+    setStatus('Error', 'error');
+    console.error(err);
+  } finally {
+    $runBtn.disabled = false;
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   WAT → binary WASM via wabt.js → WebAssembly.instantiate()
+────────────────────────────────────────────────────────────────── */
+async function runWat(watText) {
+  const dec = new TextDecoder();
+  const wasmLines = [];
+  let   wasmErr   = '';
+
+  const memory = { buffer: null };
+  const printBuf = [];
+  const imports = {
+    env: {
+      print_str: (ptr, len) => {
+        if (!memory.buffer) return;
+        const bytes = new Uint8Array(memory.buffer, ptr, len);
+        printBuf.push(dec.decode(bytes));
+      },
+      print_f64: (val) => {
+        printBuf.push(Number.isInteger(val) ? String(val) : String(val));
+      },
+      print_bool: (val) => {
+        printBuf.push(val ? 'True' : 'False');
+      },
+      print_sep: () => {
+        printBuf.push(' ');
+      },
+      print_newline: () => {
+        wasmLines.push(printBuf.join(''));
+        printBuf.length = 0;
+      },
+    },
+  };
+
+  function summarizeParseWatError(message) {
+    if (!message || !message.includes('parseWat failed')) return '';
+
+    const undefinedFunctions = new Set();
+    const undefinedLocals = new Set();
+    let firstLocation = '';
+
+    message.split('\n').forEach(line => {
+      const locMatch = line.match(/module\.wat:\d+:\d+:/);
+      if (!firstLocation && locMatch) {
+        firstLocation = locMatch[0];
+      }
+      const fnMatch = line.match(/undefined function variable "\$([^"]+)"/);
+      if (fnMatch) undefinedFunctions.add(fnMatch[1]);
+      const localMatch = line.match(/undefined local variable "\$([^"]+)"/);
+      if (localMatch) undefinedLocals.add(localMatch[1]);
+    });
+
+    if (!undefinedFunctions.size && !undefinedLocals.size) return '';
+
+    const fnList = Array.from(undefinedFunctions).slice(0, 8).join(', ');
+    const localList = Array.from(undefinedLocals).slice(0, 8).join(', ');
+    const fnMore = undefinedFunctions.size > 8 ? '…' : '';
+    const localMore = undefinedLocals.size > 8 ? '…' : '';
+
+    let summary = 'WAT contains unresolved symbols and cannot be compiled to WASM.';
+    if (firstLocation) summary += `\nFirst parser location: ${firstLocation}`;
+    if (undefinedFunctions.size) {
+      summary += `\nUndefined functions (${undefinedFunctions.size}): ${fnList}${fnMore}`;
+    }
+    if (undefinedLocals.size) {
+      summary += `\nUndefined locals (${undefinedLocals.size}): ${localList}${localMore}`;
+    }
+    summary += '\nThis usually happens when the generated WAT includes high-level constructs not lowered to plain WAT.';
+    return summary;
+  }
+
+  try {
+    const wabtModule = wabt.parseWat('module.wat', watText, {
+      mutable_globals: true, sat_float_to_int: true,
+      sign_extension: true, bulk_memory: false,
+    });
+    wabtModule.resolveNames();
+    wabtModule.validate();
+
+    const { buffer: wasmBytes } = wabtModule.toBinary({ log: false, write_debug_names: true });
+    const compiled = await WebAssembly.compile(wasmBytes);
+    const instance = await WebAssembly.instantiate(compiled, imports);
+
+    if (instance.exports.memory) {
+      memory.buffer = instance.exports.memory.buffer;
+    }
+
+    if (instance.exports.__main) {
+      instance.exports.__main();
+      if (printBuf.length) {
+        wasmLines.push(printBuf.join(''));
+        printBuf.length = 0;
+      }
+    } else {
+      wasmLines.push('(module exported no __main — define top-level statements or functions)');
+    }
+  } catch (err) {
+    wasmErr = err.message;
+  }
+
+  if (wasmErr) {
+    const concise = summarizeParseWatError(wasmErr);
+    $wasmCon.className = 'console has-error';
+    $wasmCon.textContent = '⚠ WASM error: ' + (concise || wasmErr)
+      + '\n\nNote: strings, classes, imports and other high-level constructs\n'
+      + 'are not representable as plain WAT — see the Output tab for full execution.';
+    if (concise) {
+      console.warn('Full parseWat error details:\n' + wasmErr);
+    }
+  } else if (wasmLines.length) {
+    $wasmCon.textContent = wasmLines.join('\n');
+  } else {
+    $wasmCon.className = 'console empty';
+    $wasmCon.textContent = '(no output from WASM execution)';
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   Clear button
+────────────────────────────────────────────────────────────────── */
+$clearBtn.addEventListener('click', () => {
+  $outCon.className = 'console empty';
+  $outCon.textContent = 'Output will appear here after clicking ▶ Run.';
+  $pyView.textContent = 'Generated Python source will appear here.';
+  $watView.textContent = 'WAT source will appear here after clicking ▶ Run.';
+  $wasmCon.className = 'console empty';
+  $wasmCon.textContent = 'WASM execution output will appear here.';
+  $rustView.textContent = 'Generated Rust source will appear here after clicking ▶ Run.';
+  $rustRunCon.className = 'console empty';
+  $rustRunCon.textContent = 'Local run instructions will appear here.';
+  editor.focus();
+});
+
+$runBtn.addEventListener('click', runCode);
+
+/* ──────────────────────────────────────────────────────────────────
+   Boot
+────────────────────────────────────────────────────────────────── */
+initRuntimes();
+</script>
+</body>
+</html>

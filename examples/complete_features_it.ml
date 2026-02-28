@@ -131,3 +131,141 @@ stampa(a, resto, init, b, c, mezzo, d)
 stampa(ordinato(insieme_quadrati))
 stampa(risultato_potenza, risultato_divmod)
 stampa(delegato)
+
+# Numeric literals
+sia num_esadec = 0xFF
+sia num_ott = 0o17
+sia num_bin = 0b1010
+sia num_sci = 1.5e3
+
+# Augmented assignments
+sia aumentato = 10
+aumentato += 5
+aumentato -= 2
+aumentato *= 3
+aumentato //= 4
+aumentato %= 3
+
+# Bitwise operators
+sia bit_e = 0b1010 & 0b1100
+sia bit_o = 0b1010 | 0b0101
+sia bit_xor = 0b1010 ^ 0b1111
+sia bit_sx = 1 << 3
+sia bit_dx = 64 >> 2
+
+# Chained assignment
+sia catena_a = catena_b = catena_c = 0
+
+# Type annotations
+sia tipizzato: intero = 99
+
+definisci annotato(x: intero, y: decimale) -> stringa:
+    ritorna stringa(x + y)
+
+# Ternary expression
+sia ternario = "yes" se tipizzato > 0 altrimenti "no"
+
+# Default params, *args, **kwargs
+definisci multi_parametri(base, extra=1, *args, **kwargs):
+    ritorna base + extra + somma(args)
+sia risultato_multi = multi_parametri(10, 2, 3, 4, key=5)
+
+# Lambda
+sia quadrato = lambda x: x * x
+
+# List/dict comprehensions and generator expression
+sia lista_c = [x * 2 per x in intervallo(4)]
+sia diz_c = {stringa(k): k * k per k in intervallo(3)}
+sia gen_c = lista(x + 1 per x in intervallo(3))
+sia annidato_c = [i + j per i in intervallo(2) per j in intervallo(2)]
+sia filtro_c = [x per x in intervallo(6) se x % 2 == 0]
+
+# try/except/else
+sia prova_altrimenti = 0
+prova:
+    prova_altrimenti = intero("7")
+eccetto ValueError:
+    prova_altrimenti = -1
+altrimenti:
+    prova_altrimenti += 1
+
+# Exception chaining
+sia concatenato = Falso
+prova:
+    prova:
+        solleva ValueError("v")
+    eccetto ValueError come ve:
+        solleva RuntimeError("r") da ve
+eccetto RuntimeError:
+    concatenato = Vero
+
+# Multiple except handlers
+sia multi_eccezione = 0
+prova:
+    solleva TypeError("t")
+eccetto ValueError:
+    multi_eccezione = 1
+eccetto TypeError:
+    multi_eccezione = 2
+
+# Match/case with default
+sia valore_match = 2
+sia risultato_match = "other"
+confronta valore_match:
+    caso 1:
+        risultato_match = "one"
+    caso 2:
+        risultato_match = "two"
+    predefinito:
+        risultato_match = "default"
+
+# Decorator
+definisci raddoppiatore(func):
+    definisci involucro(*args, **kwargs):
+        ritorna func(*args, **kwargs) * 2
+    ritorna involucro
+
+@raddoppiatore
+definisci dieci():
+    ritorna 10
+
+sia risultato_deco = dieci()
+
+# Multiple inheritance, static/class methods, property
+classe Misto:
+    definisci misto(self):
+        ritorna 1
+
+classe BaseDue:
+    definisci __init__(self, start):
+        self.value = start
+
+classe Combinato(BaseDue, Misto):
+    @staticmethod
+    definisci etichetta():
+        ritorna "combined"
+    @classmethod
+    definisci costruisci(cls, v):
+        ritorna cls(v)
+    @property
+    definisci raddoppiato(self):
+        ritorna self.value * 2
+
+sia combinato_obj = Combinato.costruisci(3)
+sia proprieta = combinato_obj.raddoppiato
+
+# Docstring
+definisci con_doc():
+    """A docstring."""
+    ritorna Vero
+
+stampa(num_esadec, num_ott, num_bin, num_sci)
+stampa(aumentato, bit_e, bit_o, bit_xor, bit_sx, bit_dx)
+stampa(catena_a, catena_b, catena_c)
+stampa(tipizzato, annotato(3, 1.5), ternario)
+stampa(risultato_multi, quadrato(5))
+stampa(lista_c, diz_c, gen_c)
+stampa(annidato_c, filtro_c)
+stampa(prova_altrimenti, concatenato, multi_eccezione)
+stampa(risultato_match, risultato_deco, proprieta)
+stampa(con_doc())

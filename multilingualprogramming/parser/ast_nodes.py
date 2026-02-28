@@ -327,11 +327,16 @@ class ImportStatement(ASTNode):
         self.module = module
         self.alias = alias
 class FromImportStatement(ASTNode):
-    """From-import: from module import name1 as alias1, name2."""
-    def __init__(self, module, names, line=0, column=0):
+    """From-import: from module import name1 as alias1, name2.
+
+    ``level`` is the number of leading dots for relative imports:
+    0 = absolute, 1 = ``depuis . importer X``, 2 = ``depuis .. importer X``.
+    """
+    def __init__(self, module, names, line=0, column=0, level=0):
         super().__init__(line, column)
         self.module = module
         self.names = names
+        self.level = level
 # ---------------------------------------------------------------------------
 # Extended expression nodes
 # ---------------------------------------------------------------------------

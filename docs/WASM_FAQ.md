@@ -3,7 +3,7 @@
 ## Quick Answers
 
 **Q: Will WASM work for me?**
-A: Yes! Python fallback always works. WASM gives 50-100x speedup if available.
+A: Yes. Python fallback always works. WASM can provide substantial speedups on suitable workloads.
 
 **Q: What Python versions are supported?**
 A: Python 3.12+ (full features). Check with `python --version`.
@@ -63,12 +63,7 @@ pip install multilingualprogramming[wasm]
 
 ### Q: How much faster is WASM?
 
-**Answer**: Depends on operation:
-- Matrix operations: **100x faster**
-- Cryptography: **100x faster**
-- Image processing: **50x faster**
-- JSON parsing: **10x faster**
-- Scientific computing: **100x faster**
+**Answer**: It depends on operation size, hardware, and runtime overhead. For larger compute-heavy operations, speedups can be significant. Benchmark your own workload for reliable numbers.
 
 ### Q: Why isn't operation X faster?
 
@@ -447,10 +442,10 @@ pip install --upgrade multilingualprogramming
 
 **TL;DR**:
 - 🚀 Install: `pip install multilingualprogramming[wasm]`
-- 📊 Speedup: 50-100x on compute-intensive ops
+- 📊 Speedup: workload-dependent; benchmark compute-intensive paths
 - 💻 Fallback: Always works (Python)
 - 🔧 No changes: Automatic backend selection
-- ✅ Production ready: Yes!
+- ✅ Stable with fallback; validate in your environment
 
 ---
 

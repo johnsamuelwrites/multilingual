@@ -131,3 +131,141 @@ afficher(a, reste, init, b, c, milieu, d)
 afficher(trier(ensemble_carres))
 afficher(resultat_puissance, resultat_divmod)
 afficher(delegue)
+
+# Numeric literals
+soit nombre_hex = 0xFF
+soit nombre_oct = 0o17
+soit nombre_bin = 0b1010
+soit nombre_sci = 1.5e3
+
+# Augmented assignments
+soit augmente = 10
+augmente += 5
+augmente -= 2
+augmente *= 3
+augmente //= 4
+augmente %= 3
+
+# Bitwise operators
+soit bit_et = 0b1010 & 0b1100
+soit bit_ou = 0b1010 | 0b0101
+soit bit_xou = 0b1010 ^ 0b1111
+soit bit_gauche = 1 << 3
+soit bit_droite = 64 >> 2
+
+# Chained assignment
+soit chaine_a = chaine_b = chaine_c = 0
+
+# Type annotations
+soit typee: entier = 99
+
+déf annotee(x: entier, y: flottant) -> chaine:
+    retour chaine(x + y)
+
+# Ternary expression
+soit ternaire = "yes" si typee > 0 sinon "no"
+
+# Default params, *args, **kwargs
+déf multi_parametres(base, extra=1, *args, **kwargs):
+    retour base + extra + somme(args)
+soit resultat_multi = multi_parametres(10, 2, 3, 4, key=5)
+
+# Lambda
+soit carre = lambda x: x * x
+
+# List/dict comprehensions and generator expression
+soit liste_c = [x * 2 pour x dans intervalle(4)]
+soit dico_c = {chaine(k): k * k pour k dans intervalle(3)}
+soit gen_c = liste(x + 1 pour x dans intervalle(3))
+soit imbrique_c = [i + j pour i dans intervalle(2) pour j dans intervalle(2)]
+soit filtre_c = [x pour x dans intervalle(6) si x % 2 == 0]
+
+# try/except/else
+soit essai_sinon = 0
+essayer:
+    essai_sinon = entier("7")
+sauf ValueError:
+    essai_sinon = -1
+sinon:
+    essai_sinon += 1
+
+# Exception chaining
+soit enchainee = Faux
+essayer:
+    essayer:
+        lever ValueError("v")
+    sauf ValueError comme ve:
+        lever RuntimeError("r") depuis ve
+sauf RuntimeError:
+    enchainee = Vrai
+
+# Multiple except handlers
+soit multi_exc_loc = 0
+essayer:
+    lever TypeError("t")
+sauf ValueError:
+    multi_exc_loc = 1
+sauf TypeError:
+    multi_exc_loc = 2
+
+# Match/case with default
+soit valeur_selon = 2
+soit resultat_selon = "other"
+selon valeur_selon:
+    cas 1:
+        resultat_selon = "one"
+    cas 2:
+        resultat_selon = "two"
+    defaut:
+        resultat_selon = "default"
+
+# Decorator
+déf doubleur(func):
+    déf enveloppe(*args, **kwargs):
+        retour func(*args, **kwargs) * 2
+    retour enveloppe
+
+@doubleur
+déf dix():
+    retour 10
+
+soit resultat_deco = dix()
+
+# Multiple inheritance, static/class methods, property
+classe Melange:
+    déf melange(self):
+        retour 1
+
+classe BaseDeux:
+    déf __init__(self, start):
+        self.value = start
+
+classe Combine(BaseDeux, Melange):
+    @staticmethod
+    déf etiquette():
+        retour "combined"
+    @classmethod
+    déf construire(cls, v):
+        retour cls(v)
+    @property
+    déf doublee(self):
+        retour self.value * 2
+
+soit combine_obj = Combine.construire(3)
+soit propriete = combine_obj.doublee
+
+# Docstring
+déf avec_doc():
+    """A docstring."""
+    retour Vrai
+
+afficher(nombre_hex, nombre_oct, nombre_bin, nombre_sci)
+afficher(augmente, bit_et, bit_ou, bit_xou, bit_gauche, bit_droite)
+afficher(chaine_a, chaine_b, chaine_c)
+afficher(typee, annotee(3, 1.5), ternaire)
+afficher(resultat_multi, carre(5))
+afficher(liste_c, dico_c, gen_c)
+afficher(imbrique_c, filtre_c)
+afficher(essai_sinon, enchainee, multi_exc_loc)
+afficher(resultat_selon, resultat_deco, propriete)
+afficher(avec_doc())

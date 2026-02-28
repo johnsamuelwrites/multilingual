@@ -301,7 +301,12 @@ class PythonCodeGenerator:
             else:
                 parts.append(name)
         names = ", ".join(parts)
-        self._emit(f"from {node.module} import {names}")
+        # Relative imports: level dots prepended to module name
+        # e.g. level=1, module=""     → "from . import X"
+        #      level=1, module="sous" → "from .sous import X"
+        #      level=2, module="util" → "from ..util import X"
+        dots = "." * getattr(node, "level", 0)
+        self._emit(f"from {dots}{node.module} import {names}")
 
     def generic_visit(self, node):
         """Raise when statement node code generation is not implemented."""

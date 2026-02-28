@@ -1,0 +1,175 @@
+/*
+ * SPDX-FileCopyrightText: 2024 John Samuel <johnsamuelwrites@gmail.com>
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ *
+ * Extra CSS for the Multilingual Programming docs (MkDocs Material).
+ * Applies futuristic styling on top of the Material base theme.
+ */
+
+/* ── Fonts ───────────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+/* ── CSS custom properties ───────────────────────────────────────── */
+:root {
+  --ml-radius: 10px;
+  --ml-glow-purple: rgba(124, 106, 247, 0.35);
+  --ml-glow-cyan:   rgba(0, 212, 255, 0.25);
+  --ml-transition:  0.2s ease;
+}
+
+/* ── Animated hero gradient on the home page ─────────────────────── */
+.md-hero {
+  background: linear-gradient(135deg, #1a0533 0%, #0a1628 50%, #0d1f3c 100%);
+  position: relative;
+  overflow: hidden;
+}
+.md-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 25% 30%, rgba(124, 106, 247, 0.15) 0%, transparent 55%),
+    radial-gradient(ellipse at 75% 70%, rgba(0, 212, 255, 0.10) 0%, transparent 55%);
+  animation: ml-bg-pulse 6s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+@keyframes ml-bg-pulse {
+  from { opacity: 0.6; }
+  to   { opacity: 1.0; }
+}
+
+/* ── Navigation tabs — glow on active ───────────────────────────── */
+.md-tabs__link--active {
+  text-shadow: 0 0 12px var(--ml-glow-cyan);
+}
+
+/* ── Code blocks ─────────────────────────────────────────────────── */
+.md-typeset pre > code {
+  border-radius: var(--ml-radius);
+}
+.md-typeset .highlight {
+  border-radius: var(--ml-radius);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(124, 106, 247, 0.15);
+}
+[data-md-color-scheme="slate"] .md-typeset .highlight {
+  border-color: rgba(124, 106, 247, 0.25);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(124, 106, 247, 0.1);
+}
+
+/* ── Admonition upgrades ─────────────────────────────────────────── */
+.md-typeset .admonition,
+.md-typeset details {
+  border-radius: var(--ml-radius);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+}
+
+/* ── Content cards ───────────────────────────────────────────────── */
+.md-typeset .grid.cards > ul > li,
+.md-typeset .grid.cards > :not(ul) {
+  border-radius: var(--ml-radius);
+  transition: transform var(--ml-transition), box-shadow var(--ml-transition);
+}
+.md-typeset .grid.cards > ul > li:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 32px rgba(124, 106, 247, 0.2);
+}
+
+/* ── Header — subtle glow on dark ───────────────────────────────── */
+[data-md-color-scheme="slate"] .md-header {
+  background: linear-gradient(90deg, #12004a 0%, #0a0a2a 50%, #001a3a 100%);
+  box-shadow: 0 1px 0 rgba(124, 106, 247, 0.3), 0 4px 24px rgba(0, 0, 0, 0.4);
+}
+[data-md-color-scheme="slate"] .md-tabs {
+  background: rgba(10, 10, 30, 0.7);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(124, 106, 247, 0.15);
+}
+
+/* ── Sidebar navigation ──────────────────────────────────────────── */
+[data-md-color-scheme="slate"] .md-nav__link--active {
+  color: #00d4ff;
+  text-shadow: 0 0 8px rgba(0, 212, 255, 0.4);
+}
+[data-md-color-scheme="slate"] .md-nav__link:hover {
+  color: #a78bfa;
+}
+
+/* ── Tables ──────────────────────────────────────────────────────── */
+.md-typeset table:not([class]) {
+  border-radius: var(--ml-radius);
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+}
+[data-md-color-scheme="slate"] .md-typeset table:not([class]) th {
+  background: rgba(124, 106, 247, 0.2);
+}
+[data-md-color-scheme="slate"] .md-typeset table:not([class]) tr:hover td {
+  background: rgba(124, 106, 247, 0.07);
+}
+
+/* ── Buttons ─────────────────────────────────────────────────────── */
+.md-typeset .md-button {
+  border-radius: var(--ml-radius);
+  transition: transform var(--ml-transition), box-shadow var(--ml-transition);
+}
+.md-typeset .md-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px var(--ml-glow-purple);
+}
+.md-typeset .md-button--primary {
+  background: linear-gradient(135deg, #7c6af7, #00d4ff);
+  border: none;
+  color: #fff;
+}
+
+/* ── Search bar ──────────────────────────────────────────────────── */
+[data-md-color-scheme="slate"] .md-search__input {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(124, 106, 247, 0.2);
+  border-radius: 24px;
+}
+[data-md-color-scheme="slate"] .md-search__input:focus {
+  box-shadow: 0 0 0 3px rgba(124, 106, 247, 0.25);
+}
+
+/* ── Footer ──────────────────────────────────────────────────────── */
+[data-md-color-scheme="slate"] .md-footer {
+  background: #060614;
+  border-top: 1px solid rgba(124, 106, 247, 0.15);
+}
+
+/* ── Inline code ─────────────────────────────────────────────────── */
+[data-md-color-scheme="slate"] .md-typeset code:not(.highlight code) {
+  background: rgba(124, 106, 247, 0.12);
+  border: 1px solid rgba(124, 106, 247, 0.2);
+  border-radius: 4px;
+  color: #a78bfa;
+}
+
+/* ── Copy button on code blocks ──────────────────────────────────── */
+.md-typeset .highlight .md-clipboard {
+  border-radius: 6px;
+  transition: background var(--ml-transition), color var(--ml-transition);
+}
+
+/* ── Playground page: open-in-full link styling ──────────────────── */
+.md-typeset .playground-link {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  background: linear-gradient(135deg, #7c6af7, #00d4ff);
+  color: #fff !important;
+  padding: .6rem 1.4rem;
+  border-radius: 24px;
+  font-weight: 600;
+  text-decoration: none;
+  box-shadow: 0 4px 20px rgba(124, 106, 247, 0.35);
+  transition: transform var(--ml-transition), box-shadow var(--ml-transition);
+  margin: .5rem 0;
+}
+.md-typeset .playground-link:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(124, 106, 247, 0.5);
+  text-decoration: none !important;
+}
