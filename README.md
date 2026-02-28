@@ -265,6 +265,7 @@ multilingual run main_en.ml --lang en
 - Date/time: `MPDate`, `MPTime`, `MPDatetime`
 - Frontend: `Lexer`, `Parser`, AST nodes, `SemanticAnalyzer`
 - Runtime: `PythonCodeGenerator`, `RuntimeBuiltins`, `ProgramExecutor`, `REPL`
+- WAT/WASM backend: `WATCodeGenerator` — compiles multilingual AST to executable WebAssembly (core language + OOP with stateful class instances)
 
 Additional syntax now supported:
 
@@ -360,6 +361,8 @@ Use this README for setup and workflow; use `docs/` for design rationale and pol
 - Development and debugging guide: [docs/development.md](docs/development.md)
 - Guide complet en francais: [docs/fr/programmation.md](docs/fr/programmation.md)
 - Language onboarding guide: [docs/language_onboarding.md](docs/language_onboarding.md)
+- WAT/WASM architecture overview: [docs/WASM_ARCHITECTURE_OVERVIEW.md](docs/WASM_ARCHITECTURE_OVERVIEW.md)
+- WAT/WASM OOP object model reference: [docs/wat_oop_model.md](docs/wat_oop_model.md)
 - Contribution guide: [CONTRIBUTING.md](CONTRIBUTING.md)
 - Release process: [docs/releasing.md](docs/releasing.md)
 - Changelog: [CHANGELOG.md](CHANGELOG.md)

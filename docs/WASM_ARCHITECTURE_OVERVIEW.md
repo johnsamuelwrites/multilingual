@@ -4,8 +4,8 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│               Multilingual Programming Language v0.4.0          │
-│                    (WASM Infrastructure: WASM Edition)                     │
+│               Multilingual Programming Language v0.5.x          │
+│                    (WAT/WASM Infrastructure)                               │
 └─────────────────────────────────────────────────────────────────┘
                               │
                 ┌─────────────┴──────────────┐
@@ -94,7 +94,19 @@
 
 ---
 
-> **Pipeline status (v0.4.0):** `WasmCodeGenerator.generate()` produces Rust intermediate code, but the generated function bodies are stubs (placeholder comments, `return 0`). Type mapping always returns `WasmI32` regardless of actual parameter type. `WasmBuildConfig.build()` returns `None` — the Cranelift compilation step and WASM binary output are not yet implemented. No pre-built `.wasm` corpus binaries are shipped with the package.
+> **Pipeline status (v0.5.x):** Two WASM paths exist side-by-side.
+>
+> **WAT path (primary, production-ready):** `WATCodeGenerator` compiles the multilingual
+> AST directly to WebAssembly Text (WAT). The generated WAT is compiled to binary WASM by
+> `wabt` / `wat2wasm` and executed by Wasmtime. Class methods, stateful OOP instances
+> (heap allocation via `$__heap_ptr`), `self.attr` field reads/writes, and instance method
+> calls are fully lowered. All 17-language `complete_features_*.ml` examples compile to
+> executable WASM and are validated in CI.
+>
+> **Rust/Cranelift path (stub, planned):** `WasmCodeGenerator.generate()` produces Rust
+> intermediate code but function bodies remain stubs (`return 0`). `WasmBuildConfig.build()`
+> returns `None`; Cranelift compilation is not yet implemented. No pre-built `.wasm` corpus
+> binaries are shipped with the package.
 
 ---
 
@@ -365,6 +377,76 @@ pip install multilingualprogramming[performance] # + wasmtime + NumPy
 
 ---
 
+## WAT OOP Object Model
+
+The `WATCodeGenerator` implements a lightweight linear-memory object model for classes.
+
+### Stateful vs. Stateless Classes
+
+| Kind | Definition | WAT behaviour |
+|------|-----------|---------------|
+| **Stateless** | No `self.attr = …` in any method | `f64.const 0` passed as `self`; no heap allocation |
+| **Stateful** | At least one `self.attr = …` | Heap allocation on every constructor call; `self` carries the heap address |
+
+### Memory Layout
+
+```
+Linear memory (WAT, 64 KB default page)
+┌──────────────────────────────┐  ← offset 0
+│  String data section         │  ← interned string literals (immutable)
+├──────────────────────────────┤  ← HEAP_BASE = max(ceil(string_len / 8) * 8, 64)
+│  Object heap                 │  ← bump-allocated instances (grows upward)
+└──────────────────────────────┘  ← 65535
+```
+
+The heap pointer is a single WAT global emitted only when stateful classes exist:
+
+```wat
+(global $__heap_ptr (mut i32) (i32.const HEAP_BASE))
+```
+
+### Field Layout
+
+Each `f64` field occupies 8 bytes. Field order is determined by first-seen
+`self.attr = …` assignment, scanning `__init__` first then remaining methods.
+
+```
+base + 0   : f64  (first field)
+base + 8   : f64  (second field)
+...
+```
+
+### Constructor Sequence
+
+`Counter(10)` (stateful, 1 field = 8 bytes) compiles to:
+
+```wat
+global.get $__heap_ptr      ;; advance heap pointer
+i32.const 8
+i32.add
+global.set $__heap_ptr
+global.get $__heap_ptr      ;; self = new_ptr - size
+i32.const 8
+i32.sub
+f64.convert_i32_u           ;; self as f64
+f64.const 10.0              ;; arg
+call $Counter____init__
+drop                        ;; discard __init__ return value
+global.get $__heap_ptr      ;; push object ref
+i32.const 8
+i32.sub
+f64.convert_i32_u
+```
+
+### Field Store / Load
+
+`self.value = x` → `f64.store`; `self.value` → `f64.load` at the compile-time byte offset.
+
+For full details, limitations, and a complete end-to-end example see
+[docs/wat_oop_model.md](wat_oop_model.md).
+
+---
+
 ## Data Flow Examples
 
 ### Example 1: Matrix Multiplication
@@ -503,9 +585,10 @@ AST
     │   Code Generation → Python Executor
     │   (Always works, slower)
     │
-    └─ Path 2: WASM [PARTIALLY IMPLEMENTED — see pipeline status note]
-        Code Generation → Rust (stub bodies) → Cranelift [PLANNED] → WASM Binary [PLANNED]
-        (Faster for data-parallel ops when fully implemented; requires wasmtime)
+    └─ Path 2: WAT/WASM
+        WAT Code Generation → WAT text → wat2wasm → WASM Binary → Wasmtime execution
+        (Functional for core language + OOP; requires wasmtime + wabt)
+        [Rust/Cranelift path: PLANNED — stubs only]
     ↓
 Backend Selector
     (Auto-detect best path)
@@ -647,16 +730,16 @@ Fallback path should be as fast as possible
 
 ## Summary
 
-WASM Infrastructure delivers a **2-path execution model** with **transparent backend selection**:
+The WAT/WASM infrastructure delivers a **2-path execution model** with **transparent backend selection**:
 
 - ✅ **Always works** (Python fallback)
-- ✅ **50-100x faster** (WASM when available)
-- ✅ **No code changes** (automatic selection)
+- ✅ **WAT path production-ready** (core language + OOP fully lowered; all 17 languages validated)
+- ✅ **No code changes required** (automatic selection)
 - ✅ **Cross-platform** (Windows/Linux/macOS)
-- ✅ **Stability-focused** (33+ tests, comprehensive docs)
+- ✅ **Stability-focused** (1787 tests, comprehensive docs)
 
 ---
 
-**Version**: Documentation Suite Final
-**Status**: Stable; validate in your environment.
+**Version**: v0.5.x (updated March 2026)
+**Status**: WAT path stable; Rust/Cranelift path planned.
 **Architecture**: Stable & Extensible

@@ -4,7 +4,7 @@ This matrix defines the current compatibility baseline for `multilingual`.
 
 Baseline source of truth:
 - `examples/complete_features_en.ml`
-- `tests/` (858 tests across 78 test suites)
+- `tests/` (1787 tests across 130+ test suites, 2 skipped)
 
 Target runtime:
 - CPython `3.12.x`
@@ -158,9 +158,42 @@ parsing.
 | `if` statement | ja, ar, hi, bn, ta | condition-first: `condition もし:` |
 | `with` statement | ja, ar, hi, bn, ta | expression-first: `expression 付き:` |
 
+## WAT/WASM Backend
+
+The WAT code generator (`WATCodeGenerator`) compiles the multilingual AST directly to
+WebAssembly Text (WAT), which is then compiled and executed via Wasmtime.
+
+| Feature | Status | Notes |
+|---|---|---|
+| Arithmetic and numeric expressions | Supported | `f64` values; `+`, `-`, `*`, `/`, `%`, `**` |
+| Variable declarations and assignments | Supported | WAT locals |
+| `if` / `elif` / `else` | Supported | WAT `if` blocks |
+| `while` loops | Supported | WAT `block`/`loop`/`br_if` |
+| `for` loops | Supported | WAT `block`/`loop`/`br_if` with iterator |
+| Function definitions | Supported | Mangled WAT exports |
+| `print` / `print_newline` | Supported | Imported host functions |
+| String literals | Supported | Interned in linear memory data section |
+| Class methods (lowering) | Supported | `Class__method` mangled WAT exports |
+| Stateful OOP — field store (`self.attr = val`) | Supported | `f64.store` at compile-time offset |
+| Stateful OOP — field load (`self.attr`) | Supported | `f64.load` at compile-time offset |
+| Stateful OOP — constructor allocation | Supported | Bump-pointer heap; `$__heap_ptr` global |
+| Stateful OOP — instance method calls | Supported | Actual heap pointer passed as `self` |
+| External `obj.attr` reads | Supported | When class statically tracked |
+| `abs`, `min`, `max` (2-arg) | Supported | `f64.abs`, `f64.min`, `f64.max` |
+| Stateless utility classes | Supported | `f64.const 0` as `self`, no allocation |
+| Multiple independent instances | Supported | Each constructor call advances heap |
+| Inheritance / method resolution | Not supported | Methods of base class not inherited in WAT |
+| Dynamic dispatch / polymorphism | Not supported | No vtable |
+| `super()` calls | Not supported | |
+| `@staticmethod` / `@classmethod` / `@property` | Not lowered | Treated as regular functions |
+| n-arg `min`/`max` (n > 2) | Not supported | Emits stub |
+| `print` with multiple args | Partial | Each arg printed separately |
+
+See [docs/wat_oop_model.md](wat_oop_model.md) for the full object model reference.
+
 ## Test Coverage
 
-858 tests across 78 test suites covering:
+1787 tests (2 skipped) across 130+ test suites covering:
 
 | Test area | Suite count | Description |
 |---|---|---|
@@ -173,6 +206,7 @@ parsing.
 | Critical features | 8 | Triple-quoted strings, slices, parameters, tuples, comprehensions, decorators, f-strings |
 | Language completeness and CLI features | 8 | Augmented assignment, membership/identity, ternary, assert, chained assignment, CLI, REPL |
 | Advanced language features | 23 | Loop else, yield/raise from, set comprehensions, parameter separators, f-string formatting, match guards/OR/AS, global/nonlocal, builtins, exceptions, surface normalization, data quality, extended builtins, alias resolution, alias execution, starred unpacking, integration, multilingual |
+| WAT/WASM generation | 10+ | WAT text correctness, WAT OOP object model, WASM execution, complete-features WASM execution |
 | Infrastructure | 10 | Keyword registry, AST nodes, AST printer, error messages, runtime builtins, REPL |
 
 ## Not Guaranteed Yet

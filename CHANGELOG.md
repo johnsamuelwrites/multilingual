@@ -6,6 +6,33 @@ The format is inspired by Keep a Changelog, and this project follows SemVer.
 
 ## [Unreleased]
 
+### Added
+- **WAT/WASM OOP object model**: Stateful classes (those with `self.attr = …` assignments)
+  now use a linear-memory bump allocator in generated WAT. Each field is an `f64` stored at
+  a compile-time-computed byte offset. Object pointers are carried as `f64` values and
+  converted at field-access sites via `i32.trunc_f64_u` / `f64.convert_i32_u`.
+- **Heap-pointer global**: `(global $__heap_ptr (mut i32) …)` is emitted only when at least
+  one stateful class is present; `HEAP_BASE` is aligned to 8 bytes after the string data section.
+- **`self.attr` store/load lowering**: Attribute writes (`self.x = val`) compile to `f64.store`;
+  attribute reads (`self.x`) compile to `f64.load`. Compound assignments (`self.x += delta`)
+  use a temporary `f64` local to avoid address recomputation issues.
+- **External `obj.attr` reads**: `obj.attr` outside the class body lowers to `f64.load` when
+  the variable's class is statically known from local assignments.
+- **Stateful instance method calls**: Instance method calls (`obj.method(…)`) pass the actual
+  heap address as `self` (as `f64`) for stateful classes; stateless classes keep the old
+  `f64.const 0` behavior.
+- **New WAT OOP tests** in `tests/wat_generator_test.py`:
+  - `WATOopObjectModelTestSuite` — 6 WAT pattern tests (no wasmtime required).
+  - 3 new execution tests in `WATClassWasmExecutionTestSuite`: single-field counter get,
+    increment-then-get, and two independent instances.
+- **`docs/wat_oop_model.md`**: Reference document covering the object model design, memory
+  layout, field layout rules, constructor sequence, store/load patterns, limitations, and a
+  full end-to-end WAT example.
+
+### Changed
+- Stateless classes (no `self.attr` assignments) are unaffected and keep the `f64.const 0`
+  self path — no existing tests are broken.
+
 
 ## v0.5.1
 - Update documentation
