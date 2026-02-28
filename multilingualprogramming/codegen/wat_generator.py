@@ -105,8 +105,7 @@ _ABS_NAMES = frozenset({
     "betrag",
     # Italian
     "valoreassoluto",
-    # Portuguese
-    "valorabsoluto",
+    # Portuguese shares the same alias as Spanish (kept once above)
     # Polish
     "wartoscbezwzgledna",
     # Dutch
@@ -122,9 +121,8 @@ _ABS_NAMES = frozenset({
 # min() → WAT f64.min  (2 arguments; more args unsupported)
 _MIN_NAMES = frozenset({
     "min",
-    "minimum", "minimo", "minimum", "minimo",
+    "minimum", "minimo",
     # localized aliases from builtins_aliases.json
-    "minimum",  # fr
     "न्यूनतम",  # hi
     "الحد_الأدنى", "الحدالأدنى",  # ar
     "最小",  # zh / ja
@@ -133,7 +131,7 @@ _MIN_NAMES = frozenset({
 # max() → WAT f64.max  (2 arguments; more args unsupported)
 _MAX_NAMES = frozenset({
     "max",
-    "maximum", "maximo", "massimo", "maximo",
+    "maximum", "maximo", "massimo",
     "अधिकतम",  # hi
     "الحد_الأقصى", "الحدالأقصى",  # ar
     "最大",  # zh / ja

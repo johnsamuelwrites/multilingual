@@ -15,13 +15,12 @@ Issue 6 — ``_name()`` helper returns a readable string for AttributeAccess nod
 Issue 8 — ``has_stub_calls()`` distinguishes functional WAT from stub-only exports
 """
 
+import io
+import sys
 import unittest
 
 from multilingualprogramming.codegen.executor import ProgramExecutor
-from multilingualprogramming.codegen.runtime_builtins import (
-    RuntimeBuiltins,
-    make_exec_globals,
-)
+from multilingualprogramming.codegen.runtime_builtins import make_exec_globals
 from multilingualprogramming.codegen.wat_generator import (
     WATCodeGenerator,
     _name as wat_name,
@@ -39,7 +38,6 @@ from multilingualprogramming.parser.ast_nodes import (
     Parameter,
     AttributeAccess,
 )
-from multilingualprogramming.core.ir import CoreIRProgram
 
 
 # ---------------------------------------------------------------------------
@@ -373,7 +371,6 @@ class MakeExecGlobalsTestSuite(unittest.TestCase):
         executor = ProgramExecutor(language="fr")
         python_src = executor.transpile('afficher("salut")\n')
         ns = make_exec_globals("fr")
-        import io, sys
         captured = io.StringIO()
         old = sys.stdout
         sys.stdout = captured
