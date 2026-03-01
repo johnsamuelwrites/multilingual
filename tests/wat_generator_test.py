@@ -1760,7 +1760,8 @@ class WATInheritanceTestSuite(unittest.TestCase):
             "    pass\n"
         )
         self.gen.generate(prog)
-        self.assertIn("Dog.speak", self.gen._class_attr_call_names)
+        attr_call_names = getattr(self.gen, "_class_attr_call_names")
+        self.assertIn("Dog.speak", attr_call_names)
 
     def test_overridden_method_not_inherited(self):
         """If Dog defines its own speak(), it must NOT be overwritten by Animal's."""
@@ -1774,7 +1775,8 @@ class WATInheritanceTestSuite(unittest.TestCase):
         )
         self.gen.generate(prog)
         # Dog.speak should point to Dog__speak, not Animal__speak
-        self.assertEqual(self.gen._class_attr_call_names["Dog.speak"], "Dog__speak")
+        attr_call_names = getattr(self.gen, "_class_attr_call_names")
+        self.assertEqual(attr_call_names["Dog.speak"], "Dog__speak")
 
     # -- field layout inheritance --
 
@@ -1789,7 +1791,8 @@ class WATInheritanceTestSuite(unittest.TestCase):
             "        self.name = 0\n"
         )
         self.gen.generate(prog)
-        layout = self.gen._class_field_layouts["Dog"]
+        class_field_layouts = getattr(self.gen, "_class_field_layouts")
+        layout = class_field_layouts["Dog"]
         self.assertIn("legs", layout)
         self.assertIn("name", layout)
         self.assertEqual(layout["legs"], 0)   # parent field first
@@ -1806,7 +1809,8 @@ class WATInheritanceTestSuite(unittest.TestCase):
             "        self.name = 0\n"
         )
         self.gen.generate(prog)
-        self.assertEqual(self.gen._class_obj_sizes["Dog"], 16)
+        class_obj_sizes = getattr(self.gen, "_class_obj_sizes")
+        self.assertEqual(class_obj_sizes["Dog"], 16)
 
     # -- super() lowering --
 
@@ -1848,10 +1852,11 @@ class WATInheritanceTestSuite(unittest.TestCase):
             "        print(self.legs)\n"
         )
         self.gen.generate(prog)
-        self.assertIn("Dog", self.gen._class_ctor_names)
+        class_ctor_names = getattr(self.gen, "_class_ctor_names")
+        self.assertIn("Dog", class_ctor_names)
         self.assertEqual(
-            self.gen._class_ctor_names["Dog"],
-            self.gen._class_ctor_names["Animal"],
+            class_ctor_names["Dog"],
+            class_ctor_names["Animal"],
         )
 
 
@@ -1879,7 +1884,7 @@ class WATInheritanceWasmExecutionTestSuite(unittest.TestCase):
         def _print_f64(val):
             printed.append(val)
 
-        def _print_str(ptr, length):
+        def _print_str(_ptr, _length):
             pass  # string printing not tested here
 
         def _print_bool(val):
