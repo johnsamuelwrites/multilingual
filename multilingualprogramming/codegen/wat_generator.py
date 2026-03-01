@@ -979,7 +979,7 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
         for stmt in stmts:
             self._gen_stmt(stmt, indent)
 
-    def _gen_stmt(self, stmt, indent: str):  # noqa: C901  # pylint: disable=too-many-branches,too-many-statements
+    def _gen_stmt(self, stmt, indent: str):  # noqa: C901  # pylint: disable=too-many-branches,too-many-statements,too-many-locals
         if isinstance(stmt, VariableDeclaration):
             name = _name(stmt.name)
             self._locals.add(name)
@@ -1076,10 +1076,13 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
                 # super().method(args) — lower to direct parent WAT call (statement ctx).
                 _super_wat = self._resolve_super_call(expr)
                 if _super_wat is not None:
+                    super_method = _name(expr.func.attr)
                     self._emit(f"{indent}local.get ${self._wat_symbol('self')}")
                     self._gen_call_args(expr, indent, _super_wat, skip_params=1)
                     self._emit(f"{indent}call ${self._wat_symbol(_super_wat)}")
-                    self._emit(f"{indent}drop  ;; super().{_name(expr.func.attr)} return value discarded")
+                    self._emit(
+                        f"{indent}drop  ;; super().{super_method} return value discarded"
+                    )
                     return
                 fname = _name(expr.func)
                 if fname in _PRINT_NAMES:
