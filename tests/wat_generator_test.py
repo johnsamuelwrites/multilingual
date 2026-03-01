@@ -1730,5 +1730,232 @@ class WATClassWasmExecutionTestSuite(unittest.TestCase):
         self.assertEqual(printed, [1.0, 2.0])
 
 
+# ---------------------------------------------------------------------------
+# Inheritance helpers + test suite
+# ---------------------------------------------------------------------------
+
+def _parse_en(source: str):
+    """Parse an English-language multilingual source string via the full pipeline."""
+    from multilingualprogramming.lexer.lexer import Lexer   # pylint: disable=import-outside-toplevel
+    from multilingualprogramming.parser.parser import Parser  # pylint: disable=import-outside-toplevel
+    tokens = Lexer(source, language="en").tokenize()
+    return Parser(tokens, source_language="en").parse()
+
+
+class WATInheritanceTestSuite(unittest.TestCase):
+    """Verify compile-time inheritance: method name table, field layout, super()."""
+
+    def setUp(self):
+        self.gen = WATCodeGenerator()
+
+    # -- method name-table inheritance --
+
+    def test_inherited_method_in_name_table(self):
+        """Dog should have Animal.speak in its name table after lowering."""
+        prog = _parse_en(
+            "class Animal:\n"
+            "    def speak(self):\n"
+            "        print(0)\n"
+            "class Dog(Animal):\n"
+            "    pass\n"
+        )
+        self.gen.generate(prog)
+        self.assertIn("Dog.speak", self.gen._class_attr_call_names)
+
+    def test_overridden_method_not_inherited(self):
+        """If Dog defines its own speak(), it must NOT be overwritten by Animal's."""
+        prog = _parse_en(
+            "class Animal:\n"
+            "    def speak(self):\n"
+            "        print(1)\n"
+            "class Dog(Animal):\n"
+            "    def speak(self):\n"
+            "        print(2)\n"
+        )
+        self.gen.generate(prog)
+        # Dog.speak should point to Dog__speak, not Animal__speak
+        self.assertEqual(self.gen._class_attr_call_names["Dog.speak"], "Dog__speak")
+
+    # -- field layout inheritance --
+
+    def test_parent_field_at_offset_zero(self):
+        """Inherited parent field must appear at offset 0 in the child layout."""
+        prog = _parse_en(
+            "class Animal:\n"
+            "    def __init__(self):\n"
+            "        self.legs = 4\n"
+            "class Dog(Animal):\n"
+            "    def __init__(self):\n"
+            "        self.name = 0\n"
+        )
+        self.gen.generate(prog)
+        layout = self.gen._class_field_layouts["Dog"]
+        self.assertIn("legs", layout)
+        self.assertIn("name", layout)
+        self.assertEqual(layout["legs"], 0)   # parent field first
+        self.assertEqual(layout["name"], 8)   # child field after
+
+    def test_subclass_obj_size_includes_parent_fields(self):
+        """Dog with one parent field + one own field must have obj_size == 16."""
+        prog = _parse_en(
+            "class Animal:\n"
+            "    def __init__(self):\n"
+            "        self.legs = 4\n"
+            "class Dog(Animal):\n"
+            "    def __init__(self):\n"
+            "        self.name = 0\n"
+        )
+        self.gen.generate(prog)
+        self.assertEqual(self.gen._class_obj_sizes["Dog"], 16)
+
+    # -- super() lowering --
+
+    def test_super_init_emits_parent_call(self):
+        """super().__init__() must emit a call to Animal____init__."""
+        prog = _parse_en(
+            "class Animal:\n"
+            "    def __init__(self):\n"
+            "        self.legs = 4\n"
+            "class Dog(Animal):\n"
+            "    def __init__(self):\n"
+            "        super().__init__()\n"
+            "        self.name = 0\n"
+        )
+        wat = self.gen.generate(prog)
+        self.assertIn("call $Animal____init__", wat)
+
+    def test_super_method_emits_parent_call(self):
+        """super().speak() inside Dog.bark must emit a call to Animal__speak."""
+        prog = _parse_en(
+            "class Animal:\n"
+            "    def speak(self):\n"
+            "        print(1)\n"
+            "class Dog(Animal):\n"
+            "    def bark(self):\n"
+            "        super().speak()\n"
+        )
+        wat = self.gen.generate(prog)
+        self.assertIn("call $Animal__speak", wat)
+
+    def test_subclass_without_own_init_inherits_ctor(self):
+        """A subclass with no __init__ must inherit the parent's constructor entry."""
+        prog = _parse_en(
+            "class Animal:\n"
+            "    def __init__(self):\n"
+            "        self.legs = 4\n"
+            "class Dog(Animal):\n"
+            "    def bark(self):\n"
+            "        print(self.legs)\n"
+        )
+        self.gen.generate(prog)
+        self.assertIn("Dog", self.gen._class_ctor_names)
+        self.assertEqual(
+            self.gen._class_ctor_names["Dog"],
+            self.gen._class_ctor_names["Animal"],
+        )
+
+
+@unittest.skipUnless(
+    importlib.util.find_spec("wasmtime") is not None,
+    "wasmtime not installed",
+)
+class WATInheritanceWasmExecutionTestSuite(unittest.TestCase):
+    """Execute WAT-compiled inheritance programs via wasmtime."""
+
+    def setUp(self):
+        self.gen = WATCodeGenerator()
+
+    def _run_main(self, prog):
+        import wasmtime  # pylint: disable=import-outside-toplevel,import-error
+        wat = self.gen.generate(prog)
+        engine = wasmtime.Engine()
+        wasm_bytes = wasmtime.wat2wasm(wat)
+        module = wasmtime.Module(engine, wasm_bytes)
+        store = wasmtime.Store(engine)
+        printed = []
+        linker = wasmtime.Linker(engine)
+        linker.allow_shadowing = True
+
+        def _print_f64(val):
+            printed.append(val)
+
+        def _print_str(ptr, length):
+            pass  # string printing not tested here
+
+        def _print_bool(val):
+            printed.append(bool(val))
+
+        def _print_sep():
+            pass
+
+        def _print_newline():
+            pass
+
+        linker.define_func("env", "print_f64",
+                           wasmtime.FuncType([wasmtime.ValType.f64()], []), _print_f64)
+        linker.define_func("env", "print_str",
+                           wasmtime.FuncType([wasmtime.ValType.i32(), wasmtime.ValType.i32()], []),
+                           _print_str)
+        linker.define_func("env", "print_bool",
+                           wasmtime.FuncType([wasmtime.ValType.i32()], []), _print_bool)
+        linker.define_func("env", "print_sep",
+                           wasmtime.FuncType([], []), _print_sep)
+        linker.define_func("env", "print_newline",
+                           wasmtime.FuncType([], []), _print_newline)
+
+        instance = linker.instantiate(store, module)
+        instance.exports(store)["__main"](store)
+        return printed
+
+    def test_inherited_method_called_on_subclass(self):
+        """Dog() uses Animal's constructor; d.get_legs() returns the Animal field."""
+        prog = _parse_en(
+            "class Animal:\n"
+            "    def __init__(self):\n"
+            "        self.legs = 4\n"
+            "    def get_legs(self):\n"
+            "        return self.legs\n"
+            "class Dog(Animal):\n"
+            "    pass\n"
+            "d = Dog()\n"
+            "print(d.get_legs())\n"
+        )
+        self.assertEqual(self._run_main(prog), [4.0])
+
+    def test_super_init_sets_parent_field(self):
+        """super().__init__() in Dog.__init__ correctly sets self.legs."""
+        prog = _parse_en(
+            "class Animal:\n"
+            "    def __init__(self):\n"
+            "        self.legs = 4\n"
+            "class Dog(Animal):\n"
+            "    def __init__(self):\n"
+            "        super().__init__()\n"
+            "        self.name = 9\n"
+            "    def get_legs(self):\n"
+            "        return self.legs\n"
+            "d = Dog()\n"
+            "print(d.get_legs())\n"
+        )
+        self.assertEqual(self._run_main(prog), [4.0])
+
+    def test_subclass_own_and_inherited_fields(self):
+        """Dog can access both inherited self.legs and its own self.name."""
+        prog = _parse_en(
+            "class Animal:\n"
+            "    def __init__(self):\n"
+            "        self.legs = 4\n"
+            "class Dog(Animal):\n"
+            "    def __init__(self):\n"
+            "        super().__init__()\n"
+            "        self.name = 99\n"
+            "    def get_both(self):\n"
+            "        return self.legs + self.name\n"
+            "d = Dog()\n"
+            "print(d.get_both())\n"
+        )
+        self.assertEqual(self._run_main(prog), [103.0])
+
+
 if __name__ == "__main__":
     unittest.main()

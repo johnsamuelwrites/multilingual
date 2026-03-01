@@ -19,6 +19,9 @@ classes and instances the generator uses:
 4. **Compile-time field layout** — the code generator scans `self.attr = …`
    assignments at codegen time to build a fixed `{field_name → byte_offset}`
    map per class; no runtime type information is needed.
+5. **Static inheritance** — base class methods are copied into the subclass name table
+   at codegen time; parent fields are prepended to child field layouts; `super()` calls
+   are lowered to direct parent WAT function calls.
 
 ## Stateful vs. Stateless Classes
 
@@ -219,6 +222,75 @@ call $print_f64
 call $print_newline
 ```
 
+## Inheritance
+
+`WATCodeGenerator` implements **static compile-time inheritance** for single-level and
+simple multi-level class hierarchies.  Because WAT has no dynamic dispatch, all method
+resolution happens at codegen time using a copy-up approach.
+
+### How It Works
+
+Three compile-time passes extend the existing lowering:
+
+1. **`_class_bases` population** — `cls.bases` (Identifier nodes) are converted to
+   string class names and stored in `_class_bases[class_name]`.
+
+2. **Effective field layout** — `_effective_field_layout(class_name)` merges parent
+   fields recursively before own fields.  Parent fields always appear at lower byte
+   offsets, so inherited methods that access `self.field` use the correct addresses
+   when called on subclass instances.
+
+3. **Method name-table inheritance** — after all classes are processed, for every
+   ancestor method not overridden in the subclass, an entry is added to
+   `_class_attr_call_names` mapping `"SubClass.method"` to the parent's lowered WAT
+   function name (`"Parent__method"`).  Constructors are inherited similarly.
+
+### Field Layout with Inheritance
+
+```
+class Animal:
+    def __init__(self):
+        self.legs = 4     # offset 0
+
+class Dog(Animal):
+    def __init__(self):
+        self.name = 0     # offset 8 (after legs)
+
+Dog instance memory:
+  base + 0  : f64  (legs — from Animal)
+  base + 8  : f64  (name — from Dog)
+  total: 16 bytes
+```
+
+### `super()` Call Lowering
+
+`super().method(args)` inside a class method is lowered to a direct call to the first
+ancestor that defines `method`:
+
+```wat
+;; Dog.__init__ calling super().__init__()
+local.get $self          ;; push self pointer
+call $Animal____init__   ;; direct call to parent method
+drop
+```
+
+`super()` with explicit arguments (`super().__init__(val)`) works the same way — the
+extra arguments are pushed between `local.get $self` and the `call` instruction.
+
+### Limitations of Inheritance
+
+| Feature | Status |
+|---------|--------|
+| Single inheritance | Supported |
+| `super().__init__()` / `super().method()` | Supported |
+| Method override (child method takes precedence) | Supported |
+| Inherited constructor when child has no `__init__` | Supported |
+| Inherited parent fields at correct byte offsets | Supported |
+| Multi-level inheritance (A → B → C) | Supported (DFS left-to-right MRO) |
+| Multiple inheritance (A, B) | Approximate — left-to-right DFS, not full C3 |
+| Dynamic dispatch / polymorphism | Not supported — no vtable |
+| `super()` with explicit class argument | Not supported |
+
 ## Limitations
 
 | Feature | Status |
@@ -229,11 +301,10 @@ call $print_newline
 | External `obj.attr` read (statically known class) | Supported |
 | Instance method calls (statically tracked object) | Supported |
 | Multiple independent instances | Supported |
-| Inheritance / method resolution from base class | Not supported (methods of base class not inherited in WAT) |
-| Dynamic dispatch / polymorphism | Not supported |
+| Single inheritance + `super()` | Supported (see Inheritance section above) |
+| Dynamic dispatch / polymorphism | Not supported — no vtable |
 | `__str__`, `__repr__`, `__del__` and other dunder methods | Not lowered; fall to stubs if called dynamically |
 | `@staticmethod`, `@classmethod`, `@property` decorators | Decorator metadata ignored; methods lowered as regular WAT functions |
-| `super()` calls | Not supported in WAT lowering |
 | Nested classes | Not supported |
 | Closures over instance state | Not supported |
 

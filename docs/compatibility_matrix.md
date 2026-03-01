@@ -182,9 +182,9 @@ WebAssembly Text (WAT), which is then compiled and executed via Wasmtime.
 | `abs`, `min`, `max` (2-arg) | Supported | `f64.abs`, `f64.min`, `f64.max` |
 | Stateless utility classes | Supported | `f64.const 0` as `self`, no allocation |
 | Multiple independent instances | Supported | Each constructor call advances heap |
-| Inheritance / method resolution | Not supported | Methods of base class not inherited in WAT |
-| Dynamic dispatch / polymorphism | Not supported | No vtable |
-| `super()` calls | Not supported | |
+| Inheritance / method resolution | Supported (single) | Method name table + field layout merged at compile time; parent fields prepended |
+| Dynamic dispatch / polymorphism | Not supported | No vtable; all dispatch is static |
+| `super()` calls | Supported | Lowered to direct parent WAT function call; `super().__init__()` and `super().method()` |
 | `@staticmethod` / `@classmethod` / `@property` | Not lowered | Treated as regular functions |
 | n-arg `min`/`max` (n > 2) | Not supported | Emits stub |
 | `print` with multiple args | Partial | Each arg printed separately |

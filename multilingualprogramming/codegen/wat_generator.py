@@ -297,10 +297,15 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
         self._wat_symbols: dict[str, str] = {}
         self._used_wat_symbols: set[str] = set()
         # OOP object model: field layout and sizes per class.
+        # _class_direct_fields: own (non-inherited) fields scanned from the class body.
+        # _class_field_layouts: effective (merged) layout including inherited fields.
+        self._class_direct_fields: dict[str, dict[str, int]] = {}
         self._class_field_layouts: dict[str, dict[str, int]] = {}
         self._class_obj_sizes: dict[str, int] = {}
         # Name of the class currently being emitted (set in _emit_class).
         self._current_class: str | None = None
+        # Inheritance: maps class_name -> [base_class_names] (strings).
+        self._class_bases: dict[str, list[str]] = {}
 
     # -----------------------------------------------------------------------
     # Public API
@@ -324,9 +329,11 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
         self._var_class_types = {}
         self._wat_symbols = {}
         self._used_wat_symbols = set()
+        self._class_direct_fields = {}
         self._class_field_layouts = {}
         self._class_obj_sizes = {}
         self._current_class = None
+        self._class_bases = {}
 
         if isinstance(program, CoreIRProgram):
             program = program.ast
@@ -633,8 +640,14 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
 
     def _collect_class_lowering(self, classes: list[ClassDef]):
         """Pre-collect lowered names for class methods and constructors."""
+        # Pass 1: register methods, constructors, and own (direct) field layouts.
         for cls in classes:
             class_name = _name(cls.name)
+            # Collect base class names (string identifiers only; skip complex exprs).
+            self._class_bases[class_name] = [
+                _name(b) for b in (cls.bases or [])
+                if isinstance(b, Identifier)
+            ]
             for member in (cls.body or []):
                 if not isinstance(member, FunctionDef):
                     continue
@@ -646,10 +659,29 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
                 self._class_attr_call_names[f"{class_name}.{method_name}"] = lowered
                 if method_name == "__init__":
                     self._class_ctor_names[class_name] = lowered
-            # Build field layout for the object model (stateful classes).
-            fields = self._collect_class_fields(cls)
-            self._class_field_layouts[class_name] = fields
-            self._class_obj_sizes[class_name] = len(fields) * 8
+            # Store own (non-inherited) field layout for use in pass 2.
+            self._class_direct_fields[class_name] = self._collect_class_fields(cls)
+
+        # Pass 2: compute effective (inherited) field layouts and object sizes.
+        for class_name in self._class_direct_fields:
+            eff = self._effective_field_layout(class_name)
+            self._class_field_layouts[class_name] = eff
+            self._class_obj_sizes[class_name] = len(eff) * 8
+
+        # Pass 3: inherit method name-table entries and constructors from ancestors.
+        for class_name in self._class_bases:
+            for ancestor in self._mro(class_name)[1:]:
+                # Inherit method entries not already defined on class_name.
+                for key, val in list(self._class_attr_call_names.items()):
+                    if key.startswith(f"{ancestor}."):
+                        method_name = key[len(ancestor) + 1:]
+                        own_key = f"{class_name}.{method_name}"
+                        if own_key not in self._class_attr_call_names:
+                            self._class_attr_call_names[own_key] = val
+                # Inherit constructor if class_name defines no __init__.
+                if (class_name not in self._class_ctor_names
+                        and ancestor in self._class_ctor_names):
+                    self._class_ctor_names[class_name] = self._class_ctor_names[ancestor]
 
     def _collect_class_fields(self, class_def: ClassDef) -> dict[str, int]:
         """Scan all method bodies for self.attr = ... to build field layout.
@@ -682,6 +714,68 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
             if isinstance(member, FunctionDef):
                 _scan(member.body)
         return fields
+
+    def _mro(self, class_name: str, _seen: list[str] | None = None) -> list[str]:
+        """Return the left-to-right DFS ancestor list for class_name (class itself first).
+
+        Correct for single inheritance; approximate (but usable) for simple
+        multiple-inheritance hierarchies.  Cycle-safe via _seen guard.
+        """
+        if _seen is None:
+            _seen = []
+        if class_name in _seen:
+            return _seen
+        _seen.append(class_name)
+        for base in self._class_bases.get(class_name, []):
+            self._mro(base, _seen)
+        return _seen
+
+    def _effective_field_layout(self, class_name: str,
+                                 _visiting: set[str] | None = None) -> dict[str, int]:
+        """Compute the complete field layout for class_name including all inherited fields.
+
+        Parent fields are prepended before own fields so that inherited methods
+        that reference ``self.field`` use the correct byte offsets when called on
+        subclass instances.
+        """
+        if _visiting is None:
+            _visiting = set()
+        if class_name in _visiting:
+            return {}
+        _visiting.add(class_name)
+        layout: dict[str, int] = {}
+        for base in self._class_bases.get(class_name, []):
+            for field in self._effective_field_layout(base, _visiting):
+                if field not in layout:
+                    layout[field] = len(layout) * 8
+        # Append own fields in scan order (value = original offset, sort key).
+        own = self._class_direct_fields.get(class_name) or {}
+        for field in sorted(own, key=lambda f: own[f]):
+            if field not in layout:
+                layout[field] = len(layout) * 8
+        return layout
+
+    def _resolve_super_call(self, call_expr) -> str | None:
+        """If call_expr is super().method(args) inside a class method, return the
+        lowered WAT function name of the first ancestor that defines method.
+        Returns None if the pattern does not match or no ancestor is found.
+        """
+        func = call_expr.func
+        if not isinstance(func, AttributeAccess):
+            return None
+        obj = func.obj
+        if not (isinstance(obj, CallExpr)
+                and isinstance(obj.func, Identifier)
+                and obj.func.name == "super"):
+            return None
+        if not self._current_class:
+            return None
+        method_name = _name(func.attr)
+        for ancestor in self._mro(self._current_class)[1:]:
+            key = f"{ancestor}.{method_name}"
+            if key in self._class_attr_call_names:
+                return self._class_attr_call_names[key]
+        return None
 
     def _resolve_field(self, class_name: str, field_name: str) -> int | None:
         """Return byte offset of field_name in class_name, or None if unknown."""
@@ -979,6 +1073,14 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
         elif isinstance(stmt, ExpressionStatement):
             expr = stmt.expression
             if isinstance(expr, CallExpr):
+                # super().method(args) — lower to direct parent WAT call (statement ctx).
+                _super_wat = self._resolve_super_call(expr)
+                if _super_wat is not None:
+                    self._emit(f"{indent}local.get ${self._wat_symbol('self')}")
+                    self._gen_call_args(expr, indent, _super_wat, skip_params=1)
+                    self._emit(f"{indent}call ${self._wat_symbol(_super_wat)}")
+                    self._emit(f"{indent}drop  ;; super().{_name(expr.func.attr)} return value discarded")
+                    return
                 fname = _name(expr.func)
                 if fname in _PRINT_NAMES:
                     self._gen_print(expr, indent)
@@ -1149,6 +1251,13 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
             self._emit(f"{indent}f64.convert_i32_s")
 
         elif isinstance(node, CallExpr):
+            # super().method(args) — lower to direct parent WAT call (expression ctx).
+            _super_wat = self._resolve_super_call(node)
+            if _super_wat is not None:
+                self._emit(f"{indent}local.get ${self._wat_symbol('self')}")
+                self._gen_call_args(node, indent, _super_wat, skip_params=1)
+                self._emit(f"{indent}call ${self._wat_symbol(_super_wat)}")
+                return
             fname = _name(node.func)
             if fname in _PRINT_NAMES:
                 self._emit(f"{indent}f64.const 0  ;; print() used as expression")
