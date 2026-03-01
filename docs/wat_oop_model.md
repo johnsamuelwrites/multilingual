@@ -426,6 +426,6 @@ Generated WAT (abbreviated):
 
 ## Related
 
-- Source: [multilingualprogramming/codegen/wat_generator.py](../multilingualprogramming/codegen/wat_generator.py)
-- Tests: [tests/wat_generator_test.py](../tests/wat_generator_test.py) — `WATOopObjectModelTestSuite`, `WATClassWasmExecutionTestSuite`
+- Source: [multilingualprogramming/codegen/wat_generator.py](https://github.com/johnsamuelwrites/multilingual/blob/main/multilingualprogramming/codegen/wat_generator.py)
+- Tests: [tests/wat_generator_test.py](https://github.com/johnsamuelwrites/multilingual/blob/main/tests/wat_generator_test.py) — `WATOopObjectModelTestSuite`, `WATClassWasmExecutionTestSuite`
 - Architecture overview: [WASM_ARCHITECTURE_OVERVIEW.md](WASM_ARCHITECTURE_OVERVIEW.md)
