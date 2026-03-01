@@ -16,7 +16,7 @@ import sys
 
 from multilingualprogramming.lexer.lexer import Lexer
 from multilingualprogramming.parser.parser import Parser
-from multilingualprogramming.parser.semantic_analyzer import SemanticAnalyzer
+from multilingualprogramming.parser.semantic_analyzer import SemanticAnalyzer, Scope, Symbol
 from multilingualprogramming.codegen.python_generator import PythonCodeGenerator
 from multilingualprogramming.codegen.runtime_builtins import RuntimeBuiltins
 from multilingualprogramming.core.lowering import lower_to_core_ir
@@ -92,14 +92,17 @@ class ProgramExecutor:
                 analyzer = SemanticAnalyzer(
                     source_language=detected_language
                 )
-                # Pre-seed symbol table with runtime builtins so that
-                # names like print, range, len, etc. are not flagged
-                # as undefined.
+                # Pre-seed a builtins scope *below* the global scope so that
+                # names like print, range, len, etc. are found by lookup()
+                # but NOT by lookup_local().  This lets user code redeclare a
+                # builtin with `let x = ...` (VariableDeclaration) without
+                # triggering a spurious DUPLICATE_DEFINITION error.
                 builtins_ns = RuntimeBuiltins(detected_language).namespace()
+                builtins_scope = Scope("builtins", "global")
                 for name in builtins_ns:
-                    analyzer.symbol_table.define(
-                        name, "variable", line=0, column=0
-                    )
+                    builtins_scope.define(Symbol(name, "variable"))
+                # Attach the builtins scope as the parent of the global scope.
+                analyzer.symbol_table.global_scope.parent = builtins_scope
                 semantic_errors = analyzer.analyze(core_program.ast)
                 if semantic_errors:
                     return ExecutionResult(

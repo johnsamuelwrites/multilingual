@@ -189,14 +189,27 @@ class SemanticAnalyzer:
         # Tuple unpacking: define targets instead of looking them up
         if isinstance(node.target, TupleLiteral):
             self._define_assignment_target(node.target)
+        elif isinstance(node.target, Identifier):
+            # A plain assignment always defines the variable in the current scope
+            # when it does not already exist — standard Python semantics.
+            # Previously this called accept() which triggered a spurious
+            # UNDEFINED_NAME error before the variable was registered.
+            sym = self.symbol_table.lookup(node.target.name)
+            if sym is None:
+                self.symbol_table.define(
+                    node.target.name, "variable",
+                    line=node.target.line, column=node.target.column,
+                )
+            elif sym.is_const:
+                self._report("CONST_REASSIGNMENT", node, name=node.target.name)
         else:
             node.target.accept(self)
-        # Check const reassignment
-        if hasattr(node.target, 'name'):
-            sym = self.symbol_table.lookup(node.target.name)
-            if sym and sym.is_const:
-                self._report("CONST_REASSIGNMENT", node,
-                             name=node.target.name)
+            # Check const reassignment for non-Identifier targets that carry a name
+            if hasattr(node.target, 'name'):
+                sym = self.symbol_table.lookup(node.target.name)
+                if sym and sym.is_const:
+                    self._report("CONST_REASSIGNMENT", node,
+                                 name=node.target.name)
 
     def visit_AnnAssignment(self, node):
         if node.annotation:

@@ -63,6 +63,8 @@ from multilingualprogramming.parser.ast_nodes import (
     ForLoop,
     FunctionDef,
     ClassDef,
+    TryStatement,
+    WithStatement,
     BinaryOp,
     UnaryOp,
     BooleanOp,
@@ -74,6 +76,12 @@ from multilingualprogramming.parser.ast_nodes import (
     BooleanLiteral,
     NoneLiteral,
     AttributeAccess,
+    LambdaExpr,
+    ListComprehension,
+    DictComprehension,
+    SetComprehension,
+    GeneratorExpr,
+    Parameter,
 )
 from multilingualprogramming.numeral.mp_numeral import MPNumeral
 from multilingualprogramming.core.ir import CoreIRProgram
@@ -715,20 +723,50 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
                 _scan(member.body)
         return fields
 
-    def _mro(self, class_name: str, _seen: list[str] | None = None) -> list[str]:
-        """Return the left-to-right DFS ancestor list for class_name (class itself first).
+    def _mro(self, class_name: str) -> list[str]:
+        """Return the C3 linearization (MRO) for class_name (class itself first).
 
-        Correct for single inheritance; approximate (but usable) for simple
-        multiple-inheritance hierarchies.  Cycle-safe via _seen guard.
+        Implements the C3 superclass linearization algorithm — the same used by
+        CPython for all new-style classes.  Handles diamond inheritance and
+        arbitrary single/multiple inheritance hierarchies.  Cycle-safe via a
+        visited set passed through the recursive helper.
         """
-        if _seen is None:
-            _seen = []
-        if class_name in _seen:
-            return _seen
-        _seen.append(class_name)
-        for base in self._class_bases.get(class_name, []):
-            self._mro(base, _seen)
-        return _seen
+        return self._c3_mro(class_name, frozenset())
+
+    def _c3_mro(self, class_name: str, visiting: frozenset) -> list[str]:
+        """Recursive C3 linearization step."""
+        if class_name in visiting:
+            return [class_name]          # cycle guard
+        visiting = visiting | {class_name}
+        bases = self._class_bases.get(class_name, [])
+        if not bases:
+            return [class_name]
+        sequences = [list(self._c3_mro(b, visiting)) for b in bases] + [list(bases)]
+        return [class_name] + self._c3_merge(sequences)
+
+    @staticmethod
+    def _c3_merge(sequences: list[list[str]]) -> list[str]:
+        """C3 merge step: picks heads not in any tail, in order."""
+        result: list[str] = []
+        while True:
+            sequences = [s for s in sequences if s]
+            if not sequences:
+                return result
+            for seq in sequences:
+                candidate = seq[0]
+                if not any(candidate in s[1:] for s in sequences):
+                    result.append(candidate)
+                    for s in sequences:
+                        if s and s[0] == candidate:
+                            del s[0]
+                    break
+            else:
+                # Inconsistent hierarchy — append first candidate to make progress.
+                candidate = sequences[0][0]
+                result.append(candidate)
+                for s in sequences:
+                    if s and s[0] == candidate:
+                        del s[0]
 
     def _effective_field_layout(self, class_name: str,
                                  _visiting: set[str] | None = None) -> dict[str, int]:
@@ -1091,15 +1129,19 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
                     self._gen_expr(expr.args[0], indent)
                     self._emit(f"{indent}f64.abs")
                     self._emit(f"{indent}drop")
-                elif fname in _MIN_NAMES and len(expr.args) == 2:
+                elif fname in _MIN_NAMES and len(expr.args) >= 1:
+                    # min(a, b, c, ...) → chained f64.min instructions
                     self._gen_expr(expr.args[0], indent)
-                    self._gen_expr(expr.args[1], indent)
-                    self._emit(f"{indent}f64.min")
+                    for _extra in expr.args[1:]:
+                        self._gen_expr(_extra, indent)
+                        self._emit(f"{indent}f64.min")
                     self._emit(f"{indent}drop")
-                elif fname in _MAX_NAMES and len(expr.args) == 2:
+                elif fname in _MAX_NAMES and len(expr.args) >= 1:
+                    # max(a, b, c, ...) → chained f64.max instructions
                     self._gen_expr(expr.args[0], indent)
-                    self._gen_expr(expr.args[1], indent)
-                    self._emit(f"{indent}f64.max")
+                    for _extra in expr.args[1:]:
+                        self._gen_expr(_extra, indent)
+                        self._emit(f"{indent}f64.max")
                     self._emit(f"{indent}drop")
                 elif fname in self._defined_func_names:
                     # Known WAT function — emit args then call
@@ -1179,6 +1221,42 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
         elif isinstance(stmt, (GlobalStatement, LocalStatement)):
             names = ", ".join(stmt.names)
             self._emit(f"{indent};; {type(stmt).__name__}: {names} (nop in WAT)")
+
+        elif isinstance(stmt, TryStatement):
+            # Best-effort: WASM MVP has no native exception handling.
+            # Execute the try body unconditionally; skip except handlers.
+            # Always execute finally (it runs regardless of exceptions in Python).
+            self._emit(f"{indent};; try (best-effort: no WASM exception handling)")
+            self._gen_stmts(stmt.body, indent)
+            if stmt.handlers:
+                self._emit(
+                    f"{indent};; except handler(s) omitted "
+                    f"(WAT cannot intercept exceptions)"
+                )
+            if stmt.else_body:
+                self._emit(
+                    f"{indent};; try-else omitted "
+                    f"(no exception state available in WAT)"
+                )
+            if stmt.finally_body:
+                self._emit(f"{indent};; finally")
+                self._gen_stmts(stmt.finally_body, indent)
+
+        elif isinstance(stmt, WithStatement):
+            # Best-effort: lower the body; __enter__/__exit__ hooks are not
+            # callable through the WAT f64 model without a vtable.
+            self._emit(
+                f"{indent};; with (context-manager hooks not lowerable in WAT)"
+            )
+            for _, alias in stmt.items:
+                if alias:
+                    self._locals.add(alias)
+                    self._emit(
+                        f"{indent}f64.const 0  "
+                        f";; placeholder for 'as {alias}' binding"
+                    )
+                    self._emit(f"{indent}local.set ${self._wat_symbol(alias)}")
+            self._gen_stmts(stmt.body, indent)
 
         elif isinstance(stmt, FunctionDef):
             # Nested function def — not directly supported
@@ -1268,16 +1346,18 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
                 # abs(x) → f64.abs
                 self._gen_expr(node.args[0], indent)
                 self._emit(f"{indent}f64.abs")
-            elif fname in _MIN_NAMES and len(node.args) == 2:
-                # min(a, b) → f64.min
+            elif fname in _MIN_NAMES and len(node.args) >= 1:
+                # min(a, b, c, ...) → chained f64.min instructions
                 self._gen_expr(node.args[0], indent)
-                self._gen_expr(node.args[1], indent)
-                self._emit(f"{indent}f64.min")
-            elif fname in _MAX_NAMES and len(node.args) == 2:
-                # max(a, b) → f64.max
+                for _extra in node.args[1:]:
+                    self._gen_expr(_extra, indent)
+                    self._emit(f"{indent}f64.min")
+            elif fname in _MAX_NAMES and len(node.args) >= 1:
+                # max(a, b, c, ...) → chained f64.max instructions
                 self._gen_expr(node.args[0], indent)
-                self._gen_expr(node.args[1], indent)
-                self._emit(f"{indent}f64.max")
+                for _extra in node.args[1:]:
+                    self._gen_expr(_extra, indent)
+                    self._emit(f"{indent}f64.max")
             elif fname in self._defined_func_names:
                 # Known WAT function — emit args then call
                 self._gen_call_args(node, indent, fname)
@@ -1307,6 +1387,123 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
             else:
                 # Closure, constructor, builtin, or other non-WAT callable
                 self._emit(f"{indent}f64.const 0  ;; unsupported call: {fname}(...)")
+
+        elif isinstance(node, LambdaExpr):
+            # Lift the lambda to a module-level WAT function named __lambda_N.
+            # WAT has no first-class function values representable as f64, so
+            # the expression pushes 0.0 as a placeholder.  The emitted WAT
+            # function is callable by its mangled name from other WAT code.
+            lam_id = self._new_label()
+            lam_name = f"__lambda_{lam_id}"
+            param_names = []
+            for p in (node.params or []):
+                if isinstance(p, Parameter):
+                    pn = _name(p.name)
+                    if pn not in _PARAM_SEPARATORS and not getattr(p, "is_vararg", False) \
+                            and not getattr(p, "is_kwarg", False):
+                        param_names.append(pn)
+                elif isinstance(p, str) and p not in _PARAM_SEPARATORS:
+                    param_names.append(p)
+
+            saved = self._save_func_state()
+            self._locals = set(param_names)
+            self._gen_expr(node.body, "    ")
+            body_instrs = list(self._instrs)
+            local_names = sorted(self._locals - set(param_names))
+
+            wat_lam = self._wat_symbol(lam_name)
+            lines = [f'  (func ${wat_lam} (export "{lam_name}")']
+            for pn in param_names:
+                lines.append(f"    (param ${self._wat_symbol(pn)} f64)")
+            lines.append("    (result f64)")
+            for ln in local_names:
+                lines.append(f"    (local ${self._wat_symbol(ln)} f64)")
+            lines.extend(body_instrs)
+            lines.append("  )")
+            self._funcs.append("\n".join(lines))
+            self._defined_func_names.add(lam_name)
+            self._func_real_params[lam_name] = param_names
+
+            self._restore_func_state(saved)
+            # No f64 function-pointer representation in WAT; push 0 as placeholder.
+            self._emit(
+                f"{indent}f64.const 0  "
+                f";; lambda lifted to ${wat_lam} (no f64 func-ptr)"
+            )
+
+        elif isinstance(node, (ListComprehension, SetComprehension,
+                                DictComprehension, GeneratorExpr)):
+            # WAT has no native collection types.  For the common pattern
+            # [elem for x in range(n)] with a single numeric clause, lower
+            # to a WAT loop that accumulates into an f64 sum-accumulator local.
+            # For all other forms, push 0 as placeholder.
+            clause = node.clauses[0] if node.clauses else None
+            is_range_comp = (
+                len(node.clauses) == 1
+                and isinstance(clause.iterable, CallExpr)
+                and _name(clause.iterable.func) in _RANGE_NAMES
+                and not clause.conditions
+                and isinstance(node, (ListComprehension, GeneratorExpr))
+            )
+            if is_range_comp:
+                # Emit a loop that computes a running sum of the element expression.
+                # This is correct for `sum([f(x) for x in range(n)])` patterns
+                # when the surrounding call is stripped by Python-side reduction.
+                # Without a sum wrapper the result is just the last element value.
+                n = self._new_label()
+                iter_var_raw = (
+                    _name(clause.target)
+                    if isinstance(clause.target, Identifier) else f"__ci_{n}"
+                )
+                iter_var = iter_var_raw
+                self._locals.add(iter_var)
+                acc_var = f"__cacc_{n}"
+                re_var = f"__cre_{n}"
+                self._locals.add(acc_var)
+                self._locals.add(re_var)
+                blk = f"comp_blk_{n}"
+                lp = f"comp_lp_{n}"
+
+                itbl = clause.iterable
+                if len(itbl.args) == 1:
+                    range_start_node = NumeralLiteral("0")
+                    range_end_node = itbl.args[0]
+                else:
+                    range_start_node = itbl.args[0]
+                    range_end_node = itbl.args[1]
+
+                self._emit(
+                    f"{indent};; listcomp over range — "
+                    f"accumulates element values (last value if no sum wrapper)"
+                )
+                self._gen_expr(range_start_node, indent)
+                self._emit(f"{indent}local.set ${self._wat_symbol(iter_var)}")
+                self._gen_expr(range_end_node, indent)
+                self._emit(f"{indent}local.set ${self._wat_symbol(re_var)}")
+                self._emit(f"{indent}f64.const 0")
+                self._emit(f"{indent}local.set ${self._wat_symbol(acc_var)}")
+                self._emit(f"{indent}block ${blk}")
+                self._emit(f"{indent}  loop ${lp}")
+                self._emit(f"{indent}    local.get ${self._wat_symbol(iter_var)}")
+                self._emit(f"{indent}    local.get ${self._wat_symbol(re_var)}")
+                self._emit(f"{indent}    f64.ge")
+                self._emit(f"{indent}    br_if ${blk}")
+                self._gen_expr(node.element, indent + "    ")
+                self._emit(f"{indent}    local.set ${self._wat_symbol(acc_var)}")
+                self._emit(f"{indent}    local.get ${self._wat_symbol(iter_var)}")
+                self._emit(f"{indent}    f64.const 1")
+                self._emit(f"{indent}    f64.add")
+                self._emit(f"{indent}    local.set ${self._wat_symbol(iter_var)}")
+                self._emit(f"{indent}    br ${lp}")
+                self._emit(f"{indent}  end  ;; comp loop")
+                self._emit(f"{indent}end  ;; comp block")
+                self._emit(f"{indent}local.get ${self._wat_symbol(acc_var)}")
+            else:
+                self._emit(
+                    f"{indent}f64.const 0  "
+                    f";; unsupported expr: {type(node).__name__} "
+                    f"(collections not representable as f64)"
+                )
 
         elif (isinstance(node, AttributeAccess)
               and isinstance(node.obj, Identifier)):

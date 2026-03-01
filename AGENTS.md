@@ -287,8 +287,11 @@ registry = KeywordRegistry.get_instance()
 ### SemanticAnalyzer (`parser/semantic_analyzer.py`)
 
 - Builds symbol table, checks scope, does basic type analysis.
-- **Known pre-existing issue**: flags simple variable assignments as "undefined" in top-level
-  programs for some languages (e.g., French). Use `check_semantics=False` in tests to bypass.
+- **Fixed (Mar 2026)**: plain assignments (`x = 5`) now correctly define the variable in scope
+  rather than triggering a false `UNDEFINED_NAME` error. Applies to all languages.
+- **Builtins scope**: `executor.py` pre-seeds a *parent* builtins scope (not the global scope),
+  so user variables that shadow a builtin alias do not trigger `DUPLICATE_DEFINITION`.
+- Use `check_semantics=False` in tests that need to isolate parser/codegen from analysis.
 
 ### PythonCodeGenerator (`codegen/python_generator.py`)
 
@@ -328,8 +331,14 @@ Translates AST to WebAssembly Text format. Supports a subset of the full languag
 | Class definition (OOP) | ✓ (see §7) |
 | Inheritance | ✓ (see §8) |
 | `print` | ✓ (host import) |
-| `abs`, `min`, `max` (2-arg) | ✓ (native WAT instructions) |
-| `len`, n-arg `min`/`max`, etc. | stub comment emitted |
+| `abs` | ✓ native `f64.abs` |
+| `min(a,b,…)` n-arg | ✓ chained `f64.min` |
+| `max(a,b,…)` n-arg | ✓ chained `f64.max` |
+| `try/except/finally` | ✓ best-effort (try body + finally executed; except skipped — no WASM exception model) |
+| `with` statement | ✓ best-effort (body executed; `__enter__`/`__exit__` not callable from WAT) |
+| Lambda expressions | ✓ lifted to named WAT functions; expression value is `f64.const 0` (no f64 func-ptr) |
+| List/generator comprehension over `range` | ✓ lowered to WAT loop + f64 accumulator |
+| Other comprehensions | stub comment (collections not representable as f64) |
 | `async`/`await`, `match/case` | not supported |
 
 ### Host Imports (expected by WAT modules)
@@ -441,7 +450,8 @@ External access (`obj.attr`) works when `obj` is tracked in `_var_class_types`.
 ### Method Resolution
 
 - `_effective_field_layout(cls)`: recursive merge — parent fields prepended before own fields.
-- `_mro(cls)`: left-to-right DFS ancestor list (class itself first).
+- `_mro(cls)`: C3 linearization (same algorithm as CPython, cycle-safe); class itself first.
+  Implemented via `_c3_mro()` + `_c3_merge()` — replaces the original DFS approximation.
 - Method inheritance: `_class_attr_call_names["SubClass.method"]` resolves to the parent's
   lowered WAT function name if the subclass does not define the method.
 - Constructor inheritance: if a class has no `__init__`, `_class_ctor_names[cls]` is set to the
