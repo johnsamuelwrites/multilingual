@@ -42,7 +42,7 @@ Host imports expected by the generated module:
   (import "env" "print_sep"     (func))                  ;; space between args
   (import "env" "print_newline" (func))
 """
-# pylint: disable=mixed-line-endings
+# pylint: disable=mixed-line-endings, too-many-lines
 
 from copy import deepcopy
 import json
@@ -1492,7 +1492,7 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
     # Expression generation  (each call pushes exactly one f64)
     # -----------------------------------------------------------------------
 
-    def _gen_expr(self, node, indent: str):  # noqa: C901  # pylint: disable=too-many-branches,too-many-statements
+    def _gen_expr(self, node, indent: str):  # noqa: C901  # pylint: disable=too-many-branches,too-many-statements,too-many-locals
         if isinstance(node, NumeralLiteral):
             val = self._to_f64(node.value)
             self._emit(f"{indent}f64.const {val}")
