@@ -274,5 +274,49 @@ class SymbolTableTestSuite(unittest.TestCase):
         self.assertIn("const=True", repr(sym))
 
 
+class SemanticAugmentedAssignTestSuite(unittest.TestCase):
+    """Tests for augmented-assignment semantic validation."""
+
+    def test_augmented_add_undefined_reports_error(self):
+        """x += 1 without prior definition must report UNDEFINED_NAME."""
+        errors, _ = _analyze("x += 1\n")
+        self.assertTrue(
+            any("x" in str(e) for e in errors),
+            f"Expected UNDEFINED_NAME for x, got: {errors}",
+        )
+
+    def test_augmented_sub_undefined_reports_error(self):
+        """x -= 1 without prior definition must report UNDEFINED_NAME."""
+        errors, _ = _analyze("x -= 1\n")
+        self.assertTrue(any("x" in str(e) for e in errors))
+
+    def test_augmented_assign_after_definition_ok(self):
+        """x = 0; x += 1 should produce no errors."""
+        errors, _ = _analyze("x = 0\nx += 1\n")
+        self.assertEqual(
+            len(errors), 0,
+            f"Unexpected errors: {errors}",
+        )
+
+    def test_augmented_let_then_add_ok(self):
+        """let x = 5; x += 3 should produce no errors."""
+        errors, _ = _analyze("let x = 5\nx += 3\n")
+        self.assertEqual(len(errors), 0, f"Unexpected errors: {errors}")
+
+    def test_plain_assign_still_defines_variable(self):
+        """Plain x = 1 (no prior let) is valid and defines x."""
+        errors, _ = _analyze("x = 1\nx\n")
+        self.assertEqual(len(errors), 0, f"Unexpected errors: {errors}")
+
+    def test_multiple_augmented_ops_all_require_prior_def(self):
+        """Various augmented operators on undefined variables each report errors."""
+        for op in ("-=", "*=", "/=", "//=", "%="):
+            errors, _ = _analyze(f"y {op} 2\n")
+            self.assertTrue(
+                any("y" in str(e) for e in errors),
+                f"Expected error for 'y {op} 2', got: {errors}",
+            )
+
+
 if __name__ == "__main__":
     unittest.main()

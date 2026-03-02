@@ -1962,5 +1962,268 @@ class WATInheritanceWasmExecutionTestSuite(unittest.TestCase):
         self.assertEqual(self._run_main(prog), [103.0])
 
 
+# ---------------------------------------------------------------------------
+# New feature tests — items 1–5
+# ---------------------------------------------------------------------------
+
+from multilingualprogramming.parser.ast_nodes import (  # noqa: E402
+    MatchStatement,
+    CaseClause,
+    ListLiteral,
+    TupleLiteral,
+    IndexAccess,
+    AwaitExpr,
+)
+
+
+class WATMatchCaseTestSuite(unittest.TestCase):
+    """WAT lowering for match/case statements."""
+
+    def test_match_numeric_case_generates_block(self):
+        """match with numeric literal cases produces block + f64.eq + if."""
+        stmt = MatchStatement(
+            subject=Identifier("x"),
+            cases=[
+                CaseClause(NumeralLiteral("1"), [PassStatement()], is_default=False),
+                CaseClause(NumeralLiteral("2"), [PassStatement()], is_default=False),
+            ],
+        )
+        wat = _gen(stmt)
+        self.assertIn("block $", wat)
+        self.assertIn("f64.eq", wat)
+        self.assertIn("if", wat)
+        self.assertIn("br $", wat)
+
+    def test_match_default_case_emits_body(self):
+        """A default case emits its body without a condition check."""
+        stmt = MatchStatement(
+            subject=Identifier("x"),
+            cases=[
+                CaseClause(None, [PassStatement()], is_default=True),
+            ],
+        )
+        wat = _gen(stmt)
+        self.assertIn(";; case _: (default)", wat)
+        self.assertIn("br $", wat)
+
+    def test_match_boolean_case(self):
+        """Boolean literal case emits f64.const 1.0 / 0.0 + f64.eq."""
+        stmt = MatchStatement(
+            subject=Identifier("flag"),
+            cases=[
+                CaseClause(BooleanLiteral(True), [PassStatement()], is_default=False),
+            ],
+        )
+        wat = _gen(stmt)
+        self.assertIn("f64.const 1.0", wat)
+        self.assertIn("f64.eq", wat)
+
+    def test_match_string_case_emits_stub(self):
+        """String pattern is not lowerable; a stub comment is emitted."""
+        stmt = MatchStatement(
+            subject=Identifier("s"),
+            cases=[
+                CaseClause(
+                    StringLiteral("hello"), [PassStatement()], is_default=False
+                ),
+            ],
+        )
+        wat = _gen(stmt)
+        self.assertIn("string patterns not comparable", wat)
+
+
+class WATAugmentedAssignTestSuite(unittest.TestCase):
+    """WAT lowering for augmented assignment operators."""
+
+    def _gen_aug(self, op: str) -> str:
+        """Generate WAT for ``x = 0; x op= 3``."""
+        return _gen(
+            VariableDeclaration(Identifier("x"), NumeralLiteral("0")),
+            Assignment(Identifier("x"), NumeralLiteral("3"), op=op),
+        )
+
+    def test_add_assign(self):
+        self.assertIn("f64.add", self._gen_aug("+="))
+
+    def test_sub_assign(self):
+        self.assertIn("f64.sub", self._gen_aug("-="))
+
+    def test_mul_assign(self):
+        self.assertIn("f64.mul", self._gen_aug("*="))
+
+    def test_div_assign(self):
+        self.assertIn("f64.div", self._gen_aug("/="))
+
+    def test_floor_div_assign(self):
+        wat = self._gen_aug("//=")
+        self.assertIn("f64.div", wat)
+        self.assertIn("f64.floor", wat)
+
+    def test_mod_assign(self):
+        wat = self._gen_aug("%=")
+        self.assertIn("f64.div", wat)
+        self.assertIn("f64.floor", wat)
+        self.assertIn("f64.neg", wat)
+        self.assertIn("f64.add", wat)
+
+    def test_power_assign_stub(self):
+        wat = self._gen_aug("**=")
+        self.assertIn("**= not natively supported", wat)
+
+    def test_bitwise_and_assign(self):
+        wat = self._gen_aug("&=")
+        self.assertIn("i32.trunc_f64_s", wat)
+        self.assertIn("i32.and", wat)
+        self.assertIn("f64.convert_i32_s", wat)
+
+    def test_bitwise_or_assign(self):
+        wat = self._gen_aug("|=")
+        self.assertIn("i32.or", wat)
+
+    def test_bitwise_xor_assign(self):
+        wat = self._gen_aug("^=")
+        self.assertIn("i32.xor", wat)
+
+    def test_shl_assign(self):
+        wat = self._gen_aug("<<=")
+        self.assertIn("i32.shl", wat)
+
+    def test_shr_assign(self):
+        wat = self._gen_aug(">>=")
+        self.assertIn("i32.shr_s", wat)
+
+
+class WATStringLenTestSuite(unittest.TestCase):
+    """WAT len() lowering for string literals and string variables."""
+
+    def test_len_of_string_literal(self):
+        """len("hello") → f64.const 5.0 (byte length)."""
+        stmt = ExpressionStatement(
+            CallExpr(Identifier("len"), [StringLiteral("hello")])
+        )
+        wat = _gen(stmt)
+        self.assertIn("f64.const 5.0", wat)
+
+    def test_len_of_string_variable(self):
+        """let s = "hi"; len(s) → local.get of the strlen local."""
+        stmts = [
+            VariableDeclaration(Identifier("s"), StringLiteral("hi")),
+            ExpressionStatement(CallExpr(Identifier("len"), [Identifier("s")])),
+        ]
+        wat = _gen(*stmts)
+        # strlen local must be declared and used
+        self.assertIn("s_strlen", wat)
+        self.assertIn("f64.const 2.0", wat)  # "hi" = 2 bytes
+
+    def test_len_string_reassign(self):
+        """Re-assigning a string variable updates the strlen local."""
+        stmts = [
+            VariableDeclaration(Identifier("t"), StringLiteral("abc")),
+            Assignment(Identifier("t"), StringLiteral("wxyz"), op="="),
+            ExpressionStatement(CallExpr(Identifier("len"), [Identifier("t")])),
+        ]
+        wat = _gen(*stmts)
+        self.assertIn("f64.const 4.0", wat)  # "wxyz" = 4 bytes
+
+    def test_len_localized_fr(self):
+        """longueur() is recognized as len() in WAT."""
+        stmt = ExpressionStatement(
+            CallExpr(Identifier("longueur"), [StringLiteral("bonjour")])
+        )
+        wat = _gen(stmt)
+        self.assertIn("f64.const 7.0", wat)
+
+
+class WATListSupportTestSuite(unittest.TestCase):
+    """WAT lowering for list literals, indexing, and len()."""
+
+    def test_list_alloc_emits_heap_global(self):
+        """A list literal triggers emission of $__heap_ptr."""
+        stmt = VariableDeclaration(Identifier("a"), ListLiteral([NumeralLiteral("1")]))
+        wat = _gen(stmt)
+        self.assertIn("$__heap_ptr", wat)
+
+    def test_list_alloc_stores_length_header(self):
+        """[1, 2, 3] stores f64.const 3.0 as the length header."""
+        stmt = VariableDeclaration(
+            Identifier("a"),
+            ListLiteral([NumeralLiteral("1"), NumeralLiteral("2"), NumeralLiteral("3")]),
+        )
+        wat = _gen(stmt)
+        self.assertIn("f64.const 3.0", wat)
+        self.assertIn("f64.store", wat)
+
+    def test_list_len(self):
+        """len(a) for a list variable emits f64.load at offset 0."""
+        stmts = [
+            VariableDeclaration(
+                Identifier("a"),
+                ListLiteral([NumeralLiteral("10"), NumeralLiteral("20")]),
+            ),
+            ExpressionStatement(CallExpr(Identifier("len"), [Identifier("a")])),
+        ]
+        wat = _gen(*stmts)
+        self.assertIn("f64.load", wat)
+        self.assertIn(";; list length from header", wat)
+
+    def test_list_index_access(self):
+        """a[1] for a list variable emits the correct offset arithmetic."""
+        stmts = [
+            VariableDeclaration(
+                Identifier("a"),
+                ListLiteral([NumeralLiteral("10"), NumeralLiteral("20")]),
+            ),
+            ExpressionStatement(
+                IndexAccess(Identifier("a"), NumeralLiteral("1"))
+            ),
+        ]
+        wat = _gen(*stmts)
+        # Offset arithmetic: i32.const 8 * index (element 1 → offset 8 from data start)
+        self.assertIn("i32.const 8", wat)
+        self.assertIn("i32.mul", wat)
+        self.assertIn("f64.load", wat)
+
+    def test_tuple_alloc(self):
+        """Tuple literal (1, 2) is allocated like a list."""
+        stmt = VariableDeclaration(
+            Identifier("t"),
+            TupleLiteral([NumeralLiteral("1"), NumeralLiteral("2")]),
+        )
+        wat = _gen(stmt)
+        self.assertIn("$__heap_ptr", wat)
+        self.assertIn("f64.const 2.0", wat)
+
+
+class WATAsyncAwaitTestSuite(unittest.TestCase):
+    """WAT lowering for async/await — best-effort synchronous evaluation."""
+
+    def test_await_expr_evaluates_operand(self):
+        """await f() in WAT is lowered by simply evaluating f() (no async stub)."""
+        func = FunctionDef(
+            Identifier("work"),
+            params=[],
+            body=[ReturnStatement(NumeralLiteral("42"))],
+        )
+        stmt = ExpressionStatement(
+            AwaitExpr(CallExpr(Identifier("work"), []))
+        )
+        wat = _gen(func, stmt)
+        # The call to $work must appear; no "unsupported expr: AwaitExpr" stub.
+        self.assertIn("call $work", wat)
+        self.assertNotIn("unsupported expr: AwaitExpr", wat)
+
+    def test_async_def_lowers_as_regular_function(self):
+        """async def f() is emitted as a normal WAT function."""
+        func = FunctionDef(
+            Identifier("f"),
+            params=[],
+            body=[ReturnStatement(NumeralLiteral("1"))],
+            is_async=True,
+        )
+        wat = _gen(func)
+        self.assertIn('(func $f', wat)
+        self.assertIn('(export "f")', wat)
+
+
 if __name__ == "__main__":
     unittest.main()

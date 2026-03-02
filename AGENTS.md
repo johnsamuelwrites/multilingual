@@ -321,25 +321,36 @@ Translates AST to WebAssembly Text format. Supports a subset of the full languag
 |---|---|
 | Variable declaration/assignment | ✓ |
 | Arithmetic (+, -, *, /) | ✓ (f64) |
+| Augmented assignment (+=, -=, *=, /=, //=, %=) | ✓ native f64 arithmetic |
+| Augmented assignment (&=, \|=, ^=, <<=, >>=) | ✓ i32 round-trip |
+| Augmented assignment (**=) | stub (no WAT f64.pow; old value preserved) |
 | Comparisons | ✓ |
 | Boolean logic | ✓ |
 | `if` / `elif` / `else` | ✓ |
 | `while` loop | ✓ |
 | `for` loop | ✓ |
 | Function definition | ✓ |
+| `async def` / `await` | ✓ best-effort (`async def` = regular WAT func; `await` evaluates operand) |
 | `return` | ✓ |
 | Class definition (OOP) | ✓ (see §7) |
 | Inheritance | ✓ (see §8) |
+| `match`/`case` (numeric/boolean patterns) | ✓ lowered to WAT block + nested if |
+| `match`/`case` (string/complex patterns) | stub comment |
 | `print` | ✓ (host import) |
 | `abs` | ✓ native `f64.abs` |
 | `min(a,b,…)` n-arg | ✓ chained `f64.min` |
 | `max(a,b,…)` n-arg | ✓ chained `f64.max` |
+| `len(str_literal)` / `len(str_var)` | ✓ compile-time byte length / parallel length local |
+| `len(list_var)` / `len(tuple_var)` | ✓ loaded from list/tuple header in linear memory |
+| List/tuple literal allocation | ✓ heap bump-allocator; layout = [len_f64, elem0, elem1, …] |
+| `list[i]` / `tuple[i]` index read | ✓ `f64.load` at `base + 8 + i*8` |
 | `try/except/finally` | ✓ best-effort (try body + finally executed; except skipped — no WASM exception model) |
 | `with` statement | ✓ best-effort (body executed; `__enter__`/`__exit__` not callable from WAT) |
 | Lambda expressions | ✓ lifted to named WAT functions; expression value is `f64.const 0` (no f64 func-ptr) |
 | List/generator comprehension over `range` | ✓ lowered to WAT loop + f64 accumulator |
-| Other comprehensions | stub comment (collections not representable as f64) |
-| `async`/`await`, `match/case` | not supported |
+| Other comprehensions | stub comment (dynamic collections not representable as f64) |
+| String concatenation, indexing, slicing | not supported in WAT |
+| `async for` / `async with` | not supported |
 
 ### Host Imports (expected by WAT modules)
 
@@ -710,12 +721,12 @@ if has_stub_calls(wat):
 
 ## 13. Known Issues & Gotchas
 
-### SemanticAnalyzer False Positives
+### SemanticAnalyzer — Augmented Assignment on Undefined Variable
 
-The SemanticAnalyzer incorrectly flags simple top-level variable assignments as "undefined" in
-some languages (e.g., French). This is a **pre-existing issue**, not introduced by recent changes.
-**Workaround**: pass `check_semantics=False` when constructing the executor or parser pipeline
-in tests, to isolate parser/codegen behavior from semantic analysis.
+Augmented assignment (`x += 1`) now correctly reports `UNDEFINED_NAME` when the target variable
+has not been previously defined. Plain assignment (`x = 1`) still implicitly defines the variable
+(Python semantics). The earlier false-positive for plain assignments in some languages (e.g.,
+French) was fixed in March 2026.
 
 ### Lexer INDENT/DEDENT Inside Brackets
 
@@ -723,12 +734,10 @@ The lexer emits INDENT and DEDENT tokens even inside bracket pairs (unlike CPyth
 suppresses them). Any parser method that handles multi-line constructs inside brackets
 **must** call `_skip_bracket_newlines()` rather than `_skip_newlines()`.
 
-### WAT `min`/`max` — 2-arg Only
+### WAT `min`/`max` — n-arg Supported
 
-The WAT backend lowers `min(a, b)` and `max(a, b)` to native `f64.min` / `f64.max`.
-Calls with more than 2 arguments (or with non-literal variable arguments in some cases)
-will produce a stub comment instead of valid WAT. This is by design — the WAT backend
-supports a limited subset.
+The WAT backend lowers `min(a, b, c, …)` and `max(a, b, c, …)` to chained `f64.min` /
+`f64.max` for any number of arguments ≥ 1.
 
 ### `super()` in WAT — Guard Ordering
 

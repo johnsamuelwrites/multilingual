@@ -190,16 +190,19 @@ class SemanticAnalyzer:
         if isinstance(node.target, TupleLiteral):
             self._define_assignment_target(node.target)
         elif isinstance(node.target, Identifier):
-            # A plain assignment always defines the variable in the current scope
-            # when it does not already exist — standard Python semantics.
-            # Previously this called accept() which triggered a spurious
-            # UNDEFINED_NAME error before the variable was registered.
+            # Plain assignment (=) defines the variable if it does not yet exist.
+            # Augmented assignment (+=, -= etc.) is read-modify-write, so the
+            # variable must already be defined — report UNDEFINED_NAME if not.
             sym = self.symbol_table.lookup(node.target.name)
             if sym is None:
-                self.symbol_table.define(
-                    node.target.name, "variable",
-                    line=node.target.line, column=node.target.column,
-                )
+                if getattr(node, "op", "=") != "=":
+                    # Augmented assignment requires the variable to exist first.
+                    self._report("UNDEFINED_NAME", node.target, name=node.target.name)
+                else:
+                    self.symbol_table.define(
+                        node.target.name, "variable",
+                        line=node.target.line, column=node.target.column,
+                    )
             elif sym.is_const:
                 self._report("CONST_REASSIGNMENT", node, name=node.target.name)
         else:

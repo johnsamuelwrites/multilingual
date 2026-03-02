@@ -65,6 +65,7 @@ from multilingualprogramming.parser.ast_nodes import (
     ClassDef,
     TryStatement,
     WithStatement,
+    MatchStatement,
     BinaryOp,
     UnaryOp,
     BooleanOp,
@@ -75,7 +76,11 @@ from multilingualprogramming.parser.ast_nodes import (
     StringLiteral,
     BooleanLiteral,
     NoneLiteral,
+    ListLiteral,
+    TupleLiteral,
     AttributeAccess,
+    IndexAccess,
+    AwaitExpr,
     LambdaExpr,
     ListComprehension,
     DictComprehension,
@@ -149,6 +154,27 @@ _MAX_NAMES = frozenset({
     "अधिकतम",  # hi
     "الحد_الأقصى", "الحدالأقصى",  # ar
     "最大",  # zh / ja
+})
+
+# len() → byte length for strings / element count for lists
+_LEN_NAMES = frozenset({
+    "len",
+    "longueur",   # fr
+    "longitud",   # es
+    "laenge",     # de
+    "lunghezza",  # it
+    "comprimento",  # pt
+    "लंबाई",      # hi
+    "طول",        # ar
+    "দৈর্ঘ্য",    # bn
+    "நீளம்",      # ta
+    "长度",       # zh
+    "長さ",       # ja
+    "dlugosc",    # pl
+    "lengte",     # nl
+    "langd",      # sv
+    "laengde",    # da
+    "pituus",     # fi
 })
 
 
@@ -314,6 +340,12 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
         self._current_class: str | None = None
         # Inheritance: maps class_name -> [base_class_names] (strings).
         self._class_bases: dict[str, list[str]] = {}
+        # String length tracking: var_name -> WAT local that holds byte length.
+        self._string_len_locals: dict[str, str] = {}
+        # Locals known to hold list/tuple pointers (heap-allocated).
+        self._list_locals: set[str] = set()
+        # True when any heap allocation (list or OOP) is needed.
+        self._need_heap_ptr: bool = False
 
     # -----------------------------------------------------------------------
     # Public API
@@ -342,6 +374,9 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
         self._class_obj_sizes = {}
         self._current_class = None
         self._class_bases = {}
+        self._string_len_locals = {}
+        self._list_locals = set()
+        self._need_heap_ptr = False
 
         if isinstance(program, CoreIRProgram):
             program = program.ast
@@ -551,9 +586,9 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
         if self._data:
             escaped = "".join(f"\\{b:02x}" for b in self._data)
             lines.append(f'  (data (i32.const 0) "{escaped}")')
-        # Emit bump-allocator global for the object heap when any stateful class exists.
+        # Emit bump-allocator global when any stateful class or heap allocation exists.
         has_stateful = any(size > 0 for size in self._class_obj_sizes.values())
-        if has_stateful:
+        if has_stateful or self._need_heap_ptr:
             heap_base = max((len(self._data) + 7) // 8 * 8, 64)
             lines.append(f'  (global $__heap_ptr (mut i32) (i32.const {heap_base}))')
         lines.extend(self._funcs)
@@ -633,11 +668,14 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
 
     def _save_func_state(self):
         saved = (self._instrs, self._locals, self._loop_stack,
-                 self._var_class_types, self._current_class)
+                 self._var_class_types, self._current_class,
+                 self._string_len_locals, self._list_locals)
         self._instrs = []
         self._locals = set()
         self._loop_stack = []
         self._var_class_types = {}
+        self._string_len_locals = {}
+        self._list_locals = set()
         # _current_class is NOT reset here: _emit_class sets it before each method
         # and it must persist into the method body.
         return saved
@@ -825,7 +863,8 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
 
     def _restore_func_state(self, saved):
         (self._instrs, self._locals, self._loop_stack,
-         self._var_class_types, self._current_class) = saved
+         self._var_class_types, self._current_class,
+         self._string_len_locals, self._list_locals) = saved
 
     def _infer_class_name(self, expr) -> str | None:
         """Infer class name for simple object-like values tracked in WAT lowering."""
@@ -1007,6 +1046,205 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
         self._restore_func_state(saved)
 
     # -----------------------------------------------------------------------
+    # Augmented-assignment helper
+    # -----------------------------------------------------------------------
+
+    def _gen_augmented_op(self, op: str, rhs_node, indent: str):
+        """Emit the compound-assignment arithmetic.
+
+        Precondition : the current (old) value of the LHS is on the f64 stack.
+        Postcondition: the new value is on the stack ready for ``local.set`` /
+                       ``f64.store``.
+        """
+        if op in ("+=", "-=", "*=", "/="):
+            _arith = {"+=": "f64.add", "-=": "f64.sub",
+                      "*=": "f64.mul", "/=": "f64.div"}
+            self._gen_expr(rhs_node, indent)
+            self._emit(f"{indent}{_arith[op]}")
+        elif op == "//=":
+            self._gen_expr(rhs_node, indent)
+            self._emit(f"{indent}f64.div")
+            self._emit(f"{indent}f64.floor")
+        elif op == "%=":
+            # a %= b  →  a - floor(a/b)*b
+            n = self._new_label()
+            tmp_a = f"__aug_a_{n}"
+            tmp_b = f"__aug_b_{n}"
+            self._locals.add(tmp_a)
+            self._locals.add(tmp_b)
+            # old_val is on stack; tee saves it while keeping it on stack.
+            self._emit(f"{indent}local.tee ${self._wat_symbol(tmp_a)}")
+            self._gen_expr(rhs_node, indent)
+            self._emit(f"{indent}local.tee ${self._wat_symbol(tmp_b)}")
+            self._emit(f"{indent}f64.div")
+            self._emit(f"{indent}f64.floor")
+            self._emit(f"{indent}local.get ${self._wat_symbol(tmp_b)}")
+            self._emit(f"{indent}f64.mul")
+            # stack: [floor(a/b)*b]  →  negate, then add a
+            self._emit(f"{indent}f64.neg")
+            self._emit(f"{indent}local.get ${self._wat_symbol(tmp_a)}")
+            self._emit(f"{indent}f64.add  ;; a - floor(a/b)*b")
+        elif op == "**=":
+            self._emit(
+                f"{indent};; **= not natively supported in WAT (no f64.pow)"
+                f" — old value preserved"
+            )
+            # Old value stays on stack unchanged; rhs not evaluated.
+        elif op in ("&=", "|=", "^="):
+            _bitwise = {"&=": "i32.and", "|=": "i32.or", "^=": "i32.xor"}
+            self._emit(f"{indent}i32.trunc_f64_s")
+            self._gen_expr(rhs_node, indent)
+            self._emit(f"{indent}i32.trunc_f64_s")
+            self._emit(f"{indent}{_bitwise[op]}")
+            self._emit(f"{indent}f64.convert_i32_s")
+        elif op in ("<<=", ">>="):
+            _shifts = {"<<=": "i32.shl", ">>=": "i32.shr_s"}
+            self._emit(f"{indent}i32.trunc_f64_s")
+            self._gen_expr(rhs_node, indent)
+            self._emit(f"{indent}i32.trunc_f64_s")
+            self._emit(f"{indent}{_shifts[op]}")
+            self._emit(f"{indent}f64.convert_i32_s")
+        else:
+            self._gen_expr(rhs_node, indent)
+            self._emit(f"{indent}f64.add  ;; unknown augmented op {op!r}")
+
+    # -----------------------------------------------------------------------
+    # List / tuple allocation helper
+    # -----------------------------------------------------------------------
+
+    def _gen_list_alloc(self, node, indent: str):
+        """Allocate a list or tuple literal in linear memory.
+
+        Memory layout: ``[offset 0: length_f64, offset 8: elem0, ...]``
+        Total allocation: ``(n + 1) * 8`` bytes.  Pushes the base pointer
+        (as f64) onto the stack.
+        """
+        n = len(node.elements)
+        total_bytes = (n + 1) * 8
+        lbl = self._new_label()
+        ptr_local = f"__list_{lbl}_ptr"
+        self._locals.add(ptr_local)
+        self._need_heap_ptr = True
+
+        self._emit(f"{indent};; list/tuple literal [{n} elements]")
+        # Capture old heap_ptr as f64 base address, then advance.
+        self._emit(f"{indent}global.get $__heap_ptr")
+        self._emit(f"{indent}f64.convert_i32_u")
+        self._emit(f"{indent}local.tee ${self._wat_symbol(ptr_local)}")
+        self._emit(f"{indent}i32.trunc_f64_u")
+        self._emit(f"{indent}i32.const {total_bytes}")
+        self._emit(f"{indent}i32.add")
+        self._emit(f"{indent}global.set $__heap_ptr")
+        # Store length header at base + 0.
+        self._emit(f"{indent}local.get ${self._wat_symbol(ptr_local)}")
+        self._emit(f"{indent}i32.trunc_f64_u")
+        self._emit(f"{indent}f64.const {float(n)}")
+        self._emit(f"{indent}f64.store")
+        # Store each element.
+        for i, elem in enumerate(node.elements):
+            offset = (i + 1) * 8
+            self._emit(f"{indent}local.get ${self._wat_symbol(ptr_local)}")
+            self._emit(f"{indent}i32.trunc_f64_u")
+            self._emit(f"{indent}i32.const {offset}")
+            self._emit(f"{indent}i32.add")
+            self._gen_expr(elem, indent)
+            self._emit(f"{indent}f64.store")
+        # Push the pointer as f64.
+        self._emit(f"{indent}local.get ${self._wat_symbol(ptr_local)}")
+
+    # -----------------------------------------------------------------------
+    # len() helper
+    # -----------------------------------------------------------------------
+
+    def _gen_len(self, arg_node, indent: str):
+        """Emit WAT that pushes the length of a string or list variable."""
+        if isinstance(arg_node, StringLiteral):
+            _, byte_len = self._intern(arg_node.value)
+            self._emit(f"{indent}f64.const {float(byte_len)}  ;; len of string literal")
+        elif isinstance(arg_node, Identifier):
+            if arg_node.name in self._string_len_locals:
+                len_local = self._string_len_locals[arg_node.name]
+                self._emit(f"{indent}local.get ${self._wat_symbol(len_local)}")
+            elif arg_node.name in self._list_locals:
+                # Load element count from the list header at offset 0.
+                self._emit(f"{indent}local.get ${self._wat_symbol(arg_node.name)}")
+                self._emit(f"{indent}i32.trunc_f64_u")
+                self._emit(f"{indent}f64.load  ;; list length from header")
+            else:
+                self._emit(
+                    f"{indent}f64.const 0  "
+                    f";; unsupported: len() of {arg_node.name!r} (unknown type)"
+                )
+        else:
+            self._emit(
+                f"{indent}f64.const 0  "
+                f";; unsupported: len() of {type(arg_node).__name__}"
+            )
+
+    # -----------------------------------------------------------------------
+    # match/case lowering helper
+    # -----------------------------------------------------------------------
+
+    def _gen_match(self, stmt: MatchStatement, indent: str):
+        """Lower a match/case statement to a WAT block + nested if instructions."""
+        n = self._new_label()
+        subj_local = f"__match_subj_{n}"
+        blk = f"__match_end_{n}"
+        self._locals.add(subj_local)
+
+        self._emit(f"{indent};; match ...")
+        self._gen_expr(stmt.subject, indent)
+        self._emit(f"{indent}local.set ${self._wat_symbol(subj_local)}")
+        self._emit(f"{indent}block ${blk}")
+
+        for case in stmt.cases:
+            if getattr(case, "is_default", False) or case.pattern is None:
+                self._emit(f"{indent}  ;; case _: (default)")
+                self._gen_stmts(case.body, indent + "    ")
+                self._emit(f"{indent}  br ${blk}")
+            elif isinstance(case.pattern, NumeralLiteral):
+                val = self._to_f64(case.pattern.value)
+                self._emit(f"{indent}  ;; case {val}:")
+                self._emit(f"{indent}  local.get ${self._wat_symbol(subj_local)}")
+                self._emit(f"{indent}  f64.const {val}")
+                self._emit(f"{indent}  f64.eq")
+                if getattr(case, "guard", None):
+                    self._gen_cond(case.guard, indent + "  ")
+                    self._emit(f"{indent}  i32.and")
+                self._emit(f"{indent}  if")
+                self._gen_stmts(case.body, indent + "    ")
+                self._emit(f"{indent}    br ${blk}")
+                self._emit(f"{indent}  end")
+            elif isinstance(case.pattern, BooleanLiteral):
+                val_i = 1 if case.pattern.value else 0
+                self._emit(f"{indent}  ;; case {bool(val_i)}:")
+                self._emit(f"{indent}  local.get ${self._wat_symbol(subj_local)}")
+                self._emit(f"{indent}  f64.const {float(val_i)}")
+                self._emit(f"{indent}  f64.eq")
+                if getattr(case, "guard", None):
+                    self._gen_cond(case.guard, indent + "  ")
+                    self._emit(f"{indent}  i32.and")
+                self._emit(f"{indent}  if")
+                self._gen_stmts(case.body, indent + "    ")
+                self._emit(f"{indent}    br ${blk}")
+                self._emit(f"{indent}  end")
+            elif isinstance(case.pattern, StringLiteral):
+                self._emit(
+                    f"{indent}  ;; case {case.pattern.value!r}: "
+                    f"string patterns not comparable as f64 — stub"
+                )
+                self._emit(
+                    f"{indent}  ;; unsupported call: string_pattern_match"
+                )
+            else:
+                self._emit(
+                    f"{indent}  ;; case {type(case.pattern).__name__}: "
+                    f"complex pattern not lowerable in WAT — stub"
+                )
+
+        self._emit(f"{indent}end  ;; match")
+
+    # -----------------------------------------------------------------------
     # Statement generation
     # -----------------------------------------------------------------------
 
@@ -1024,6 +1262,16 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
             self._emit(f"{indent};; let {name} = ...")
             self._gen_expr(stmt.value, indent)
             self._emit(f"{indent}local.set ${self._wat_symbol(name)}")
+            # Track string length and list pointer locals.
+            if isinstance(stmt.value, StringLiteral):
+                _, byte_len = self._intern(stmt.value.value)
+                len_local = f"{name}_strlen"
+                self._locals.add(len_local)
+                self._emit(f"{indent}f64.const {float(byte_len)}  ;; strlen for {name}")
+                self._emit(f"{indent}local.set ${self._wat_symbol(len_local)}")
+                self._string_len_locals[name] = len_local
+            elif isinstance(stmt.value, (ListLiteral, TupleLiteral)):
+                self._list_locals.add(name)
             inferred_class = self._infer_class_name(stmt.value)
             if inferred_class:
                 self._var_class_types[name] = inferred_class
@@ -1040,20 +1288,28 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
                     self._emit(f"{indent};; {name} = ...")
                     self._gen_expr(stmt.value, indent)
                     self._emit(f"{indent}local.set ${self._wat_symbol(name)}")
+                    # Track string/list types after assignment.
+                    if isinstance(stmt.value, StringLiteral):
+                        _, byte_len = self._intern(stmt.value.value)
+                        len_local = f"{name}_strlen"
+                        self._locals.add(len_local)
+                        self._emit(
+                            f"{indent}f64.const {float(byte_len)}  ;; strlen for {name}"
+                        )
+                        self._emit(f"{indent}local.set ${self._wat_symbol(len_local)}")
+                        self._string_len_locals[name] = len_local
+                    elif isinstance(stmt.value, (ListLiteral, TupleLiteral)):
+                        self._list_locals.add(name)
                     inferred_class = self._infer_class_name(stmt.value)
                     if inferred_class:
                         self._var_class_types[name] = inferred_class
                     elif name in self._var_class_types:
                         del self._var_class_types[name]
                 else:
-                    # Compound assignment: a += b → a = a op b
-                    _compound = {"+=": "f64.add", "-=": "f64.sub",
-                                 "*=": "f64.mul", "/=": "f64.div"}
-                    wat_op = _compound.get(op, "f64.add")
+                    # Compound assignment: a op= b
                     self._emit(f"{indent};; {name} {op} ...")
                     self._emit(f"{indent}local.get ${self._wat_symbol(name)}")
-                    self._gen_expr(stmt.value, indent)
-                    self._emit(f"{indent}{wat_op}")
+                    self._gen_augmented_op(op, stmt.value, indent)
                     self._emit(f"{indent}local.set ${self._wat_symbol(name)}")
                     if name in self._var_class_types:
                         del self._var_class_types[name]
@@ -1079,24 +1335,19 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
                         self._gen_expr(stmt.value, indent)
                         self._emit(f"{indent}f64.store")
                     else:
-                        # Compound assignment: obj.attr += val
-                        # Load old value, apply op, save to tmp f64 local, store.
-                        _compound = {"+=": "f64.add", "-=": "f64.sub",
-                                     "*=": "f64.mul", "/=": "f64.div"}
-                        wat_op = _compound.get(op, "f64.add")
+                        # Compound assignment: obj.attr op= val
                         tmp = f"__attr_val_{self._new_label()}"
                         self._locals.add(tmp)
                         self._emit(f"{indent};; {obj_name}.{attr} {op} ...")
-                        # Load current field value
+                        # Load current field value, apply op, save result.
                         self._emit(f"{indent}local.get ${self._wat_symbol(obj_name)}")
                         self._emit(f"{indent}i32.trunc_f64_u")
                         self._emit(f"{indent}i32.const {offset}")
                         self._emit(f"{indent}i32.add")
                         self._emit(f"{indent}f64.load")
-                        self._gen_expr(stmt.value, indent)
-                        self._emit(f"{indent}{wat_op}")
+                        self._gen_augmented_op(op, stmt.value, indent)
                         self._emit(f"{indent}local.set ${self._wat_symbol(tmp)}")
-                        # Store new value (recompute address)
+                        # Store new value (recompute address).
                         self._emit(f"{indent}local.get ${self._wat_symbol(obj_name)}")
                         self._emit(f"{indent}i32.trunc_f64_u")
                         self._emit(f"{indent}i32.const {offset}")
@@ -1142,6 +1393,10 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
                     for _extra in expr.args[1:]:
                         self._gen_expr(_extra, indent)
                         self._emit(f"{indent}f64.max")
+                    self._emit(f"{indent}drop")
+                elif fname in _LEN_NAMES and len(expr.args) == 1:
+                    self._emit(f"{indent};; len(...)")
+                    self._gen_len(expr.args[0], indent)
                     self._emit(f"{indent}drop")
                 elif fname in self._defined_func_names:
                     # Known WAT function — emit args then call
@@ -1262,6 +1517,9 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
             # Nested function def — not directly supported
             self._emit(f"{indent};; nested def {_name(stmt.name)} — skipped in WAT")
 
+        elif isinstance(stmt, MatchStatement):
+            self._gen_match(stmt, indent)
+
         else:
             self._emit(f"{indent};; (unsupported statement: {type(stmt).__name__})")
 
@@ -1358,6 +1616,8 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
                 for _extra in node.args[1:]:
                     self._gen_expr(_extra, indent)
                     self._emit(f"{indent}f64.max")
+            elif fname in _LEN_NAMES and len(node.args) == 1:
+                self._gen_len(node.args[0], indent)
             elif fname in self._defined_func_names:
                 # Known WAT function — emit args then call
                 self._gen_call_args(node, indent, fname)
@@ -1526,6 +1786,33 @@ class WATCodeGenerator:  # pylint: disable=too-many-instance-attributes
                     f"{indent}f64.const 0  ;; unsupported expr: "
                     f"AttributeAccess {obj_name}.{node.attr}"
                 )
+
+        elif isinstance(node, (ListLiteral, TupleLiteral)):
+            self._gen_list_alloc(node, indent)
+
+        elif isinstance(node, IndexAccess):
+            obj = node.obj
+            if isinstance(obj, Identifier) and obj.name in self._list_locals:
+                # list[i] / tuple[i]  →  load from base + 8 + i*8
+                self._emit(f"{indent};; {obj.name}[i]")
+                self._emit(f"{indent}local.get ${self._wat_symbol(obj.name)}")
+                self._emit(f"{indent}i32.trunc_f64_u")
+                self._gen_expr(node.index, indent)
+                self._emit(f"{indent}i32.trunc_f64_u")
+                self._emit(f"{indent}i32.const 8")
+                self._emit(f"{indent}i32.mul")
+                self._emit(f"{indent}i32.const 8  ;; skip length header")
+                self._emit(f"{indent}i32.add")
+                self._emit(f"{indent}i32.add")
+                self._emit(f"{indent}f64.load")
+            else:
+                self._emit(
+                    f"{indent}f64.const 0  ;; unsupported: IndexAccess on non-list"
+                )
+
+        elif isinstance(node, AwaitExpr):
+            # WAT has no async runtime — evaluate the awaited value synchronously.
+            self._gen_expr(node.value, indent)
 
         else:
             self._emit(f"{indent}f64.const 0  ;; unsupported expr: {type(node).__name__}")
