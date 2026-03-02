@@ -46,6 +46,7 @@ Host imports expected by the generated module:
 
 from copy import deepcopy
 import json
+from pathlib import Path
 import re
 
 from multilingualprogramming.parser.ast_nodes import (
@@ -93,89 +94,30 @@ from multilingualprogramming.core.ir import CoreIRProgram
 
 
 # ---------------------------------------------------------------------------
-# Localised builtin name sets
+# Localised builtin name sets — built dynamically from builtins_aliases.json
 # ---------------------------------------------------------------------------
 
-_PRINT_NAMES = frozenset({
-    # English
-    "print",
-    # Romance / Germanic / Slavic
-    "afficher", "imprimir", "ausgeben", "stampa", "imprima",
-    "drukuj", "afdrukken", "skriv", "tulosta",
-    # Indic / Semitic / East Asian
-    "छापो", "اطبع", "ছাপাও", "அச்சிடு", "打印", "表示",
-})
+_BUILTINS_ALIASES_PATH = (
+    Path(__file__).parent.parent / "resources" / "usm" / "builtins_aliases.json"
+)
+with _BUILTINS_ALIASES_PATH.open(encoding="utf-8") as _f:
+    _BUILTINS_ALIASES: dict = json.load(_f)["aliases"]
 
-_RANGE_NAMES = frozenset({
-    "range",
-    "intervalle", "rango", "bereich", "intervallo", "intervalo",
-    "zakres", "bereik", "intervall", "interval", "vali",
-    "परास", "مدى", "পরিসর", "வரம்பு", "范围", "範囲",
-})
 
-# abs() → WAT f64.abs  (1 argument)
-_ABS_NAMES = frozenset({
-    "abs",
-    # French
-    "valeurabsolue", "valeur_absolue",
-    # Spanish
-    "valorabsoluto", "valor_absoluto",
-    # German
-    "betrag",
-    # Italian
-    "valoreassoluto",
-    # Portuguese shares the same alias as Spanish (kept once above)
-    # Polish
-    "wartoscbezwzgledna",
-    # Dutch
-    "absoluutewaarde",
-    # Hindi
-    "निरपेक्षमान",
-    # Arabic
-    "قيمةمطلقة",
-    # Chinese / Japanese
-    "绝对值", "絶対値",
-})
+def _aliases_for(canonical: str) -> frozenset:
+    """Return {canonical} plus every localized alias from builtins_aliases.json."""
+    names = {canonical}
+    for lang_aliases in _BUILTINS_ALIASES.get(canonical, {}).values():
+        names.update(lang_aliases)
+    return frozenset(names)
 
-# min() → WAT f64.min  (2 arguments; more args unsupported)
-_MIN_NAMES = frozenset({
-    "min",
-    "minimum", "minimo",
-    # localized aliases from builtins_aliases.json
-    "न्यूनतम",  # hi
-    "الحد_الأدنى", "الحدالأدنى",  # ar
-    "最小",  # zh / ja
-})
 
-# max() → WAT f64.max  (2 arguments; more args unsupported)
-_MAX_NAMES = frozenset({
-    "max",
-    "maximum", "maximo", "massimo",
-    "अधिकतम",  # hi
-    "الحد_الأقصى", "الحدالأقصى",  # ar
-    "最大",  # zh / ja
-})
-
-# len() → byte length for strings / element count for lists
-_LEN_NAMES = frozenset({
-    "len",
-    "longueur",   # fr
-    "longitud",   # es
-    "laenge",     # de
-    "lunghezza",  # it
-    "comprimento",  # pt
-    "लंबाई",      # hi
-    "طول",        # ar
-    "দৈর্ঘ্য",    # bn
-    "நீளம்",      # ta
-    "长度",       # zh
-    "長さ",       # ja
-    "dlugosc",    # pl
-    "lengte",     # nl
-    "langd",      # sv
-    "laengde",    # da
-    "pituus",     # fi
-})
+_PRINT_NAMES = _aliases_for("print")
+_RANGE_NAMES = _aliases_for("range")
+_ABS_NAMES   = _aliases_for("abs")
+_MIN_NAMES   = _aliases_for("min")
+_MAX_NAMES   = _aliases_for("max")
+_LEN_NAMES   = _aliases_for("len")
 
 
 # ---------------------------------------------------------------------------

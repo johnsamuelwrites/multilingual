@@ -112,8 +112,22 @@
       "fi": ["maksimi"]
     },
     "print": {
-      "hi": ["प्रिंट"],
-      "ar": ["طباعة"]
+      "fr": ["afficher"],
+      "es": ["imprimir"],
+      "de": ["ausgeben"],
+      "it": ["stampa"],
+      "pt": ["imprimir", "imprima"],
+      "hi": ["प्रिंट", "छापो"],
+      "ar": ["طباعة", "اطبع"],
+      "bn": ["ছাপাও"],
+      "ta": ["அச்சிடு"],
+      "zh": ["打印"],
+      "ja": ["表示"],
+      "pl": ["drukuj"],
+      "nl": ["afdrukken"],
+      "sv": ["skriv"],
+      "da": ["skriv"],
+      "fi": ["tulosta"]
     },
     "super": {
       "fr": ["superieur", "superclasse"],
