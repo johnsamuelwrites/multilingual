@@ -5,7 +5,7 @@
 #
 
 """Tests for the WAT (WebAssembly Text) code generator."""
-# pylint: disable=duplicate-code
+# pylint: disable=duplicate-code, too-many-lines
 # pylint: disable=mixed-line-endings
 
 import unittest
@@ -39,6 +39,12 @@ from multilingualprogramming.parser.ast_nodes import (
     FunctionDef,
     ClassDef,
     Parameter,
+    MatchStatement,
+    CaseClause,
+    ListLiteral,
+    TupleLiteral,
+    IndexAccess,
+    AwaitExpr,
 )
 from multilingualprogramming.codegen.wat_generator import WATCodeGenerator
 from multilingualprogramming.core.ir import CoreIRProgram
@@ -1965,16 +1971,6 @@ class WATInheritanceWasmExecutionTestSuite(unittest.TestCase):
 # ---------------------------------------------------------------------------
 # New feature tests — items 1–5
 # ---------------------------------------------------------------------------
-
-from multilingualprogramming.parser.ast_nodes import (  # noqa: E402
-    MatchStatement,
-    CaseClause,
-    ListLiteral,
-    TupleLiteral,
-    IndexAccess,
-    AwaitExpr,
-)
-
 
 class WATMatchCaseTestSuite(unittest.TestCase):
     """WAT lowering for match/case statements."""
