@@ -511,7 +511,7 @@ class _ExpressionGenerator:
         # Single-element tuples need trailing comma: (x,)
         if len(node.elements) == 1:
             elems += ","
-        return elems
+        return f"({elems})"
 
     def visit_ListComprehension(self, node):
         elem = self._expr(node.element)
