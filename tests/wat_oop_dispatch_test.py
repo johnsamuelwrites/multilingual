@@ -4,7 +4,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 
-"""Tests for new WAT features: @property, print sep/end, and vtable dispatch."""
+"""Tests for WAT OOP dispatch: @property, @staticmethod/@classmethod, print
+kwargs, and vtable-based dynamic dispatch."""
 
 import unittest
 
@@ -60,7 +61,6 @@ print(c.radius)
     def test_property_getter_receives_self(self):
         """The call to the property getter passes self (or f64.const 0)."""
         wat = _wat(self._src_radius)
-        # The getter should be called — at least the mangled name appears
         self.assertIn("Circle__radius", wat)
 
     def test_property_getter_in_return(self):
@@ -102,7 +102,6 @@ class Math:
 """
         wat = _wat(src)
         self.assertIn("Math__double", wat)
-        # The WAT func for double should have exactly param $n, not $self
         self.assertNotIn("$self", wat)
 
     def test_classmethod_no_self(self):
@@ -250,7 +249,6 @@ def make_noise(obj):
     def test_unknown_receiver_uses_dispatch(self):
         """Function param of unknown class type routes through dispatch fn."""
         wat = _wat(self._src_animals)
-        # make_noise(obj) should call __dispatch_speak, not directly Animal/Dog
         self.assertIn("dynamic dispatch speak", wat)
 
     def test_known_receiver_still_direct(self):
@@ -265,7 +263,6 @@ c = Cat()
 c.speak()
 """
         wat = _wat(src)
-        # Single class: no dispatch fn needed
         self.assertNotIn("__dispatch_speak", wat)
         self.assertIn("Cat__speak", wat)
 
@@ -283,8 +280,8 @@ class Point:
         self.pz = pz
 """
         wat = _wat(src)
-        self.assertIn("i32.const 0", wat)   # first field
-        self.assertIn("i32.const 8", wat)   # second field
+        self.assertIn("i32.const 0", wat)
+        self.assertIn("i32.const 8", wat)
 
     def test_obj_size_unchanged(self):
         """_class_obj_sizes still reflects only field bytes (not tag bytes)."""
@@ -295,56 +292,6 @@ class Pair:
         self.b = b
 """)
         self.assertEqual(gen._class_obj_sizes.get("Pair"), 16)
-
-
-# ---------------------------------------------------------------------------
-# Built-in aliases
-# ---------------------------------------------------------------------------
-
-class TestNewBuiltinAliases(unittest.TestCase):
-    """The 15 new built-in aliases are recognized in non-English languages."""
-
-    def _execute(self, source, language="fr"):
-        from multilingualprogramming.codegen.executor import ProgramExecutor
-        return ProgramExecutor(language=language).execute(source)
-
-    def test_eval_french_alias(self):
-        """French 'evaluer' maps to eval."""
-        r = self._execute("x = evaluer('1 + 1')\nprint(x)", language="fr")
-        self.assertEqual(r.output.strip(), "2")
-
-    def test_exec_french_alias(self):
-        """French 'executer' maps to exec (runs code that calls print)."""
-        r = self._execute("executer('print(42)')", language="fr")
-        self.assertEqual(r.output.strip(), "42")
-
-    def test_globals_french_alias(self):
-        """French 'globaux' maps to globals."""
-        r = self._execute("g = globaux()\nprint(type(g).__name__)", language="fr")
-        self.assertEqual(r.output.strip(), "dict")
-
-    def test_locals_french_alias(self):
-        """French 'locaux' maps to locals."""
-        r = self._execute("l = locaux()\nprint(type(l).__name__)", language="fr")
-        self.assertEqual(r.output.strip(), "dict")
-
-    def test_breakpoint_german_alias(self):
-        """German 'haltepunkt' maps to breakpoint (is callable)."""
-        r = self._execute("print(type(haltepunkt).__name__)", language="de")
-        self.assertIn("builtin", r.output.lower())
-
-    def test_vars_german_alias(self):
-        """German 'variablen' maps to vars."""
-        r = self._execute("v = variablen()\nprint(type(v).__name__)", language="de")
-        self.assertEqual(r.output.strip(), "dict")
-
-    def test_compile_spanish_alias(self):
-        """Spanish 'compilar' maps to compile."""
-        r = self._execute(
-            "c = compilar('1+1', '<string>', 'eval')\nprint(type(c).__name__)",
-            language="es"
-        )
-        self.assertEqual(r.output.strip(), "code")
 
 
 if __name__ == "__main__":
