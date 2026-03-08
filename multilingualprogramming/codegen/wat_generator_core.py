@@ -12,6 +12,31 @@ import re
 class WATGeneratorCoreMixin:
     """Core module/string/symbol helpers for WATCodeGenerator."""
 
+    _data: bytearray
+    _strings: dict[str, tuple[int, int]]
+    _class_obj_sizes: dict[str, int]
+    _need_heap_ptr: bool
+    _lambda_table: list[str]
+    _funcs: list[str]
+    _label_count: int = 0
+    _wat_symbols: dict[str, str]
+    _used_wat_symbols: set[str]
+
+    @staticmethod
+    def state_attribute_names() -> tuple[str, ...]:
+        """Return the core mutable state fields required by the mixin."""
+        return (
+            "_data",
+            "_strings",
+            "_class_obj_sizes",
+            "_need_heap_ptr",
+            "_lambda_table",
+            "_funcs",
+            "_label_count",
+            "_wat_symbols",
+            "_used_wat_symbols",
+        )
+
     def _build_module(self) -> str:
         lines = ["(module"]
         lines += [

@@ -89,7 +89,10 @@ from multilingualprogramming.numeral.mp_numeral import MPNumeral
 from multilingualprogramming.core.ir import CoreIRProgram
 
 from multilingualprogramming.codegen.wat_generator_core import WATGeneratorCoreMixin
+from multilingualprogramming.codegen.wat_generator_expression import WATGeneratorExpressionMixin
+from multilingualprogramming.codegen.wat_generator_loop import WATGeneratorLoopMixin
 from multilingualprogramming.codegen.wat_generator_manifest import WATGeneratorManifestMixin
+from multilingualprogramming.codegen.wat_generator_match import WATGeneratorMatchMixin
 from multilingualprogramming.codegen.wat_generator_support import (
     _ABS_NAMES,
     _LEN_NAMES,
@@ -108,7 +111,13 @@ from multilingualprogramming.codegen.wat_generator_support import (
 # WATCodeGenerator
 # ---------------------------------------------------------------------------
 
-class WATCodeGenerator(WATGeneratorManifestMixin, WATGeneratorCoreMixin):  # pylint: disable=too-many-instance-attributes
+class WATCodeGenerator(
+    WATGeneratorManifestMixin,
+    WATGeneratorCoreMixin,
+    WATGeneratorMatchMixin,
+    WATGeneratorExpressionMixin,
+    WATGeneratorLoopMixin,
+):  # pylint: disable=too-many-instance-attributes
     """
     Visitor-based WAT source code generator.
 
@@ -709,143 +718,6 @@ class WATCodeGenerator(WATGeneratorManifestMixin, WATGeneratorCoreMixin):  # pyl
     # match/case lowering helper
     # -----------------------------------------------------------------------
 
-    def _gen_match(self, stmt: MatchStatement, indent: str):
-        """Lower a match/case statement to a WAT block + nested if instructions."""
-        n = self._new_label()
-        subj_local = f"__match_subj_{n}"
-        blk = f"__match_end_{n}"
-        self._locals.add(subj_local)
-        # Detect whether the subject is a tracked list/tuple (needed for tuple patterns).
-        subj_var_name = _name(stmt.subject) if isinstance(stmt.subject, Identifier) else None
-        subj_is_list = bool(subj_var_name and subj_var_name in self._list_locals)
-
-        self._emit(f"{indent};; match ...")
-        self._gen_expr(stmt.subject, indent)
-        self._emit(f"{indent}local.set ${self._wat_symbol(subj_local)}")
-        self._emit(f"{indent}block ${blk}")
-
-        for case in stmt.cases:
-            if getattr(case, "is_default", False) or case.pattern is None:
-                self._emit(f"{indent}  ;; case _: (default)")
-                self._gen_stmts(case.body, indent + "    ")
-                self._emit(f"{indent}  br ${blk}")
-            elif isinstance(case.pattern, NumeralLiteral):
-                val = self._to_f64(case.pattern.value)
-                self._emit(f"{indent}  ;; case {val}:")
-                self._emit(f"{indent}  local.get ${self._wat_symbol(subj_local)}")
-                self._emit(f"{indent}  f64.const {val}")
-                self._emit(f"{indent}  f64.eq")
-                if getattr(case, "guard", None):
-                    self._gen_cond(case.guard, indent + "  ")
-                    self._emit(f"{indent}  i32.and")
-                self._emit(f"{indent}  if")
-                self._gen_stmts(case.body, indent + "    ")
-                self._emit(f"{indent}    br ${blk}")
-                self._emit(f"{indent}  end")
-            elif isinstance(case.pattern, BooleanLiteral):
-                val_i = 1 if case.pattern.value else 0
-                self._emit(f"{indent}  ;; case {bool(val_i)}:")
-                self._emit(f"{indent}  local.get ${self._wat_symbol(subj_local)}")
-                self._emit(f"{indent}  f64.const {float(val_i)}")
-                self._emit(f"{indent}  f64.eq")
-                if getattr(case, "guard", None):
-                    self._gen_cond(case.guard, indent + "  ")
-                    self._emit(f"{indent}  i32.and")
-                self._emit(f"{indent}  if")
-                self._gen_stmts(case.body, indent + "    ")
-                self._emit(f"{indent}    br ${blk}")
-                self._emit(f"{indent}  end")
-            elif isinstance(case.pattern, StringLiteral):
-                # Strings are interned at compile time: the subject f64 value
-                # is the byte offset of its interned string in the data section.
-                # Interning deduplicates, so equal strings always share an offset.
-                # This comparison is valid for compile-time string constants only.
-                pat_offset, _ = self._intern(case.pattern.value)
-                self._emit(f"{indent}  ;; case {case.pattern.value!r}:")
-                self._emit(f"{indent}  local.get ${self._wat_symbol(subj_local)}")
-                self._emit(f"{indent}  f64.const {float(pat_offset)}")
-                self._emit(f"{indent}  f64.eq")
-                if getattr(case, "guard", None):
-                    self._gen_cond(case.guard, indent + "  ")
-                    self._emit(f"{indent}  i32.and")
-                self._emit(f"{indent}  if")
-                self._gen_stmts(case.body, indent + "    ")
-                self._emit(f"{indent}    br ${blk}")
-                self._emit(f"{indent}  end")
-            elif isinstance(case.pattern, NoneLiteral):
-                # case None: — None is represented as f64.const 0
-                self._emit(f"{indent}  ;; case None:")
-                self._emit(f"{indent}  local.get ${self._wat_symbol(subj_local)}")
-                self._emit(f"{indent}  f64.const 0")
-                self._emit(f"{indent}  f64.eq")
-                if getattr(case, "guard", None):
-                    self._gen_cond(case.guard, indent + "  ")
-                    self._emit(f"{indent}  i32.and")
-                self._emit(f"{indent}  if")
-                self._gen_stmts(case.body, indent + "    ")
-                self._emit(f"{indent}    br ${blk}")
-                self._emit(f"{indent}  end")
-            elif isinstance(case.pattern, Identifier):
-                # case name: — capture variable (always matches); binds subject value.
-                # case _: is handled above via is_default, but a named capture also
-                # always matches so treat it identically: bind and execute body.
-                cap_name = _name(case.pattern)
-                self._emit(f"{indent}  ;; case {cap_name}: (capture variable — always matches)")
-                self._locals.add(cap_name)
-                self._emit(f"{indent}  local.get ${self._wat_symbol(subj_local)}")
-                self._emit(f"{indent}  local.set ${self._wat_symbol(cap_name)}")
-                if getattr(case, "guard", None):
-                    self._gen_cond(case.guard, indent + "  ")
-                    self._emit(f"{indent}  if")
-                    self._gen_stmts(case.body, indent + "    ")
-                    self._emit(f"{indent}    br ${blk}")
-                    self._emit(f"{indent}  end")
-                else:
-                    self._gen_stmts(case.body, indent + "  ")
-                    self._emit(f"{indent}  br ${blk}")
-            elif isinstance(case.pattern, (TupleLiteral, ListLiteral)) and subj_is_list:
-                # case (v0, v1, …): — element-wise comparison against a tracked list/tuple.
-                # Requires subject to be a heap-allocated list/tuple variable.
-                elements = case.pattern.elements
-                n_pat = len(elements)
-                pat_repr = ", ".join(str(getattr(e, "value", "?")) for e in elements)
-                self._emit(f"{indent}  ;; case ({pat_repr},): element-wise comparison")
-                # Condition: len == n AND elem[i] == pat[i] for all i.
-                # Start with length check (pushes i32).
-                self._emit(f"{indent}  local.get ${self._wat_symbol(subj_local)}")
-                self._emit(f"{indent}  i32.trunc_f64_u")
-                self._emit(f"{indent}  f64.load")
-                self._emit(f"{indent}  f64.const {float(n_pat)}")
-                self._emit(f"{indent}  f64.eq")
-                for i, elem in enumerate(elements):
-                    # Load element at subj_base + 8 + i*8.
-                    self._emit(f"{indent}  local.get ${self._wat_symbol(subj_local)}")
-                    self._emit(f"{indent}  i32.trunc_f64_u")
-                    self._emit(f"{indent}  i32.const {8 + i * 8}")
-                    self._emit(f"{indent}  i32.add")
-                    self._emit(f"{indent}  f64.load")
-                    self._gen_expr(elem, indent + "  ")
-                    self._emit(f"{indent}  f64.eq")
-                    self._emit(f"{indent}  i32.and")
-                if getattr(case, "guard", None):
-                    self._gen_cond(case.guard, indent + "  ")
-                    self._emit(f"{indent}  i32.and")
-                self._emit(f"{indent}  if")
-                self._gen_stmts(case.body, indent + "    ")
-                self._emit(f"{indent}    br ${blk}")
-                self._emit(f"{indent}  end")
-            else:
-                self._emit(
-                    f"{indent}  ;; case {type(case.pattern).__name__}: "
-                    f"complex pattern not lowerable in WAT — stub"
-                )
-
-        self._emit(f"{indent}end  ;; match")
-
-    # -----------------------------------------------------------------------
-    # Statement generation
-    # -----------------------------------------------------------------------
-
     def _emit(self, line: str):
         self._instrs.append(line)
 
@@ -1410,11 +1282,7 @@ class WATCodeGenerator(WATGeneratorManifestMixin, WATGeneratorCoreMixin):  # pyl
                 self._emit(f"{indent}    br_if ${blk}")
                 self._gen_expr(node.element, indent + "    ")
                 self._emit(f"{indent}    local.set ${self._wat_symbol(acc_var)}")
-                self._emit(f"{indent}    local.get ${self._wat_symbol(iter_var)}")
-                self._emit(f"{indent}    f64.const 1")
-                self._emit(f"{indent}    f64.add")
-                self._emit(f"{indent}    local.set ${self._wat_symbol(iter_var)}")
-                self._emit(f"{indent}    br ${lp}")
+                self._emit_counted_loop_increment(iter_var, lp, indent + "    ")
                 self._emit(f"{indent}  end  ;; comp loop")
                 self._emit(f"{indent}end  ;; comp block")
                 self._emit(f"{indent}local.get ${self._wat_symbol(acc_var)}")
@@ -1622,103 +1490,6 @@ class WATCodeGenerator(WATGeneratorManifestMixin, WATGeneratorCoreMixin):  # pyl
     # Binary / unary expression helpers
     # -----------------------------------------------------------------------
 
-    def _gen_binop(self, node: BinaryOp, indent: str):  # noqa: C901
-        op = node.op
-
-        # Comparison operators -> i32, then convert to f64
-        if op in ("==", "!=", "<", "<=", ">", ">="):
-            self._gen_cmp_from_binop(node, indent)
-            self._emit(f"{indent}f64.convert_i32_s")
-            return
-
-        if op == "%":
-            # Python-style modulo: a - floor(a/b)*b
-            if isinstance(node.left, Identifier):
-                # Hot-kernel optimization: avoid evaluating left expression twice.
-                tmp_name = f"__mod_left_{self._new_label()}"
-                self._locals.add(tmp_name)
-                self._gen_expr(node.left, indent)
-                self._emit(f"{indent}local.set ${self._wat_symbol(tmp_name)}")
-                self._emit(f"{indent}local.get ${self._wat_symbol(tmp_name)}")
-                self._emit(f"{indent}local.get ${self._wat_symbol(tmp_name)}")
-                self._gen_expr(node.right, indent)
-                self._emit(f"{indent}f64.div")
-                self._emit(f"{indent}f64.floor")
-                self._gen_expr(node.right, indent)
-                self._emit(f"{indent}f64.mul")
-                self._emit(f"{indent}f64.sub")
-                return
-            self._emit(f"{indent};; f64 modulo")
-            self._gen_expr(node.left, indent)   # a
-            self._gen_expr(node.left, indent)   # a  (again)
-            self._gen_expr(node.right, indent)  # b
-            self._emit(f"{indent}f64.div")      # a/b
-            self._emit(f"{indent}f64.floor")    # floor(a/b)
-            self._gen_expr(node.right, indent)  # b
-            self._emit(f"{indent}f64.mul")      # floor(a/b)*b
-            self._emit(f"{indent}f64.sub")      # a - floor(a/b)*b
-            return
-
-        if op == "//":
-            self._gen_expr(node.left, indent)
-            self._gen_expr(node.right, indent)
-            self._emit(f"{indent}f64.div")
-            self._emit(f"{indent}f64.floor")
-            return
-
-        if op == "**":
-            self._gen_expr(node.left, indent)
-            self._gen_expr(node.right, indent)
-            self._emit(f"{indent}call $pow_f64")
-            return
-
-        if op == "+":
-            left_is_str = (
-                isinstance(node.left, StringLiteral)
-                or (isinstance(node.left, Identifier)
-                    and node.left.name in self._string_len_locals)
-            )
-            right_is_str = (
-                isinstance(node.right, StringLiteral)
-                or (isinstance(node.right, Identifier)
-                    and node.right.name in self._string_len_locals)
-            )
-            if left_is_str and right_is_str:
-                if isinstance(node.left, StringLiteral) and isinstance(node.right, StringLiteral):
-                    # Compile-time: intern concatenated string directly.
-                    result = node.left.value + node.right.value
-                    offset, _ = self._intern(result)
-                    self._emit(f"{indent}f64.const {float(offset)}  ;; str concat (compile-time)")
-                else:
-                    # Runtime: emit ptr+len args for each operand, call $__str_concat.
-                    self._ensure_str_concat_helper()
-                    self._emit(f"{indent};; str concat (runtime)")
-                    # left ptr
-                    self._gen_expr(node.left, indent)
-                    # left len
-                    if isinstance(node.left, StringLiteral):
-                        _, blen = self._intern(node.left.value)
-                        self._emit(f"{indent}f64.const {float(blen)}")
-                    else:
-                        ll = self._string_len_locals[node.left.name]
-                        self._emit(f"{indent}local.get ${self._wat_symbol(ll)}")
-                    # right ptr
-                    self._gen_expr(node.right, indent)
-                    # right len
-                    if isinstance(node.right, StringLiteral):
-                        _, blen = self._intern(node.right.value)
-                        self._emit(f"{indent}f64.const {float(blen)}")
-                    else:
-                        rl = self._string_len_locals[node.right.name]
-                        self._emit(f"{indent}local.get ${self._wat_symbol(rl)}")
-                    self._emit(f"{indent}call $__str_concat")
-                return
-
-        _arith = {"+": "f64.add", "-": "f64.sub", "*": "f64.mul", "/": "f64.div"}
-        self._gen_expr(node.left, indent)
-        self._gen_expr(node.right, indent)
-        self._emit(f"{indent}{_arith.get(op, 'f64.add')}  ;; op={op!r}")
-
     def _gen_unaryop(self, node: UnaryOp, indent: str):
         if node.op == "-":
             self._gen_expr(node.operand, indent)
@@ -1792,69 +1563,6 @@ class WATCodeGenerator(WATGeneratorManifestMixin, WATGeneratorCoreMixin):  # pyl
         self._emit(f"{indent}    br ${lp}")
         self._emit(f"{indent}  end  ;; loop")
         self._emit(f"{indent}end  ;; block (while)")
-
-        self._loop_stack.pop()
-
-    def _gen_for(self, stmt: ForLoop, indent: str):
-        n = self._new_label()
-        blk = f"for_blk_{n}"
-        lp = f"for_lp_{n}"
-        range_end_local = f"__re{n}"      # holds range end
-        self._loop_stack.append((blk, lp))
-        self._locals.add(range_end_local)
-
-        # Determine iterator variable name
-        target = stmt.target
-        if isinstance(target, Identifier):
-            iter_var = target.name
-        elif isinstance(target, str):
-            iter_var = target
-        else:
-            iter_var = "__for_i"
-        self._locals.add(iter_var)
-
-        # Decode range() call
-        iterable = stmt.iterable
-        range_start = NumeralLiteral("0")
-        range_end = None
-
-        if isinstance(iterable, CallExpr):
-            fname = _name(iterable.func)
-            if fname in _RANGE_NAMES:
-                if len(iterable.args) == 1:
-                    range_start = NumeralLiteral("0")
-                    range_end = iterable.args[0]
-                elif len(iterable.args) >= 2:
-                    range_start = iterable.args[0]
-                    range_end = iterable.args[1]
-
-        if range_end is not None:
-            self._emit(f"{indent};; for {iter_var} in range(...)")
-            self._gen_expr(range_start, indent)
-            self._emit(f"{indent}local.set ${self._wat_symbol(iter_var)}")
-            self._gen_expr(range_end, indent)
-            self._emit(f"{indent}local.set ${self._wat_symbol(range_end_local)}")
-
-            self._emit(f"{indent}block ${blk}")
-            self._emit(f"{indent}  loop ${lp}")
-            self._emit(f"{indent}    local.get ${self._wat_symbol(iter_var)}")
-            self._emit(f"{indent}    local.get ${self._wat_symbol(range_end_local)}")
-            self._emit(f"{indent}    f64.ge")
-            self._emit(f"{indent}    br_if ${blk}")
-            self._gen_stmts(stmt.body, indent + "    ")
-            self._emit(f"{indent}    local.get ${self._wat_symbol(iter_var)}")
-            self._emit(f"{indent}    f64.const 1")
-            self._emit(f"{indent}    f64.add")
-            self._emit(f"{indent}    local.set ${self._wat_symbol(iter_var)}")
-            self._emit(f"{indent}    br ${lp}")
-            self._emit(f"{indent}  end  ;; loop")
-            self._emit(f"{indent}end  ;; block (for)")
-        else:
-            iterable_name = _name(iterable) if isinstance(iterable, Identifier) else None
-            if iterable_name and iterable_name in self._list_locals:
-                self._gen_for_list(stmt, iterable_name, iter_var, blk, lp, n, indent)
-            else:
-                self._emit(f"{indent};; for loop over non-range iterable — not supported in WAT")
 
         self._loop_stack.pop()
 
