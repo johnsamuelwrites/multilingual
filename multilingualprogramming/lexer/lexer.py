@@ -214,6 +214,23 @@ class Lexer:
             if char in ('f', 'F') and self.reader.peek_ahead(1) in ('"', "'"):
                 self._read_fstring()
                 continue
+            # Raw bytes literals: rb"..." or br"..." (check before r/b alone)
+            if char in ('r', 'R') and self.reader.peek_ahead(1) in ('b', 'B') \
+                    and self.reader.peek_ahead(2) in ('"', "'"):
+                self._read_bytes_literal(raw=True)
+                continue
+            if char in ('b', 'B') and self.reader.peek_ahead(1) in ('r', 'R') \
+                    and self.reader.peek_ahead(2) in ('"', "'"):
+                self._read_bytes_literal(raw=True)
+                continue
+            # Bytes literals: b"..." or B"..."
+            if char in ('b', 'B') and self.reader.peek_ahead(1) in ('"', "'"):
+                self._read_bytes_literal(raw=False)
+                continue
+            # Raw string literals: r"..." or R"..."
+            if char in ('r', 'R') and self.reader.peek_ahead(1) in ('"', "'"):
+                self._read_raw_string()
+                continue
             # String literals (check triple-quoted first)
             if char in ('"', "'") and self.reader.peek_ahead(1) == char \
                     and self.reader.peek_ahead(2) == char:
@@ -472,6 +489,91 @@ class Lexer:
             "Unterminated f-string literal",
             line, col
         )
+    def _read_bytes_literal(self, raw: bool):
+        """Read a bytes literal: b"..." B"..." rb"..." br"..." etc."""
+        line, col = self.reader.line, self.reader.column
+        # Consume the prefix characters (one or two letters before the quote)
+        self.reader.advance()  # first prefix char (b/B/r/R)
+        if self.reader.peek() not in ('"', "'"):
+            self.reader.advance()  # consume second prefix char (r/R or b/B)
+        quote_char = self.reader.advance()  # consume opening quote
+        # Check for triple-quoted bytes: b"""..."""
+        if self.reader.peek() == quote_char and self.reader.peek_ahead(1) == quote_char:
+            self.reader.advance()
+            self.reader.advance()
+            text = ""
+            while not self.reader.is_at_end():
+                ch = self.reader.peek()
+                if ch == quote_char and self.reader.peek_ahead(1) == quote_char \
+                        and self.reader.peek_ahead(2) == quote_char:
+                    self.reader.advance()
+                    self.reader.advance()
+                    self.reader.advance()
+                    self.tokens.append(Token(
+                        TokenType.BYTES, text, line, col, raw=raw
+                    ))
+                    return
+                if not raw and ch == "\\":
+                    self.reader.advance()
+                    nc = self.reader.advance()
+                    text += "\\" + nc
+                else:
+                    text += self.reader.advance()
+            raise UnexpectedTokenError("Unterminated bytes literal", line, col)
+        # Single-quoted bytes
+        text = ""
+        while not self.reader.is_at_end():
+            ch = self.reader.peek()
+            if ch == quote_char:
+                self.reader.advance()
+                self.tokens.append(Token(
+                    TokenType.BYTES, text, line, col, raw=raw
+                ))
+                return
+            if not raw and ch == "\\":
+                self.reader.advance()
+                nc = self.reader.advance()
+                text += "\\" + nc
+            else:
+                text += self.reader.advance()
+        raise UnexpectedTokenError("Unterminated bytes literal", line, col)
+
+    def _read_raw_string(self):
+        """Read a raw string literal: r"..." or R"..." — no escape processing."""
+        line, col = self.reader.line, self.reader.column
+        self.reader.advance()  # consume 'r' or 'R'
+        quote_char = self.reader.advance()  # consume opening quote
+        # Check for triple-quoted raw string: r"""..."""
+        if self.reader.peek() == quote_char and self.reader.peek_ahead(1) == quote_char:
+            self.reader.advance()
+            self.reader.advance()
+            text = ""
+            while not self.reader.is_at_end():
+                ch = self.reader.peek()
+                if ch == quote_char and self.reader.peek_ahead(1) == quote_char \
+                        and self.reader.peek_ahead(2) == quote_char:
+                    self.reader.advance()
+                    self.reader.advance()
+                    self.reader.advance()
+                    self.tokens.append(Token(
+                        TokenType.STRING, text, line, col, raw=True
+                    ))
+                    return
+                text += self.reader.advance()
+            raise UnexpectedTokenError("Unterminated raw string literal", line, col)
+        # Single-quoted raw string — no escape processing
+        text = ""
+        while not self.reader.is_at_end():
+            ch = self.reader.peek()
+            if ch == quote_char:
+                self.reader.advance()
+                self.tokens.append(Token(
+                    TokenType.STRING, text, line, col, raw=True
+                ))
+                return
+            text += self.reader.advance()
+        raise UnexpectedTokenError("Unterminated raw string literal", line, col)
+
     def _read_triple_string(self, quote_char):
         """Read a triple-quoted string literal (\"\"\"...\"\"\" or '''...''')."""
         line, col = self.reader.line, self.reader.column

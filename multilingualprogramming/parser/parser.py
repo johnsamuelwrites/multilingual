@@ -11,7 +11,7 @@ from typing import NoReturn
 from multilingualprogramming.lexer.lexer import Lexer
 from multilingualprogramming.lexer.token_types import TokenType
 from multilingualprogramming.parser.ast_nodes import (
-    Program, NumeralLiteral, StringLiteral, DateLiteral,
+    Program, NumeralLiteral, StringLiteral, BytesLiteral, DateLiteral,
     BooleanLiteral, NoneLiteral, ListLiteral, DictLiteral, SetLiteral,
     Identifier, BinaryOp, UnaryOp, BooleanOp, CompareOp,
     CallExpr, AttributeAccess, IndexAccess, ConditionalExpr,
@@ -1465,11 +1465,19 @@ class Parser:
             return NumeralLiteral(tok.value,
                                   line=tok.line, column=tok.column)
 
-        # String literal
+        # String literal (including raw strings with tok.raw=True)
         if tok.type == TokenType.STRING:
             self._advance()
             return StringLiteral(tok.value,
-                                 line=tok.line, column=tok.column)
+                                 line=tok.line, column=tok.column,
+                                 raw=getattr(tok, "raw", False))
+
+        # Bytes literal: b"..." or rb"..."
+        if tok.type == TokenType.BYTES:
+            self._advance()
+            return BytesLiteral(tok.value,
+                                line=tok.line, column=tok.column,
+                                raw=getattr(tok, "raw", False))
 
         # F-string literal
         if tok.type == TokenType.FSTRING:

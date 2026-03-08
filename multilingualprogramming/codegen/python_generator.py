@@ -7,6 +7,22 @@
 """Python code generator: transpiles the multilingual AST to valid Python source."""
 
 from multilingualprogramming.exceptions import CodeGenerationError
+
+
+def _emit_raw_literal(prefix: str, value: str) -> str:
+    """Emit a raw string or raw bytes literal with the given prefix (r or rb).
+
+    Chooses the quote style (single, double, triple) to avoid unescapable
+    quote conflicts, since backslash escapes are not allowed in raw literals.
+    """
+    if '"' not in value:
+        return f'{prefix}"{value}"'
+    if "'" not in value:
+        return f"{prefix}'{value}'"
+    # Both quote chars present — use triple double-quotes if possible
+    if '"""' not in value:
+        return f'{prefix}"""{value}"""'
+    return f"{prefix}'''{value}'''"
 from multilingualprogramming.numeral.mp_numeral import MPNumeral
 from multilingualprogramming.core.ir import CoreIRProgram
 
@@ -364,7 +380,14 @@ class _ExpressionGenerator:
         return self._convert_numeral(node.value)
 
     def visit_StringLiteral(self, node):
+        if getattr(node, "raw", False):
+            return _emit_raw_literal("r", node.value)
         return repr(node.value)
+
+    def visit_BytesLiteral(self, node):
+        if getattr(node, "raw", False):
+            return _emit_raw_literal("rb", node.value)
+        return f"b{repr(node.value)}"
 
     def visit_DateLiteral(self, node):
         # Emit as a string for runtime parsing

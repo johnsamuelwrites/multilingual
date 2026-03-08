@@ -2,7 +2,7 @@
 
 **Document Purpose**: Map all Python 3.12 syntax forms to multilingual language implementation status.
 
-**Last Updated**: 2026-02-22 | **Target Coverage**: 100% | **Current Coverage**: 95%+
+**Last Updated**: 2026-03-08 | **Target Coverage**: 100% | **Current Coverage**: 100% (core syntax)
 
 ---
 
@@ -20,8 +20,9 @@
 | Complex numbers | ✅ Supported | `1+2j` | `test_complex_literals` |
 | Boolean literals | ✅ Supported | `True`, `False` | `test_boolean_literals` |
 | None literal | ✅ Supported | `None` | `test_none_literal` |
-| Bytes literals | ⚠️ Partial | Not explicitly tested | `PENDING` |
-| Raw strings | ✅ Supported | `r"..."` | `test_raw_strings` |
+| Bytes literals | ✅ Supported | `b"..."`, `B"..."`, triple-quoted, with escapes | `test_bytes_literal` |
+| Raw strings | ✅ Supported | `r"..."`, `R"..."`, triple-quoted, no escape processing | `test_raw_string` |
+| Raw bytes literals | ✅ Supported | `rb"..."`, `br"..."` and all case variants | `test_raw_bytes` |
 
 ---
 
@@ -264,8 +265,8 @@
 | Guard clauses | ✅ Supported | `case x if cond:` | `test_guard_clauses` |
 | OR patterns | ✅ Supported | `case a \| b:` | `test_or_patterns` |
 | Capture patterns | ✅ Supported | `case Point(x, y):` | `test_capture_patterns` |
-| Sequence patterns | ⚠️ Partial | Not comprehensive | `PENDING` |
-| Mapping patterns | ⚠️ Partial | Not comprehensive | `PENDING` |
+| Sequence patterns | ✅ Supported | `case [1, 2]:` and `case (a, b):` work in Python codegen; WAT: when subject is list local | `test_sequence_patterns` |
+| Mapping patterns | ✅ Supported | `case {"key": value}:` works in Python codegen | `test_mapping_patterns` |
 
 #### Async/Await
 | Feature | Status | Notes | Test File |
@@ -328,9 +329,9 @@
 - **Override Decorator** (PEP 698) - Type annotation feature
 
 ### Partial Implementation
-- **Pattern Matching** - Basic patterns work; complex structural patterns limited
+- **WAT `@property`** - Lowered to a regular WAT function; property protocol (getter/setter/deleter) not enforced at WAT level
+- **WAT Dynamic Dispatch** - No vtable; all dispatch is static
 - **Async/Await** - Core functionality working; advanced scenarios may need testing
-- **Unicode Operators** - Not all Unicode variants tested comprehensively
 
 ### Areas Needing Expansion (v0.4.0 Focus)
 - Edge case syntax forms (deeply nested, complex combinations)

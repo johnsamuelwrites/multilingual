@@ -70,6 +70,7 @@ from multilingualprogramming.parser.ast_nodes import (
     Identifier,
     NumeralLiteral,
     StringLiteral,
+    BytesLiteral,
     BooleanLiteral,
     NoneLiteral,
     ListLiteral,
@@ -95,6 +96,7 @@ from multilingualprogramming.codegen.wat_generator_manifest import WATGeneratorM
 from multilingualprogramming.codegen.wat_generator_match import WATGeneratorMatchMixin
 from multilingualprogramming.codegen.wat_generator_support import (
     _ABS_NAMES,
+    _has_decorator,
     _LEN_NAMES,
     _MAX_NAMES,
     _MIN_NAMES,
@@ -174,6 +176,8 @@ class WATCodeGenerator(
         # Whether runtime string helpers have been added to _funcs.
         self._str_concat_helper_emitted: bool = False
         self._str_slice_helper_emitted: bool = False
+        # Lowered names of @staticmethod and @classmethod methods (no self/cls pushed).
+        self._static_method_names: set[str] = set()
 
     # -----------------------------------------------------------------------
     # Public API
@@ -305,6 +309,9 @@ class WATCodeGenerator(
                 self._func_real_params[lowered] = _real_params(member)
                 self._func_render_modes[lowered] = _extract_render_mode(member)
                 self._class_attr_call_names[f"{class_name}.{method_name}"] = lowered
+                # Track @staticmethod and @classmethod — these don't receive self.
+                if _has_decorator(member, ("staticmethod", "classmethod")):
+                    self._static_method_names.add(lowered)
                 if method_name == "__init__":
                     self._class_ctor_names[class_name] = lowered
             # Store own (non-inherited) field layout for use in pass 2.
@@ -904,11 +911,15 @@ class WATCodeGenerator(
                     obj_expr = expr.func.obj
                     cls = self._var_class_types.get(_name(obj_expr))
                     self._emit(f"{indent};; instance call {fname}(...)")
-                    if cls and self._is_stateful_class(cls):
+                    if lowered in self._static_method_names:
+                        # @staticmethod/@classmethod: no self pushed
+                        self._gen_call_args(expr, indent, lowered)
+                    elif cls and self._is_stateful_class(cls):
                         self._gen_expr(obj_expr, indent)   # push actual f64 pointer
+                        self._gen_call_args(expr, indent, lowered, skip_params=1)
                     else:
                         self._emit(f"{indent}f64.const 0  ;; implicit self")
-                    self._gen_call_args(expr, indent, lowered, skip_params=1)
+                        self._gen_call_args(expr, indent, lowered, skip_params=1)
                     self._emit(f"{indent}call ${self._wat_symbol(lowered)}")
                     self._emit(f"{indent}drop")
                 elif fname in self._lambda_locals:
@@ -1067,6 +1078,11 @@ class WATCodeGenerator(
             offset, _ = self._intern(node.value)
             self._emit(f"{indent}f64.const {float(offset)}  ;; str offset (not a numeric value)")
 
+        elif isinstance(node, BytesLiteral):
+            # Bytes literals stored in linear memory just like strings
+            offset, _ = self._intern(node.value)
+            self._emit(f"{indent}f64.const {float(offset)}  ;; bytes offset")
+
         elif isinstance(node, Identifier):
             if node.name in self._locals:
                 self._emit(f"{indent}local.get ${self._wat_symbol(node.name)}")
@@ -1138,11 +1154,15 @@ class WATCodeGenerator(
                 lowered = self._class_method_target_from_call(node)
                 obj_expr = node.func.obj
                 cls = self._var_class_types.get(_name(obj_expr))
-                if cls and self._is_stateful_class(cls):
+                if lowered in self._static_method_names:
+                    # @staticmethod/@classmethod: no self pushed
+                    self._gen_call_args(node, indent, lowered)
+                elif cls and self._is_stateful_class(cls):
                     self._gen_expr(obj_expr, indent)   # push actual f64 pointer
+                    self._gen_call_args(node, indent, lowered, skip_params=1)
                 else:
                     self._emit(f"{indent}f64.const 0  ;; implicit self")
-                self._gen_call_args(node, indent, lowered, skip_params=1)
+                    self._gen_call_args(node, indent, lowered, skip_params=1)
                 self._emit(f"{indent}call ${self._wat_symbol(lowered)}")
             elif fname in self._lambda_locals:
                 # Indirect call through lambda table.

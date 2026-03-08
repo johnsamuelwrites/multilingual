@@ -24,13 +24,15 @@ class Token:
 
     # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(self, token_type: TokenType, value, line=1, column=1,
-                 concept=None, language=None):
+                 concept=None, language=None, raw=False, extra=None):
         self.type = token_type
         self.value = value
         self.line = line
         self.column = column
         self.concept = concept
         self.language = language
+        # raw=True for r"..." strings and rb"..." bytes literals
+        self.raw = raw or bool(extra and extra.get("raw"))
 
     def __repr__(self):
         parts = [f"Token({self.type.name}, {self.value!r}"]

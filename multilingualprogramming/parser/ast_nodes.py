@@ -32,9 +32,16 @@ class NumeralLiteral(ASTNode):
         self.value = value
 class StringLiteral(ASTNode):
     """String literal (content without delimiters)."""
-    def __init__(self, value, line=0, column=0):
+    def __init__(self, value, line=0, column=0, raw=False):
         super().__init__(line, column)
         self.value = value
+        self.raw = raw
+class BytesLiteral(ASTNode):
+    """Bytes literal: b"..." or rb"..." (content without delimiters)."""
+    def __init__(self, value, line=0, column=0, raw=False):
+        super().__init__(line, column)
+        self.value = value
+        self.raw = raw
 class DateLiteral(ASTNode):
     """Date literal from special delimiters."""
     def __init__(self, value, line=0, column=0):

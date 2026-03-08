@@ -132,6 +132,17 @@ def _extract_render_mode(func_def: FunctionDef) -> str:
     return "scalar_field"
 
 
+def _has_decorator(func_def: FunctionDef, names) -> bool:
+    """Return True if *func_def* has any decorator whose name is in *names*."""
+    if isinstance(names, str):
+        names = (names,)
+    names = frozenset(names)
+    for decorator in (func_def.decorators or []):
+        if _name(decorator) in names:
+            return True
+    return False
+
+
 def _extract_buffer_output(func_def: FunctionDef) -> str:
     """Extract @buffer_output("...") metadata; defaults to 'points'."""
     for decorator in (func_def.decorators or []):

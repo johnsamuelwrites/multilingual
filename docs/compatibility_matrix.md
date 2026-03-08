@@ -64,6 +64,9 @@ third-party ecosystem.
 | Tuples | Supported | literals, unpacking |
 | Strings | Supported | single/double quotes, triple-quoted, f-strings |
 | F-string format specs | Supported | `f"{x:.2f}"`, `f"{x!r}"`, `f"{x!s}"`, `f"{x!a}"` |
+| Bytes literals | Supported | `b"..."`, `B"..."`, `b'...'`, triple-quoted `b"""..."""` |
+| Raw strings | Supported | `r"..."`, `R"..."`, triple-quoted `r"""..."""` |
+| Raw bytes | Supported | `rb"..."`, `br"..."` and all case variants |
 | Hex/octal/binary literals | Supported | `0xFF`, `0o77`, `0b1010` |
 | Scientific notation | Supported | `1.5e10` |
 
@@ -179,21 +182,21 @@ WebAssembly Text (WAT), which is then compiled and executed via Wasmtime.
 | Stateful OOP — constructor allocation | Supported | Bump-pointer heap; `$__heap_ptr` global |
 | Stateful OOP — instance method calls | Supported | Actual heap pointer passed as `self` |
 | External `obj.attr` reads | Supported | When class statically tracked |
-| `abs`, `min`, `max` (2-arg) | Supported | `f64.abs`, `f64.min`, `f64.max` |
+| `abs`, `min`, `max` (n-arg) | Supported | `f64.abs`, chained `f64.min`/`f64.max` for n≥1 args |
 | Stateless utility classes | Supported | `f64.const 0` as `self`, no allocation |
 | Multiple independent instances | Supported | Each constructor call advances heap |
 | Inheritance / method resolution | Supported (single) | Method name table + field layout merged at compile time; parent fields prepended |
 | Dynamic dispatch / polymorphism | Not supported | No vtable; all dispatch is static |
 | `super()` calls | Supported | Lowered to direct parent WAT function call; `super().__init__()` and `super().method()` |
-| `@staticmethod` / `@classmethod` / `@property` | Not lowered | Treated as regular functions |
-| n-arg `min`/`max` (n > 2) | Not supported | Emits stub |
-| `print` with multiple args | Partial | Each arg printed separately |
+| `@staticmethod` / `@classmethod` | Supported | Detected via decorator; no `self` pushed at call site |
+| `@property` | Partial | Lowered to a regular WAT function; property protocol not enforced |
+| `print` with multiple args | Supported | Each arg printed with separator |
 
 See [docs/wat_oop_model.md](wat_oop_model.md) for the full object model reference.
 
 ## Test Coverage
 
-1787 tests (2 skipped) across 130+ test suites covering:
+1880 tests (2 skipped) across 130+ test suites covering:
 
 | Test area | Suite count | Description |
 |---|---|---|
@@ -218,8 +221,8 @@ The following are not claimed as universally compatible at this stage:
 - Full third-party package/runtime ecosystem compatibility
 - Every advanced metaprogramming/introspection scenario
 - Complete localization aliases for every CPython built-in function/type (41 of 70+ have aliases)
-- Starred unpacking in deeply nested expression contexts
-- Complex decorator chains with arguments
+- WAT dynamic dispatch / polymorphism (no vtable)
+- WAT `@property` getter/setter/deleter protocol
 
 ## Recommendation
 
