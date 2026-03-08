@@ -116,7 +116,10 @@ class CompleteFeaturesWasmExecutionSuite(unittest.TestCase):
             "pow_f64",
             wasmtime.Func(
                 store,
-                wasmtime.FuncType([wasmtime.ValType.f64(), wasmtime.ValType.f64()], [wasmtime.ValType.f64()]),
+                wasmtime.FuncType(
+                    [wasmtime.ValType.f64(), wasmtime.ValType.f64()],
+                    [wasmtime.ValType.f64()],
+                ),
                 lambda base, exp: base ** exp,
             ),
         )

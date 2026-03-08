@@ -5,6 +5,7 @@
 #
 
 """Module structure and ABI tests for the WAT code generator."""
+# pylint: disable=duplicate-code
 
 import unittest
 
@@ -37,6 +38,18 @@ def _gen(*stmts):
 def _param(name: str) -> Parameter:
     """Create a Parameter with an Identifier name."""
     return Parameter(Identifier(name))
+
+
+def _point_stream_fn() -> FunctionDef:
+    """Create a function decorated with point_stream render mode."""
+    return FunctionDef(
+        Identifier("draw"),
+        [_param("x")],
+        [ReturnStatement(NumeralLiteral("0"))],
+        decorators=[
+            CallExpr(Identifier("render_mode"), [StringLiteral("point_stream")])
+        ],
+    )
 
 
 class WATModuleStructureTestSuite(unittest.TestCase):
@@ -111,12 +124,7 @@ class WATABIManifestTestSuite(unittest.TestCase):
         self.assertEqual(manifest["tuple_lowering"]["preferred"], "out_params")
 
     def test_manifest_extracts_render_mode_decorator(self):
-        fn = FunctionDef(
-            Identifier("draw"),
-            [_param("x")],
-            [ReturnStatement(NumeralLiteral("0"))],
-            decorators=[CallExpr(Identifier("render_mode"), [StringLiteral("point_stream")])],
-        )
+        fn = _point_stream_fn()
         manifest = WATCodeGenerator().generate_abi_manifest(_prog(fn))
         export = manifest["exports"][0]
         self.assertEqual(export["name"], "draw")
@@ -152,12 +160,7 @@ class WATStreamBufferExportsTestSuite(unittest.TestCase):
     """Verify stream helper exports are emitted for stream render modes."""
 
     def test_stream_render_mode_emits_buffer_helpers(self):
-        fn = FunctionDef(
-            Identifier("draw"),
-            [_param("x")],
-            [ReturnStatement(NumeralLiteral("0"))],
-            decorators=[CallExpr(Identifier("render_mode"), [StringLiteral("point_stream")])],
-        )
+        fn = _point_stream_fn()
         wat = WATCodeGenerator().generate(_prog(fn))
         self.assertIn('(export "draw_point_count")', wat)
         self.assertIn('(export "draw_write_points")', wat)
@@ -177,12 +180,7 @@ class WATFrontendTemplateTestSuite(unittest.TestCase):
         self.assertIn("print_f64", shim)
 
     def test_generate_renderer_template_contains_mode_dispatch(self):
-        fn = FunctionDef(
-            Identifier("draw"),
-            [_param("x")],
-            [ReturnStatement(NumeralLiteral("0"))],
-            decorators=[CallExpr(Identifier("render_mode"), [StringLiteral("point_stream")])],
-        )
+        fn = _point_stream_fn()
         manifest = WATCodeGenerator().generate_abi_manifest(_prog(fn))
         template = WATCodeGenerator().generate_renderer_template(manifest)
         self.assertIn("renderByMode", template)
