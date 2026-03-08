@@ -329,8 +329,7 @@
 - **Override Decorator** (PEP 698) - Type annotation feature
 
 ### Partial Implementation
-- **WAT `@property`** - Lowered to a regular WAT function; property protocol (getter/setter/deleter) not enforced at WAT level
-- **WAT Dynamic Dispatch** - No vtable; all dispatch is static
+- **WAT `@property` setter/deleter** - `@property` getter fully supported; `@prop.setter` and `@prop.deleter` not yet lowered in WAT backend
 - **Async/Await** - Core functionality working; advanced scenarios may need testing
 
 ### Areas Needing Expansion (v0.4.0 Focus)

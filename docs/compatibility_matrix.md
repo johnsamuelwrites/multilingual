@@ -186,17 +186,17 @@ WebAssembly Text (WAT), which is then compiled and executed via Wasmtime.
 | Stateless utility classes | Supported | `f64.const 0` as `self`, no allocation |
 | Multiple independent instances | Supported | Each constructor call advances heap |
 | Inheritance / method resolution | Supported (single) | Method name table + field layout merged at compile time; parent fields prepended |
-| Dynamic dispatch / polymorphism | Not supported | No vtable; all dispatch is static |
+| Dynamic dispatch / polymorphism | Supported | Type tag (class ID) stored at `obj_ptr - 8`; `$__dispatch_method` switch per overridden method |
 | `super()` calls | Supported | Lowered to direct parent WAT function call; `super().__init__()` and `super().method()` |
 | `@staticmethod` / `@classmethod` | Supported | Detected via decorator; no `self` pushed at call site |
-| `@property` | Partial | Lowered to a regular WAT function; property protocol not enforced |
-| `print` with multiple args | Supported | Each arg printed with separator |
+| `@property` | Supported | Getter call emitted on `obj.attr` access; works with stateful and stateless classes |
+| `print` with `sep=` / `end=` | Supported | Custom separator/terminator interned in data section, printed via `$print_str` |
 
 See [docs/wat_oop_model.md](wat_oop_model.md) for the full object model reference.
 
 ## Test Coverage
 
-1880 tests (2 skipped) across 130+ test suites covering:
+1916 tests (2 skipped) across 130+ test suites covering:
 
 | Test area | Suite count | Description |
 |---|---|---|
@@ -221,8 +221,8 @@ The following are not claimed as universally compatible at this stage:
 - Full third-party package/runtime ecosystem compatibility
 - Every advanced metaprogramming/introspection scenario
 - Complete localization aliases for every CPython built-in function/type (41 of 70+ have aliases)
-- WAT dynamic dispatch / polymorphism (no vtable)
-- WAT `@property` getter/setter/deleter protocol
+- WAT `@property` setter/deleter protocol (getter fully supported; setter/deleter not yet lowered)
+- WAT `print` `file=` kwarg (stdout is the only target in WAT)
 
 ## Recommendation
 
