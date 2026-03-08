@@ -1455,6 +1455,28 @@ class Parser:
         args.append(self._parse_expression())
         return "positional"
 
+    def _parse_keyword_atom(self, tok):
+        """Parse keyword-backed atomic expressions."""
+        concept = tok.concept
+
+        if concept == "TRUE":
+            self._advance()
+            return BooleanLiteral(True, line=tok.line, column=tok.column)
+        if concept == "FALSE":
+            self._advance()
+            return BooleanLiteral(False, line=tok.line, column=tok.column)
+        if concept == "NONE":
+            self._advance()
+            return NoneLiteral(line=tok.line, column=tok.column)
+        if concept in _CALLABLE_CONCEPTS or concept in _TYPE_CONCEPTS:
+            self._advance()
+            return Identifier(tok.value, line=tok.line, column=tok.column)
+        if concept == "LAMBDA":
+            return self._parse_lambda()
+        if concept == "YIELD":
+            return self._parse_yield_expr()
+        return None
+
     def _parse_atom(self):  # pylint: disable=too-many-branches
         """Parse atomic expressions: literals, identifiers, parenthesized."""
         tok = self._current()
@@ -1498,42 +1520,9 @@ class Parser:
 
         # Keyword-based atoms
         if tok.type == TokenType.KEYWORD:
-            concept = tok.concept
-
-            # Boolean literals
-            if concept == "TRUE":
-                self._advance()
-                return BooleanLiteral(True,
-                                      line=tok.line, column=tok.column)
-            if concept == "FALSE":
-                self._advance()
-                return BooleanLiteral(False,
-                                      line=tok.line, column=tok.column)
-
-            # None literal
-            if concept == "NONE":
-                self._advance()
-                return NoneLiteral(line=tok.line, column=tok.column)
-
-            # PRINT, INPUT as callable identifiers
-            if concept in _CALLABLE_CONCEPTS:
-                self._advance()
-                return Identifier(tok.value,
-                                  line=tok.line, column=tok.column)
-
-            # Type keywords as identifiers
-            if concept in _TYPE_CONCEPTS:
-                self._advance()
-                return Identifier(tok.value,
-                                  line=tok.line, column=tok.column)
-
-            # Lambda
-            if concept == "LAMBDA":
-                return self._parse_lambda()
-
-            # Yield expression
-            if concept == "YIELD":
-                return self._parse_yield_expr()
+            keyword_atom = self._parse_keyword_atom(tok)
+            if keyword_atom is not None:
+                return keyword_atom
 
         # Parenthesized expression or generator expression
         if self._match_delimiter("("):

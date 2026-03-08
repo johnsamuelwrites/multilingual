@@ -8,33 +8,14 @@
 
 import unittest
 
+from multilingualprogramming.codegen.wat_generator import WATCodeGenerator
 from multilingualprogramming.lexer.lexer import Lexer
 from multilingualprogramming.lexer.token_types import TokenType
-from multilingualprogramming.parser.parser import Parser
 from multilingualprogramming.parser.ast_nodes import (
     BytesLiteral,
     StringLiteral,
 )
-from multilingualprogramming.codegen.python_generator import PythonCodeGenerator
-from multilingualprogramming.codegen.executor import ProgramExecutor
-
-
-def _parse(source, language="en"):
-    lexer = Lexer(source, language=language)
-    tokens = lexer.tokenize()
-    parser = Parser(tokens, source_language=language)
-    return parser.parse()
-
-
-def _generate(source, language="en"):
-    prog = _parse(source, language)
-    gen = PythonCodeGenerator()
-    return gen.generate(prog).strip()
-
-
-def _execute(source, language="en"):
-    executor = ProgramExecutor(language=language)
-    return executor.execute(source)
+from tests._test_helpers import execute_source, generate_python, parse_source
 
 
 class TestBytesLiteralLexer(unittest.TestCase):
@@ -109,7 +90,7 @@ class TestBytesLiteralParser(unittest.TestCase):
     """Parser creates BytesLiteral and raw StringLiteral AST nodes."""
 
     def _first_expr(self, source):
-        prog = _parse(f"x = {source}")
+        prog = parse_source(f"x = {source}")
         return prog.body[0].value
 
     def test_bytes_literal_node(self):
@@ -138,38 +119,38 @@ class TestBytesLiteralCodegen(unittest.TestCase):
     """Python code generator emits correct output for bytes and raw strings."""
 
     def test_bytes_codegen(self):
-        result = _generate('x = b"hello"')
+        result = generate_python('x = b"hello"')
         self.assertEqual(result, "x = b'hello'")
 
     def test_bytes_single_quote_codegen(self):
-        result = _generate("x = b'world'")
+        result = generate_python("x = b'world'")
         self.assertEqual(result, "x = b'world'")
 
     def test_raw_bytes_codegen(self):
-        result = _generate(r'x = rb"no\nescape"')
+        result = generate_python(r'x = rb"no\nescape"')
         self.assertIn("rb", result)
         self.assertIn(r"no\nescape", result)
 
     def test_raw_string_codegen(self):
-        result = _generate(r'x = r"path\nvalue"')
+        result = generate_python(r'x = r"path\nvalue"')
         self.assertIn("r", result[4:6])  # prefix r present
         self.assertIn(r"path\nvalue", result)
 
     def test_raw_string_double_quote(self):
-        result = _generate(r'x = r"C:\Users\name"')
+        result = generate_python(r'x = r"C:\Users\name"')
         self.assertIn(r"C:\Users\name", result)
         self.assertIn("r", result)
 
     def test_bytes_expression_in_call(self):
-        result = _generate('print(b"data")')
+        result = generate_python('print(b"data")')
         self.assertIn("b'data'", result)
 
     def test_raw_bytes_br_prefix_codegen(self):
-        result = _generate(r'x = br"test\t"')
+        result = generate_python(r'x = br"test\t"')
         self.assertIn("rb", result)
 
     def test_bytes_uppercase_codegen(self):
-        result = _generate('x = B"data"')
+        result = generate_python('x = B"data"')
         self.assertIn("b'data'", result)
 
 
@@ -177,25 +158,25 @@ class TestBytesLiteralExecution(unittest.TestCase):
     """Bytes and raw string literals execute correctly via ProgramExecutor."""
 
     def test_bytes_type(self):
-        r = _execute('x = b"hello"\nprint(type(x).__name__)')
+        r = execute_source('x = b"hello"\nprint(type(x).__name__)')
         self.assertEqual(r.output.strip(), "bytes")
 
     def test_bytes_value(self):
-        r = _execute('x = b"hello"\nprint(x)')
+        r = execute_source('x = b"hello"\nprint(x)')
         self.assertIn("hello", r.output)
 
     def test_raw_bytes_no_escape(self):
-        r = _execute(r'x = rb"no\nescape"' + "\nprint(len(x))")
+        r = execute_source(r'x = rb"no\nescape"' + "\nprint(len(x))")
         # rb"no\nescape" has 10 chars: n,o,\,n,e,s,c,a,p,e (backslash is literal)
         self.assertEqual(r.output.strip(), "10")
 
     def test_raw_string_no_escape(self):
-        r = _execute(r'x = r"a\nb"' + "\nprint(len(x))")
+        r = execute_source(r'x = r"a\nb"' + "\nprint(len(x))")
         # r"a\nb" has 4 chars: a, \, n, b
         self.assertEqual(r.output.strip(), "4")
 
     def test_raw_string_type(self):
-        r = _execute(r'x = r"path"' + "\nprint(type(x).__name__)")
+        r = execute_source(r'x = r"path"' + "\nprint(type(x).__name__)")
         self.assertEqual(r.output.strip(), "str")
 
 
@@ -203,8 +184,7 @@ class TestWATStaticMethod(unittest.TestCase):
     """WAT generator correctly handles @staticmethod and @classmethod."""
 
     def _generate_wat(self, source):
-        from multilingualprogramming.codegen.wat_generator import WATCodeGenerator
-        prog = _parse(source)
+        prog = parse_source(source)
         gen = WATCodeGenerator()
         return gen.generate(prog)
 
