@@ -323,19 +323,24 @@ Translates AST to WebAssembly Text format. Supports a subset of the full languag
 | Arithmetic (+, -, *, /) | ✓ (f64) |
 | Augmented assignment (+=, -=, *=, /=, //=, %=) | ✓ native f64 arithmetic |
 | Augmented assignment (&=, \|=, ^=, <<=, >>=) | ✓ i32 round-trip |
-| Augmented assignment (**=) | stub (no WAT f64.pow; old value preserved) |
+| Augmented assignment (**=) | ✓ via `call $pow_f64` host import (`Math.pow` in JS) |
 | Comparisons | ✓ |
 | Boolean logic | ✓ |
 | `if` / `elif` / `else` | ✓ |
 | `while` loop | ✓ |
-| `for` loop | ✓ |
+| `for` loop over `range()` | ✓ |
+| `for` loop over list/tuple variable | ✓ index-based using linear-memory list header |
 | Function definition | ✓ |
 | `async def` / `await` | ✓ best-effort (`async def` = regular WAT func; `await` evaluates operand) |
 | `return` | ✓ |
 | Class definition (OOP) | ✓ (see §7) |
 | Inheritance | ✓ (see §8) |
 | `match`/`case` (numeric/boolean patterns) | ✓ lowered to WAT block + nested if |
-| `match`/`case` (string/complex patterns) | stub comment |
+| `match`/`case` (string patterns) | ✓ interned-offset `f64.eq` comparison (compile-time strings only) |
+| `match`/`case` (`None` pattern) | ✓ `f64.eq` with `f64.const 0` |
+| `match`/`case` (capture variable `case x:`) | ✓ binds subject to local, always matches |
+| `match`/`case` (tuple/list literal patterns) | ✓ element-wise `f64.eq` + length check (list/tuple subject only) |
+| `match`/`case` (class/complex patterns) | stub comment |
 | `print` | ✓ (host import) |
 | `abs` | ✓ native `f64.abs` |
 | `min(a,b,…)` n-arg | ✓ chained `f64.min` |
@@ -346,11 +351,16 @@ Translates AST to WebAssembly Text format. Supports a subset of the full languag
 | `list[i]` / `tuple[i]` index read | ✓ `f64.load` at `base + 8 + i*8` |
 | `try/except/finally` | ✓ best-effort (try body + finally executed; except skipped — no WASM exception model) |
 | `with` statement | ✓ best-effort (body executed; `__enter__`/`__exit__` not callable from WAT) |
-| Lambda expressions | ✓ lifted to named WAT functions; expression value is `f64.const 0` (no f64 func-ptr) |
+| Lambda expressions | ✓ lifted to WAT functions; stored as table index (f64); called via `call_indirect` |
 | List/generator comprehension over `range` | ✓ lowered to WAT loop + f64 accumulator |
+| List/generator comprehension over list variable | ✓ index-based loop + f64 accumulator |
 | Other comprehensions | stub comment (dynamic collections not representable as f64) |
-| String concatenation, indexing, slicing | not supported in WAT |
-| `async for` / `async with` | not supported |
+| String concatenation (`+`) | ✓ compile-time (both literals) → interned; runtime → `$__str_concat` heap helper |
+| String indexing (`s[i]`) | ✓ `i32.load8_u` → char code as f64 |
+| String slicing (`s[a:b]`) | ✓ `$__str_slice` heap copy helper |
+| `async for` over `range()` / list var | ✓ best-effort (same lowering as sync `for`) |
+| `async with` | ✓ best-effort (same lowering as sync `with`) |
+| `async for` over other iterables | not supported |
 
 ### Host Imports (expected by WAT modules)
 
@@ -360,7 +370,13 @@ Translates AST to WebAssembly Text format. Supports a subset of the full languag
 (import "env" "print_bool"    (func $print_bool (param f64)))
 (import "env" "print_sep"     (func $print_sep))
 (import "env" "print_newline" (func $print_newline))
+(import "env" "pow_f64"       (func $pow_f64 (param f64 f64) (result f64)))
 ```
+
+Internal WAT helper functions (emitted on demand, no host import needed):
+- `$__str_concat (ptr1 len1 ptr2 len2 : f64) → f64` — heap-allocates concatenated string
+- `$__str_slice (ptr start stop : f64) → f64` — heap-allocates string slice
+- Lambda `funcref` table at index 0 + `call_indirect` for lambda calls
 
 ### Stub Detection
 

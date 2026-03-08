@@ -45,6 +45,9 @@ from multilingualprogramming.parser.ast_nodes import (
     TupleLiteral,
     IndexAccess,
     AwaitExpr,
+    ListComprehension,
+    LambdaExpr,
+    SliceExpr,
 )
 from multilingualprogramming.codegen.wat_generator import WATCodeGenerator
 from multilingualprogramming.core.ir import CoreIRProgram
@@ -138,7 +141,7 @@ class WATABIManifestTestSuite(unittest.TestCase):
         names = {entry["name"] for entry in imports}
         self.assertEqual(
             names,
-            {"print_str", "print_f64", "print_bool", "print_sep", "print_newline"},
+            {"print_str", "print_f64", "print_bool", "print_sep", "print_newline", "pow_f64"},
         )
 
     def test_manifest_tracks_export_signatures(self):
@@ -322,6 +325,12 @@ class WATExpressionTestSuite(unittest.TestCase):
         wat = self._wat(BinaryOp(NumeralLiteral("7"), "%", NumeralLiteral("3")))
         self.assertIn("f64.floor", wat)
         self.assertIn("f64.sub", wat)
+
+    def test_power(self):
+        """Power operator lowers to call $pow_f64 host import."""
+        wat = self._wat(BinaryOp(NumeralLiteral("2"), "**", NumeralLiteral("8")))
+        self.assertIn("call $pow_f64", wat)
+        self.assertNotIn("not natively supported", wat)
 
     def test_unary_neg(self):
         wat = self._wat(UnaryOp("-", NumeralLiteral("5")))
@@ -1510,6 +1519,16 @@ class WATClassWasmExecutionTestSuite(unittest.TestCase):
             "print_newline",
             wasmtime.Func(store, wasmtime.FuncType([], []), _noop),
         )
+        linker.define(
+            store,
+            "env",
+            "pow_f64",
+            wasmtime.Func(
+                store,
+                wasmtime.FuncType([wasmtime.ValType.f64(), wasmtime.ValType.f64()], [wasmtime.ValType.f64()]),
+                lambda base, exp: base ** exp,
+            ),
+        )
         instance = linker.instantiate(store, module)
         instance.exports(store)["__main"](store)
         return printed
@@ -1913,6 +1932,10 @@ class WATInheritanceWasmExecutionTestSuite(unittest.TestCase):
                            wasmtime.FuncType([], []), _print_sep)
         linker.define_func("env", "print_newline",
                            wasmtime.FuncType([], []), _print_newline)
+        linker.define_func("env", "pow_f64",
+                           wasmtime.FuncType([wasmtime.ValType.f64(), wasmtime.ValType.f64()],
+                                             [wasmtime.ValType.f64()]),
+                           lambda base, exp: base ** exp)
 
         instance = linker.instantiate(store, module)
         instance.exports(store)["__main"](store)
@@ -2014,8 +2037,8 @@ class WATMatchCaseTestSuite(unittest.TestCase):
         self.assertIn("f64.const 1.0", wat)
         self.assertIn("f64.eq", wat)
 
-    def test_match_string_case_emits_stub(self):
-        """String pattern is not lowerable; a stub comment is emitted."""
+    def test_match_string_case_lowers_to_f64_eq(self):
+        """String pattern is lowered via interned offset comparison (f64.eq)."""
         stmt = MatchStatement(
             subject=Identifier("s"),
             cases=[
@@ -2025,7 +2048,31 @@ class WATMatchCaseTestSuite(unittest.TestCase):
             ],
         )
         wat = _gen(stmt)
-        self.assertIn("string patterns not comparable", wat)
+        self.assertIn("f64.eq", wat)
+        self.assertIn("f64.const", wat)
+        self.assertNotIn("string patterns not comparable", wat)
+        self.assertNotIn("unsupported call: string_pattern_match", wat)
+
+    def test_match_string_case_same_string_matches(self):
+        """Two identical string literals intern to the same offset, so the match fires."""
+        # Declare s = "world", then match s: case "world": x = 1; case "other": x = 2
+        prog = _gen(
+            VariableDeclaration(Identifier("s"), StringLiteral("world")),
+            MatchStatement(
+                subject=Identifier("s"),
+                cases=[
+                    CaseClause(StringLiteral("world"), [
+                        VariableDeclaration(Identifier("x"), NumeralLiteral("1")),
+                    ], is_default=False),
+                    CaseClause(StringLiteral("other"), [
+                        VariableDeclaration(Identifier("x"), NumeralLiteral("2")),
+                    ], is_default=False),
+                ],
+            ),
+        )
+        # Both patterns lower to f64.eq comparisons against interned offsets.
+        self.assertIn("f64.eq", prog)
+        self.assertNotIn("unsupported call:", prog)
 
 
 class WATAugmentedAssignTestSuite(unittest.TestCase):
@@ -2062,9 +2109,10 @@ class WATAugmentedAssignTestSuite(unittest.TestCase):
         self.assertIn("f64.neg", wat)
         self.assertIn("f64.add", wat)
 
-    def test_power_assign_stub(self):
+    def test_power_assign(self):
         wat = self._gen_aug("**=")
-        self.assertIn("**= not natively supported", wat)
+        self.assertIn("call $pow_f64", wat)
+        self.assertNotIn("not natively supported", wat)
 
     def test_bitwise_and_assign(self):
         wat = self._gen_aug("&=")
@@ -2219,6 +2267,288 @@ class WATAsyncAwaitTestSuite(unittest.TestCase):
         wat = _gen(func)
         self.assertIn('(func $f', wat)
         self.assertIn('(export "f")', wat)
+
+
+class WATForListTestSuite(unittest.TestCase):
+    """WAT lowering for for-loops over list/tuple variables."""
+
+    def test_for_loop_over_list_var_emits_index_loop(self):
+        """for x in a (list var) → index-based loop using list header."""
+        stmts = [
+            VariableDeclaration(
+                Identifier("a"),
+                ListLiteral([NumeralLiteral("10"), NumeralLiteral("20"), NumeralLiteral("30")]),
+            ),
+            ForLoop(
+                target=Identifier("x"),
+                iterable=Identifier("a"),
+                body=[ExpressionStatement(Identifier("x"))],
+            ),
+        ]
+        wat = _gen(*stmts)
+        # Should emit list-iteration pattern: load length, index loop, f64.load element.
+        self.assertIn("i32.const 8", wat)   # element stride
+        self.assertIn("i32.mul", wat)
+        self.assertIn("f64.load", wat)
+        self.assertIn("f64.ge", wat)        # exit condition (idx >= len)
+        self.assertNotIn("not supported in WAT", wat)
+
+    def test_for_loop_over_non_tracked_var_emits_comment(self):
+        """for x in unknown_var → unsupported comment (not a tracked list)."""
+        stmt = ForLoop(
+            target=Identifier("x"),
+            iterable=Identifier("unknown"),
+            body=[PassStatement()],
+        )
+        wat = _gen(stmt)
+        self.assertIn("not supported in WAT", wat)
+
+    def test_async_for_over_list_var_works(self):
+        """async for x in a (list var) is lowered identically to sync for."""
+        stmts = [
+            VariableDeclaration(
+                Identifier("a"),
+                ListLiteral([NumeralLiteral("1"), NumeralLiteral("2")]),
+            ),
+            ForLoop(
+                target=Identifier("x"),
+                iterable=Identifier("a"),
+                body=[PassStatement()],
+                is_async=True,
+            ),
+        ]
+        wat = _gen(*stmts)
+        self.assertIn("i32.mul", wat)
+        self.assertNotIn("not supported in WAT", wat)
+
+
+class WATListComprehensionTestSuite(unittest.TestCase):
+    """WAT lowering for comprehensions over list variables."""
+
+    def test_listcomp_over_list_var(self):
+        """[x for x in a] over a list variable lowers to an index-based loop."""
+        stmts = [
+            VariableDeclaration(
+                Identifier("a"),
+                ListLiteral([NumeralLiteral("1"), NumeralLiteral("2"), NumeralLiteral("3")]),
+            ),
+            ExpressionStatement(
+                ListComprehension(
+                    element=Identifier("x"),
+                    target=Identifier("x"),
+                    iterable=Identifier("a"),
+                )
+            ),
+        ]
+        wat = _gen(*stmts)
+        self.assertIn("listcomp over list variable", wat)
+        self.assertIn("f64.load", wat)
+        self.assertIn("i32.mul", wat)
+        self.assertNotIn("collections not representable as f64", wat)
+
+
+class WATMatchCaseExtendedTestSuite(unittest.TestCase):
+    """WAT lowering for additional match/case pattern types."""
+
+    def test_match_none_pattern(self):
+        """case None: lowers to f64.eq with f64.const 0."""
+        stmt = MatchStatement(
+            subject=Identifier("x"),
+            cases=[
+                CaseClause(NoneLiteral(), [PassStatement()], is_default=False),
+            ],
+        )
+        wat = _gen(stmt)
+        self.assertIn("case None:", wat)
+        self.assertIn("f64.const 0", wat)
+        self.assertIn("f64.eq", wat)
+        self.assertNotIn("complex pattern not lowerable", wat)
+
+    def test_match_identifier_capture(self):
+        """case y: (capture variable) binds subject value to y and always matches."""
+        stmt = MatchStatement(
+            subject=Identifier("x"),
+            cases=[
+                CaseClause(Identifier("y"), [PassStatement()], is_default=False),
+            ],
+        )
+        wat = _gen(stmt)
+        self.assertIn("capture variable", wat)
+        self.assertIn("local.set", wat)
+        self.assertNotIn("complex pattern not lowerable", wat)
+
+    def test_match_mixed_patterns(self):
+        """Numeric, string, None, and capture cases all lower without stubs."""
+        stmt = MatchStatement(
+            subject=Identifier("v"),
+            cases=[
+                CaseClause(NumeralLiteral("1"), [PassStatement()], is_default=False),
+                CaseClause(StringLiteral("ok"), [PassStatement()], is_default=False),
+                CaseClause(NoneLiteral(), [PassStatement()], is_default=False),
+                CaseClause(Identifier("other"), [PassStatement()], is_default=False),
+            ],
+        )
+        wat = _gen(stmt)
+        self.assertNotIn("complex pattern not lowerable", wat)
+        self.assertNotIn("unsupported call: string_pattern_match", wat)
+
+
+class WATTupleMatchPatternTestSuite(unittest.TestCase):
+    """WAT match/case lowering for tuple/list literal patterns."""
+
+    def test_tuple_pattern_emits_length_and_element_checks(self):
+        """case (1, 2): checks length == 2 AND elem[0] == 1.0 AND elem[1] == 2.0."""
+        stmts = [
+            VariableDeclaration(
+                Identifier("t"),
+                TupleLiteral([NumeralLiteral("1"), NumeralLiteral("2")]),
+            ),
+            MatchStatement(
+                subject=Identifier("t"),
+                cases=[
+                    CaseClause(
+                        TupleLiteral([NumeralLiteral("1"), NumeralLiteral("2")]),
+                        [PassStatement()],
+                        is_default=False,
+                    ),
+                ],
+            ),
+        ]
+        wat = _gen(*stmts)
+        # Length check: f64.const 2.0 from the pattern tuple
+        self.assertIn("f64.const 2.0", wat)
+        # Element-wise: each element comparison uses f64.eq + i32.and
+        self.assertGreaterEqual(wat.count("f64.eq"), 3)  # len + 2 elements
+        self.assertIn("i32.and", wat)
+        self.assertNotIn("complex pattern not lowerable", wat)
+
+    def test_tuple_pattern_requires_list_subject(self):
+        """Tuple pattern against a non-list subject falls back to stub."""
+        stmt = MatchStatement(
+            subject=Identifier("x"),   # x is not a list local
+            cases=[
+                CaseClause(
+                    TupleLiteral([NumeralLiteral("1")]),
+                    [PassStatement()],
+                    is_default=False,
+                ),
+            ],
+        )
+        wat = _gen(stmt)
+        self.assertIn("complex pattern not lowerable", wat)
+
+
+class WATStringOpsTestSuite(unittest.TestCase):
+    """WAT lowering for string concatenation, indexing, and slicing."""
+
+    def test_compile_time_string_concat(self):
+        """StringLiteral + StringLiteral interns the concatenated result at compile time."""
+        stmt = VariableDeclaration(
+            Identifier("s"),
+            BinaryOp(StringLiteral("hello"), "+", StringLiteral(" world")),
+        )
+        wat = _gen(stmt)
+        self.assertIn("str concat (compile-time)", wat)
+        # No runtime helper needed.
+        self.assertNotIn("call $__str_concat", wat)
+
+    def test_runtime_string_concat_calls_helper(self):
+        """str_var + StringLiteral emits call $__str_concat and the helper func."""
+        stmts = [
+            VariableDeclaration(Identifier("a"), StringLiteral("hi")),
+            VariableDeclaration(
+                Identifier("b"),
+                BinaryOp(Identifier("a"), "+", StringLiteral("!")),
+            ),
+        ]
+        wat = _gen(*stmts)
+        self.assertIn("call $__str_concat", wat)
+        self.assertIn("str concat (runtime)", wat)
+
+    def test_string_index_emits_byte_load(self):
+        """s[i] on a string variable emits i32.load8_u + f64.convert_i32_u."""
+        stmts = [
+            VariableDeclaration(Identifier("s"), StringLiteral("hello")),
+            ExpressionStatement(IndexAccess(Identifier("s"), NumeralLiteral("0"))),
+        ]
+        wat = _gen(*stmts)
+        self.assertIn("i32.load8_u", wat)
+        self.assertIn("f64.convert_i32_u", wat)
+        self.assertIn("string byte access", wat)
+
+    def test_string_slice_calls_helper(self):
+        """s[1:3] on a string variable emits call $__str_slice and the helper."""
+        stmts = [
+            VariableDeclaration(Identifier("s"), StringLiteral("hello")),
+            ExpressionStatement(
+                IndexAccess(Identifier("s"), SliceExpr(NumeralLiteral("1"), NumeralLiteral("3")))
+            ),
+        ]
+        wat = _gen(*stmts)
+        self.assertIn("call $__str_slice", wat)
+        self.assertIn("string slice", wat)
+
+    def test_string_slice_no_start_uses_zero(self):
+        """s[:3] defaults start to 0."""
+        stmts = [
+            VariableDeclaration(Identifier("s"), StringLiteral("hello")),
+            ExpressionStatement(
+                IndexAccess(Identifier("s"), SliceExpr(stop=NumeralLiteral("3")))
+            ),
+        ]
+        wat = _gen(*stmts)
+        self.assertIn("call $__str_slice", wat)
+        self.assertIn("f64.const 0", wat)
+
+
+class WATLambdaTableTestSuite(unittest.TestCase):
+    """WAT lambda function pointers via WAT table + call_indirect."""
+
+    def test_lambda_emits_table_and_index(self):
+        """let f = lambda x: x emits a lambda table entry and f64.const index."""
+        stmt = VariableDeclaration(
+            Identifier("f"),
+            LambdaExpr(
+                params=[Parameter(Identifier("x"))],
+                body=Identifier("x"),
+            ),
+        )
+        wat = _gen(stmt)
+        self.assertIn("(table", wat)
+        self.assertIn("(elem", wat)
+        self.assertIn("f64.const 0.0", wat)  # table index 0
+
+    def test_lambda_call_emits_call_indirect(self):
+        """f(42) on a lambda local emits call_indirect via lambda_table."""
+        stmts = [
+            VariableDeclaration(
+                Identifier("f"),
+                LambdaExpr(
+                    params=[Parameter(Identifier("x"))],
+                    body=Identifier("x"),
+                ),
+            ),
+            ExpressionStatement(CallExpr(Identifier("f"), [NumeralLiteral("42")])),
+        ]
+        wat = _gen(*stmts)
+        self.assertIn("call_indirect", wat)
+        self.assertIn("(table", wat)
+
+    def test_two_lambdas_get_distinct_table_indices(self):
+        """Two lambdas get indices 0 and 1 in the table."""
+        stmts = [
+            VariableDeclaration(
+                Identifier("f"),
+                LambdaExpr(params=[Parameter(Identifier("x"))], body=Identifier("x")),
+            ),
+            VariableDeclaration(
+                Identifier("g"),
+                LambdaExpr(params=[Parameter(Identifier("y"))], body=Identifier("y")),
+            ),
+        ]
+        wat = _gen(*stmts)
+        self.assertIn("f64.const 0.0", wat)
+        self.assertIn("f64.const 1.0", wat)
 
 
 if __name__ == "__main__":

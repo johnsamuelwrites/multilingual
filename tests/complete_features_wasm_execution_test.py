@@ -110,6 +110,16 @@ class CompleteFeaturesWasmExecutionSuite(unittest.TestCase):
             "print_newline",
             wasmtime.Func(store, wasmtime.FuncType([], []), _noop),
         )
+        linker.define(
+            store,
+            "env",
+            "pow_f64",
+            wasmtime.Func(
+                store,
+                wasmtime.FuncType([wasmtime.ValType.f64(), wasmtime.ValType.f64()], [wasmtime.ValType.f64()]),
+                lambda base, exp: base ** exp,
+            ),
+        )
         instance = linker.instantiate(store, module)
         exports = instance.exports(store)
         if "__main" in exports:
