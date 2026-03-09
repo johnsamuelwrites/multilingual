@@ -282,12 +282,12 @@ seja pot_aug = 2
 pot_aug **= 4
 
 # Literal de bytes (v0.6.0)
-seja dados_bytes = b"ola"
+seja dados_bytes = b"hello"
 seja tam_bytes = comprimento(dados_bytes)
 
 # Concatenação, indexação e fatiamento de cadeia (v0.6.0)
-seja cadeia_x = "ola"
-seja cadeia_y = " mundo"
+seja cadeia_x = "hello"
+seja cadeia_y = " world"
 seja concat_cadeia = cadeia_x + cadeia_y
 seja idx_cadeia = cadeia_x[1]
 seja fat_cadeia = cadeia_x[1:3]
@@ -306,23 +306,23 @@ seja lista_dup_src = [1, 2, 3, 4]
 seja lista_dupla = [v * 2 para v em lista_dup_src]
 
 # Correspondência extendida: cadeia, Nenhum, numérico e tuplo (v0.6.0)
-seja cadeia_m = "ola"
+seja cadeia_m = "hello"
 seja result_cadeia_m = "nenhum"
 corresponda cadeia_m:
-    caso "ola":
-        result_cadeia_m = "salve"
-    caso "tchau":
-        result_cadeia_m = "adeus"
+    caso "hello":
+        result_cadeia_m = "hi"
+    caso "bye":
+        result_cadeia_m = "goodbye"
     padrao:
-        result_cadeia_m = "desconhecido"
+        result_cadeia_m = "unknown"
 
 seja val_nenhum = Nenhum
 seja result_nenhum = "definido"
 corresponda val_nenhum:
     caso Nenhum:
-        result_nenhum = "vazio"
+        result_nenhum = "null"
     padrao:
-        result_nenhum = "outro"
+        result_nenhum = "other"
 
 seja val_num_m = 42
 seja result_num_m = 0
@@ -333,12 +333,12 @@ corresponda val_num_m:
         result_num_m = 0
 
 seja val_tuplo_m = (1, 2)
-seja result_tuplo_m = "nao"
+seja result_tuplo_m = "no"
 corresponda val_tuplo_m:
     caso (1, 2):
-        result_tuplo_m = "sim"
+        result_tuplo_m = "yes"
     padrao:
-        result_tuplo_m = "nao"
+        result_tuplo_m = "no"
 
 # async def, await, async for, async with (v0.6.0)
 assincrono defina dobrar_async(n):

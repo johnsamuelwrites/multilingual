@@ -282,12 +282,12 @@ olkoon pot_aug = 2
 pot_aug **= 4
 
 # Tavuliteraali (v0.6.0)
-olkoon tavu_data = b"hei"
+olkoon tavu_data = b"hello"
 olkoon tavu_pituus = pituus(tavu_data)
 
 # Merkkijonon yhdistäminen, indeksointi ja leikkaus (v0.6.0)
-olkoon mjono_x = "hei"
-olkoon mjono_y = " maailma"
+olkoon mjono_x = "hello"
+olkoon mjono_y = " world"
 olkoon yhdistetty = mjono_x + mjono_y
 olkoon mjono_idx = mjono_x[1]
 olkoon mjono_leikkaus = mjono_x[1:3]
@@ -306,23 +306,23 @@ olkoon kaksink_lahde = [1, 2, 3, 4]
 olkoon kaksinkertaistettu = [v * 2 jokaiselle v sisalla kaksink_lahde]
 
 # Laajennettu täsmäytys: merkkijono, EiMitaan, numero ja monikko (v0.6.0)
-olkoon mjono_m = "hei"
+olkoon mjono_m = "hello"
 olkoon result_mjono_m = "ei_mitaan"
 taysmatch mjono_m:
-    tapaus "hei":
-        result_mjono_m = "terve"
-    tapaus "nakemiin":
-        result_mjono_m = "hyvästi"
+    tapaus "hello":
+        result_mjono_m = "hi"
+    tapaus "bye":
+        result_mjono_m = "goodbye"
     oletus:
-        result_mjono_m = "tuntematon"
+        result_mjono_m = "unknown"
 
 olkoon val_ei_mitaan = EiMitaan
 olkoon result_ei_mitaan = "maaritetty"
 taysmatch val_ei_mitaan:
     tapaus EiMitaan:
-        result_ei_mitaan = "tyhja"
+        result_ei_mitaan = "null"
     oletus:
-        result_ei_mitaan = "muu"
+        result_ei_mitaan = "other"
 
 olkoon val_num_m = 42
 olkoon result_num_m = 0
@@ -333,12 +333,12 @@ taysmatch val_num_m:
         result_num_m = 0
 
 olkoon val_monikko_m = (1, 2)
-olkoon result_monikko_m = "ei"
+olkoon result_monikko_m = "no"
 taysmatch val_monikko_m:
     tapaus (1, 2):
-        result_monikko_m = "kylla"
+        result_monikko_m = "yes"
     oletus:
-        result_monikko_m = "ei"
+        result_monikko_m = "no"
 
 # async def, await, async for, async with (v0.6.0)
 async maarittele tuplaa_async(n):

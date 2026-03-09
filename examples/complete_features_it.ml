@@ -282,12 +282,12 @@ sia pot_aug = 2
 pot_aug **= 4
 
 # Letterale di bytes (v0.6.0)
-sia dati_bytes = b"ciao"
+sia dati_bytes = b"hello"
 sia lung_bytes = lunghezza(dati_bytes)
 
 # Concatenazione, indicizzazione e slice di stringa (v0.6.0)
-sia stringa_x = "ciao"
-sia stringa_y = " mondo"
+sia stringa_x = "hello"
+sia stringa_y = " world"
 sia concat_stringa = stringa_x + stringa_y
 sia idx_stringa = stringa_x[1]
 sia slice_stringa = stringa_x[1:3]
@@ -306,23 +306,23 @@ sia lista_dop_src = [1, 2, 3, 4]
 sia lista_doppia = [v * 2 per v in lista_dop_src]
 
 # Corrispondenza estesa: stringa, Nessuno, numerico, tupla (v0.6.0)
-sia stringa_m = "ciao"
+sia stringa_m = "hello"
 sia result_stringa_m = "nessuno"
 confronta stringa_m:
-    caso "ciao":
-        result_stringa_m = "salve"
-    caso "arrivederci":
-        result_stringa_m = "addio"
+    caso "hello":
+        result_stringa_m = "hi"
+    caso "bye":
+        result_stringa_m = "goodbye"
     predefinito:
-        result_stringa_m = "sconosciuto"
+        result_stringa_m = "unknown"
 
 sia val_nessuno = Nessuno
 sia result_nessuno = "definito"
 confronta val_nessuno:
     caso Nessuno:
-        result_nessuno = "vuoto"
+        result_nessuno = "null"
     predefinito:
-        result_nessuno = "altro"
+        result_nessuno = "other"
 
 sia val_num_m = 42
 sia result_num_m = 0
@@ -336,7 +336,7 @@ sia val_tupla_m = (1, 2)
 sia result_tupla_m = "no"
 confronta val_tupla_m:
     caso (1, 2):
-        result_tupla_m = "si"
+        result_tupla_m = "yes"
     predefinito:
         result_tupla_m = "no"
 

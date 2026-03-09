@@ -282,12 +282,12 @@ lat pot_aug = 2
 pot_aug **= 4
 
 # Bytes-literal (v0.6.0)
-lat byte_data = b"hej"
+lat byte_data = b"hello"
 lat byte_langd = langd(byte_data)
 
 # Strängkonkatenering, indexering och skärning (v0.6.0)
-lat strang_x = "hej"
-lat strang_y = " varlden"
+lat strang_x = "hello"
+lat strang_y = " world"
 lat konkatenerad = strang_x + strang_y
 lat strang_idx = strang_x[1]
 lat strang_skar = strang_x[1:3]
@@ -306,23 +306,23 @@ lat dubbel_kalla = [1, 2, 3, 4]
 lat dubblad_lista = [v * 2 for v i dubbel_kalla]
 
 # Utökad matchning: sträng, Ingen, numerisk och tuppel (v0.6.0)
-lat strang_m = "hej"
+lat strang_m = "hello"
 lat result_strang_m = "ingen"
 matcha strang_m:
-    fall "hej":
-        result_strang_m = "tja"
-    fall "hejda":
-        result_strang_m = "adjö"
+    fall "hello":
+        result_strang_m = "hi"
+    fall "bye":
+        result_strang_m = "goodbye"
     standard:
-        result_strang_m = "okand"
+        result_strang_m = "unknown"
 
 lat val_ingen = Ingen
 lat result_ingen = "definierad"
 matcha val_ingen:
     fall Ingen:
-        result_ingen = "tom"
+        result_ingen = "null"
     standard:
-        result_ingen = "annat"
+        result_ingen = "other"
 
 lat val_num_m = 42
 lat result_num_m = 0
@@ -333,12 +333,12 @@ matcha val_num_m:
         result_num_m = 0
 
 lat val_tuppel_m = (1, 2)
-lat result_tuppel_m = "nej"
+lat result_tuppel_m = "no"
 matcha val_tuppel_m:
     fall (1, 2):
-        result_tuppel_m = "ja"
+        result_tuppel_m = "yes"
     standard:
-        result_tuppel_m = "nej"
+        result_tuppel_m = "no"
 
 # async def, await, async for, async with (v0.6.0)
 async definiera dubbla_async(n):

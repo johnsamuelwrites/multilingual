@@ -282,12 +282,12 @@ soit puiss_aug = 2
 puiss_aug **= 4
 
 # Littéral d'octets (v0.6.0)
-soit donnees_octets = b"bonjour"
+soit donnees_octets = b"hello"
 soit taille_octets = longueur(donnees_octets)
 
 # Concaténation, indexation et découpage de chaînes (v0.6.0)
-soit chaine_x = "bonjour"
-soit chaine_y = " monde"
+soit chaine_x = "hello"
+soit chaine_y = " world"
 soit concat_chaine = chaine_x + chaine_y
 soit idx_chaine = chaine_x[1]
 soit dec_chaine = chaine_x[1:3]
@@ -306,23 +306,23 @@ soit liste_doub_src = [1, 2, 3, 4]
 soit liste_doublee = [v * 2 pour v dans liste_doub_src]
 
 # Correspondance étendue : chaîne, Rien, numérique et tuple (v0.6.0)
-soit chaine_m = "bonjour"
+soit chaine_m = "hello"
 soit result_chaine_m = "aucun"
 selon chaine_m:
-    cas "bonjour":
-        result_chaine_m = "salut"
-    cas "bonsoir":
-        result_chaine_m = "bonne_nuit"
+    cas "hello":
+        result_chaine_m = "hi"
+    cas "bye":
+        result_chaine_m = "goodbye"
     defaut:
-        result_chaine_m = "inconnu"
+        result_chaine_m = "unknown"
 
 soit val_rien = Rien
 soit result_rien = "défini"
 selon val_rien:
     cas Rien:
-        result_rien = "vide"
+        result_rien = "null"
     defaut:
-        result_rien = "autre"
+        result_rien = "other"
 
 soit val_num_m = 42
 soit result_num_m = 0
@@ -333,12 +333,12 @@ selon val_num_m:
         result_num_m = 0
 
 soit val_tuple_m = (1, 2)
-soit result_tuple_m = "non"
+soit result_tuple_m = "no"
 selon val_tuple_m:
     cas (1, 2):
-        result_tuple_m = "oui"
+        result_tuple_m = "yes"
     defaut:
-        result_tuple_m = "non"
+        result_tuple_m = "no"
 
 # async def, await, async for, async with (v0.6.0)
 asynchrone déf doubler_async(n):

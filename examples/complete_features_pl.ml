@@ -282,12 +282,12 @@ niech pot_aug = 2
 pot_aug **= 4
 
 # Literał bajtów (v0.6.0)
-niech dane_bajty = b"czesc"
+niech dane_bajty = b"hello"
 niech dl_bajty = dlugosc(dane_bajty)
 
 # Łączenie, indeksowanie i wycinanie łańcucha (v0.6.0)
-niech lancuch_x = "czesc"
-niech lancuch_y = " swiecie"
+niech lancuch_x = "hello"
+niech lancuch_y = " world"
 niech polaczony = lancuch_x + lancuch_y
 niech idx_lancuch = lancuch_x[1]
 niech wycinek = lancuch_x[1:3]
@@ -306,23 +306,23 @@ niech lista_pod_src = [1, 2, 3, 4]
 niech lista_podwoj = [v * 2 dla v w lista_pod_src]
 
 # Rozszerzone dopasowanie: łańcuch, Brak, liczba i krotka (v0.6.0)
-niech lancuch_m = "czesc"
+niech lancuch_m = "hello"
 niech result_lancuch_m = "brak"
 dopasuj lancuch_m:
-    przypadek "czesc":
-        result_lancuch_m = "hej"
-    przypadek "do_widzenia":
-        result_lancuch_m = "zegnaj"
+    przypadek "hello":
+        result_lancuch_m = "hi"
+    przypadek "bye":
+        result_lancuch_m = "goodbye"
     domyslnie:
-        result_lancuch_m = "nieznany"
+        result_lancuch_m = "unknown"
 
 niech val_brak = Brak
 niech result_brak = "zdefiniowany"
 dopasuj val_brak:
     przypadek Brak:
-        result_brak = "pusty"
+        result_brak = "null"
     domyslnie:
-        result_brak = "inny"
+        result_brak = "other"
 
 niech val_num_m = 42
 niech result_num_m = 0
@@ -333,12 +333,12 @@ dopasuj val_num_m:
         result_num_m = 0
 
 niech val_krotka_m = (1, 2)
-niech result_krotka_m = "nie"
+niech result_krotka_m = "no"
 dopasuj val_krotka_m:
     przypadek (1, 2):
-        result_krotka_m = "tak"
+        result_krotka_m = "yes"
     domyslnie:
-        result_krotka_m = "nie"
+        result_krotka_m = "no"
 
 # async def, await, async for, async with (v0.6.0)
 async funkcja podwoj_async(n):

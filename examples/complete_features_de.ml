@@ -282,12 +282,12 @@ sei pot_aug = 2
 pot_aug **= 4
 
 # Bytes-Literal (v0.6.0)
-sei byte_daten = b"hallo"
+sei byte_daten = b"hello"
 sei byte_laenge = laenge(byte_daten)
 
 # Zeichenketten-Verkettung, Indizierung, Slicing (v0.6.0)
-sei zeichenkette_x = "hallo"
-sei zeichenkette_y = " welt"
+sei zeichenkette_x = "hello"
+sei zeichenkette_y = " world"
 sei verkettung = zeichenkette_x + zeichenkette_y
 sei zeichen_idx = zeichenkette_x[1]
 sei zeichen_ausschn = zeichenkette_x[1:3]
@@ -306,23 +306,23 @@ sei dopp_quelle = [1, 2, 3, 4]
 sei doppelte_liste = [v * 2 für v in dopp_quelle]
 
 # Erweiterte Zuordnung: Zeichenkette, Nichts, Zahl, Tupel (v0.6.0)
-sei zeichen_m = "hallo"
+sei zeichen_m = "hello"
 sei result_zeichen_m = "keins"
 zuordnen zeichen_m:
-    fall "hallo":
+    fall "hello":
         result_zeichen_m = "hi"
-    fall "tschuss":
-        result_zeichen_m = "tschüss"
+    fall "bye":
+        result_zeichen_m = "goodbye"
     standard:
-        result_zeichen_m = "unbekannt"
+        result_zeichen_m = "unknown"
 
 sei nichts_val = Nichts
 sei result_nichts = "definiert"
 zuordnen nichts_val:
     fall Nichts:
-        result_nichts = "leer"
+        result_nichts = "null"
     standard:
-        result_nichts = "anderes"
+        result_nichts = "other"
 
 sei zahl_m = 42
 sei result_zahl_m = 0
@@ -333,12 +333,12 @@ zuordnen zahl_m:
         result_zahl_m = 0
 
 sei tupel_m = (1, 2)
-sei result_tupel_m = "nein"
+sei result_tupel_m = "no"
 zuordnen tupel_m:
     fall (1, 2):
-        result_tupel_m = "ja"
+        result_tupel_m = "yes"
     standard:
-        result_tupel_m = "nein"
+        result_tupel_m = "no"
 
 # async def, await, async for, async with (v0.6.0)
 asynchron def verdoppeln_async(n):

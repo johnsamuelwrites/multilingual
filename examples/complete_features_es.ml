@@ -282,12 +282,12 @@ sea pot_aug = 2
 pot_aug **= 4
 
 # Literal de bytes (v0.6.0)
-sea datos_bytes = b"hola"
+sea datos_bytes = b"hello"
 sea tam_bytes = longitud(datos_bytes)
 
 # Concatenación, indexación y segmento de cadena (v0.6.0)
-sea cadena_x = "hola"
-sea cadena_y = " mundo"
+sea cadena_x = "hello"
+sea cadena_y = " world"
 sea concat_cadena = cadena_x + cadena_y
 sea idx_cadena = cadena_x[1]
 sea seg_cadena = cadena_x[1:3]
@@ -306,23 +306,23 @@ sea lista_dobl_src = [1, 2, 3, 4]
 sea lista_doblada = [v * 2 para v en lista_dobl_src]
 
 # Coincidencia extendida: cadena, Nada, numérico y tupla (v0.6.0)
-sea cadena_m = "hola"
+sea cadena_m = "hello"
 sea result_cadena_m = "ninguno"
 según cadena_m:
-    caso "hola":
-        result_cadena_m = "saludo"
-    caso "adios":
-        result_cadena_m = "despedida"
+    caso "hello":
+        result_cadena_m = "hi"
+    caso "bye":
+        result_cadena_m = "goodbye"
     predeterminado:
-        result_cadena_m = "desconocido"
+        result_cadena_m = "unknown"
 
 sea val_nada = Nada
 sea result_nada = "definido"
 según val_nada:
     caso Nada:
-        result_nada = "vacio"
+        result_nada = "null"
     predeterminado:
-        result_nada = "otro"
+        result_nada = "other"
 
 sea val_num_m = 42
 sea result_num_m = 0
@@ -336,7 +336,7 @@ sea val_tupla_m = (1, 2)
 sea result_tupla_m = "no"
 según val_tupla_m:
     caso (1, 2):
-        result_tupla_m = "si"
+        result_tupla_m = "yes"
     predeterminado:
         result_tupla_m = "no"
 

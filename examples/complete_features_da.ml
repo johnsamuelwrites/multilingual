@@ -282,12 +282,12 @@ lad pot_aug = 2
 pot_aug **= 4
 
 # Bytes-literal (v0.6.0)
-lad byte_data = b"hej"
+lad byte_data = b"hello"
 lad byte_laengde = laengde(byte_data)
 
 # Streng sammenkædning, indeksering og udskæring (v0.6.0)
-lad streng_x = "hej"
-lad streng_y = " verden"
+lad streng_x = "hello"
+lad streng_y = " world"
 lad sammenkat = streng_x + streng_y
 lad streng_idx = streng_x[1]
 lad streng_udskaer = streng_x[1:3]
@@ -306,23 +306,23 @@ lad dobbelt_kilde = [1, 2, 3, 4]
 lad dobbelt_liste = [v * 2 for v i dobbelt_kilde]
 
 # Udvidet match: streng, Ingen, numerisk og tupel (v0.6.0)
-lad streng_m = "hej"
+lad streng_m = "hello"
 lad result_streng_m = "ingen"
 match streng_m:
-    sag "hej":
-        result_streng_m = "hejsa"
-    sag "farvel":
-        result_streng_m = "adjoe"
+    sag "hello":
+        result_streng_m = "hi"
+    sag "bye":
+        result_streng_m = "goodbye"
     standard:
-        result_streng_m = "ukendt"
+        result_streng_m = "unknown"
 
 lad val_ingen = Ingen
 lad result_ingen = "defineret"
 match val_ingen:
     sag Ingen:
-        result_ingen = "tom"
+        result_ingen = "null"
     standard:
-        result_ingen = "andet"
+        result_ingen = "other"
 
 lad val_num_m = 42
 lad result_num_m = 0
@@ -333,12 +333,12 @@ match val_num_m:
         result_num_m = 0
 
 lad val_tupel_m = (1, 2)
-lad result_tupel_m = "nej"
+lad result_tupel_m = "no"
 match val_tupel_m:
     sag (1, 2):
-        result_tupel_m = "ja"
+        result_tupel_m = "yes"
     standard:
-        result_tupel_m = "nej"
+        result_tupel_m = "no"
 
 # async def, await, async for, async with (v0.6.0)
 async definer fordobl_async(n):

@@ -282,12 +282,12 @@ laat macht_aug = 2
 macht_aug **= 4
 
 # Bytes-literal (v0.6.0)
-laat byte_data = b"hallo"
+laat byte_data = b"hello"
 laat byte_len = lengte(byte_data)
 
 # Tekenreeks samenvoegen, indexeren en segmenteren (v0.6.0)
-laat tekstr_x = "hallo"
-laat tekstr_y = " wereld"
+laat tekstr_x = "hello"
+laat tekstr_y = " world"
 laat samengev = tekstr_x + tekstr_y
 laat tekstr_idx = tekstr_x[1]
 laat tekstr_seg = tekstr_x[1:3]
@@ -306,23 +306,23 @@ laat dubb_bron = [1, 2, 3, 4]
 laat dubbele_lijst = [v * 2 voor v in dubb_bron]
 
 # Uitgebreide vergelijking: tekenreeks, Geen, getal, tupel (v0.6.0)
-laat tekstr_m = "hallo"
+laat tekstr_m = "hello"
 laat result_tekstr_m = "geen"
 vergelijk tekstr_m:
-    geval "hallo":
-        result_tekstr_m = "hoi"
-    geval "doei":
-        result_tekstr_m = "dag"
+    geval "hello":
+        result_tekstr_m = "hi"
+    geval "bye":
+        result_tekstr_m = "goodbye"
     standaard:
-        result_tekstr_m = "onbekend"
+        result_tekstr_m = "unknown"
 
 laat val_geen = Geen
 laat result_geen = "gedefinieerd"
 vergelijk val_geen:
     geval Geen:
-        result_geen = "leeg"
+        result_geen = "null"
     standaard:
-        result_geen = "ander"
+        result_geen = "other"
 
 laat val_num_m = 42
 laat result_num_m = 0
@@ -333,12 +333,12 @@ vergelijk val_num_m:
         result_num_m = 0
 
 laat val_tupel_m = (1, 2)
-laat result_tupel_m = "nee"
+laat result_tupel_m = "no"
 vergelijk val_tupel_m:
     geval (1, 2):
-        result_tupel_m = "ja"
+        result_tupel_m = "yes"
     standaard:
-        result_tupel_m = "nee"
+        result_tupel_m = "no"
 
 # async def, await, async for, async with (v0.6.0)
 async definieer verdubbel_async(n):
