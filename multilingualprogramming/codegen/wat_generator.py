@@ -44,6 +44,8 @@ Host imports expected by the generated module:
 """
 # pylint: disable=mixed-line-endings
 
+from types import MappingProxyType
+
 from multilingualprogramming.parser.ast_nodes import (
     VariableDeclaration,
     Assignment,
@@ -186,6 +188,26 @@ class WATCodeGenerator(
         # _dispatch_func_names: method_name -> WAT dispatch func name
         # Populated for methods that are overridden in ≥1 subclass.
         self._dispatch_func_names: dict[str, str] = {}
+
+    @property
+    def property_getters(self):
+        """Read-only view of registered property getter functions."""
+        return MappingProxyType(self._property_getters)
+
+    @property
+    def class_ids(self):
+        """Read-only view of assigned runtime class IDs."""
+        return MappingProxyType(self._class_ids)
+
+    @property
+    def dispatch_func_names(self):
+        """Read-only view of generated dispatch function names."""
+        return MappingProxyType(self._dispatch_func_names)
+
+    @property
+    def class_obj_sizes(self):
+        """Read-only view of computed object sizes in bytes."""
+        return MappingProxyType(self._class_obj_sizes)
 
     # -----------------------------------------------------------------------
     # Public API
@@ -598,40 +620,40 @@ class WATCodeGenerator(
 
             lines = [
                 f"  (func ${dispatch_wat} (param $self f64) (result f64)",
-                f"    (local $__tag i32)",
-                f"    ;; load type tag at self_ptr - 8",
-                f"    local.get $self",
-                f"    i32.trunc_f64_u",
-                f"    i32.const 8",
-                f"    i32.sub",
-                f"    i32.load",
-                f"    local.set $__tag",
+                "    (local $__tag i32)",
+                "    ;; load type tag at self_ptr - 8",
+                "    local.get $self",
+                "    i32.trunc_f64_u",
+                "    i32.const 8",
+                "    i32.sub",
+                "    i32.load",
+                "    local.set $__tag",
             ]
             # Build if/else chain: first impl checked, rest in else branches.
             first_cls_id, first_fn = impls[0]
             lines += [
-                f"    local.get $__tag",
+                "    local.get $__tag",
                 f"    i32.const {first_cls_id}  ;; {first_fn}",
-                f"    i32.eq",
-                f"    if (result f64)",
-                f"      local.get $self",
+                "    i32.eq",
+                "    if (result f64)",
+                "      local.get $self",
                 f"      call ${self._wat_symbol(first_fn)}",
             ]
             for cls_id, fn_name in impls[1:-1]:
                 lines += [
-                    f"    else",
-                    f"      local.get $__tag",
+                    "    else",
+                    "      local.get $__tag",
                     f"      i32.const {cls_id}  ;; {fn_name}",
-                    f"      i32.eq",
-                    f"      if (result f64)",
-                    f"        local.get $self",
+                    "      i32.eq",
+                    "      if (result f64)",
+                    "        local.get $self",
                     f"        call ${self._wat_symbol(fn_name)}",
                 ]
             # Last impl is the default else branch
-            last_cls_id, last_fn = impls[-1]
+            _, last_fn = impls[-1]
             lines += [
-                f"    else",
-                f"      local.get $self",
+                "    else",
+                "      local.get $self",
                 f"      call ${self._wat_symbol(last_fn)}",
             ]
             # Close all nested if blocks

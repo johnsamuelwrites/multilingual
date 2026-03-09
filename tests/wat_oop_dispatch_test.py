@@ -51,7 +51,7 @@ print(c.radius)
     def test_property_method_registered(self):
         """@property method name maps to a property getter entry."""
         _, gen = _wat_gen(self._src_radius)
-        self.assertIn("Circle.radius", gen._property_getters)
+        self.assertIn("Circle.radius", gen.property_getters)
 
     def test_property_access_emits_call(self):
         """c.radius emits a WAT function call, not a raw f64.load."""
@@ -198,16 +198,16 @@ def make_noise(obj):
     def test_class_ids_assigned(self):
         """Both classes get integer IDs."""
         _, gen = _wat_gen(self._src_animals)
-        self.assertIn("Animal", gen._class_ids)
-        self.assertIn("Dog", gen._class_ids)
+        self.assertIn("Animal", gen.class_ids)
+        self.assertIn("Dog", gen.class_ids)
         self.assertNotEqual(
-            gen._class_ids["Animal"], gen._class_ids["Dog"]
+            gen.class_ids["Animal"], gen.class_ids["Dog"]
         )
 
     def test_dispatch_func_registered(self):
         """Overridden method 'speak' has a dispatch entry."""
         _, gen = _wat_gen(self._src_animals)
-        self.assertIn("speak", gen._dispatch_func_names)
+        self.assertIn("speak", gen.dispatch_func_names)
 
     def test_dispatch_func_emitted(self):
         """The WAT module contains the dispatch function."""
@@ -233,12 +233,12 @@ def make_noise(obj):
     def test_animal_class_id_zero(self):
         """Animal (first class) gets class_id = 0."""
         _, gen = _wat_gen(self._src_animals)
-        self.assertEqual(gen._class_ids["Animal"], 0)
+        self.assertEqual(gen.class_ids["Animal"], 0)
 
     def test_dog_class_id_one(self):
         """Dog (second class) gets class_id = 1."""
         _, gen = _wat_gen(self._src_animals)
-        self.assertEqual(gen._class_ids["Dog"], 1)
+        self.assertEqual(gen.class_ids["Dog"], 1)
 
     def test_dispatch_calls_both_impls(self):
         """Dispatch function references both Animal__speak and Dog__speak."""
@@ -284,14 +284,14 @@ class Point:
         self.assertIn("i32.const 8", wat)
 
     def test_obj_size_unchanged(self):
-        """_class_obj_sizes still reflects only field bytes (not tag bytes)."""
+        """Object size metadata still reflects only field bytes (not tag bytes)."""
         _, gen = _wat_gen("""
 class Pair:
     def __init__(self, a, b):
         self.a = a
         self.b = b
 """)
-        self.assertEqual(gen._class_obj_sizes.get("Pair"), 16)
+        self.assertEqual(gen.class_obj_sizes.get("Pair"), 16)
 
 
 if __name__ == "__main__":
