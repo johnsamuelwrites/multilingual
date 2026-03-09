@@ -6,7 +6,9 @@
 
 """Python code generator: transpiles the multilingual AST to valid Python source."""
 
+from multilingualprogramming.core.ir import CoreIRProgram
 from multilingualprogramming.exceptions import CodeGenerationError
+from multilingualprogramming.numeral.mp_numeral import MPNumeral
 
 
 def _emit_raw_literal(prefix: str, value: str) -> str:
@@ -23,8 +25,6 @@ def _emit_raw_literal(prefix: str, value: str) -> str:
     if '"""' not in value:
         return f'{prefix}"""{value}"""'
     return f"{prefix}'''{value}'''"
-from multilingualprogramming.numeral.mp_numeral import MPNumeral
-from multilingualprogramming.core.ir import CoreIRProgram
 
 
 class PythonCodeGenerator:
