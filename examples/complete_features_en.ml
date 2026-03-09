@@ -1,5 +1,6 @@
 import math
 from math import sqrt as root_fn
+import asyncio
 
 let shared_counter = 3
 
@@ -269,3 +270,109 @@ print(nested_c, filter_c)
 print(try_else, chained, multi_exc)
 print(mr, dec_r, prop)
 print(with_doc())
+
+# Bitwise and power augmented assignments (v0.6.0)
+let bau = 0b1111
+bau &= 0b1010
+bau |= 0b0100
+bau ^= 0b0011
+bau <<= 1
+bau >>= 2
+let pow_aug = 2
+pow_aug **= 4
+
+# Bytes literal (v0.6.0)
+let bdata = b"hello"
+let blen = len(bdata)
+
+# String concatenation, indexing, slicing (v0.6.0)
+let str_a = "hello"
+let str_b = " world"
+let str_cat = str_a + str_b
+let str_idx = str_a[1]
+let str_slc = str_a[1:3]
+
+# Tuple literal (v0.6.0)
+let tup_lit = (10, 20, 30)
+let tup_elem = tup_lit[1]
+
+# for loop and comprehension over list variable (v0.6.0)
+let iter_list = [10, 20, 30]
+let iter_sum = 0
+for iter_val in iter_list:
+    iter_sum = iter_sum + iter_val
+
+let comp_list = [1, 2, 3, 4]
+let doubled_list = [v * 2 for v in comp_list]
+
+# Extended match/case: string, None, capture, and tuple patterns (v0.6.0)
+let ms = "hello"
+let msr = "none"
+match ms:
+    case "hello":
+        msr = "hi"
+    case "bye":
+        msr = "goodbye"
+    default:
+        msr = "unknown"
+
+let mn = None
+let mnr = "defined"
+match mn:
+    case None:
+        mnr = "null"
+    default:
+        mnr = "other"
+
+let mc = 42
+let mcr = 0
+match mc:
+    case 42:
+        mcr = mc
+    default:
+        mcr = 0
+
+let mt = (1, 2)
+let mtr = "no"
+match mt:
+    case (1, 2):
+        mtr = "yes"
+    default:
+        mtr = "no"
+
+# async def, await, async for, async with (v0.6.0)
+async def async_double(n):
+    await asyncio.sleep(0)
+    return n * 2
+
+async def async_gen():
+    for v in range(3):
+        yield v
+
+async def async_for_task():
+    let total = 0
+    async for av in async_gen():
+        total = total + av
+    return total
+
+class AsyncCtxEn:
+    async def __aenter__(self):
+        return 5
+    async def __aexit__(self, exc_type, exc, tb):
+        return False
+
+async def async_with_task():
+    async with AsyncCtxEn() as value:
+        return value
+
+let async_result = asyncio.run(async_double(5))
+let async_for_result = asyncio.run(async_for_task())
+let async_with_result = asyncio.run(async_with_task())
+
+print(bau, pow_aug)
+print(blen)
+print(str_cat, str_idx, str_slc)
+print(tup_elem, iter_sum)
+print(doubled_list)
+print(msr, mnr, mcr, mtr)
+print(async_result, async_for_result, async_with_result)
