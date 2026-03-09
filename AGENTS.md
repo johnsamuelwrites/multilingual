@@ -32,7 +32,7 @@
 | **Package name** | `multilingualprogramming` |
 | **CLI commands** | `multilingual`, `multilg` (alias) |
 | **Tagline** | "One programming model. Many human languages." |
-| **Version** | `0.5.1` (see `multilingualprogramming/version.py`) |
+| **Version** | `0.6.0` (see `multilingualprogramming/version.py`) |
 | **Status** | Beta (Development Status :: 4) |
 | **Python requirement** | ≥ 3.12 |
 | **License** | GPL-3.0-or-later (code), CC BY-SA 4.0 (docs) |
@@ -112,7 +112,7 @@ multilingual/
 ├── multilingualprogramming/            ← main package
 │   ├── __init__.py                     ← public API exports (88 items)
 │   ├── __main__.py                     ← CLI entry point (argparse)
-│   ├── version.py                      ← version = "0.5.1"
+│   ├── version.py                      ← version = "0.6.0"
 │   ├── exceptions.py                   ← custom exceptions
 │   ├── imports.py                      ← multilingual .ml import support
 │   ├── unicode_string.py               ← Unicode string utilities
@@ -807,7 +807,7 @@ Both forms must appear in the language's array for reliable lexer matching.
 
 ## 15. Version & Release Info
 
-### Current Version: `0.5.1`
+### Current Version: `0.6.0`
 
 Defined in `multilingualprogramming/version.py`.
 
@@ -815,6 +815,7 @@ Defined in `multilingualprogramming/version.py`.
 
 | Version | Highlights |
 |---|---|
+| `0.6.0` | WAT/WASM OOP object model, inheritance, `with`/`try`/`match`/`lambda`/`async` lowering, bytes support, and WAT backend reorganization |
 | `0.5.1` | Documentation updates |
 | `0.5.0` | WAT/WASM OOP object model; class lowering; inheritance; WAT execution tests; Unicode identifier reliability |
 | `0.4.0` | WAT/WASM code generation; browser playground; WASM backend with 25+ Python fallbacks; 20 corpus projects |
@@ -831,4 +832,4 @@ via the `release-pypi.yml` GitHub Actions workflow.
 
 ---
 
-*Last updated: 2026-03-01. For changes after this date, check CHANGELOG.md and git log.*
+*Last updated: 2026-03-09. For changes after this date, check CHANGELOG.md and git log.*
