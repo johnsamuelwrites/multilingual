@@ -1,5 +1,6 @@
 importuj math
 zmodulu math importuj sqrt jako root_fn
+importuj asyncio
 
 niech licznik_globalny = 3
 
@@ -269,3 +270,109 @@ drukuj(zagniezdzony_c, filtr_c)
 drukuj(sprobuj_inaczej, lancuchowany, wiele_wyjatkow)
 drukuj(wynik_dopas, wynik_deko, wlasciwosc)
 drukuj(z_dok())
+
+# Bitowe rozszerzone przypisania i potęga (v0.6.0)
+niech bau_bits = 0b1111
+bau_bits &= 0b1010
+bau_bits |= 0b0100
+bau_bits ^= 0b0011
+bau_bits <<= 1
+bau_bits >>= 2
+niech pot_aug = 2
+pot_aug **= 4
+
+# Literał bajtów (v0.6.0)
+niech dane_bajty = b"czesc"
+niech dl_bajty = dlugosc(dane_bajty)
+
+# Łączenie, indeksowanie i wycinanie łańcucha (v0.6.0)
+niech lancuch_x = "czesc"
+niech lancuch_y = " swiecie"
+niech polaczony = lancuch_x + lancuch_y
+niech idx_lancuch = lancuch_x[1]
+niech wycinek = lancuch_x[1:3]
+
+# Literał krotki (v0.6.0)
+niech krotka_pl = (10, 20, 30)
+niech elem_krotka_pl = krotka_pl[1]
+
+# Pętla for nad zmienną listy i wyrażenie listowe (v0.6.0)
+niech lista_iter = [10, 20, 30]
+niech suma_iter = 0
+dla val_iter w lista_iter:
+    suma_iter = suma_iter + val_iter
+
+niech lista_pod_src = [1, 2, 3, 4]
+niech lista_podwoj = [v * 2 dla v w lista_pod_src]
+
+# Rozszerzone dopasowanie: łańcuch, Brak, liczba i krotka (v0.6.0)
+niech lancuch_m = "czesc"
+niech result_lancuch_m = "brak"
+dopasuj lancuch_m:
+    przypadek "czesc":
+        result_lancuch_m = "hej"
+    przypadek "do_widzenia":
+        result_lancuch_m = "zegnaj"
+    domyslnie:
+        result_lancuch_m = "nieznany"
+
+niech val_brak = Brak
+niech result_brak = "zdefiniowany"
+dopasuj val_brak:
+    przypadek Brak:
+        result_brak = "pusty"
+    domyslnie:
+        result_brak = "inny"
+
+niech val_num_m = 42
+niech result_num_m = 0
+dopasuj val_num_m:
+    przypadek 42:
+        result_num_m = val_num_m
+    domyslnie:
+        result_num_m = 0
+
+niech val_krotka_m = (1, 2)
+niech result_krotka_m = "nie"
+dopasuj val_krotka_m:
+    przypadek (1, 2):
+        result_krotka_m = "tak"
+    domyslnie:
+        result_krotka_m = "nie"
+
+# async def, await, async for, async with (v0.6.0)
+async funkcja podwoj_async(n):
+    czekaj asyncio.sleep(0)
+    zwroc n * 2
+
+async funkcja gen_async_pl():
+    dla v w range(3):
+        zwroc_wartosc v
+
+async funkcja zadanie_async_dla():
+    niech total_async = 0
+    async dla av w gen_async_pl():
+        total_async = total_async + av
+    zwroc total_async
+
+klasa KontekstAsyncPl:
+    async funkcja __aenter__(self):
+        zwroc 5
+    async funkcja __aexit__(self, exc_type, exc, tb):
+        zwroc Falsz
+
+async funkcja zadanie_async_z():
+    async z KontekstAsyncPl() jako wartosc:
+        zwroc wartosc
+
+niech wynik_async = asyncio.run(podwoj_async(5))
+niech wynik_async_dla = asyncio.run(zadanie_async_dla())
+niech wynik_async_z = asyncio.run(zadanie_async_z())
+
+drukuj(bau_bits, pot_aug)
+drukuj(dl_bajty)
+drukuj(polaczony, idx_lancuch, wycinek)
+drukuj(elem_krotka_pl, suma_iter)
+drukuj(lista_podwoj)
+drukuj(result_lancuch_m, result_brak, result_num_m, result_krotka_m)
+drukuj(wynik_async, wynik_async_dla, wynik_async_z)

@@ -1,5 +1,6 @@
 importar math
 desde math importar sqrt como root_fn
+importar asyncio
 
 sea contador_global = 3
 
@@ -269,3 +270,109 @@ imprimir(anidado_c, filtro_c)
 imprimir(intenta_sino, encadenado, multi_excepcion)
 imprimir(resultado_seg_n, resultado_deco, propiedad)
 imprimir(con_doc())
+
+# Asignaciones aumentadas bit a bit y potencia (v0.6.0)
+sea bau_bits = 0b1111
+bau_bits &= 0b1010
+bau_bits |= 0b0100
+bau_bits ^= 0b0011
+bau_bits <<= 1
+bau_bits >>= 2
+sea pot_aug = 2
+pot_aug **= 4
+
+# Literal de bytes (v0.6.0)
+sea datos_bytes = b"hola"
+sea tam_bytes = longitud(datos_bytes)
+
+# Concatenación, indexación y segmento de cadena (v0.6.0)
+sea cadena_x = "hola"
+sea cadena_y = " mundo"
+sea concat_cadena = cadena_x + cadena_y
+sea idx_cadena = cadena_x[1]
+sea seg_cadena = cadena_x[1:3]
+
+# Literal de tupla (v0.6.0)
+sea tupla_es = (10, 20, 30)
+sea elem_tupla_es = tupla_es[1]
+
+# Bucle for sobre variable de lista y comprensión (v0.6.0)
+sea lista_iter = [10, 20, 30]
+sea suma_iter = 0
+para val_iter en lista_iter:
+    suma_iter = suma_iter + val_iter
+
+sea lista_dobl_src = [1, 2, 3, 4]
+sea lista_doblada = [v * 2 para v en lista_dobl_src]
+
+# Coincidencia extendida: cadena, Nada, numérico y tupla (v0.6.0)
+sea cadena_m = "hola"
+sea result_cadena_m = "ninguno"
+según cadena_m:
+    caso "hola":
+        result_cadena_m = "saludo"
+    caso "adios":
+        result_cadena_m = "despedida"
+    predeterminado:
+        result_cadena_m = "desconocido"
+
+sea val_nada = Nada
+sea result_nada = "definido"
+según val_nada:
+    caso Nada:
+        result_nada = "vacio"
+    predeterminado:
+        result_nada = "otro"
+
+sea val_num_m = 42
+sea result_num_m = 0
+según val_num_m:
+    caso 42:
+        result_num_m = val_num_m
+    predeterminado:
+        result_num_m = 0
+
+sea val_tupla_m = (1, 2)
+sea result_tupla_m = "no"
+según val_tupla_m:
+    caso (1, 2):
+        result_tupla_m = "si"
+    predeterminado:
+        result_tupla_m = "no"
+
+# async def, await, async for, async with (v0.6.0)
+asincrono def doblar_async(n):
+    esperar asyncio.sleep(0)
+    devolver n * 2
+
+asincrono def gen_async_es():
+    para v en range(3):
+        producir v
+
+asincrono def tarea_async_para():
+    sea total_async = 0
+    asincrono para av en gen_async_es():
+        total_async = total_async + av
+    devolver total_async
+
+clase ContextoAsyncEs:
+    asincrono def __aenter__(self):
+        devolver 5
+    asincrono def __aexit__(self, exc_type, exc, tb):
+        devolver Falso
+
+asincrono def tarea_async_con():
+    asincrono con ContextoAsyncEs() como valor:
+        devolver valor
+
+sea resultado_async = asyncio.run(doblar_async(5))
+sea resultado_async_para = asyncio.run(tarea_async_para())
+sea resultado_async_con = asyncio.run(tarea_async_con())
+
+imprimir(bau_bits, pot_aug)
+imprimir(tam_bytes)
+imprimir(concat_cadena, idx_cadena, seg_cadena)
+imprimir(elem_tupla_es, suma_iter)
+imprimir(lista_doblada)
+imprimir(result_cadena_m, result_nada, result_num_m, result_tupla_m)
+imprimir(resultado_async, resultado_async_para, resultado_async_con)

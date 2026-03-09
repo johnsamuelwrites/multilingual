@@ -1,5 +1,6 @@
 importer math
 depuis math importer sqrt comme root_fn
+importer asyncio
 
 soit compteur_partage = 3
 
@@ -269,3 +270,109 @@ afficher(imbrique_c, filtre_c)
 afficher(essai_sinon, enchainee, multi_exc_loc)
 afficher(resultat_selon, resultat_deco, propriete)
 afficher(avec_doc())
+
+# Assignements augmentés binaires et puissance (v0.6.0)
+soit bau_bits = 0b1111
+bau_bits &= 0b1010
+bau_bits |= 0b0100
+bau_bits ^= 0b0011
+bau_bits <<= 1
+bau_bits >>= 2
+soit puiss_aug = 2
+puiss_aug **= 4
+
+# Littéral d'octets (v0.6.0)
+soit donnees_octets = b"bonjour"
+soit taille_octets = longueur(donnees_octets)
+
+# Concaténation, indexation et découpage de chaînes (v0.6.0)
+soit chaine_x = "bonjour"
+soit chaine_y = " monde"
+soit concat_chaine = chaine_x + chaine_y
+soit idx_chaine = chaine_x[1]
+soit dec_chaine = chaine_x[1:3]
+
+# Littéral de tuple (v0.6.0)
+soit tuple_fr = (10, 20, 30)
+soit elem_tuple_fr = tuple_fr[1]
+
+# Boucle for sur variable de liste et compréhension de liste (v0.6.0)
+soit liste_iter = [10, 20, 30]
+soit somme_iter = 0
+pour val_iter dans liste_iter:
+    somme_iter = somme_iter + val_iter
+
+soit liste_doub_src = [1, 2, 3, 4]
+soit liste_doublee = [v * 2 pour v dans liste_doub_src]
+
+# Correspondance étendue : chaîne, Rien, numérique et tuple (v0.6.0)
+soit chaine_m = "bonjour"
+soit result_chaine_m = "aucun"
+selon chaine_m:
+    cas "bonjour":
+        result_chaine_m = "salut"
+    cas "bonsoir":
+        result_chaine_m = "bonne_nuit"
+    defaut:
+        result_chaine_m = "inconnu"
+
+soit val_rien = Rien
+soit result_rien = "défini"
+selon val_rien:
+    cas Rien:
+        result_rien = "vide"
+    defaut:
+        result_rien = "autre"
+
+soit val_num_m = 42
+soit result_num_m = 0
+selon val_num_m:
+    cas 42:
+        result_num_m = val_num_m
+    defaut:
+        result_num_m = 0
+
+soit val_tuple_m = (1, 2)
+soit result_tuple_m = "non"
+selon val_tuple_m:
+    cas (1, 2):
+        result_tuple_m = "oui"
+    defaut:
+        result_tuple_m = "non"
+
+# async def, await, async for, async with (v0.6.0)
+asynchrone déf doubler_async(n):
+    attendre asyncio.sleep(0)
+    retour n * 2
+
+asynchrone déf gen_async_fr():
+    pour v dans range(3):
+        produire v
+
+asynchrone déf tache_async_pour():
+    soit total_async = 0
+    asynchrone pour av dans gen_async_fr():
+        total_async = total_async + av
+    retour total_async
+
+classe ContexteAsyncFr:
+    asynchrone déf __aenter__(self):
+        retour 5
+    asynchrone déf __aexit__(self, exc_type, exc, tb):
+        retour Faux
+
+asynchrone déf tache_async_avec():
+    asynchrone avec ContexteAsyncFr() comme valeur:
+        retour valeur
+
+soit resultat_async = asyncio.run(doubler_async(5))
+soit resultat_async_pour = asyncio.run(tache_async_pour())
+soit resultat_async_avec = asyncio.run(tache_async_avec())
+
+afficher(bau_bits, puiss_aug)
+afficher(taille_octets)
+afficher(concat_chaine, idx_chaine, dec_chaine)
+afficher(elem_tuple_fr, somme_iter)
+afficher(liste_doublee)
+afficher(result_chaine_m, result_rien, result_num_m, result_tuple_m)
+afficher(resultat_async, resultat_async_pour, resultat_async_avec)

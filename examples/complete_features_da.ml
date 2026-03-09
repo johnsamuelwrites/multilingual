@@ -1,5 +1,6 @@
 importer math
 fra math importer sqrt som root_fn
+importer asyncio
 
 lad delt_taeller = 3
 
@@ -269,3 +270,109 @@ skriv(indlejret_c, filter_c)
 skriv(prov_ellers, kaedet, flere_undtag)
 skriv(match_resultat, deko_resultat, egenskab)
 skriv(med_doc())
+
+# Bit-vise udvidede tildelinger og potens (v0.6.0)
+lad bau_bits = 0b1111
+bau_bits &= 0b1010
+bau_bits |= 0b0100
+bau_bits ^= 0b0011
+bau_bits <<= 1
+bau_bits >>= 2
+lad pot_aug = 2
+pot_aug **= 4
+
+# Bytes-literal (v0.6.0)
+lad byte_data = b"hej"
+lad byte_laengde = laengde(byte_data)
+
+# Streng sammenkædning, indeksering og udskæring (v0.6.0)
+lad streng_x = "hej"
+lad streng_y = " verden"
+lad sammenkat = streng_x + streng_y
+lad streng_idx = streng_x[1]
+lad streng_udskaer = streng_x[1:3]
+
+# Tupel-literal (v0.6.0)
+lad tupel_da = (10, 20, 30)
+lad elem_tupel_da = tupel_da[1]
+
+# For-løkke over listevariabel og listeforståelse (v0.6.0)
+lad iter_liste = [10, 20, 30]
+lad iter_sum = 0
+for iter_val i iter_liste:
+    iter_sum = iter_sum + iter_val
+
+lad dobbelt_kilde = [1, 2, 3, 4]
+lad dobbelt_liste = [v * 2 for v i dobbelt_kilde]
+
+# Udvidet match: streng, Ingen, numerisk og tupel (v0.6.0)
+lad streng_m = "hej"
+lad result_streng_m = "ingen"
+match streng_m:
+    sag "hej":
+        result_streng_m = "hejsa"
+    sag "farvel":
+        result_streng_m = "adjoe"
+    standard:
+        result_streng_m = "ukendt"
+
+lad val_ingen = Ingen
+lad result_ingen = "defineret"
+match val_ingen:
+    sag Ingen:
+        result_ingen = "tom"
+    standard:
+        result_ingen = "andet"
+
+lad val_num_m = 42
+lad result_num_m = 0
+match val_num_m:
+    sag 42:
+        result_num_m = val_num_m
+    standard:
+        result_num_m = 0
+
+lad val_tupel_m = (1, 2)
+lad result_tupel_m = "nej"
+match val_tupel_m:
+    sag (1, 2):
+        result_tupel_m = "ja"
+    standard:
+        result_tupel_m = "nej"
+
+# async def, await, async for, async with (v0.6.0)
+async definer fordobl_async(n):
+    afvent asyncio.sleep(0)
+    returner n * 2
+
+async definer gen_async_da():
+    for v i range(3):
+        giv v
+
+async definer opgave_async_for():
+    lad total_async = 0
+    async for av i gen_async_da():
+        total_async = total_async + av
+    returner total_async
+
+klasse KontekstAsyncDa:
+    async definer __aenter__(self):
+        returner 5
+    async definer __aexit__(self, exc_type, exc, tb):
+        returner Falsk
+
+async definer opgave_async_med():
+    async med KontekstAsyncDa() som vaerdi:
+        returner vaerdi
+
+lad resultat_async = asyncio.run(fordobl_async(5))
+lad resultat_async_for = asyncio.run(opgave_async_for())
+lad resultat_async_med = asyncio.run(opgave_async_med())
+
+skriv(bau_bits, pot_aug)
+skriv(byte_laengde)
+skriv(sammenkat, streng_idx, streng_udskaer)
+skriv(elem_tupel_da, iter_sum)
+skriv(dobbelt_liste)
+skriv(result_streng_m, result_ingen, result_num_m, result_tupel_m)
+skriv(resultat_async, resultat_async_for, resultat_async_med)

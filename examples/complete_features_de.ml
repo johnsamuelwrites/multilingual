@@ -1,5 +1,6 @@
 importieren math
 von math importieren sqrt als root_fn
+importieren asyncio
 
 sei gemeinsamer_zaehler = 3
 
@@ -269,3 +270,109 @@ ausgeben(verschachtelt_c, filter_c)
 ausgeben(versuch_sonst, verkettet, mehrfach_ausnahme)
 ausgeben(zuordnungs_resultat, deko_resultat, eigenschaft)
 ausgeben(mit_doc())
+
+# Bit-weise erweiterte Zuweisungen und Potenz (v0.6.0)
+sei bau_bits = 0b1111
+bau_bits &= 0b1010
+bau_bits |= 0b0100
+bau_bits ^= 0b0011
+bau_bits <<= 1
+bau_bits >>= 2
+sei pot_aug = 2
+pot_aug **= 4
+
+# Bytes-Literal (v0.6.0)
+sei byte_daten = b"hallo"
+sei byte_laenge = laenge(byte_daten)
+
+# Zeichenketten-Verkettung, Indizierung, Slicing (v0.6.0)
+sei zeichenkette_x = "hallo"
+sei zeichenkette_y = " welt"
+sei verkettung = zeichenkette_x + zeichenkette_y
+sei zeichen_idx = zeichenkette_x[1]
+sei zeichen_ausschn = zeichenkette_x[1:3]
+
+# Tupel-Literal (v0.6.0)
+sei tupel_de = (10, 20, 30)
+sei tupel_elem_de = tupel_de[1]
+
+# For-Schleife über Listenvariable und Comprehension (v0.6.0)
+sei iter_liste = [10, 20, 30]
+sei iter_summe = 0
+für iter_wert in iter_liste:
+    iter_summe = iter_summe + iter_wert
+
+sei dopp_quelle = [1, 2, 3, 4]
+sei doppelte_liste = [v * 2 für v in dopp_quelle]
+
+# Erweiterte Zuordnung: Zeichenkette, Nichts, Zahl, Tupel (v0.6.0)
+sei zeichen_m = "hallo"
+sei result_zeichen_m = "keins"
+zuordnen zeichen_m:
+    fall "hallo":
+        result_zeichen_m = "hi"
+    fall "tschuss":
+        result_zeichen_m = "tschüss"
+    standard:
+        result_zeichen_m = "unbekannt"
+
+sei nichts_val = Nichts
+sei result_nichts = "definiert"
+zuordnen nichts_val:
+    fall Nichts:
+        result_nichts = "leer"
+    standard:
+        result_nichts = "anderes"
+
+sei zahl_m = 42
+sei result_zahl_m = 0
+zuordnen zahl_m:
+    fall 42:
+        result_zahl_m = zahl_m
+    standard:
+        result_zahl_m = 0
+
+sei tupel_m = (1, 2)
+sei result_tupel_m = "nein"
+zuordnen tupel_m:
+    fall (1, 2):
+        result_tupel_m = "ja"
+    standard:
+        result_tupel_m = "nein"
+
+# async def, await, async for, async with (v0.6.0)
+asynchron def verdoppeln_async(n):
+    erwarten asyncio.sleep(0)
+    rückgabe n * 2
+
+asynchron def gen_async_de():
+    für v in range(3):
+        erzeugen v
+
+asynchron def aufgabe_async_fuer():
+    sei gesamt_async = 0
+    asynchron für av in gen_async_de():
+        gesamt_async = gesamt_async + av
+    rückgabe gesamt_async
+
+klasse KontextAsyncDe:
+    asynchron def __aenter__(self):
+        rückgabe 5
+    asynchron def __aexit__(self, exc_type, exc, tb):
+        rückgabe Falsch
+
+asynchron def aufgabe_async_mit():
+    asynchron mit KontextAsyncDe() als wert:
+        rückgabe wert
+
+sei async_ergebnis = asyncio.run(verdoppeln_async(5))
+sei async_fuer_ergebnis = asyncio.run(aufgabe_async_fuer())
+sei async_mit_ergebnis = asyncio.run(aufgabe_async_mit())
+
+ausgeben(bau_bits, pot_aug)
+ausgeben(byte_laenge)
+ausgeben(verkettung, zeichen_idx, zeichen_ausschn)
+ausgeben(tupel_elem_de, iter_summe)
+ausgeben(doppelte_liste)
+ausgeben(result_zeichen_m, result_nichts, result_zahl_m, result_tupel_m)
+ausgeben(async_ergebnis, async_fuer_ergebnis, async_mit_ergebnis)

@@ -1,5 +1,6 @@
 importera math
 fran math importera sqrt som root_fn
+importera asyncio
 
 lat delad_rackare = 3
 
@@ -269,3 +270,109 @@ skriv(nastlad_c, filter_c)
 skriv(prova_annars, kedjad, flera_undantag)
 skriv(match_resultat, deko_resultat, egenskap)
 skriv(med_doc())
+
+# Bit-visa utökade tilldelningar och potens (v0.6.0)
+lat bau_bits = 0b1111
+bau_bits &= 0b1010
+bau_bits |= 0b0100
+bau_bits ^= 0b0011
+bau_bits <<= 1
+bau_bits >>= 2
+lat pot_aug = 2
+pot_aug **= 4
+
+# Bytes-literal (v0.6.0)
+lat byte_data = b"hej"
+lat byte_langd = langd(byte_data)
+
+# Strängkonkatenering, indexering och skärning (v0.6.0)
+lat strang_x = "hej"
+lat strang_y = " varlden"
+lat konkatenerad = strang_x + strang_y
+lat strang_idx = strang_x[1]
+lat strang_skar = strang_x[1:3]
+
+# Tuppel-literal (v0.6.0)
+lat tuppel_sv = (10, 20, 30)
+lat elem_tuppel_sv = tuppel_sv[1]
+
+# For-slinga över listvariabel och listförståelse (v0.6.0)
+lat iter_lista = [10, 20, 30]
+lat iter_summa = 0
+for iter_val i iter_lista:
+    iter_summa = iter_summa + iter_val
+
+lat dubbel_kalla = [1, 2, 3, 4]
+lat dubblad_lista = [v * 2 for v i dubbel_kalla]
+
+# Utökad matchning: sträng, Ingen, numerisk och tuppel (v0.6.0)
+lat strang_m = "hej"
+lat result_strang_m = "ingen"
+matcha strang_m:
+    fall "hej":
+        result_strang_m = "tja"
+    fall "hejda":
+        result_strang_m = "adjö"
+    standard:
+        result_strang_m = "okand"
+
+lat val_ingen = Ingen
+lat result_ingen = "definierad"
+matcha val_ingen:
+    fall Ingen:
+        result_ingen = "tom"
+    standard:
+        result_ingen = "annat"
+
+lat val_num_m = 42
+lat result_num_m = 0
+matcha val_num_m:
+    fall 42:
+        result_num_m = val_num_m
+    standard:
+        result_num_m = 0
+
+lat val_tuppel_m = (1, 2)
+lat result_tuppel_m = "nej"
+matcha val_tuppel_m:
+    fall (1, 2):
+        result_tuppel_m = "ja"
+    standard:
+        result_tuppel_m = "nej"
+
+# async def, await, async for, async with (v0.6.0)
+async definiera dubbla_async(n):
+    invanta asyncio.sleep(0)
+    retur n * 2
+
+async definiera gen_async_sv():
+    for v i range(3):
+        ge v
+
+async definiera uppgift_async_for():
+    lat totalt_async = 0
+    async for av i gen_async_sv():
+        totalt_async = totalt_async + av
+    retur totalt_async
+
+klass KontextAsyncSv:
+    async definiera __aenter__(self):
+        retur 5
+    async definiera __aexit__(self, exc_type, exc, tb):
+        retur Falskt
+
+async definiera uppgift_async_med():
+    async med KontextAsyncSv() som varde:
+        retur varde
+
+lat resultat_async = asyncio.run(dubbla_async(5))
+lat resultat_async_for = asyncio.run(uppgift_async_for())
+lat resultat_async_med = asyncio.run(uppgift_async_med())
+
+skriv(bau_bits, pot_aug)
+skriv(byte_langd)
+skriv(konkatenerad, strang_idx, strang_skar)
+skriv(elem_tuppel_sv, iter_summa)
+skriv(dubblad_lista)
+skriv(result_strang_m, result_ingen, result_num_m, result_tuppel_m)
+skriv(resultat_async, resultat_async_for, resultat_async_med)

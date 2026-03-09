@@ -1,5 +1,6 @@
 importe math
 de math importe sqrt como root_fn
+importe asyncio
 
 seja contador_global = 3
 
@@ -269,3 +270,109 @@ imprima(aninhado_c, filtro_c)
 imprima(tente_senao, encadeado, multi_excecao)
 imprima(resultado_match, resultado_deco, propriedade)
 imprima(com_doc())
+
+# Atribuições aumentadas bit a bit e potência (v0.6.0)
+seja bau_bits = 0b1111
+bau_bits &= 0b1010
+bau_bits |= 0b0100
+bau_bits ^= 0b0011
+bau_bits <<= 1
+bau_bits >>= 2
+seja pot_aug = 2
+pot_aug **= 4
+
+# Literal de bytes (v0.6.0)
+seja dados_bytes = b"ola"
+seja tam_bytes = comprimento(dados_bytes)
+
+# Concatenação, indexação e fatiamento de cadeia (v0.6.0)
+seja cadeia_x = "ola"
+seja cadeia_y = " mundo"
+seja concat_cadeia = cadeia_x + cadeia_y
+seja idx_cadeia = cadeia_x[1]
+seja fat_cadeia = cadeia_x[1:3]
+
+# Literal de tuplo (v0.6.0)
+seja tuplo_pt = (10, 20, 30)
+seja elem_tuplo_pt = tuplo_pt[1]
+
+# Ciclo for sobre variável de lista e compreensão (v0.6.0)
+seja lista_iter = [10, 20, 30]
+seja soma_iter = 0
+para val_iter em lista_iter:
+    soma_iter = soma_iter + val_iter
+
+seja lista_dup_src = [1, 2, 3, 4]
+seja lista_dupla = [v * 2 para v em lista_dup_src]
+
+# Correspondência extendida: cadeia, Nenhum, numérico e tuplo (v0.6.0)
+seja cadeia_m = "ola"
+seja result_cadeia_m = "nenhum"
+corresponda cadeia_m:
+    caso "ola":
+        result_cadeia_m = "salve"
+    caso "tchau":
+        result_cadeia_m = "adeus"
+    padrao:
+        result_cadeia_m = "desconhecido"
+
+seja val_nenhum = Nenhum
+seja result_nenhum = "definido"
+corresponda val_nenhum:
+    caso Nenhum:
+        result_nenhum = "vazio"
+    padrao:
+        result_nenhum = "outro"
+
+seja val_num_m = 42
+seja result_num_m = 0
+corresponda val_num_m:
+    caso 42:
+        result_num_m = val_num_m
+    padrao:
+        result_num_m = 0
+
+seja val_tuplo_m = (1, 2)
+seja result_tuplo_m = "nao"
+corresponda val_tuplo_m:
+    caso (1, 2):
+        result_tuplo_m = "sim"
+    padrao:
+        result_tuplo_m = "nao"
+
+# async def, await, async for, async with (v0.6.0)
+assincrono defina dobrar_async(n):
+    aguarde asyncio.sleep(0)
+    retorne n * 2
+
+assincrono defina gen_async_pt():
+    para v em range(3):
+        produza v
+
+assincrono defina tarefa_async_para():
+    seja total_async = 0
+    assincrono para av em gen_async_pt():
+        total_async = total_async + av
+    retorne total_async
+
+classe ContextoAsyncPt:
+    assincrono defina __aenter__(self):
+        retorne 5
+    assincrono defina __aexit__(self, exc_type, exc, tb):
+        retorne Falso
+
+assincrono defina tarefa_async_com():
+    assincrono com ContextoAsyncPt() como valor:
+        retorne valor
+
+seja resultado_async = asyncio.run(dobrar_async(5))
+seja resultado_async_para = asyncio.run(tarefa_async_para())
+seja resultado_async_com = asyncio.run(tarefa_async_com())
+
+imprima(bau_bits, pot_aug)
+imprima(tam_bytes)
+imprima(concat_cadeia, idx_cadeia, fat_cadeia)
+imprima(elem_tuplo_pt, soma_iter)
+imprima(lista_dupla)
+imprima(result_cadeia_m, result_nenhum, result_num_m, result_tuplo_m)
+imprima(resultado_async, resultado_async_para, resultado_async_com)

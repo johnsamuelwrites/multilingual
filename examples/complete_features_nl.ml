@@ -1,5 +1,6 @@
 importeer math
 van math importeer sqrt zoals root_fn
+importeer asyncio
 
 laat gedeelde_teller = 3
 
@@ -269,3 +270,109 @@ afdrukken(genest_c, filter_c)
 afdrukken(probeer_anders, gekoppeld, multi_uitz)
 afdrukken(match_resultaat, deco_resultaat, eigenschap)
 afdrukken(met_doc())
+
+# Bit-gewijze uitgebreide toewijzingen en macht (v0.6.0)
+laat bau_bits = 0b1111
+bau_bits &= 0b1010
+bau_bits |= 0b0100
+bau_bits ^= 0b0011
+bau_bits <<= 1
+bau_bits >>= 2
+laat macht_aug = 2
+macht_aug **= 4
+
+# Bytes-literal (v0.6.0)
+laat byte_data = b"hallo"
+laat byte_len = lengte(byte_data)
+
+# Tekenreeks samenvoegen, indexeren en segmenteren (v0.6.0)
+laat tekstr_x = "hallo"
+laat tekstr_y = " wereld"
+laat samengev = tekstr_x + tekstr_y
+laat tekstr_idx = tekstr_x[1]
+laat tekstr_seg = tekstr_x[1:3]
+
+# Tupel-literal (v0.6.0)
+laat tupel_nl = (10, 20, 30)
+laat elem_tupel_nl = tupel_nl[1]
+
+# For-lus over lijstvariabele en lijstcomprehensie (v0.6.0)
+laat iter_lijst = [10, 20, 30]
+laat iter_som = 0
+voor iter_val in iter_lijst:
+    iter_som = iter_som + iter_val
+
+laat dubb_bron = [1, 2, 3, 4]
+laat dubbele_lijst = [v * 2 voor v in dubb_bron]
+
+# Uitgebreide vergelijking: tekenreeks, Geen, getal, tupel (v0.6.0)
+laat tekstr_m = "hallo"
+laat result_tekstr_m = "geen"
+vergelijk tekstr_m:
+    geval "hallo":
+        result_tekstr_m = "hoi"
+    geval "doei":
+        result_tekstr_m = "dag"
+    standaard:
+        result_tekstr_m = "onbekend"
+
+laat val_geen = Geen
+laat result_geen = "gedefinieerd"
+vergelijk val_geen:
+    geval Geen:
+        result_geen = "leeg"
+    standaard:
+        result_geen = "ander"
+
+laat val_num_m = 42
+laat result_num_m = 0
+vergelijk val_num_m:
+    geval 42:
+        result_num_m = val_num_m
+    standaard:
+        result_num_m = 0
+
+laat val_tupel_m = (1, 2)
+laat result_tupel_m = "nee"
+vergelijk val_tupel_m:
+    geval (1, 2):
+        result_tupel_m = "ja"
+    standaard:
+        result_tupel_m = "nee"
+
+# async def, await, async for, async with (v0.6.0)
+async definieer verdubbel_async(n):
+    wacht asyncio.sleep(0)
+    retourneer n * 2
+
+async definieer gen_async_nl():
+    voor v in range(3):
+        lever v
+
+async definieer taak_async_voor():
+    laat totaal_async = 0
+    async voor av in gen_async_nl():
+        totaal_async = totaal_async + av
+    retourneer totaal_async
+
+klasse ContextAsyncNl:
+    async definieer __aenter__(self):
+        retourneer 5
+    async definieer __aexit__(self, exc_type, exc, tb):
+        retourneer Onwaar
+
+async definieer taak_async_met():
+    async met ContextAsyncNl() zoals waarde:
+        retourneer waarde
+
+laat uitkomst_async = asyncio.run(verdubbel_async(5))
+laat uitkomst_async_voor = asyncio.run(taak_async_voor())
+laat uitkomst_async_met = asyncio.run(taak_async_met())
+
+afdrukken(bau_bits, macht_aug)
+afdrukken(byte_len)
+afdrukken(samengev, tekstr_idx, tekstr_seg)
+afdrukken(elem_tupel_nl, iter_som)
+afdrukken(dubbele_lijst)
+afdrukken(result_tekstr_m, result_geen, result_num_m, result_tupel_m)
+afdrukken(uitkomst_async, uitkomst_async_voor, uitkomst_async_met)

@@ -1,5 +1,6 @@
 tuo math
 kohteesta math tuo sqrt nimella root_fn
+tuo asyncio
 
 olkoon jaettu_laskuri = 3
 
@@ -269,3 +270,109 @@ tulosta(sisakkais_c, suodatin_c)
 tulosta(yrita_muuten, ketjutettu, moni_poikkeus)
 tulosta(sovitus_tulos, deko_tulos, ominaisuus)
 tulosta(doc_kanssa())
+
+# Bittitason laajennetut sijoitukset ja potenssi (v0.6.0)
+olkoon bau_bits = 0b1111
+bau_bits &= 0b1010
+bau_bits |= 0b0100
+bau_bits ^= 0b0011
+bau_bits <<= 1
+bau_bits >>= 2
+olkoon pot_aug = 2
+pot_aug **= 4
+
+# Tavuliteraali (v0.6.0)
+olkoon tavu_data = b"hei"
+olkoon tavu_pituus = pituus(tavu_data)
+
+# Merkkijonon yhdistäminen, indeksointi ja leikkaus (v0.6.0)
+olkoon mjono_x = "hei"
+olkoon mjono_y = " maailma"
+olkoon yhdistetty = mjono_x + mjono_y
+olkoon mjono_idx = mjono_x[1]
+olkoon mjono_leikkaus = mjono_x[1:3]
+
+# Monikkoliteraali (v0.6.0)
+olkoon monikko_fi = (10, 20, 30)
+olkoon elem_monikko_fi = monikko_fi[1]
+
+# For-silmukka listamuuttujan yli ja listayhteenotto (v0.6.0)
+olkoon iter_lista = [10, 20, 30]
+olkoon iter_summa = 0
+jokaiselle iter_arvo sisalla iter_lista:
+    iter_summa = iter_summa + iter_arvo
+
+olkoon kaksink_lahde = [1, 2, 3, 4]
+olkoon kaksinkertaistettu = [v * 2 jokaiselle v sisalla kaksink_lahde]
+
+# Laajennettu täsmäytys: merkkijono, EiMitaan, numero ja monikko (v0.6.0)
+olkoon mjono_m = "hei"
+olkoon result_mjono_m = "ei_mitaan"
+taysmatch mjono_m:
+    tapaus "hei":
+        result_mjono_m = "terve"
+    tapaus "nakemiin":
+        result_mjono_m = "hyvästi"
+    oletus:
+        result_mjono_m = "tuntematon"
+
+olkoon val_ei_mitaan = EiMitaan
+olkoon result_ei_mitaan = "maaritetty"
+taysmatch val_ei_mitaan:
+    tapaus EiMitaan:
+        result_ei_mitaan = "tyhja"
+    oletus:
+        result_ei_mitaan = "muu"
+
+olkoon val_num_m = 42
+olkoon result_num_m = 0
+taysmatch val_num_m:
+    tapaus 42:
+        result_num_m = val_num_m
+    oletus:
+        result_num_m = 0
+
+olkoon val_monikko_m = (1, 2)
+olkoon result_monikko_m = "ei"
+taysmatch val_monikko_m:
+    tapaus (1, 2):
+        result_monikko_m = "kylla"
+    oletus:
+        result_monikko_m = "ei"
+
+# async def, await, async for, async with (v0.6.0)
+async maarittele tuplaa_async(n):
+    odota asyncio.sleep(0)
+    palauta n * 2
+
+async maarittele gen_async_fi():
+    jokaiselle v sisalla range(3):
+        tuota v
+
+async maarittele tehtava_async_jokaiselle():
+    olkoon yhteensa_async = 0
+    async jokaiselle av sisalla gen_async_fi():
+        yhteensa_async = yhteensa_async + av
+    palauta yhteensa_async
+
+luokka KontekstiAsyncFi:
+    async maarittele __aenter__(self):
+        palauta 5
+    async maarittele __aexit__(self, exc_type, exc, tb):
+        palauta Epatosi
+
+async maarittele tehtava_async_kanssa():
+    async kanssa KontekstiAsyncFi() nimella arvo:
+        palauta arvo
+
+olkoon tulos_async = asyncio.run(tuplaa_async(5))
+olkoon tulos_async_jokaiselle = asyncio.run(tehtava_async_jokaiselle())
+olkoon tulos_async_kanssa = asyncio.run(tehtava_async_kanssa())
+
+tulosta(bau_bits, pot_aug)
+tulosta(tavu_pituus)
+tulosta(yhdistetty, mjono_idx, mjono_leikkaus)
+tulosta(elem_monikko_fi, iter_summa)
+tulosta(kaksinkertaistettu)
+tulosta(result_mjono_m, result_ei_mitaan, result_num_m, result_monikko_m)
+tulosta(tulos_async, tulos_async_jokaiselle, tulos_async_kanssa)

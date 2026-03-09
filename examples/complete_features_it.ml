@@ -1,5 +1,6 @@
 importa math
 da math importa sqrt come root_fn
+importa asyncio
 
 sia contatore_condiviso = 3
 
@@ -269,3 +270,109 @@ stampa(annidato_c, filtro_c)
 stampa(prova_altrimenti, concatenato, multi_eccezione)
 stampa(risultato_match, risultato_deco, proprieta)
 stampa(con_doc())
+
+# Assegnazioni aumentate bit a bit e potenza (v0.6.0)
+sia bau_bits = 0b1111
+bau_bits &= 0b1010
+bau_bits |= 0b0100
+bau_bits ^= 0b0011
+bau_bits <<= 1
+bau_bits >>= 2
+sia pot_aug = 2
+pot_aug **= 4
+
+# Letterale di bytes (v0.6.0)
+sia dati_bytes = b"ciao"
+sia lung_bytes = lunghezza(dati_bytes)
+
+# Concatenazione, indicizzazione e slice di stringa (v0.6.0)
+sia stringa_x = "ciao"
+sia stringa_y = " mondo"
+sia concat_stringa = stringa_x + stringa_y
+sia idx_stringa = stringa_x[1]
+sia slice_stringa = stringa_x[1:3]
+
+# Letterale di tupla (v0.6.0)
+sia tupla_it = (10, 20, 30)
+sia elem_tupla_it = tupla_it[1]
+
+# Ciclo for su variabile lista e comprensione (v0.6.0)
+sia lista_iter = [10, 20, 30]
+sia somma_iter = 0
+per val_iter in lista_iter:
+    somma_iter = somma_iter + val_iter
+
+sia lista_dop_src = [1, 2, 3, 4]
+sia lista_doppia = [v * 2 per v in lista_dop_src]
+
+# Corrispondenza estesa: stringa, Nessuno, numerico, tupla (v0.6.0)
+sia stringa_m = "ciao"
+sia result_stringa_m = "nessuno"
+confronta stringa_m:
+    caso "ciao":
+        result_stringa_m = "salve"
+    caso "arrivederci":
+        result_stringa_m = "addio"
+    predefinito:
+        result_stringa_m = "sconosciuto"
+
+sia val_nessuno = Nessuno
+sia result_nessuno = "definito"
+confronta val_nessuno:
+    caso Nessuno:
+        result_nessuno = "vuoto"
+    predefinito:
+        result_nessuno = "altro"
+
+sia val_num_m = 42
+sia result_num_m = 0
+confronta val_num_m:
+    caso 42:
+        result_num_m = val_num_m
+    predefinito:
+        result_num_m = 0
+
+sia val_tupla_m = (1, 2)
+sia result_tupla_m = "no"
+confronta val_tupla_m:
+    caso (1, 2):
+        result_tupla_m = "si"
+    predefinito:
+        result_tupla_m = "no"
+
+# async def, await, async for, async with (v0.6.0)
+asincrono definisci raddoppia_async(n):
+    attendi asyncio.sleep(0)
+    ritorna n * 2
+
+asincrono definisci gen_async_it():
+    per v in range(3):
+        produci v
+
+asincrono definisci compito_async_per():
+    sia totale_async = 0
+    asincrono per av in gen_async_it():
+        totale_async = totale_async + av
+    ritorna totale_async
+
+classe ContestoAsyncIt:
+    asincrono definisci __aenter__(self):
+        ritorna 5
+    asincrono definisci __aexit__(self, exc_type, exc, tb):
+        ritorna Falso
+
+asincrono definisci compito_async_con():
+    asincrono con ContestoAsyncIt() come valore:
+        ritorna valore
+
+sia risultato_async = asyncio.run(raddoppia_async(5))
+sia risultato_async_per = asyncio.run(compito_async_per())
+sia risultato_async_con = asyncio.run(compito_async_con())
+
+stampa(bau_bits, pot_aug)
+stampa(lung_bytes)
+stampa(concat_stringa, idx_stringa, slice_stringa)
+stampa(elem_tupla_it, somma_iter)
+stampa(lista_doppia)
+stampa(result_stringa_m, result_nessuno, result_num_m, result_tupla_m)
+stampa(risultato_async, risultato_async_per, risultato_async_con)
