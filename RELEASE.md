@@ -1,5 +1,48 @@
 # Release Notes
 
+## v0.6.0 - 2026-03-09
+
+### WAT/WASM Backend — Full Construct Coverage
+
+This release completes the WAT/WASM backend with full support for all major Python-like language
+constructs, OOP patterns, and compatibility fixes across the code generator.
+
+#### OOP Object Model
+- Stateful classes use a linear-memory bump allocator in generated WAT; each `self.attr` field
+  is stored as `f64` at a compile-time byte offset.
+- `(global $__heap_ptr (mut i32) …)` is emitted only when stateful classes are present.
+- `self.attr` writes lower to `f64.store`; reads lower to `f64.load`; compound assignments
+  (`self.x += delta`) use a temporary local to avoid address recomputation.
+- External `obj.attr` reads lower to `f64.load` when the variable's class is statically known.
+- Instance method calls pass the actual heap address as `self` for stateful classes.
+
+#### Inheritance and Method Resolution
+- Subclass hierarchies are resolved at WAT-emit time; inherited methods dispatch to the correct
+  parent-class WAT export.
+
+#### New Control-Flow Constructs in WAT
+- `with` statement: context-manager blocks lower to WAT enter/exit call sequences.
+- `try/except`: structured exception-handling blocks compile to WAT `if/else` control flow.
+- `lambda`: anonymous functions lower to WAT functions with explicit argument forwarding.
+- `match/case`: structural pattern matching lowers to WAT `if/else` chains.
+- `async/await`: async functions and `await` lower to synchronous WAT equivalents.
+
+#### Property and Literals
+- `@property` setter/getter descriptors lower to distinct WAT getter/setter exports.
+- `b"..."` bytes literals stored in the WAT data section; referenced by pointer/length pairs.
+- `TupleLiteral` code generation now correctly wraps elements in parentheses.
+
+#### Architecture
+- WAT backend source reorganized into themed sub-modules (control flow, OOP, literals, builtins).
+- Updated builtin aliases for expanded localized coverage.
+
+#### Documentation and Tooling
+- `docs/wat_oop_model.md`: reference document for the WAT OOP object model design.
+- `AGENTS.md`: agent guidance for AI-assisted development workflows.
+
+#### Quality
+- All WAT backend correctness fixes from gap-filling and test stabilization applied.
+
 ## v0.5.1
 - Update documentation
 

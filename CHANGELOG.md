@@ -6,6 +6,8 @@ The format is inspired by Keep a Changelog, and this project follows SemVer.
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-03-09
+
 ### Added
 - **WAT/WASM OOP object model**: Stateful classes (those with `self.attr = …` assignments)
   now use a linear-memory bump allocator in generated WAT. Each field is an `f64` stored at
@@ -21,6 +23,27 @@ The format is inspired by Keep a Changelog, and this project follows SemVer.
 - **Stateful instance method calls**: Instance method calls (`obj.method(…)`) pass the actual
   heap address as `self` (as `f64`) for stateful classes; stateless classes keep the old
   `f64.const 0` behavior.
+- **Inheritance and method resolution in WAT/WASM**: Subclass hierarchies are now resolved
+  at WAT-emit time; inherited methods are dispatched to the correct parent-class WAT export.
+- **`with` statement lowering in WAT**: Context-manager blocks (`with expr as var`) lower to
+  WAT with enter/exit call sequences.
+- **`try/except` lowering in WAT**: Try-except blocks compile to WAT control-flow blocks,
+  providing structured exception handling in the WASM backend.
+- **`lambda` lowering in WAT**: Lambda expressions lower to anonymous WAT functions with
+  captured parameters forwarded as explicit arguments.
+- **`match/case` lowering in WAT**: Structural pattern-matching statements lower to WAT
+  `if/else` chains using equality comparisons.
+- **`async/await` lowering in WAT**: Async function definitions and `await` expressions lower
+  to synchronous WAT equivalents with stub scheduling hooks.
+- **`@property` setter/getter in WAT**: Property descriptors (`@property`, `@x.setter`) lower
+  to distinct WAT getter/setter exports following the established class-method mangling scheme.
+- **Bytes literals in WAT**: `b"..."` byte-string literals are stored in the WAT data section
+  and referenced by pointer/length pairs.
+- **WAT generation organized by themes**: The WAT backend code is now split into focused
+  modules by language construct theme (control flow, OOP, literals, builtins) for maintainability.
+- **`TupleLiteral` code generation fix**: Tuple literals now wrap generated elements in
+  parentheses, producing correctly parenthesized WAT output.
+- **Updated builtin aliases**: Expanded localized builtin alias coverage across supported languages.
 - **New WAT OOP tests** in `tests/wat_generator_test.py`:
   - `WATOopObjectModelTestSuite` — 6 WAT pattern tests (no wasmtime required).
   - 3 new execution tests in `WATClassWasmExecutionTestSuite`: single-field counter get,
@@ -28,11 +51,16 @@ The format is inspired by Keep a Changelog, and this project follows SemVer.
 - **`docs/wat_oop_model.md`**: Reference document covering the object model design, memory
   layout, field layout rules, constructor sequence, store/load patterns, limitations, and a
   full end-to-end WAT example.
+- **`AGENTS.md`**: Agent guidance document for AI-assisted development workflows in this repository.
 
 ### Changed
 - Stateless classes (no `self.attr` assignments) are unaffected and keep the `f64.const 0`
   self path — no existing tests are broken.
+- WAT backend source split into themed sub-modules for clarity and maintainability.
 
+### Fixed
+- `TupleLiteral` code generation now wraps output in parentheses (previously emitted bare elements).
+- Various WAT backend correctness fixes surfaced during gap-filling and test stabilization.
 
 ## v0.5.1
 - Update documentation
