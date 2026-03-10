@@ -1458,9 +1458,49 @@ async function runCode() {
 
     await pyodide.runPythonAsync(`
 from multilingualprogramming.codegen.executor import ProgramExecutor
+from multilingualprogramming.codegen.runtime_builtins import make_exec_globals
+import ast
+import contextlib
+import io
 
 _ALL_LANGS = ['en', 'fr', 'de', 'es', 'hi', 'ta', 'nl', 'pt', 'ar',
               'zh', 'ja', 'ru', 'sv', 'fi', 'it', 'da', 'la']
+
+class _AsyncioRunRewriter(ast.NodeTransformer):
+    def __init__(self):
+        self.changed = False
+
+    def visit_Call(self, node):
+        self.generic_visit(node)
+        if (
+            isinstance(node.func, ast.Attribute)
+            and isinstance(node.func.value, ast.Name)
+            and node.func.value.id == 'asyncio'
+            and node.func.attr == 'run'
+            and len(node.args) == 1
+            and not node.keywords
+        ):
+            self.changed = True
+            return ast.copy_location(ast.Await(value=node.args[0]), node)
+        return node
+
+async def _execute_with_top_level_await(_python_source, _language):
+    from pyodide.code import eval_code_async
+
+    _tree = ast.parse(_python_source, filename='<multilingual>', mode='exec')
+    _rewriter = _AsyncioRunRewriter()
+    _tree = _rewriter.visit(_tree)
+    ast.fix_missing_locations(_tree)
+    _stdout = io.StringIO()
+    _globals = make_exec_globals(_language)
+
+    with contextlib.redirect_stdout(_stdout):
+        if _rewriter.changed:
+            await eval_code_async(ast.unparse(_tree), globals=_globals)
+        else:
+            exec(compile(_python_source, '<multilingual>', 'exec'), _globals)
+
+    return _stdout.getvalue()
 
 _exec   = ProgramExecutor(language=_user_lang)
 _result = _exec.execute(_user_code)
@@ -1478,10 +1518,26 @@ if not _result.success and _result.errors and any('ParseError' in str(e) for e i
             _detected_lang = _try_lang
             break
 
-_out    = _result.output or ''
-_psrc   = _result.python_source or ''
-_errs   = '\\n'.join(_result.errors) if _result.errors else ''
-_ok     = _result.success
+_psrc = _result.python_source or ''
+if (
+    not _result.success
+    and _psrc
+    and _result.errors
+    and any('asyncio.run() cannot be called from a running event loop' in str(e)
+            for e in _result.errors)
+):
+    try:
+        _out = await _execute_with_top_level_await(_psrc, _detected_lang)
+        _errs = ''
+        _ok = True
+    except Exception as _async_exc:
+        _out = _result.output or ''
+        _errs = '\\n'.join(_result.errors + [f'{type(_async_exc).__name__}: {_async_exc}'])
+        _ok = False
+else:
+    _out = _result.output or ''
+    _errs = '\\n'.join(_result.errors) if _result.errors else ''
+    _ok = _result.success
 `);
 
     const out          = pyodide.globals.get('_out');
