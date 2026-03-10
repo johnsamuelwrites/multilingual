@@ -178,6 +178,7 @@ class WATFrontendTemplateTestSuite(unittest.TestCase):
         self.assertIn("createEnvHost", shim)
         self.assertIn("print_str", shim)
         self.assertIn("print_f64", shim)
+        self.assertIn("pow_f64", shim)
 
     def test_generate_renderer_template_contains_mode_dispatch(self):
         fn = _point_stream_fn()

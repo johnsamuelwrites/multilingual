@@ -1637,6 +1637,7 @@ async function runWat(watText) {
         wasmLines.push(printBuf.join(''));
         printBuf.length = 0;
       },
+      pow_f64: (base, exp) => Math.pow(base, exp),
     },
   };
 
