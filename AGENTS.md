@@ -120,7 +120,14 @@ multilingual/
 │   ├── codegen/
 │   │   ├── executor.py                 ← ProgramExecutor: full pipeline + exec()
 │   │   ├── python_generator.py         ← AST → Python source transpiler
-│   │   ├── wat_generator.py            ← AST → WebAssembly Text (WAT) generator
+│   │   ├── wat_generator.py            ← AST → WAT: top-level entry point
+│   │   ├── wat_generator_core.py       ← WAT: core state and helpers
+│   │   ├── wat_generator_expression.py ← WAT: expression lowering
+│   │   ├── wat_generator_loop.py       ← WAT: loop lowering (for/while)
+│   │   ├── wat_generator_manifest.py   ← WAT: manifest/ABI metadata
+│   │   ├── wat_generator_match.py      ← WAT: match/case lowering
+│   │   ├── wat_generator_oop.py        ← WAT: OOP / class lowering
+│   │   ├── wat_generator_support.py    ← WAT: shared support utilities
 │   │   ├── wasm_generator.py           ← WAT → WASM binary
 │   │   ├── runtime_builtins.py         ← RuntimeBuiltins + make_exec_globals()
 │   │   ├── repl.py                     ← interactive REPL
@@ -181,15 +188,14 @@ multilingual/
 │   ├── runtime/
 │   │   ├── backend_selector.py         ← WASM/Python auto-selector
 │   │   ├── python_fallbacks.py         ← 25+ pure Python fallback implementations
-│   │   ├── numeric_primitives.py       ← performance primitives
-│   │   └── tuple_abi.py                ← tuple ABI marshalling
+│   │   └── numeric_primitives.py       ← performance primitives
 │   │
 │   └── wasm/
 │       ├── loader.py                   ← WASM module loader
 │       ├── tuple_abi.py                ← tuple serialization
 │       └── tuple_memory.py             ← memory management
 │
-├── tests/                              ← 58 test files, ~19,848 lines
+├── tests/                              ← 67 test files, ~22,284 lines
 ├── examples/                           ← 33 .ml example files (17 languages)
 ├── docs/                               ← 29+ markdown files + French docs
 └── tools/                              ← development utilities
@@ -287,8 +293,6 @@ registry = KeywordRegistry.get_instance()
 ### SemanticAnalyzer (`parser/semantic_analyzer.py`)
 
 - Builds symbol table, checks scope, does basic type analysis.
-- **Fixed (Mar 2026)**: plain assignments (`x = 5`) now correctly define the variable in scope
-  rather than triggering a false `UNDEFINED_NAME` error. Applies to all languages.
 - **Builtins scope**: `executor.py` pre-seeds a *parent* builtins scope (not the global scope),
   so user variables that shadow a builtin alias do not trigger `DUPLICATE_DEFINITION`.
 - Use `check_semantics=False` in tests that need to isolate parser/codegen from analysis.
@@ -566,9 +570,9 @@ CI gates before merge: `pythonpackage`, `pylint`, `package-artifacts`, `compatib
 ### Test Suite Overview
 
 - **Location**: `tests/`
-- **Files**: 58 test files, ~19,848 lines of test code
+- **Files**: 67 test files, ~22,284 lines of test code
 - **Discovery**: `test_*.py` and `*_test.py`
-- **Total tests**: ~1,797 (2 skipped — require `rustc wasm32` target)
+- **Total tests**: ~1,926 (2 skipped — require `rustc wasm32` target)
 
 ### Running Tests
 
@@ -606,11 +610,17 @@ python -m pytest -k "inheritance" tests/  # tests with "inheritance" in name
 | `executor_test.py` | Full pipeline: source → execution |
 | `runtime_builtins_test.py` | Builtin aliases (longueur→len, etc.) |
 | `wat_generator_test.py` | AST → WAT, includes OOP and inheritance tests |
+| `wat_generator_wasm_execution_test.py` | WASM execution validation for WAT generator output |
+| `wat_generator_manifest_test.py` | WAT manifest/ABI metadata generation |
+| `wat_generator_string_lambda_test.py` | String operations and lambda lowering in WAT |
+| `wat_oop_dispatch_test.py` | WAT OOP dynamic dispatch and type-tag tests |
 | `wasm_corpus_test.py` | 20 multilingual corpus projects (end-to-end) |
 | `complete_features_wat_test.py` | Full WAT feature coverage across 17 languages |
 | `complete_features_wasm_execution_test.py` | Executable WASM validation |
 | `frontend_equivalence_test.py` | All 17 frontends produce equivalent output |
 | `semantic_analyzer_test.py` | Scope, symbol table, type checking |
+| `scope_closure_object_model_test.py` | Scope, closures, and object model integration |
+| `core_ir_test.py` | Core IR representation and lowering |
 | `surface_normalizer_test.py` | Surface normalization (Spanish, Japanese, Portuguese) |
 | `regression_fixes_test.py` | Regression guard for past bug fixes |
 
@@ -619,7 +629,7 @@ python -m pytest -k "inheritance" tests/  # tests with "inheritance" in name
 - Use `check_semantics=False` in tests that exercise parser/codegen in isolation, to bypass the
   pre-existing SemanticAnalyzer false-positive for top-level assignments in some languages.
 - WAT tests: use `has_stub_calls(wat_text)` to assert no stubs exist when testing lowerable code.
-- WASM execution tests are in `WATInheritanceWasmExecutionTestSuite` (3 exec tests).
+- WASM execution tests span multiple files: `WATInheritanceWasmExecutionTestSuite` (3 inheritance exec tests in `wat_generator_test.py`) and broader coverage in `wat_generator_wasm_execution_test.py`.
 
 ---
 
@@ -739,10 +749,9 @@ if has_stub_calls(wat):
 
 ### SemanticAnalyzer — Augmented Assignment on Undefined Variable
 
-Augmented assignment (`x += 1`) now correctly reports `UNDEFINED_NAME` when the target variable
-has not been previously defined. Plain assignment (`x = 1`) still implicitly defines the variable
-(Python semantics). The earlier false-positive for plain assignments in some languages (e.g.,
-French) was fixed in March 2026.
+Augmented assignment (`x += 1`) correctly reports `UNDEFINED_NAME` when the target variable has
+not been previously defined. Plain assignment (`x = 1`) implicitly defines the variable (Python
+semantics).
 
 ### Lexer INDENT/DEDENT Inside Brackets
 
@@ -832,4 +841,4 @@ via the `release-pypi.yml` GitHub Actions workflow.
 
 ---
 
-*Last updated: 2026-03-09. For changes after this date, check CHANGELOG.md and git log.*
+*Last updated: 2026-03-10. For changes after this date, check CHANGELOG.md and git log.*
