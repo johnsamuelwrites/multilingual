@@ -38,6 +38,7 @@ from multilingualprogramming.parser.ast_nodes import (
     GlobalStatement,
     LocalStatement,
     AssertStatement,
+    RaiseStatement,
     YieldStatement,
     IfStatement,
     WhileLoop,
@@ -62,6 +63,7 @@ from multilingualprogramming.parser.ast_nodes import (
     NamedExpr,
     ConditionalExpr,
     GeneratorExpr,
+    FStringLiteral,
     ImportStatement,
     FromImportStatement,
     ChainedAssignment,
@@ -570,6 +572,11 @@ class WATStatementTestSuite(unittest.TestCase):
         wat = self._wat(AssertStatement(BooleanLiteral(True)))
         self.assertIn("assert omitted in WAT best-effort mode", wat)
         self.assertNotIn("unsupported statement: AssertStatement", wat)
+
+    def test_raise_statement_is_best_effort_nop(self):
+        wat = self._wat(RaiseStatement(StringLiteral("boom")))
+        self.assertIn("raise omitted in WAT best-effort mode", wat)
+        self.assertNotIn("unsupported statement: RaiseStatement", wat)
 
     def test_expression_statement_non_print(self):
         """An expression statement calling a WAT function must be evaluated and dropped."""
@@ -1141,6 +1148,56 @@ class WATFunctionTestSuite(unittest.TestCase):
             )
         )
         self.assertIn("(local $tmp f64)", wat)
+
+    def test_function_returning_fstring_tracks_string_length(self):
+        wat = self._wat(
+            FunctionDef(
+                "format_tag",
+                [_param("a"), _param("b")],
+                [ReturnStatement(FStringLiteral([
+                    Identifier("a"),
+                    "-",
+                    Identifier("b"),
+                ]))],
+            ),
+            VariableDeclaration(
+                "formatted",
+                CallExpr(Identifier("format_tag"), [NumeralLiteral("7"), NumeralLiteral("3")]),
+            ),
+            ExpressionStatement(CallExpr(Identifier("print"), [Identifier("formatted")])),
+        )
+        self.assertIn("$__fmt_default_tmpstr", wat)
+        self.assertIn("$__str_concat", wat)
+        self.assertIn("formatted_strlen", wat)
+        self.assertNotIn("unsupported expr: FStringLiteral", wat)
+
+    def test_make_counter_style_closure_factory_is_lowered(self):
+        wat = self._wat(
+            FunctionDef(
+                "make_counter",
+                [_param("start")],
+                [
+                    VariableDeclaration("total", Identifier("start")),
+                    FunctionDef(
+                        "step",
+                        [],
+                        [
+                            LocalStatement(["total"]),
+                            Assignment(
+                                Identifier("total"),
+                                BinaryOp(Identifier("total"), "+", NumeralLiteral("1")),
+                            ),
+                            ReturnStatement(Identifier("total")),
+                        ],
+                    ),
+                    ReturnStatement(Identifier("step")),
+                ],
+            ),
+            VariableDeclaration("next_count", CallExpr(Identifier("make_counter"), [NumeralLiteral("5")])),
+            VariableDeclaration("first_step", CallExpr(Identifier("next_count"), [])),
+        )
+        self.assertIn("make_counter__step_closure", wat)
+        self.assertNotIn("unsupported call: next_count(...)", wat)
 
     def test_simple_generator_function_over_range_returns_sequence_pointer(self):
         wat = self._wat(

@@ -56,6 +56,7 @@ from multilingualprogramming.parser.ast_nodes import (
     BreakStatement,
     ContinueStatement,
     ReturnStatement,
+    RaiseStatement,
     DelStatement,
     GlobalStatement,
     LocalStatement,
@@ -222,6 +223,13 @@ class WATCodeGenerator(
         self._dispatch_func_names: dict[str, str] = {}
         # Functions known to return heap-backed sequence pointers.
         self._sequence_func_names: set[str] = set()
+        # Functions known to return string-like values with $__last_str_len metadata.
+        self._string_return_funcs: set[str] = set()
+        # Runtime string formatting helpers.
+        self._string_format_helpers_emitted: bool = False
+        # Narrow closure-factory support for returned nested functions with one captured cell.
+        self._closure_factory_funcs: dict[str, str] = {}
+        self._closure_locals: dict[str, str] = {}
 
     @property
     def property_getters(self):
@@ -284,6 +292,10 @@ class WATCodeGenerator(
         self._str_concat_helper_emitted = False
         self._str_slice_helper_emitted = False
         self._sequence_func_names = set()
+        self._string_return_funcs = set()
+        self._string_format_helpers_emitted = False
+        self._closure_factory_funcs = {}
+        self._closure_locals = {}
 
         if isinstance(program, CoreIRProgram):
             program = program.ast
@@ -301,6 +313,8 @@ class WATCodeGenerator(
             fname = _name(f.name)
             self._func_real_params[fname] = _real_params(f)
             self._func_render_modes[fname] = _extract_render_mode(f)
+            if self._returns_string_like(f):
+                self._string_return_funcs.add(fname)
         self._collect_class_lowering(classes)
         self._collect_import_aliases(top)
 
@@ -350,6 +364,7 @@ class WATCodeGenerator(
                  self._tuple_locals,
                  self._dict_key_maps,
                  self._lambda_locals,
+                 self._closure_locals,
                  self._open_aliases,
                  self._virtual_file_contents)
         self._instrs = []
@@ -361,6 +376,7 @@ class WATCodeGenerator(
         self._tuple_locals = set()
         self._dict_key_maps = {}
         self._lambda_locals = {}
+        self._closure_locals = {}
         self._open_aliases = {}
         self._virtual_file_contents = {}
         # _current_class is NOT reset here: _emit_class sets it before each method
@@ -1327,7 +1343,16 @@ class WATCodeGenerator(
 
     def _update_string_tracking(self, name: str, value, indent: str) -> None:
         """Refresh tracked string-length metadata after storing into *name*."""
-        if self._gen_string_len_expr(value, indent):
+        if isinstance(value, FStringLiteral) or (
+            isinstance(value, CallExpr) and _name(value.func) in self._string_return_funcs
+        ):
+            len_local = f"{name}_strlen"
+            self._locals.add(len_local)
+            self._emit(f"{indent}global.get $__last_str_len")
+            self._emit(f"{indent}f64.convert_i32_u")
+            self._emit(f"{indent}local.set ${self._wat_symbol(len_local)}")
+            self._string_len_locals[name] = len_local
+        elif self._gen_string_len_expr(value, indent):
             len_local = f"{name}_strlen"
             self._locals.add(len_local)
             self._emit(f"{indent}local.set ${self._wat_symbol(len_local)}")
@@ -1457,6 +1482,10 @@ class WATCodeGenerator(
                 self._lambda_locals[name] = self._lambda_table[-1]
         elif name in self._lambda_locals:
             del self._lambda_locals[name]
+        if isinstance(value, CallExpr) and _name(value.func) in self._closure_factory_funcs:
+            self._closure_locals[name] = self._closure_factory_funcs[_name(value.func)]
+        elif name in self._closure_locals:
+            del self._closure_locals[name]
         inferred_class = self._infer_class_name(value)
         if inferred_class:
             self._var_class_types[name] = inferred_class
@@ -1475,6 +1504,8 @@ class WATCodeGenerator(
             del self._dict_key_maps[name]
         if name in self._lambda_locals:
             del self._lambda_locals[name]
+        if name in self._closure_locals:
+            del self._closure_locals[name]
         if name in self._var_class_types:
             del self._var_class_types[name]
 
@@ -1502,6 +1533,272 @@ class WATCodeGenerator(
         if method != "read" or "r" not in mode:
             return None
         return self._virtual_file_contents.get(path, "")
+
+    def _emit_last_str_len_from_f64(self, indent: str) -> None:
+        """Convert a top-of-stack f64 length into $__last_str_len."""
+        self._emit(f"{indent}i32.trunc_f64_u")
+        self._emit(f"{indent}global.set $__last_str_len")
+
+    def _ensure_string_format_helpers(self):
+        """Emit scratch-buffer string formatting helpers once per module."""
+        if self._string_format_helpers_emitted:
+            return
+        self._string_format_helpers_emitted = True
+        mem_end = self._WASM_PAGES * 65536
+        scratch = mem_end - 64
+        fmt = scratch + 12
+        lines = [
+            "  (func $__fmt_default_tmpstr (param $v f64) (result i32 i32)",
+            "    (local $neg i32)",
+            "    (local $int_part i64)",
+            "    local.get $v",
+            "    f64.const 0",
+            "    f64.lt",
+            "    local.set $neg",
+            "    local.get $neg",
+            "    if",
+            "      local.get $v",
+            "      f64.neg",
+            "      local.set $v",
+            "    end",
+            "    local.get $v",
+            "    f64.trunc",
+            "    i64.trunc_f64_u",
+            "    local.set $int_part",
+            "    local.get $int_part",
+            "    call $__fmt_u64",
+            "    local.get $neg",
+            "    if (result i32 i32)",
+            "      local.set $ml_len",
+            "      local.set $ml_ptr",
+            "      local.get $ml_ptr",
+            "      i32.const 1",
+            "      i32.sub",
+            f"      i32.const 45",
+            "      i32.store8",
+            "      local.get $ml_ptr",
+            "      i32.const 1",
+            "      i32.sub",
+            "      local.get $ml_len",
+            "      i32.const 1",
+            "      i32.add",
+            "    end",
+            "  )",
+        ]
+        # Replace temp locals with declarations for valid WAT.
+        lines[0] = "  (func $__fmt_default_tmpstr (param $v f64) (result i32 i32)"
+        lines.insert(1, "    (local $ml_ptr i32)")
+        lines.insert(2, "    (local $ml_len i32)")
+        lines.insert(3, "    (local $neg i32)")
+        lines.insert(4, "    (local $int_part i64)")
+        lines = [
+            "  (func $__fmt_default_tmpstr (param $v f64) (result f64 f64)",
+            "    (local $ml_ptr i32)",
+            "    (local $ml_len i32)",
+            "    (local $neg i32)",
+            "    (local $int_part i64)",
+            "    local.get $v",
+            "    f64.const 0",
+            "    f64.lt",
+            "    local.set $neg",
+            "    local.get $neg",
+            "    if",
+            "      local.get $v",
+            "      f64.neg",
+            "      local.set $v",
+            "    end",
+            "    local.get $v",
+            "    f64.trunc",
+            "    i64.trunc_f64_u",
+            "    local.set $int_part",
+            "    local.get $int_part",
+            "    call $__fmt_u64",
+            "    local.set $ml_len",
+            "    local.set $ml_ptr",
+            "    local.get $neg",
+            "    if",
+            "      local.get $ml_ptr",
+            "      i32.const 1",
+            "      i32.sub",
+            "      i32.const 45",
+            "      i32.store8",
+            "      local.get $ml_ptr",
+            "      i32.const 1",
+            "      i32.sub",
+            "      local.set $ml_ptr",
+            "      local.get $ml_len",
+            "      i32.const 1",
+            "      i32.add",
+            "      local.set $ml_len",
+            "    end",
+            "    local.get $ml_ptr",
+            "    f64.convert_i32_u",
+            "    local.get $ml_len",
+            "    f64.convert_i32_u",
+            "  )",
+            "  (func $__fmt_fixed1_tmpstr (param $v f64) (result f64 f64)",
+            "    (local $int_part i64)",
+            "    (local $frac_digit i32)",
+            "    (local $ptr i32)",
+            "    (local $len i32)",
+            "    (local $neg i32)",
+            "    (local $copy_i i32)",
+            "    local.get $v",
+            "    f64.const 0",
+            "    f64.lt",
+            "    local.set $neg",
+            "    local.get $neg",
+            "    if",
+            "      local.get $v",
+            "      f64.neg",
+            "      local.set $v",
+            "    end",
+            "    local.get $v",
+            "    f64.trunc",
+            "    i64.trunc_f64_u",
+            "    local.set $int_part",
+            "    local.get $int_part",
+            "    call $__fmt_u64",
+            "    local.set $len",
+            "    local.set $ptr",
+            f"    i32.const {fmt}",
+            "    local.set $copy_i",
+            "    local.get $neg",
+            "    if",
+            "      local.get $copy_i",
+            "      i32.const 45",
+            "      i32.store8",
+            "      local.get $copy_i",
+            "      i32.const 1",
+            "      i32.add",
+            "      local.set $copy_i",
+            "    end",
+            "    block $copy_done",
+            "      loop $copy_lp",
+            "        local.get $len",
+            "        i32.eqz",
+            "        br_if $copy_done",
+            "        local.get $copy_i",
+            "        local.get $ptr",
+            "        i32.load8_u",
+            "        i32.store8",
+            "        local.get $copy_i",
+            "        i32.const 1",
+            "        i32.add",
+            "        local.set $copy_i",
+            "        local.get $ptr",
+            "        i32.const 1",
+            "        i32.add",
+            "        local.set $ptr",
+            "        local.get $len",
+            "        i32.const 1",
+            "        i32.sub",
+            "        local.set $len",
+            "        br $copy_lp",
+            "      end",
+            "    end",
+            "    local.get $copy_i",
+            "    i32.const 46",
+            "    i32.store8",
+            "    local.get $copy_i",
+            "    i32.const 1",
+            "    i32.add",
+            "    local.set $copy_i",
+            "    local.get $v",
+            "    local.get $v",
+            "    f64.trunc",
+            "    f64.sub",
+            "    f64.const 10",
+            "    f64.mul",
+            "    f64.nearest",
+            "    i32.trunc_f64_u",
+            "    local.set $frac_digit",
+            "    local.get $copy_i",
+            "    local.get $frac_digit",
+            "    i32.const 48",
+            "    i32.add",
+            "    i32.store8",
+            f"    i32.const {fmt}",
+            "    f64.convert_i32_u",
+            "    local.get $neg",
+            "    if (result f64)",
+            "      f64.const 4",
+            "    else",
+            "      f64.const 3",
+            "    end",
+            "  )",
+        ]
+        self._funcs.append("\n".join(lines))
+
+    def _emit_fstring_part_ptr_len(self, part, indent: str) -> bool:
+        """Emit ptr/len f64 pairs for a supported f-string part."""
+        if isinstance(part, str):
+            offset, length = self._intern(part)
+            self._emit(f"{indent}f64.const {float(offset)}")
+            self._emit(f"{indent}f64.const {float(length)}")
+            return True
+        format_spec = getattr(part, "fstring_format_spec", "")
+        if self._is_string_value(part):
+            self._gen_expr(part, indent)
+            self._gen_string_len_expr(part, indent)
+            return True
+        if format_spec not in ("", ".1f"):
+            return False
+        self._ensure_string_format_helpers()
+        label = self._new_label()
+        ptr_local = f"__fmt_ptr_{label}"
+        len_local = f"__fmt_len_{label}"
+        self._locals.update({ptr_local, len_local})
+        self._gen_expr(part, indent)
+        helper = "$__fmt_fixed1_tmpstr" if format_spec == ".1f" else "$__fmt_default_tmpstr"
+        self._emit(f"{indent}call {helper}")
+        self._emit(f"{indent}local.set ${self._wat_symbol(len_local)}")
+        self._emit(f"{indent}local.set ${self._wat_symbol(ptr_local)}")
+        self._emit(f"{indent}local.get ${self._wat_symbol(ptr_local)}")
+        self._emit(f"{indent}local.get ${self._wat_symbol(len_local)}")
+        return True
+
+    def _gen_fstring_expr(self, node: FStringLiteral, indent: str) -> bool:
+        """Lower a supported f-string by concatenating part ptr/len pairs."""
+        if not node.parts:
+            self._emit(f"{indent}f64.const 0")
+            self._emit(f"{indent}i32.const 0")
+            self._emit(f"{indent}global.set $__last_str_len")
+            return True
+        label = self._new_label()
+        ptr_local = f"__fstr_ptr_{label}"
+        len_local = f"__fstr_len_{label}"
+        part_ptr = f"__fstr_part_ptr_{label}"
+        part_len = f"__fstr_part_len_{label}"
+        self._locals.update({ptr_local, len_local, part_ptr, part_len})
+        self._ensure_str_concat_helper()
+        first = True
+        for part in node.parts:
+            if not self._emit_fstring_part_ptr_len(part, indent):
+                return False
+            self._emit(f"{indent}local.set ${self._wat_symbol(part_len)}")
+            self._emit(f"{indent}local.set ${self._wat_symbol(part_ptr)}")
+            if first:
+                self._emit(f"{indent}local.get ${self._wat_symbol(part_ptr)}")
+                self._emit(f"{indent}local.set ${self._wat_symbol(ptr_local)}")
+                self._emit(f"{indent}local.get ${self._wat_symbol(part_len)}")
+                self._emit(f"{indent}local.set ${self._wat_symbol(len_local)}")
+                first = False
+            else:
+                self._emit(f"{indent}local.get ${self._wat_symbol(ptr_local)}")
+                self._emit(f"{indent}local.get ${self._wat_symbol(len_local)}")
+                self._emit(f"{indent}local.get ${self._wat_symbol(part_ptr)}")
+                self._emit(f"{indent}local.get ${self._wat_symbol(part_len)}")
+                self._emit(f"{indent}call $__str_concat")
+                self._emit(f"{indent}local.set ${self._wat_symbol(ptr_local)}")
+                self._emit(f"{indent}local.get ${self._wat_symbol(len_local)}")
+                self._emit(f"{indent}local.get ${self._wat_symbol(part_len)}")
+                self._emit(f"{indent}f64.add")
+                self._emit(f"{indent}local.set ${self._wat_symbol(len_local)}")
+        self._emit(f"{indent}local.get ${self._wat_symbol(len_local)}")
+        self._emit_last_str_len_from_f64(indent)
+        self._emit(f"{indent}local.get ${self._wat_symbol(ptr_local)}")
+        return True
 
     def _is_sequence_expr(self, value) -> bool:
         """Return whether *value* is representable as a list/tuple pointer in WAT."""
@@ -1690,6 +1987,126 @@ class WATCodeGenerator(
             resolved_module = self._module_aliases.get(module_name, module_name)
             return f"{resolved_module}.{attr_name}"
         return fname
+
+    def _returns_string_like(self, func_def: FunctionDef) -> bool:
+        """Best-effort check for functions that return string-like values."""
+        def _stmt_returns_string(stmt):
+            if isinstance(stmt, ReturnStatement) and stmt.value is not None:
+                return self._is_string_value(stmt.value) or isinstance(stmt.value, FStringLiteral)
+            if isinstance(stmt, IfStatement):
+                else_body = stmt.else_body or []
+                return any(_stmt_returns_string(inner) for inner in stmt.body + else_body)
+            return False
+
+        return any(_stmt_returns_string(stmt) for stmt in func_def.body)
+
+    def _closure_factory_spec(self, func_def: FunctionDef):
+        """Return closure-factory lowering info for the supported make_counter-like shape."""
+        if len(func_def.body) != 3:
+            return None
+        init_stmt, nested_stmt, return_stmt = func_def.body
+        if not (
+            isinstance(init_stmt, VariableDeclaration)
+            and isinstance(nested_stmt, FunctionDef)
+            and isinstance(return_stmt, ReturnStatement)
+            and isinstance(return_stmt.value, Identifier)
+            and _name(nested_stmt.name) == return_stmt.value.name
+        ):
+            return None
+        if len(nested_stmt.body) != 3:
+            return None
+        nonlocal_stmt, assign_stmt, nested_return = nested_stmt.body
+        capture_name = _name(init_stmt.name)
+        if not (
+            isinstance(nonlocal_stmt, LocalStatement)
+            and capture_name in nonlocal_stmt.names
+            and isinstance(assign_stmt, Assignment)
+            and isinstance(assign_stmt.target, Identifier)
+            and assign_stmt.target.name == capture_name
+            and assign_stmt.op == "="
+            and isinstance(nested_return, ReturnStatement)
+            and isinstance(nested_return.value, Identifier)
+            and nested_return.value.name == capture_name
+        ):
+            return None
+        update_expr = assign_stmt.value
+        if not (
+            isinstance(update_expr, BinaryOp)
+            and update_expr.op == "+"
+            and isinstance(update_expr.left, Identifier)
+            and update_expr.left.name == capture_name
+            and isinstance(update_expr.right, NumeralLiteral)
+            and float(update_expr.right.value) == 1.0
+        ):
+            return None
+        return {
+            "outer_name": _name(func_def.name),
+            "nested_name": _name(nested_stmt.name),
+            "capture_name": capture_name,
+            "init_value": init_stmt.value,
+        }
+
+    def _emit_closure_factory_function(self, func_def: FunctionDef, emitted_name: str | None = None) -> bool:
+        """Lower a supported closure-factory function plus its nested helper."""
+        spec = self._closure_factory_spec(func_def)
+        if spec is None:
+            return False
+
+        outer_name = emitted_name or spec["outer_name"]
+        helper_name = f"{outer_name}__{spec['nested_name']}_closure"
+        self._closure_factory_funcs[outer_name] = helper_name
+
+        saved = self._save_func_state()
+        self._locals = {"env"}
+        self._emit("    ;; closure step: increment captured cell 0")
+        self._emit("    local.get $env")
+        self._emit("    i32.trunc_f64_u")
+        self._emit("    i32.const 8")
+        self._emit("    i32.add")
+        self._emit("    local.get $env")
+        self._emit("    i32.trunc_f64_u")
+        self._emit("    i32.const 8")
+        self._emit("    i32.add")
+        self._emit("    f64.load")
+        self._emit("    f64.const 1")
+        self._emit("    f64.add")
+        self._emit("    local.tee $env_val")
+        self._emit("    f64.store")
+        self._emit("    local.get $env_val")
+        self._emit("    return")
+        self._locals.add("env_val")
+        body_instrs = list(self._instrs)
+        lines = [f'  (func ${self._wat_symbol(helper_name)} (export "{helper_name}")']
+        lines.append("    (param $env f64)")
+        lines.append("    (result f64)")
+        lines.append("    (local $env_val f64)")
+        lines.extend(body_instrs)
+        lines.append("    f64.const 0  ;; implicit return")
+        lines.append("  )")
+        self._funcs.append("\n".join(lines))
+        self._restore_func_state(saved)
+
+        saved = self._save_func_state()
+        param_names = _real_params(func_def)
+        self._locals = set(param_names)
+        self._need_heap_ptr = True
+        self._gen_list_alloc(ListLiteral([spec["init_value"]]), "    ")
+        self._emit("    return")
+        body_instrs = list(self._instrs)
+        local_names = sorted(self._locals - set(param_names))
+        wat_func_name = self._wat_symbol(outer_name)
+        lines = [f'  (func ${wat_func_name} (export "{outer_name}")']
+        for param_name in param_names:
+            lines.append(f"    (param ${self._wat_symbol(param_name)} f64)")
+        lines.append("    (result f64)")
+        for local_name in local_names:
+            lines.append(f"    (local ${self._wat_symbol(local_name)} f64)")
+        lines.extend(body_instrs)
+        lines.append("    f64.const 0  ;; implicit return")
+        lines.append("  )")
+        self._funcs.append("\n".join(lines))
+        self._restore_func_state(saved)
+        return True
 
     def _gen_stmt(self, stmt, indent: str):  # noqa: C901  # pylint: disable=too-many-branches,too-many-statements,too-many-locals
         if isinstance(stmt, VariableDeclaration):
@@ -1899,6 +2316,12 @@ class WATCodeGenerator(
                         self._gen_call_args(expr, indent, lowered, skip_params=1)
                     self._emit(f"{indent}call ${self._wat_symbol(lowered)}")
                     self._emit(f"{indent}drop")
+                elif fname in self._closure_locals:
+                    helper = self._closure_locals[fname]
+                    self._emit(f"{indent};; call closure {fname}(...)")
+                    self._emit(f"{indent}local.get ${self._wat_symbol(fname)}")
+                    self._emit(f"{indent}call ${self._wat_symbol(helper)}")
+                    self._emit(f"{indent}drop")
                 elif fname in self._lambda_locals:
                     # Indirect call through lambda table (statement context — result dropped).
                     lam_fn = self._lambda_locals[fname]
@@ -2006,6 +2429,9 @@ class WATCodeGenerator(
         elif isinstance(stmt, AssertStatement):
             self._emit(f"{indent};; assert omitted in WAT best-effort mode")
 
+        elif isinstance(stmt, RaiseStatement):
+            self._emit(f"{indent};; raise omitted in WAT best-effort mode")
+
         elif isinstance(stmt, TryStatement):
             # Best-effort: WASM MVP has no native exception handling.
             # Execute the try body unconditionally; skip except handlers.
@@ -2090,6 +2516,18 @@ class WATCodeGenerator(
                 self._emit(f"{indent}i32.const {offset}   ;; str ptr")
                 self._emit(f"{indent}i32.const {length}   ;; str len")
                 self._emit(f"{indent}call $print_str")
+            elif isinstance(arg, FStringLiteral):
+                if self._gen_fstring_expr(arg, indent):
+                    tmp_len = f"__print_fstr_len_{self._new_label()}"
+                    self._locals.add(tmp_len)
+                    self._emit(f"{indent}global.get $__last_str_len")
+                    self._emit(f"{indent}local.set ${self._wat_symbol(tmp_len)}")
+                    self._emit(f"{indent}i32.trunc_f64_u")
+                    self._emit(f"{indent}local.get ${self._wat_symbol(tmp_len)}")
+                    self._emit(f"{indent}call $print_str")
+                else:
+                    self._emit(f"{indent}f64.const 0")
+                    self._emit(f"{indent}call $print_f64")
             elif isinstance(arg, BooleanLiteral):
                 self._emit(f"{indent}i32.const {1 if arg.value else 0}")
                 self._emit(f"{indent}call $print_bool")
@@ -2104,6 +2542,15 @@ class WATCodeGenerator(
                 self._emit_print_sequence(arg.name, "(", ")", indent)
             elif isinstance(arg, Identifier) and arg.name in self._list_locals:
                 self._emit_print_sequence(arg.name, "[", "]", indent)
+            elif isinstance(arg, CallExpr) and _name(arg.func) in self._string_return_funcs:
+                tmp_len = f"__print_call_len_{self._new_label()}"
+                self._locals.add(tmp_len)
+                self._gen_expr(arg, indent)
+                self._emit(f"{indent}global.get $__last_str_len")
+                self._emit(f"{indent}local.set ${self._wat_symbol(tmp_len)}")
+                self._emit(f"{indent}i32.trunc_f64_u")
+                self._emit(f"{indent}local.get ${self._wat_symbol(tmp_len)}")
+                self._emit(f"{indent}call $print_str")
             else:
                 self._gen_expr(arg, indent)
                 self._emit(f"{indent}call $print_f64")
@@ -2208,16 +2655,21 @@ class WATCodeGenerator(
 
         elif isinstance(node, StringLiteral):
             # Strings are not first-class f64 values — emit 0 as placeholder
-            offset, _ = self._intern(node.value)
+            offset, byte_len = self._intern(node.value)
             self._emit(f"{indent}f64.const {float(offset)}  ;; str offset (not a numeric value)")
+            self._emit(f"{indent}i32.const {byte_len}")
+            self._emit(f"{indent}global.set $__last_str_len")
 
         elif isinstance(node, CallExpr) and self._virtual_file_read_content(node) is not None:
             content = self._virtual_file_read_content(node)
-            offset, _ = self._intern(content)
+            offset, byte_len = self._intern(content)
             self._emit(f"{indent}f64.const {float(offset)}  ;; virtual file read")
+            self._emit(f"{indent}i32.const {byte_len}")
+            self._emit(f"{indent}global.set $__last_str_len")
 
         elif isinstance(node, FStringLiteral):
-            self._emit(f"{indent}f64.const 0  ;; unsupported expr: FStringLiteral")
+            if not self._gen_fstring_expr(node, indent):
+                self._emit(f"{indent}f64.const 0  ;; unsupported expr: FStringLiteral")
 
         elif isinstance(node, BytesLiteral):
             # Bytes literals stored in linear memory just like strings
@@ -2231,6 +2683,10 @@ class WATCodeGenerator(
         elif isinstance(node, Identifier):
             if node.name in self._locals:
                 self._emit(f"{indent}local.get ${self._wat_symbol(node.name)}")
+                if node.name in self._string_len_locals:
+                    len_local = self._string_len_locals[node.name]
+                    self._emit(f"{indent}local.get ${self._wat_symbol(len_local)}")
+                    self._emit_last_str_len_from_f64(indent)
             else:
                 # Name not declared as a local — could be a closure, class, or
                 # module-level name that WAT cannot represent; emit 0 as placeholder.
@@ -2371,6 +2827,9 @@ class WATCodeGenerator(
                 # Known WAT function — emit args then call
                 self._gen_call_args(node, indent, fname)
                 self._emit(f"{indent}call ${self._wat_symbol(fname)}")
+                if fname in self._string_return_funcs:
+                    self._emit(f"{indent}global.get $__last_str_len")
+                    self._emit(f"{indent}drop")
             elif fname in self._class_ctor_names:
                 ctor = self._class_ctor_names[fname]
                 if self._is_stateful_class(fname):
@@ -2388,6 +2847,10 @@ class WATCodeGenerator(
                 else:
                     self._gen_call_args(node, indent, lowered)
                 self._emit(f"{indent}call ${self._wat_symbol(lowered)}")
+            elif fname in self._closure_locals:
+                helper = self._closure_locals[fname]
+                self._emit(f"{indent}local.get ${self._wat_symbol(fname)}")
+                self._emit(f"{indent}call ${self._wat_symbol(helper)}")
             elif fname == "cls" and self._current_class in self._class_ctor_names:
                 ctor = self._class_ctor_names[self._current_class]
                 if self._is_stateful_class(self._current_class):

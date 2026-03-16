@@ -245,6 +245,7 @@ class WATGeneratorOOPMixin:  # pylint: disable=too-many-instance-attributes,too-
          self._tuple_locals,
          self._dict_key_maps,
          self._lambda_locals,
+         self._closure_locals,
          self._open_aliases,
          self._virtual_file_contents) = saved
 
@@ -278,6 +279,8 @@ class WATGeneratorOOPMixin:  # pylint: disable=too-many-instance-attributes,too-
 
     def _emit_function(self, func_def: FunctionDef, emitted_name: str | None = None) -> None:
         """Generate WAT for a user-defined function."""
+        if self._emit_closure_factory_function(func_def, emitted_name=emitted_name):
+            return
         if self._emit_simple_generator_function(func_def, emitted_name=emitted_name):
             return
 
