@@ -28,7 +28,6 @@ from multilingualprogramming.parser.ast_nodes import (
     WhileLoop,
     ForLoop,
     FunctionDef,
-    ClassDef,
     TryStatement,
     WithStatement,
     MatchStatement,
@@ -64,14 +63,15 @@ from multilingualprogramming.parser.ast_nodes import (
     ChainedAssignment,
 )
 from multilingualprogramming.numeral.mp_numeral import MPNumeral
-from multilingualprogramming.core.ir import CoreIRProgram
-
 from multilingualprogramming.codegen.wat_generator_core import WATGeneratorCoreMixin
 from multilingualprogramming.codegen.wat_generator_expression import WATGeneratorExpressionMixin
 from multilingualprogramming.codegen.wat_generator_loop import WATGeneratorLoopMixin
 from multilingualprogramming.codegen.wat_generator_manifest import WATGeneratorManifestMixin
 from multilingualprogramming.codegen.wat_generator_match import WATGeneratorMatchMixin
 from multilingualprogramming.codegen.wat_generator_oop import WATGeneratorOOPMixin
+from multilingualprogramming.codegen.wat_generator_orchestrator import (
+    WATGeneratorOrchestratorMixin,
+)
 from multilingualprogramming.codegen.wat_generator_sequence import WATGeneratorSequenceMixin
 from multilingualprogramming.codegen.wat_generator_support import (
     _ABS_NAMES,
@@ -95,12 +95,11 @@ from multilingualprogramming.codegen.wat_generator_support import (
     _SET_NAMES,
     _STR_NAMES,
     _ZIP_NAMES,
-    _extract_render_mode,
     _name,
-    _real_params,
 )
 
 class WATCodeGenerator(
+    WATGeneratorOrchestratorMixin,
     WATGeneratorCoreMixin,
     WATGeneratorExpressionMixin,
     WATGeneratorOOPMixin,
@@ -210,134 +209,6 @@ class WATCodeGenerator(
     def class_obj_sizes(self):
         """Read-only view of computed object sizes in bytes."""
         return MappingProxyType(self._class_obj_sizes)
-
-    def generate(self, program, *, wasm_target: str = "browser") -> str:
-        """Generate a complete WAT module string from an AST node.
-
-        Args:
-            program: AST ``Program`` node or ``CoreIRProgram``.
-            wasm_target: ``"browser"`` (default) emits ``env`` DOM host imports
-                when DOM builtins are used.  ``"wasi"`` omits them so the module
-                can be loaded by wasmtime/WASI runtimes without a JS embedding.
-        """
-        self._wasm_target = wasm_target
-        self._reset_generation_state()
-
-        if isinstance(program, CoreIRProgram):
-            program = program.ast
-
-        funcs, classes, top = self._split_program_sections(program)
-        self._collect_function_metadata(funcs)
-        self._collect_class_lowering(classes)
-        self._collect_import_aliases(top)
-        self._emit_program_sections(funcs, classes, top)
-
-        return self._build_module()
-
-    def _reset_generation_state(self) -> None:
-        """Reset all mutable per-module generation state."""
-        self._instrs = []
-        self._locals = set()
-        self._label_count = 0
-        self._loop_stack = []
-        self._data = bytearray()
-        self._strings = {}
-        self._funcs = []
-        self._defined_func_names = set()
-        self._func_real_params = {}
-        self._func_render_modes = {}
-        self._class_ctor_names = {}
-        self._class_attr_call_names = {}
-        self._var_class_types = {}
-        self._wat_symbols = {}
-        self._used_wat_symbols = set()
-        self._class_direct_fields = {}
-        self._class_field_layouts = {}
-        self._class_obj_sizes = {}
-        self._current_class = None
-        self._class_bases = {}
-        self._string_len_locals = {}
-        self._list_locals = set()
-        self._tuple_locals = set()
-        self._dict_key_maps = {}
-        self._imported_call_aliases = {}
-        self._module_aliases = {}
-        self._open_aliases = {}
-        self._virtual_file_contents = {}
-        self._need_heap_ptr = False
-        self._uses_dom = False
-        self._lambda_table = []
-        self._lambda_locals = {}
-        self._str_concat_helper_emitted = False
-        self._str_slice_helper_emitted = False
-        self._sequence_func_names = set()
-        self._string_return_funcs = set()
-        self._string_format_helpers_emitted = False
-        self._closure_factory_funcs = {}
-        self._closure_locals = {}
-        self._try_stack = []
-
-    @staticmethod
-    def _split_program_sections(program) -> tuple[list, list, list]:
-        """Split a program body into functions, classes, and top-level statements."""
-        funcs = [stmt for stmt in program.body if isinstance(stmt, FunctionDef)]
-        classes = [stmt for stmt in program.body if isinstance(stmt, ClassDef)]
-        top = [
-            stmt for stmt in program.body
-            if not isinstance(stmt, (FunctionDef, ClassDef))
-        ]
-        return funcs, classes, top
-
-    def _collect_function_metadata(self, funcs: list[FunctionDef]) -> None:
-        """Collect callable metadata used by later WAT lowering."""
-        self._defined_func_names = {_name(func.name) for func in funcs}
-        for func in funcs:
-            fname = _name(func.name)
-            self._func_real_params[fname] = _real_params(func)
-            self._func_render_modes[fname] = _extract_render_mode(func)
-            if self._returns_string_like(func):
-                self._string_return_funcs.add(fname)
-
-    def _emit_program_sections(self, funcs: list, classes: list, top: list) -> None:
-        """Emit functions, classes, dispatch helpers, and optional main body."""
-        for func in funcs:
-            self._emit_function(func)
-        for cls in classes:
-            self._emit_class(cls)
-        self._emit_dispatch_functions()
-        if top:
-            self._emit_main(top)
-
-    def _gen_call_args(self, call_expr: CallExpr, indent: str, fname: str, skip_params: int = 0):
-        """Push argument values for a call to a known WAT function.
-
-        Resolves keyword arguments by matching them against the function's
-        real parameter list, so calls like ``f(x, b=y)`` push the correct
-        number of f64 values even when some parameters are keyword-only.
-        """
-        real_params = self._func_real_params.get(fname)
-        if real_params:
-            # Full-fidelity mapping: match each WAT param slot to its argument.
-            kwargs = dict(call_expr.keywords or [])
-            effective_params = real_params[skip_params:]
-            for i, pname in enumerate(effective_params):
-                if i < len(call_expr.args):
-                    self._gen_expr(call_expr.args[i], indent)
-                elif pname in kwargs:
-                    self._gen_expr(kwargs[pname], indent)
-                else:
-                    self._emit(f"{indent}f64.const 0  ;; missing arg: {pname}")
-        else:
-            # Fallback: just push positional args in order.
-            for arg in call_expr.args:
-                self._gen_expr(arg, indent)
-
-    def _save_func_state(self):
-        saved = self._capture_func_state()
-        self._reset_func_state()
-        # _current_class is NOT reset here: _emit_class sets it before each method
-        # and it must persist into the method body.
-        return saved
 
     def _gen_augmented_op(self, op: str, rhs_node, indent: str):
         """Emit the compound-assignment arithmetic.
@@ -1320,7 +1191,8 @@ class WATCodeGenerator(
                 self._gen_expr(node.func.obj, indent)
                 self._emit(f"{indent}i32.trunc_f64_u")     # hptr
                 self._emit(f"{indent}global.get $__last_str_len")  # hlen
-                self._gen_expr(needle_arg, indent)          # pushes needle f64 ptr + sets last_str_len
+                # Pushes the needle f64 ptr and refreshes $__last_str_len.
+                self._gen_expr(needle_arg, indent)
                 self._emit(f"{indent}i32.trunc_f64_u")     # nptr
                 self._emit(f"{indent}global.get $__last_str_len")  # nlen
                 self._emit(f"{indent}call $__str_find")

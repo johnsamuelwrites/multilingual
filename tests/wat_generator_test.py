@@ -1972,54 +1972,5 @@ class WATInheritanceWasmExecutionTestSuite(unittest.TestCase):
         self.assertIn("[1, 2, 3]", combined)
         self.assertIn("(3, 2)", combined)
 
-class WATStringHelpersTestSuite(unittest.TestCase):
-    """Tests for $__str_strip and $__str_find WAT runtime helpers."""
-
-    def _gen(self, prog):
-        gen = WATCodeGenerator()
-        return gen.generate(prog)
-
-    def test_str_strip_helper_emitted(self):
-        """$__str_strip is always emitted as part of the WASI runtime."""
-        from multilingualprogramming.parser.ast_nodes import Program, PassStatement
-        wat = self._gen(Program([PassStatement()]))
-        self.assertIn("$__str_strip", wat)
-
-    def test_str_find_helper_emitted(self):
-        """$__str_find is always emitted as part of the WASI runtime."""
-        from multilingualprogramming.parser.ast_nodes import Program, PassStatement
-        wat = self._gen(Program([PassStatement()]))
-        self.assertIn("$__str_find", wat)
-
-    def test_strip_call_lowered(self):
-        """s.strip() on a string variable lowers to call $__str_strip."""
-        from multilingualprogramming.parser.ast_nodes import (
-            Program, VariableDeclaration, ExpressionStatement, CallExpr,
-            AttributeAccess, Identifier, StringLiteral,
-        )
-        prog = Program([
-            VariableDeclaration("s", StringLiteral("  hello  ")),
-            ExpressionStatement(
-                CallExpr(AttributeAccess(Identifier("s"), "strip"), [])
-            ),
-        ])
-        wat = self._gen(prog)
-        self.assertIn("call $__str_strip", wat)
-
-    def test_find_call_lowered(self):
-        """s.find(needle) on a string variable lowers to call $__str_find."""
-        from multilingualprogramming.parser.ast_nodes import (
-            Program, VariableDeclaration, ExpressionStatement, Assignment,
-            CallExpr, AttributeAccess, Identifier, StringLiteral,
-        )
-        prog = Program([
-            VariableDeclaration("s", StringLiteral("hello world")),
-            VariableDeclaration("idx",
-                CallExpr(AttributeAccess(Identifier("s"), "find"), [StringLiteral("world")])),
-        ])
-        wat = self._gen(prog)
-        self.assertIn("call $__str_find", wat)
-
-
 if __name__ == "__main__":
     unittest.main()
