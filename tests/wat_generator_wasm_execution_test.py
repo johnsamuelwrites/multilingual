@@ -707,5 +707,94 @@ class WATArgvTestSuite(unittest.TestCase):
         self.assertIn("ok", raw)
 
 
+class WATCrossFunctionExceptionTestSuite(unittest.TestCase):
+    """Verify that exceptions raised in callees propagate to caller try/except blocks."""
+
+    _wasmtime = importlib.util.find_spec("wasmtime")
+
+    def _run(self, prog):
+        import tempfile, os  # pylint: disable=import-outside-toplevel,redefined-outer-name
+        from wasmtime import Store, Module, Linker, WasiConfig  # pylint: disable=import-outside-toplevel
+        gen = WATCodeGenerator()
+        wat = gen.generate(prog)
+        with tempfile.NamedTemporaryFile(
+            suffix=".wat", delete=False, mode="w", encoding="utf-8"
+        ) as f:
+            f.write(wat)
+            wat_path = f.name
+        stdout_path = wat_path + ".out"
+        try:
+            store = Store()
+            cfg = WasiConfig()
+            cfg.stdout_file = stdout_path
+            store.set_wasi(cfg)
+            linker = Linker(store.engine)
+            linker.define_wasi()
+            module = Module.from_file(store.engine, wat_path)
+            inst = linker.instantiate(store, module)
+            inst.exports(store)["__main"](store)
+            with open(stdout_path, encoding="utf-8") as fh:
+                return fh.read()
+        finally:
+            os.unlink(wat_path)
+            if os.path.exists(stdout_path):
+                os.unlink(stdout_path)
+
+    @unittest.skipUnless(_wasmtime, "wasmtime not installed")
+    def test_callee_raise_caught_by_caller_catchall(self):
+        """A raise in a callee function is caught by the caller's except: block."""
+        raiser = FunctionDef(
+            name=Identifier("raiser"), params=[], body=[
+                RaiseStatement(Identifier("ValueError")),
+            ],
+        )
+        prog = _prog(
+            raiser,
+            TryStatement(
+                body=[ExpressionStatement(CallExpr(Identifier("raiser"), []))],
+                handlers=[ExceptHandler(exc_type=None, name=None, body=[
+                    ExpressionStatement(CallExpr(Identifier("print"), [StringLiteral("caught")])),
+                ])],
+                else_body=None,
+                finally_body=None,
+            ),
+        )
+        out = self._run(prog)
+        self.assertIn("caught", out)
+
+    @unittest.skipUnless(_wasmtime, "wasmtime not installed")
+    def test_caught_exception_clears_global(self):
+        """After catching a cross-function raise, the second try block is clean."""
+        raiser = FunctionDef(
+            name=Identifier("raiser"), params=[], body=[
+                RaiseStatement(Identifier("ValueError")),
+            ],
+        )
+        prog = _prog(
+            raiser,
+            VariableDeclaration("caught", NumeralLiteral("0")),
+            TryStatement(
+                body=[ExpressionStatement(CallExpr(Identifier("raiser"), []))],
+                handlers=[ExceptHandler(exc_type=None, name=None, body=[
+                    Assignment(Identifier("caught"),
+                               BinaryOp("+", Identifier("caught"), NumeralLiteral("1"))),
+                ])],
+                else_body=None, finally_body=None,
+            ),
+            TryStatement(
+                body=[ExpressionStatement(CallExpr(Identifier("print"), [StringLiteral("ok")]))],
+                handlers=[ExceptHandler(exc_type=None, name=None, body=[
+                    Assignment(Identifier("caught"),
+                               BinaryOp("+", Identifier("caught"), NumeralLiteral("1"))),
+                ])],
+                else_body=None, finally_body=None,
+            ),
+            ExpressionStatement(CallExpr(Identifier("print"), [Identifier("caught")])),
+        )
+        out = self._run(prog)
+        self.assertIn("ok", out)
+        self.assertIn("1", out)
+
+
 if __name__ == "__main__":
     unittest.main()

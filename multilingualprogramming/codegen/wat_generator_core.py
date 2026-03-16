@@ -42,7 +42,7 @@ class WATGeneratorCoreMixin:
     def _build_module(self) -> str:
         heap_base = max((len(self._data) + 7) // 8 * 8, 64)
         self._emit_wasi_runtime(heap_base)
-        if self._uses_dom:
+        if self._uses_dom and getattr(self, "_wasm_target", "browser") != "wasi":
             self._emit_dom_runtime()
         lines = ["(module"]
         lines += [
@@ -55,7 +55,7 @@ class WATGeneratorCoreMixin:
             '  (import "wasi_snapshot_preview1" "args_get"'
             ' (func $args_get (param i32 i32) (result i32)))',
         ]
-        if self._uses_dom:
+        if self._uses_dom and getattr(self, "_wasm_target", "browser") != "wasi":
             from multilingualprogramming.codegen.wat_generator_support import (  # pylint: disable=import-outside-toplevel
                 _DOM_HOST_SIGNATURES,
             )
@@ -1032,6 +1032,181 @@ class WATGeneratorCoreMixin:
     global.set $__last_str_len
     i32.const {input_buf}
     f64.convert_i32_u
+  )
+  ;; Strip leading and trailing ASCII whitespace (space/tab/CR/LF) from a string.
+  ;; Params: $ptr i32, $len i32 (via $__last_str_len on entry).
+  ;; Returns f64 = new ptr (i32 as f64); $__last_str_len set to new length.
+  ;; The result points into the original linear-memory slice (no copy).
+  (func $__str_strip (param $ptr i32) (param $len i32) (result f64)
+    (local $end i32)
+    (local $b i32)
+    local.get $ptr
+    local.get $len
+    i32.add
+    local.set $end
+    ;; skip leading whitespace
+    block $ldone
+      loop $ltrim
+        local.get $ptr
+        local.get $end
+        i32.ge_u
+        br_if $ldone
+        local.get $ptr
+        i32.load8_u
+        local.set $b
+        local.get $b
+        i32.const 32
+        i32.eq
+        local.get $b
+        i32.const 9
+        i32.eq
+        i32.or
+        local.get $b
+        i32.const 13
+        i32.eq
+        i32.or
+        local.get $b
+        i32.const 10
+        i32.eq
+        i32.or
+        i32.eqz
+        br_if $ldone
+        local.get $ptr
+        i32.const 1
+        i32.add
+        local.set $ptr
+        br $ltrim
+      end
+    end
+    ;; skip trailing whitespace
+    block $rdone
+      loop $rtrim
+        local.get $end
+        local.get $ptr
+        i32.le_u
+        br_if $rdone
+        local.get $end
+        i32.const 1
+        i32.sub
+        i32.load8_u
+        local.set $b
+        local.get $b
+        i32.const 32
+        i32.eq
+        local.get $b
+        i32.const 9
+        i32.eq
+        i32.or
+        local.get $b
+        i32.const 13
+        i32.eq
+        i32.or
+        local.get $b
+        i32.const 10
+        i32.eq
+        i32.or
+        i32.eqz
+        br_if $rdone
+        local.get $end
+        i32.const 1
+        i32.sub
+        local.set $end
+        br $rtrim
+      end
+    end
+    local.get $end
+    local.get $ptr
+    i32.sub
+    global.set $__last_str_len
+    local.get $ptr
+    f64.convert_i32_u
+  )
+  ;; Find needle in haystack, returning start index as f64 (-1.0 if not found).
+  ;; Params (all i32): $hptr, $hlen = haystack ptr+len; $nptr, $nlen = needle ptr+len.
+  ;; The needle ptr+len are passed as i32 (caller converts from f64).
+  (func $__str_find
+    (param $hptr i32) (param $hlen i32)
+    (param $nptr i32) (param $nlen i32)
+    (result f64)
+    (local $i i32)
+    (local $j i32)
+    (local $match i32)
+    (local $limit i32)
+    ;; edge: empty needle always found at 0
+    local.get $nlen
+    i32.const 0
+    i32.le_s
+    if
+      f64.const 0
+      return
+    end
+    ;; edge: needle longer than haystack → not found
+    local.get $hlen
+    local.get $nlen
+    i32.lt_s
+    if
+      f64.const -1
+      return
+    end
+    local.get $hlen
+    local.get $nlen
+    i32.sub
+    local.set $limit
+    i32.const 0
+    local.set $i
+    block $found
+      loop $outer
+        local.get $i
+        local.get $limit
+        i32.gt_s
+        br_if $found
+        i32.const 1
+        local.set $match
+        i32.const 0
+        local.set $j
+        block $mismatch
+          loop $inner
+            local.get $j
+            local.get $nlen
+            i32.ge_s
+            br_if $mismatch
+            local.get $hptr
+            local.get $i
+            i32.add
+            local.get $j
+            i32.add
+            i32.load8_u
+            local.get $nptr
+            local.get $j
+            i32.add
+            i32.load8_u
+            i32.ne
+            if
+              i32.const 0
+              local.set $match
+              br $mismatch
+            end
+            local.get $j
+            i32.const 1
+            i32.add
+            local.set $j
+            br $inner
+          end
+        end
+        local.get $match
+        if
+          local.get $i
+          f64.convert_i32_s
+          return
+        end
+        local.get $i
+        i32.const 1
+        i32.add
+        local.set $i
+        br $outer
+      end
+    end
+    f64.const -1
   )
   ;; ── End WASI runtime ─────────────────────────────────────────────────────"""
         self._funcs.insert(0, runtime)

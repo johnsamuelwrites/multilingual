@@ -157,6 +157,11 @@ class WATCodeGenerator(
         self._need_heap_ptr: bool = False
         # True when any DOM builtin is used (triggers env host import emission).
         self._uses_dom: bool = False
+        # Target platform: "browser" emits env DOM imports; "wasi" skips them.
+        self._wasm_target: str = "browser"
+        # True while emitting a user-defined f64-returning function body.
+        # Used to decide between "f64.const 0; return" and "unreachable" on raise.
+        self._in_user_func: bool = False
         # Lambda table: ordered list of WAT func names registered for call_indirect.
         self._lambda_table: list[str] = []
         # Per-function: maps local var name -> lambda WAT func name (for call_indirect).
@@ -206,8 +211,16 @@ class WATCodeGenerator(
         """Read-only view of computed object sizes in bytes."""
         return MappingProxyType(self._class_obj_sizes)
 
-    def generate(self, program) -> str:
-        """Generate a complete WAT module string from an AST node."""
+    def generate(self, program, *, wasm_target: str = "browser") -> str:
+        """Generate a complete WAT module string from an AST node.
+
+        Args:
+            program: AST ``Program`` node or ``CoreIRProgram``.
+            wasm_target: ``"browser"`` (default) emits ``env`` DOM host imports
+                when DOM builtins are used.  ``"wasi"`` omits them so the module
+                can be loaded by wasmtime/WASI runtimes without a JS embedding.
+        """
+        self._wasm_target = wasm_target
         self._reset_generation_state()
 
         if isinstance(program, CoreIRProgram):
@@ -731,6 +744,30 @@ class WATCodeGenerator(
                     self._gen_expr(expr.func.obj, indent)
                     self._emit(f"{indent}call ${dispatch_fn}")
                     self._emit(f"{indent}drop")
+                elif (isinstance(expr.func, AttributeAccess)
+                      and expr.func.attr in ("strip", "lstrip", "rstrip")
+                      and not expr.args):
+                    # s.strip() statement context — result is discarded
+                    self._emit(f"{indent};; {expr.func.attr}() (result discarded)")
+                    self._gen_expr(expr.func.obj, indent)
+                    self._emit(f"{indent}i32.trunc_f64_u")
+                    self._emit(f"{indent}global.get $__last_str_len")
+                    self._emit(f"{indent}call $__str_strip")
+                    self._emit(f"{indent}drop")
+                elif (isinstance(expr.func, AttributeAccess)
+                      and expr.func.attr in ("find", "index")
+                      and len(expr.args) == 1):
+                    # s.find(needle) statement context — result is discarded
+                    needle_arg = expr.args[0]
+                    self._emit(f"{indent};; {expr.func.attr}(needle) (result discarded)")
+                    self._gen_expr(expr.func.obj, indent)
+                    self._emit(f"{indent}i32.trunc_f64_u")
+                    self._emit(f"{indent}global.get $__last_str_len")
+                    self._gen_expr(needle_arg, indent)
+                    self._emit(f"{indent}i32.trunc_f64_u")
+                    self._emit(f"{indent}global.get $__last_str_len")
+                    self._emit(f"{indent}call $__str_find")
+                    self._emit(f"{indent}drop")
                 else:
                     # Closure, constructor, builtin, or other non-WAT callable
                     self._emit(f"{indent};; unsupported call: {fname}(...) — not a WAT function")
@@ -801,7 +838,11 @@ class WATCodeGenerator(
             else:
                 self._emit(f"{indent}  i32.const 4")
                 self._emit(f"{indent}  global.set $__last_exc_code")
-                self._emit(f"{indent}  unreachable")
+                if getattr(self, "_in_user_func", False):
+                    self._emit(f"{indent}  f64.const 0  ;; propagate AssertionError")
+                    self._emit(f"{indent}  return")
+                else:
+                    self._emit(f"{indent}  unreachable")
             self._emit(f"{indent}end")
 
         elif isinstance(stmt, RaiseStatement):
@@ -815,7 +856,14 @@ class WATCodeGenerator(
                 code = self._exception_code_for(stmt.value)
                 self._emit(f"{indent}i32.const {code}")
                 self._emit(f"{indent}global.set $__last_exc_code")
-                self._emit(f"{indent}unreachable")
+                if getattr(self, "_in_user_func", False):
+                    # Inside a user function: return dummy f64.const 0 so the
+                    # caller's try/except can check $__last_exc_code (best-effort
+                    # cross-function propagation).
+                    self._emit(f"{indent}f64.const 0  ;; propagate exception to caller")
+                    self._emit(f"{indent}return")
+                else:
+                    self._emit(f"{indent}unreachable")
 
         elif isinstance(stmt, TryStatement):
             label = self._new_label()
@@ -832,6 +880,25 @@ class WATCodeGenerator(
             self._try_stack.append({"code_local": code_local, "label": end_label})
             self._gen_stmts(stmt.body, indent + "  ")
             self._try_stack.pop()
+            self._emit(f"{indent}end")
+
+            # Merge cross-function exception: if a callee set $__last_exc_code
+            # but this function's code_local is still 0, adopt the global code.
+            # Best-effort: does not short-circuit mid-body; only catches raises
+            # from the last call before the body exits cleanly.
+            self._emit(f"{indent};; merge cross-function exception (best-effort)")
+            self._emit(f"{indent}local.get ${self._wat_symbol(code_local)}")
+            self._emit(f"{indent}f64.const 0")
+            self._emit(f"{indent}f64.eq")
+            self._emit(f"{indent}if")
+            self._emit(f"{indent}  global.get $__last_exc_code")
+            self._emit(f"{indent}  i32.const 0")
+            self._emit(f"{indent}  i32.ne")
+            self._emit(f"{indent}  if")
+            self._emit(f"{indent}    global.get $__last_exc_code")
+            self._emit(f"{indent}    f64.convert_i32_u")
+            self._emit(f"{indent}    local.set ${self._wat_symbol(code_local)}")
+            self._emit(f"{indent}  end")
             self._emit(f"{indent}end")
 
             self._emit(f"{indent}f64.const 0")
@@ -859,6 +926,9 @@ class WATCodeGenerator(
                     self._emit(f"{indent}  local.set ${self._wat_symbol(handled_local)}")
                     self._emit(f"{indent}  f64.const 0")
                     self._emit(f"{indent}  local.set ${self._wat_symbol(code_local)}")
+                    # Clear the global so outer try blocks don't see a stale code.
+                    self._emit(f"{indent}  i32.const 0")
+                    self._emit(f"{indent}  global.set $__last_exc_code")
                     self._gen_stmts(handler.body, indent + "  ")
                     self._emit(f"{indent}end")
 
@@ -884,12 +954,20 @@ class WATCodeGenerator(
             if parent_ctx is not None:
                 self._emit(f"{indent}  local.get ${self._wat_symbol(code_local)}")
                 self._emit(f"{indent}  local.set ${self._wat_symbol(parent_ctx['code_local'])}")
+                # Also update global so the parent merge-check can see it.
+                self._emit(f"{indent}  local.get ${self._wat_symbol(code_local)}")
+                self._emit(f"{indent}  i32.trunc_f64_u")
+                self._emit(f"{indent}  global.set $__last_exc_code")
                 self._emit(f"{indent}  br ${parent_ctx['label']}")
             else:
                 self._emit(f"{indent}  local.get ${self._wat_symbol(code_local)}")
                 self._emit(f"{indent}  i32.trunc_f64_u")
                 self._emit(f"{indent}  global.set $__last_exc_code")
-                self._emit(f"{indent}  unreachable")
+                if getattr(self, "_in_user_func", False):
+                    self._emit(f"{indent}  f64.const 0  ;; propagate exception to caller")
+                    self._emit(f"{indent}  return")
+                else:
+                    self._emit(f"{indent}  unreachable")
             self._emit(f"{indent}end")
 
             if stmt.finally_body:
@@ -1218,6 +1296,34 @@ class WATCodeGenerator(
                     self._emit(
                         f"{indent}call_indirect (result f64)"
                     )
+            elif (isinstance(node.func, AttributeAccess)
+                  and node.func.attr in ("strip", "lstrip", "rstrip")
+                  and not node.args):
+                # s.strip() → $__str_strip(ptr, last_str_len)
+                self._emit(f"{indent};; {node.func.attr}()")
+                self._gen_expr(node.func.obj, indent)
+                self._emit(f"{indent}i32.trunc_f64_u")
+                self._emit(f"{indent}global.get $__last_str_len")
+                if node.func.attr == "lstrip":
+                    # lstrip: strip leading only — use strip and re-push length as-is
+                    # (best-effort: lstrip uses full strip because right boundary is fixed)
+                    pass
+                elif node.func.attr == "rstrip":
+                    pass
+                self._emit(f"{indent}call $__str_strip")
+            elif (isinstance(node.func, AttributeAccess)
+                  and node.func.attr in ("find", "index")
+                  and len(node.args) == 1):
+                # s.find(needle) → $__str_find(hptr, hlen, nptr, nlen) → f64 index
+                needle_arg = node.args[0]
+                self._emit(f"{indent};; {node.func.attr}(needle)")
+                self._gen_expr(node.func.obj, indent)
+                self._emit(f"{indent}i32.trunc_f64_u")     # hptr
+                self._emit(f"{indent}global.get $__last_str_len")  # hlen
+                self._gen_expr(needle_arg, indent)          # pushes needle f64 ptr + sets last_str_len
+                self._emit(f"{indent}i32.trunc_f64_u")     # nptr
+                self._emit(f"{indent}global.get $__last_str_len")  # nlen
+                self._emit(f"{indent}call $__str_find")
             elif (isinstance(node.func, AttributeAccess)
                   and isinstance(node.func.obj, Identifier)
                   and node.func.attr in self._dispatch_func_names):

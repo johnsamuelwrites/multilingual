@@ -277,6 +277,8 @@ class WATGeneratorOOPMixin:  # pylint: disable=too-many-instance-attributes,too-
             return
 
         saved = self._save_func_state()
+        prev_in_user_func = getattr(self, "_in_user_func", False)
+        self._in_user_func = True
 
         func_name = emitted_name or _name(func_def.name)
         param_names = _real_params(func_def)
@@ -287,6 +289,7 @@ class WATGeneratorOOPMixin:  # pylint: disable=too-many-instance-attributes,too-
         self._append_wat_function(func_name, param_names, body_instrs)
         if self._func_render_modes.get(func_name) in _STREAM_RENDER_MODES:
             self._funcs.append(self._build_stream_buffer_helpers(func_name))
+        self._in_user_func = prev_in_user_func
         self._restore_func_state(saved)
 
     def _emit_class(self, class_def: ClassDef) -> None:

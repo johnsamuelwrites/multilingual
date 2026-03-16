@@ -101,13 +101,19 @@ class BuildOrchestrator:  # pylint: disable=too-many-instance-attributes
             return None
         return wasmtime.wat2wasm(wat_source)
 
-    def build_from_program(self, program) -> BuildOutputs:
-        """Generate and atomically write all build artifacts from parsed Program."""
+    def build_from_program(self, program, *, wasm_target: str = "browser") -> BuildOutputs:
+        """Generate and atomically write all build artifacts from parsed Program.
+
+        Args:
+            program: Parsed AST ``Program``.
+            wasm_target: ``"browser"`` (default) or ``"wasi"``.  When ``"wasi"``,
+                DOM host imports are omitted so the module can run under wasmtime.
+        """
         self._acquire_lock()
         try:
             wat_generator = WATCodeGenerator()
             python_source = PythonCodeGenerator().generate(program)
-            wat_source = wat_generator.generate(program)
+            wat_source = wat_generator.generate(program, wasm_target=wasm_target)
             wasm_bytes = self._compile_wasm_bytes(wat_source)
             manifest = wat_generator.generate_abi_manifest(program)
             host_shim = wat_generator.generate_js_host_shim(manifest)

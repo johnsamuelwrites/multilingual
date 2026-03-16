@@ -419,12 +419,96 @@ niech i = 0
 dopoki i < 15:
     drukuj(fibonacci(i))
     i = i + 1`,
-      ar: sourceEl.value,
-      zh: sourceEl.value,
-      ja: sourceEl.value,
-      hi: sourceEl.value,
-      bn: sourceEl.value,
-      ta: sourceEl.value,
+      ar: `دالة fibonacci(n):
+    ليكن a = 0
+    ليكن b = 1
+    ليكن count = 0
+    طالما count < n:
+        ليكن temp = b
+        b = a + b
+        a = temp
+        count = count + 1
+    إرجاع a
+
+ليكن i = 0
+طالما i < 15:
+    طباعة(fibonacci(i))
+    i = i + 1`,
+      zh: `函数 fibonacci(n):
+    令 a = 0
+    令 b = 1
+    令 count = 0
+    当 count < n:
+        令 temp = b
+        b = a + b
+        a = temp
+        count = count + 1
+    返回 a
+
+令 i = 0
+当 i < 15:
+    打印(fibonacci(i))
+    i = i + 1`,
+      ja: `関数 fibonacci(n):
+    変数 a = 0
+    変数 b = 1
+    変数 count = 0
+    間 count < n:
+        変数 temp = b
+        b = a + b
+        a = temp
+        count = count + 1
+    戻る a
+
+変数 i = 0
+間 i < 15:
+    表示(fibonacci(i))
+    i = i + 1`,
+      hi: `परिभाषा fibonacci(n):
+    मान a = 0
+    मान b = 1
+    मान count = 0
+    जबतक count < n:
+        मान temp = b
+        b = a + b
+        a = temp
+        count = count + 1
+    वापसी a
+
+मान i = 0
+जबतक i < 15:
+    प्रिंट(fibonacci(i))
+    i = i + 1`,
+      bn: `সংজ্ঞা fibonacci(n):
+    ধরি a = 0
+    ধরি b = 1
+    ধরি count = 0
+    যতক্ষণ count < n:
+        ধরি temp = b
+        b = a + b
+        a = temp
+        count = count + 1
+    ফেরত a
+
+ধরি i = 0
+যতক্ষণ i < 15:
+    ছাপাও(fibonacci(i))
+    i = i + 1`,
+      ta: `வரையறு fibonacci(n):
+    இருக்கட்டும் a = 0
+    இருக்கட்டும் b = 1
+    இருக்கட்டும் count = 0
+    வரை count < n:
+        இருக்கட்டும் temp = b
+        b = a + b
+        a = temp
+        count = count + 1
+    திருப்பு a
+
+இருக்கட்டும் i = 0
+வரை i < 15:
+    அச்சிடு(fibonacci(i))
+    i = i + 1`,
     };
 
     langEl.addEventListener("change", () => {

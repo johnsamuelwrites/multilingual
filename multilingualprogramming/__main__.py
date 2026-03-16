@@ -209,8 +209,9 @@ def cmd_encoding_check_generated(args):
 def cmd_build_wasm_bundle(args):
     """Build deterministic browser-ready WAT/WASM artifact bundle."""
     program = _parse_program_from_file(args.file, args.lang)
+    wasm_target = getattr(args, "wasm_target", "browser")
     orchestrator = BuildOrchestrator(args.out_dir)
-    outputs = orchestrator.build_from_program(program)
+    outputs = orchestrator.build_from_program(program, wasm_target=wasm_target)
     print(f"[PASS] {outputs.transpiled_python}")
     print(f"[PASS] {outputs.wat}")
     if outputs.wasm.exists():
@@ -377,6 +378,13 @@ def main():  # pylint: disable=too-many-statements
     build_bundle_parser.add_argument(
         "--out-dir", default="build/wasm",
         help="Output directory for generated artifacts (default: build/wasm)",
+    )
+    build_bundle_parser.add_argument(
+        "--wasm-target", default="browser", choices=["browser", "wasi"],
+        help=(
+            "Compilation target: 'browser' (default) includes DOM host imports; "
+            "'wasi' omits them for native wasmtime/WASI execution."
+        ),
     )
 
     args = parser.parse_args()
