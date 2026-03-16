@@ -177,8 +177,12 @@ class WATExpressionTestSuite(unittest.TestCase):
                     [CallExpr(
                         Identifier("zip"),
                         [
-                            ListLiteral([NumeralLiteral("1"), NumeralLiteral("2"), NumeralLiteral("3")]),
-                            ListLiteral([NumeralLiteral("4"), NumeralLiteral("5"), NumeralLiteral("6")]),
+                            ListLiteral([
+                                NumeralLiteral("1"), NumeralLiteral("2"), NumeralLiteral("3"),
+                            ]),
+                            ListLiteral([
+                                NumeralLiteral("4"), NumeralLiteral("5"), NumeralLiteral("6"),
+                            ]),
                         ],
                     )],
                 ),
@@ -577,7 +581,12 @@ class WATStatementTestSuite(unittest.TestCase):
         wat = self._wat(
             TryStatement(
                 body=[RaiseStatement(CallExpr(Identifier("ValueError"), [StringLiteral("boom")]))],
-                handlers=[ExceptHandler(Identifier("ValueError"), body=[Assignment(Identifier("x"), NumeralLiteral("1"))])],
+                handlers=[
+                    ExceptHandler(
+                        Identifier("ValueError"),
+                        body=[Assignment(Identifier("x"), NumeralLiteral("1"))],
+                    )
+                ],
             )
         )
         self.assertIn("local.set $__exc_code_", wat)
@@ -589,7 +598,12 @@ class WATStatementTestSuite(unittest.TestCase):
             VariableDeclaration("x", NumeralLiteral("0")),
             TryStatement(
                 body=[Assignment(Identifier("x"), NumeralLiteral("7"))],
-                handlers=[ExceptHandler(Identifier("ValueError"), body=[Assignment(Identifier("x"), NumeralLiteral("-1"))])],
+                handlers=[
+                    ExceptHandler(
+                        Identifier("ValueError"),
+                        body=[Assignment(Identifier("x"), NumeralLiteral("-1"))],
+                    )
+                ],
                 else_body=[Assignment(Identifier("x"), NumeralLiteral("8"))],
             ),
         )
@@ -1212,7 +1226,10 @@ class WATFunctionTestSuite(unittest.TestCase):
                     ReturnStatement(Identifier("step")),
                 ],
             ),
-            VariableDeclaration("next_count", CallExpr(Identifier("make_counter"), [NumeralLiteral("5")])),
+            VariableDeclaration(
+                "next_count",
+                CallExpr(Identifier("make_counter"), [NumeralLiteral("5")]),
+            ),
             VariableDeclaration("first_step", CallExpr(Identifier("next_count"), [])),
         )
         self.assertIn("make_counter__step_closure", wat)
@@ -1245,7 +1262,12 @@ class WATFunctionTestSuite(unittest.TestCase):
             FunctionDef(
                 "delegating_gen",
                 [],
-                [YieldStatement(CallExpr(Identifier("range"), [NumeralLiteral("3")]), is_from=True)],
+                [
+                    YieldStatement(
+                        CallExpr(Identifier("range"), [NumeralLiteral("3")]),
+                        is_from=True,
+                    )
+                ],
             ),
             VariableDeclaration(
                 "delegated",
@@ -1611,7 +1633,10 @@ class WATOopObjectModelTestSuite(unittest.TestCase):
         )
         self.assertIn("f64.const 0  ;; implicit self", wat)
         # Stateless class: __main should not call $ml_alloc (no heap allocation for self)
-        main_body = wat.split('(func $__main')[1].split('\n  (func ')[0] if '(func $__main' in wat else ""
+        main_body = (
+            wat.split('(func $__main')[1].split('\n  (func ')[0]
+            if '(func $__main' in wat else ""
+        )
         self.assertNotIn("call $ml_alloc", main_body)
 
     def test_field_byte_offset_correct(self):

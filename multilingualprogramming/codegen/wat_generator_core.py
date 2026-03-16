@@ -52,7 +52,9 @@ class WATGeneratorCoreMixin:
         # $__heap_ptr is always declared: $ml_alloc references it unconditionally.
         lines.append(f'  (global $__heap_ptr (mut i32) (i32.const {heap_base}))')
         lines.append('  (global $__last_str_len (mut i32) (i32.const 0))')
-        lines.append('  (global $__last_exc_code (export "__last_exception_code") (mut i32) (i32.const 0))')
+        lines.append(
+            '  (global $__last_exc_code (export "__last_exception_code") (mut i32) (i32.const 0))'
+        )
         if self._lambda_table:
             n = len(self._lambda_table)
             lines.append(f'  (table {n} funcref)')

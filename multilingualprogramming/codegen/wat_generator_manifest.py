@@ -104,7 +104,7 @@ class WATGeneratorManifestMixin:
             },
         }
 
-    def generate_js_host_shim(self, manifest: dict) -> str:
+    def generate_js_host_shim(self, _manifest: dict) -> str:
         """Generate a JavaScript WASI shim for browser execution.
 
         The generated module only imports ``wasi_snapshot_preview1.fd_write``
