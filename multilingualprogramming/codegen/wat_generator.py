@@ -1270,6 +1270,9 @@ class WATCodeGenerator(
             self._emit(f"{indent}i32.const 1")
             return
         op, right = node.comparators[0]
+        if op in ("in", "not in"):
+            self._emit_membership_cmp(node.left, right, indent, negate=(op == "not in"))
+            return
         self._gen_expr(node.left, indent)
         self._gen_expr(right, indent)
         _cmp_wat = {
@@ -1279,6 +1282,32 @@ class WATCodeGenerator(
             "is": "f64.eq", "is not": "f64.ne",
         }
         self._emit(f"{indent}{_cmp_wat.get(op, 'f64.eq')}")
+
+    def _emit_membership_cmp(self, left, right, indent: str, negate: bool = False):
+        """Push i32 for ``left in right`` when *right* is a literal list/tuple."""
+        if isinstance(right, (ListLiteral, TupleLiteral)):
+            tmp_name = f"__in_left_{self._new_label()}"
+            self._locals.add(tmp_name)
+            self._gen_expr(left, indent)
+            self._emit(f"{indent}local.set ${self._wat_symbol(tmp_name)}")
+            if not right.elements:
+                self._emit(f"{indent}i32.const 0")
+            else:
+                for index, elem in enumerate(right.elements):
+                    self._emit(f"{indent}local.get ${self._wat_symbol(tmp_name)}")
+                    self._gen_expr(elem, indent)
+                    self._emit(f"{indent}f64.eq")
+                    if index:
+                        self._emit(f"{indent}i32.or")
+            if negate:
+                self._emit(f"{indent}i32.eqz")
+            return
+
+        self._gen_expr(left, indent)
+        self._gen_expr(right, indent)
+        self._emit(f"{indent}f64.eq")
+        if negate:
+            self._emit(f"{indent}i32.eqz")
 
     def _gen_cmp_from_binop(self, node: BinaryOp, indent: str):
         """Push i32 for a BinaryOp that is a comparison operator."""

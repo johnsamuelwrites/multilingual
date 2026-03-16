@@ -17,9 +17,12 @@ from multilingualprogramming.parser.ast_nodes import (
     BinaryOp,
     CallExpr,
     ClassDef,
+    CompareOp,
     ExpressionStatement,
     FunctionDef,
     Identifier,
+    IfStatement,
+    ListLiteral,
     NumeralLiteral,
     Parameter,
     Program,
@@ -36,6 +39,15 @@ def _prog(*stmts):
 def _param(name: str) -> Parameter:
     """Create a Parameter with an Identifier name."""
     return Parameter(Identifier(name))
+
+
+def _parse_source(source: str, language: str):
+    """Parse source text through the lexer/parser frontend for the given language."""
+    from multilingualprogramming.lexer.lexer import Lexer  # pylint: disable=import-outside-toplevel
+    from multilingualprogramming.parser.parser import Parser  # pylint: disable=import-outside-toplevel
+
+    tokens = Lexer(source, language=language).tokenize()
+    return Parser(tokens, source_language=language).parse()
 
 
 @unittest.skipUnless(
@@ -345,6 +357,151 @@ class WATClassWasmExecutionTestSuite(unittest.TestCase):
         )
         printed = self._run_main(prog)
         self.assertEqual(printed, [1.0, 2.0])
+
+
+@unittest.skipUnless(
+    importlib.util.find_spec("wasmtime") is not None,
+    "wasmtime is required for WAT execution tests",
+)
+class WATExpressionSemanticsWasmExecutionTestSuite(unittest.TestCase):
+    """Execute focused arithmetic and membership regressions via wasmtime."""
+
+    def setUp(self):
+        self.gen = WATCodeGenerator()
+
+    def _instantiate(self, prog):
+        import wasmtime  # pylint: disable=import-outside-toplevel,import-error
+
+        wat = self.gen.generate(prog)
+        engine = wasmtime.Engine()
+        wasm_bytes = wasmtime.wat2wasm(wat)
+        module = wasmtime.Module(engine, wasm_bytes)
+        store = wasmtime.Store(engine)
+        linker = wasmtime.Linker(engine)
+        linker.allow_shadowing = True
+
+        linker.define_func(
+            "env",
+            "print_str",
+            wasmtime.FuncType([wasmtime.ValType.i32(), wasmtime.ValType.i32()], []),
+            lambda _ptr, _length: None,
+        )
+        linker.define_func(
+            "env",
+            "print_f64",
+            wasmtime.FuncType([wasmtime.ValType.f64()], []),
+            lambda _value: None,
+        )
+        linker.define_func(
+            "env",
+            "print_bool",
+            wasmtime.FuncType([wasmtime.ValType.i32()], []),
+            lambda _value: None,
+        )
+        linker.define_func(
+            "env",
+            "print_sep",
+            wasmtime.FuncType([], []),
+            lambda: None,
+        )
+        linker.define_func(
+            "env",
+            "print_newline",
+            wasmtime.FuncType([], []),
+            lambda: None,
+        )
+        linker.define_func(
+            "env",
+            "pow_f64",
+            wasmtime.FuncType([wasmtime.ValType.f64(), wasmtime.ValType.f64()],
+                              [wasmtime.ValType.f64()]),
+            lambda base, exp: base ** exp,
+        )
+        instance = linker.instantiate(store, module)
+        return store, instance
+
+    def _call_export(self, prog, export_name, *args):
+        store, instance = self._instantiate(prog)
+        return instance.exports(store)[export_name](store, *args)
+
+    def test_bit_extract_expression_matches_expected_value(self):
+        prog = _prog(
+            FunctionDef(
+                "cellule_suivante",
+                [_param("numero_regle"), _param("gauche"), _param("centre"), _param("droite")],
+                [
+                    VariableDeclaration(
+                        "indice",
+                        BinaryOp(
+                            BinaryOp(
+                                BinaryOp(Identifier("gauche"), "*", NumeralLiteral("4")),
+                                "+",
+                                BinaryOp(Identifier("centre"), "*", NumeralLiteral("2")),
+                            ),
+                            "+",
+                            Identifier("droite"),
+                        ),
+                    ),
+                    ReturnStatement(
+                        BinaryOp(
+                            BinaryOp(Identifier("numero_regle"), ">>", Identifier("indice")),
+                            "&",
+                            NumeralLiteral("1"),
+                        )
+                    ),
+                ],
+            ),
+        )
+        self.assertEqual(self._call_export(prog, "cellule_suivante", 90.0, 1.0, 0.0, 1.0), 0.0)
+        self.assertEqual(self._call_export(prog, "cellule_suivante", 90.0, 1.0, 0.0, 0.0), 1.0)
+
+    def test_membership_branch_returns_expected_value(self):
+        prog = _prog(
+            FunctionDef(
+                "classe_wolfram",
+                [_param("numero_regle")],
+                [
+                    IfStatement(
+                        CompareOp(
+                            Identifier("numero_regle"),
+                            [(
+                                "in",
+                                ListLiteral(
+                                    [
+                                        NumeralLiteral("18"),
+                                        NumeralLiteral("22"),
+                                        NumeralLiteral("30"),
+                                        NumeralLiteral("45"),
+                                        NumeralLiteral("60"),
+                                        NumeralLiteral("90"),
+                                    ]
+                                ),
+                            )],
+                        ),
+                        [ReturnStatement(NumeralLiteral("3"))],
+                        else_body=[ReturnStatement(NumeralLiteral("2"))],
+                    )
+                ],
+            ),
+        )
+        self.assertEqual(self._call_export(prog, "classe_wolfram", 30.0), 3.0)
+        self.assertEqual(self._call_export(prog, "classe_wolfram", 73.0), 2.0)
+
+    def test_french_source_membership_and_bit_extract_compile_correctly(self):
+        prog = _parse_source(
+            "déf cellule_suivante(numero_regle, gauche, centre, droite):\n"
+            "    soit indice = gauche * 4 + centre * 2 + droite\n"
+            "    retour (numero_regle >> indice) & 1\n"
+            "\n"
+            "déf classe_wolfram(numero_regle):\n"
+            "    si numero_regle dans [18, 22, 30, 45, 60, 90]:\n"
+            "        retour 3\n"
+            "    sinon:\n"
+            "        retour 2\n",
+            language="fr",
+        )
+        self.assertEqual(self._call_export(prog, "cellule_suivante", 90.0, 1.0, 0.0, 1.0), 0.0)
+        self.assertEqual(self._call_export(prog, "classe_wolfram", 30.0), 3.0)
 
 
 if __name__ == "__main__":

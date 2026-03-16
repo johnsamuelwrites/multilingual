@@ -155,6 +155,18 @@ class WATExpressionTestSuite(unittest.TestCase):
         self.assertIn("call $pow_f64", wat)
         self.assertNotIn("not natively supported", wat)
 
+    def test_bitwise_and_expression(self):
+        """Bitwise AND must lower via i32 round-trip, not floating addition."""
+        wat = self._wat(BinaryOp(NumeralLiteral("6"), "&", NumeralLiteral("3")))
+        self.assertIn("i32.and", wat)
+        self.assertIn("f64.convert_i32_s", wat)
+
+    def test_shift_right_expression(self):
+        """Right shift must lower via i32.shr_s."""
+        wat = self._wat(BinaryOp(NumeralLiteral("90"), ">>", NumeralLiteral("5")))
+        self.assertIn("i32.shr_s", wat)
+        self.assertIn("f64.convert_i32_s", wat)
+
     def test_unary_neg(self):
         wat = self._wat(UnaryOp("-", NumeralLiteral("5")))
         self.assertIn("f64.neg", wat)
@@ -210,6 +222,18 @@ class WATExpressionTestSuite(unittest.TestCase):
         wat = self._wat(
             CompareOp(Identifier("x"), [("<", NumeralLiteral("5"))])
         )
+        self.assertIn("f64.convert_i32_s", wat)
+
+    def test_membership_list_literal_expression(self):
+        """Membership against a literal list must emit element equality checks."""
+        wat = self._wat(
+            CompareOp(
+                NumeralLiteral("30"),
+                [("in", ListLiteral([NumeralLiteral("18"), NumeralLiteral("30")]))],
+            )
+        )
+        self.assertIn("f64.eq", wat)
+        self.assertIn("i32.or", wat)
         self.assertIn("f64.convert_i32_s", wat)
 
     def test_boolean_op_and(self):

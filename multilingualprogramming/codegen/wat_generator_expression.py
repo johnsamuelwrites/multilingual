@@ -23,6 +23,12 @@ class WATGeneratorExpressionMixin:
             self._gen_cmp_from_binop(node, indent)
             self._emit(f"{indent}f64.convert_i32_s")
             return
+        if op in ("&", "|", "^"):
+            self._emit_bitwise_binop(node, indent)
+            return
+        if op in ("<<", ">>"):
+            self._emit_shift_binop(node, indent)
+            return
         if op == "%":
             self._emit_modulo_binop(node, indent)
             return
@@ -107,3 +113,21 @@ class WATGeneratorExpressionMixin:
         self._gen_expr(node.left, indent)
         self._gen_expr(node.right, indent)
         self._emit(f"{indent}{arith.get(node.op, 'f64.add')}  ;; op={node.op!r}")
+
+    def _emit_bitwise_binop(self, node: BinaryOp, indent: str):
+        instr = {"&": "i32.and", "|": "i32.or", "^": "i32.xor"}[node.op]
+        self._gen_expr(node.left, indent)
+        self._emit(f"{indent}i32.trunc_f64_s")
+        self._gen_expr(node.right, indent)
+        self._emit(f"{indent}i32.trunc_f64_s")
+        self._emit(f"{indent}{instr}")
+        self._emit(f"{indent}f64.convert_i32_s")
+
+    def _emit_shift_binop(self, node: BinaryOp, indent: str):
+        instr = {"<<": "i32.shl", ">>": "i32.shr_s"}[node.op]
+        self._gen_expr(node.left, indent)
+        self._emit(f"{indent}i32.trunc_f64_s")
+        self._gen_expr(node.right, indent)
+        self._emit(f"{indent}i32.trunc_f64_s")
+        self._emit(f"{indent}{instr}")
+        self._emit(f"{indent}f64.convert_i32_s")
