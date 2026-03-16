@@ -647,6 +647,149 @@ class WATGeneratorCoreMixin:
     i32.const 0
     global.set $__fl_s256
   )
+  ;; Return the byte length of the last string-valued function result.
+  ;; JS callers: invoke immediately after a string-returning export, then
+  ;; decode memory.buffer[ptr .. ptr+len] as UTF-8.
+  (func $__ml_str_len (export "__ml_str_len") (result i32)
+    global.get $__last_str_len
+  )
+  ;; Print a double-precision float always showing a decimal point.
+  ;; Integer values (v == trunc(v), |v| < 1e15) are printed as "N.0".
+  ;; Use this when the source literal was written as 1.0, 2.0, etc.
+  (func $print_f64_float (param $v f64)
+    (local $int_part i64)
+    (local $frac f64)
+    (local $frac_scaled i64)
+    (local $ptr i32)
+    (local $len i32)
+    local.get $v
+    local.get $v
+    f64.ne
+    if
+      i32.const {fmt}
+      i32.const 110
+      i32.store8
+      i32.const {fmt+1}
+      i32.const 97
+      i32.store8
+      i32.const {fmt+2}
+      i32.const 110
+      i32.store8
+      i32.const {fmt}
+      i32.const 3
+      call $__wasi_write
+      return
+    end
+    local.get $v
+    f64.const 0.0
+    f64.lt
+    if
+      i32.const {fmt}
+      i32.const 45
+      i32.store8
+      i32.const {fmt}
+      i32.const 1
+      call $__wasi_write
+      local.get $v
+      f64.neg
+      local.set $v
+    end
+    local.get $v
+    f64.const inf
+    f64.eq
+    if
+      i32.const {fmt}
+      i32.const 105
+      i32.store8
+      i32.const {fmt+1}
+      i32.const 110
+      i32.store8
+      i32.const {fmt+2}
+      i32.const 102
+      i32.store8
+      i32.const {fmt}
+      i32.const 3
+      call $__wasi_write
+      return
+    end
+    local.get $v
+    f64.trunc
+    local.get $v
+    f64.eq
+    local.get $v
+    f64.const 1000000000000000.0
+    f64.lt
+    i32.and
+    if
+      local.get $v
+      i64.trunc_f64_u
+      local.set $int_part
+      local.get $int_part
+      call $__fmt_u64
+      local.set $len
+      local.set $ptr
+      local.get $ptr
+      local.get $len
+      call $__wasi_write
+      i32.const {fmt}
+      i32.const 46
+      i32.store8
+      i32.const {fmt+1}
+      i32.const 48
+      i32.store8
+      i32.const {fmt}
+      i32.const 2
+      call $__wasi_write
+      return
+    end
+    local.get $v
+    f64.trunc
+    i64.trunc_f64_u
+    local.set $int_part
+    local.get $int_part
+    call $__fmt_u64
+    local.set $len
+    local.set $ptr
+    local.get $ptr
+    local.get $len
+    call $__wasi_write
+    i32.const {fmt}
+    i32.const 46
+    i32.store8
+    i32.const {fmt}
+    i32.const 1
+    call $__wasi_write
+    local.get $v
+    local.get $v
+    f64.trunc
+    f64.sub
+    local.set $frac
+    local.get $frac
+    f64.const 1000000.0
+    f64.mul
+    f64.nearest
+    i64.trunc_f64_u
+    local.set $frac_scaled
+    local.get $frac_scaled
+    i64.const 0
+    i64.eq
+    if
+      i32.const {fmt}
+      i32.const 48
+      i32.store8
+      i32.const {fmt}
+      i32.const 1
+      call $__wasi_write
+    else
+      local.get $frac_scaled
+      call $__fmt_frac6
+      local.set $len
+      local.set $ptr
+      local.get $ptr
+      local.get $len
+      call $__wasi_write
+    end
+  )
   ;; ── End WASI runtime ─────────────────────────────────────────────────────"""
         self._funcs.insert(0, runtime)
 

@@ -543,6 +543,30 @@ sys.path.insert(0, "/")
       return summary;
     }
 
+    // ── WAT → WASM via wabt.js (no Python wasmtime needed) ───────────────
+    let wabtModule = null;
+
+    async function loadWabt() {
+      if (wabtModule) return wabtModule;
+      // wabt is the WebAssembly Binary Toolkit compiled to JS/WASM.
+      // It handles the full WAT text format including multi-value returns,
+      // mutable globals, tables, and every feature this compiler generates.
+      const { default: WabtModule } = await import(
+        "https://cdn.jsdelivr.net/npm/wabt@1.0.36/index.js"
+      );
+      wabtModule = await WabtModule();
+      return wabtModule;
+    }
+
+    async function watToWasm(watText) {
+      const wabt = await loadWabt();
+      const mod = wabt.parseWat("input.wat", watText, {});
+      mod.validate();
+      const { buffer } = mod.toBinary({});
+      mod.destroy();
+      return new Uint8Array(buffer);
+    }
+
     async function compileAndRun(source, lang) {
       const py = await loadPyodide();
       statusEl.textContent = "Compiling …";
@@ -559,16 +583,9 @@ WATCodeGenerator().generate(prog)
       } catch (err) {
         throw new CompileError(formatPythonError(err.message ?? err));
       }
-      // wat2wasm via Pyodide's wasmtime if available
-      let wasmBytes;
-      try {
-        wasmBytes = py.runPython(`
-import wasmtime, js
-wasmtime.wat2wasm(${JSON.stringify(wat)})
-`).toJs();
-      } catch {
-        throw new Error("wasmtime not available in Pyodide — run build.py and use the pre-built app.wasm");
-      }
+      // Compile WAT → WASM using wabt.js (pure JS, no Python wasmtime needed).
+      statusEl.textContent = "Assembling …";
+      const wasmBytes = await watToWasm(wat);
       await runWasm(wasmBytes);
     }
 

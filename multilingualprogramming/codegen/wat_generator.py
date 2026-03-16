@@ -2644,6 +2644,10 @@ class WATCodeGenerator(
                 self._emit(f"{indent}i32.trunc_f64_u")
                 self._emit(f"{indent}local.get ${self._wat_symbol(tmp_len)}")
                 self._emit(f"{indent}call $print_str")
+            elif isinstance(arg, NumeralLiteral) and "." in arg.value:
+                # Float literal (e.g. 1.0, 3.14) — always print with decimal point.
+                self._gen_expr(arg, indent)
+                self._emit(f"{indent}call $print_f64_float")
             else:
                 self._gen_expr(arg, indent)
                 self._emit(f"{indent}call $print_f64")

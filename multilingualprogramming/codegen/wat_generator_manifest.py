@@ -38,10 +38,11 @@ class WATGeneratorManifestMixin:
             params = _real_params(func)
             fname = _name(func.name)
             render_mode = _extract_render_mode(func)
+            is_str_return = fname in getattr(self, "_string_return_funcs", set())
             export_entry = {
                 "name": fname,
                 "arg_types": ["f64"] * len(params),
-                "return_type": "f64",
+                "return_type": "str" if is_str_return else "f64",
                 "mode": render_mode,
             }
             if render_mode in _STREAM_RENDER_MODES:
@@ -152,6 +153,20 @@ class WATGeneratorManifestMixin:
             "  };",
             "  return { wasi_snapshot_preview1, memoryRef };",
             "}",
+            "",
+            "// Read a UTF-8 string returned by a string-valued export.",
+            "// Call immediately after the export; ptrF64 is its f64 return value.",
+            "// Example:",
+            "//   const ptrF64 = exports.greet(42);",
+            "//   const str = readStringResult(exports, ptrF64);",
+            "export function readStringResult(exports, ptrF64) {",
+            "  const ptr = Math.trunc(ptrF64);",
+            "  const len = exports.__ml_str_len ? exports.__ml_str_len() : 0;",
+            "  if (!exports.memory || len === 0) return '';",
+            "  return new TextDecoder('utf-8').decode(",
+            "    new Uint8Array(exports.memory.buffer, ptr, len)",
+            "  );",
+            "}",
         ]
         return "\n".join(lines)
 
@@ -175,7 +190,8 @@ class WATGeneratorManifestMixin:
             arg_types = entry.get("arg_types", [])
             ret = entry.get("return_type", "void")
             args_str = ", ".join(f"arg{i}: {t}" for i, t in enumerate(arg_types))
-            sig_lines.append(f"//   {name}({args_str}) -> {ret}")
+            note = "  // use readStringResult(exports, result)" if ret == "str" else ""
+            sig_lines.append(f"//   {name}({args_str}) -> {ret}{note}")
         sig_comment = "\n".join(sig_lines) if sig_lines else "//   (no exports)"
 
         lines = [
