@@ -66,6 +66,35 @@ class BuildOrchestratorTestSuite(unittest.TestCase):
         finally:
             shutil.rmtree(out)
 
+    def test_dom_demo_bundle_matches_browser_runtime_contract(self):
+        example = Path("examples") / "browser" / "dom_demo_en.ml"
+        program = _parse(example.read_text(encoding="utf-8"))
+        out = self._tmpdir("dom_demo_bundle")
+        try:
+            outputs = BuildOrchestrator(out).build_from_program(program)
+            wat = outputs.wat.read_text(encoding="utf-8")
+            shim = outputs.host_shim_js.read_text(encoding="utf-8")
+            renderer = outputs.renderer_template_js.read_text(encoding="utf-8")
+
+            self.assertIn('(import "env" "ml_dom_get"', wat)
+            self.assertIn('(import "env" "ml_dom_create"', wat)
+            self.assertIn('(import "env" "ml_dom_append"', wat)
+            self.assertIn("call $dom_get", wat)
+            self.assertIn("call $dom_style", wat)
+
+            self.assertIn("export function createDomImports", shim)
+            self.assertIn("ml_dom_get", shim)
+            self.assertIn("ml_dom_set_text", shim)
+            self.assertIn("ml_dom_create", shim)
+            self.assertIn("ml_dom_append", shim)
+            self.assertIn("ml_dom_style", shim)
+            self.assertIn("ml_dom_set_class", shim)
+
+            self.assertIn("export async function loadWasmBundle", renderer)
+            self.assertIn("new URL('module.wasm'", renderer)
+        finally:
+            shutil.rmtree(out)
+
 
 if __name__ == "__main__":
     unittest.main()

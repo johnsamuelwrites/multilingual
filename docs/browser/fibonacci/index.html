@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Multilingual WASM Demo - Fibonacci</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --panel: #151b23;
+      --panel-2: #0f141b;
+      --line: #2d3642;
+      --text: #e6edf3;
+      --muted: #97a6b5;
+      --accent: #ff7a18;
+      --accent-2: #ffd166;
+      --ok: #7ee787;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top right, rgba(255, 122, 24, 0.18), transparent 28%),
+        radial-gradient(circle at top left, rgba(255, 209, 102, 0.12), transparent 30%),
+        linear-gradient(180deg, #0c1016 0%, #111827 100%);
+      font-family: "Segoe UI", system-ui, sans-serif;
+      min-height: 100vh;
+    }
+
+    .shell {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 2rem 1rem 4rem;
+    }
+
+    .back {
+      color: var(--accent-2);
+      text-decoration: none;
+      font-size: 0.95rem;
+    }
+
+    .hero {
+      margin-top: 1rem;
+      background: rgba(21, 27, 35, 0.88);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      padding: 1.5rem;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2rem, 5vw, 3.6rem);
+    }
+
+    .lead {
+      color: var(--muted);
+      max-width: 62ch;
+      line-height: 1.65;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .card {
+      background: rgba(21, 27, 35, 0.88);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 1.2rem;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    textarea,
+    pre {
+      width: 100%;
+      margin: 0;
+      background: var(--panel-2);
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 0.9rem;
+      font: 0.92rem/1.55 Consolas, "Cascadia Mono", monospace;
+      white-space: pre-wrap;
+    }
+
+    textarea {
+      min-height: 320px;
+      resize: none;
+    }
+
+    button {
+      appearance: none;
+      border: 0;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: #1a1206;
+      font-weight: 800;
+      padding: 0.85rem 1.2rem;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: default;
+    }
+
+    .status {
+      color: var(--muted);
+      font-size: 0.92rem;
+      min-height: 1.2rem;
+      margin-top: 0.75rem;
+    }
+
+    .note {
+      color: var(--muted);
+      line-height: 1.6;
+      font-size: 0.95rem;
+    }
+
+    #output {
+      min-height: 280px;
+      color: var(--ok);
+    }
+
+    @media (max-width: 860px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <a class="back" href="../">← Back to browser demos</a>
+
+    <section class="hero">
+      <h1>Precompiled WASM: Fibonacci</h1>
+      <p class="lead">
+        This page runs a bundle built ahead of time from multilingual source.
+        The browser receives `module.wasm`, a generated host shim, and a tiny renderer layer.
+      </p>
+    </section>
+
+    <section class="grid">
+      <article class="card">
+        <label for="source">Source bundled into this page</label>
+        <textarea id="source" readonly spellcheck="false">def fibonacci(n):
+    let a = 0
+    let b = 1
+    let count = 0
+    while count &lt; n:
+        let temp = b
+        b = a + b
+        a = temp
+        count = count + 1
+    return a
+
+let i = 0
+while i &lt; 15:
+    print(fibonacci(i))
+    i = i + 1</textarea>
+      </article>
+
+      <article class="card">
+        <button id="runBtn">Run Prebuilt Bundle</button>
+        <div id="status" class="status">Ready to load `module.wasm`.</div>
+        <p class="note">
+          This demo is static on GitHub Pages. There is no in-browser compilation step here.
+        </p>
+        <label for="output">Program output</label>
+        <pre id="output">(press Run Prebuilt Bundle)</pre>
+      </article>
+    </section>
+  </main>
+
+  <script type="module">
+    import { loadBrowserBundle } from "./browser_runtime.js";
+
+    const runBtn = document.getElementById("runBtn");
+    const statusEl = document.getElementById("status");
+    const outputEl = document.getElementById("output");
+
+    let bundle = null;
+
+    runBtn.addEventListener("click", async () => {
+      runBtn.disabled = true;
+      statusEl.textContent = "Loading prebuilt module...";
+      try {
+        if (!bundle) {
+          bundle = await loadBrowserBundle({
+            baseUrl: "./",
+            outputElement: outputEl,
+          });
+        }
+        statusEl.textContent = "Running...";
+        bundle.runMain();
+        statusEl.textContent = "Completed.";
+      } catch (err) {
+        statusEl.textContent = "Failed.";
+        outputEl.textContent = `${err.message}\n\nThis page expects the prebuilt bundle files beside index.html.`;
+      } finally {
+        runBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

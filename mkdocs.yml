@@ -57,6 +57,7 @@ exclude_docs: |
 
 nav:
   - Home: index.md
+  - Demos: demos.md
   - Playground: playground.md
   - Guide FR: fr/programmation.md
   - Project:

@@ -185,6 +185,14 @@ class WATFrontendTemplateTestSuite(unittest.TestCase):
         self.assertIn("args_get", shim)
         self.assertIn("wasi_snapshot_preview1", shim)
 
+    def test_generate_js_host_shim_exports_dom_bridge(self):
+        manifest = WATCodeGenerator().generate_abi_manifest(_prog())
+        shim = WATCodeGenerator().generate_js_host_shim(manifest)
+        self.assertIn("export function createDomImports", shim)
+        self.assertIn("ml_dom_get", shim)
+        self.assertIn("ml_dom_set_text", shim)
+        self.assertIn("ml_dom_get_value", shim)
+
     def test_generate_renderer_template_contains_mode_dispatch(self):
         fn = _point_stream_fn()
         manifest = WATCodeGenerator().generate_abi_manifest(_prog(fn))

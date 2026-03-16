@@ -54,7 +54,6 @@ class WATGeneratorCoreMixin:
             ' (func $args_sizes_get (param i32 i32) (result i32)))',
             '  (import "wasi_snapshot_preview1" "args_get"'
             ' (func $args_get (param i32 i32) (result i32)))',
-            f'  (memory (export "memory") {self._WASM_PAGES})',
         ]
         if self._uses_dom:
             from multilingualprogramming.codegen.wat_generator_support import (  # pylint: disable=import-outside-toplevel
@@ -67,6 +66,7 @@ class WATGeneratorCoreMixin:
                     f'  (import "env" "{wat_name}"'
                     f' (func ${wat_name} {param_str}{ret_str}))'
                 )
+        lines.append(f'  (memory (export "memory") {self._WASM_PAGES})')
         if self._data:
             escaped = "".join(f"\\{b:02x}" for b in self._data)
             lines.append(f'  (data (i32.const 0) "{escaped}")')

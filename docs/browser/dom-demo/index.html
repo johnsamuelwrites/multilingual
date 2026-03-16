@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Multilingual WASM Demo - DOM Bridge</title>
+  <style>
+    :root {
+      --bg: #081417;
+      --panel: #102026;
+      --panel-2: #0a171c;
+      --line: #24414a;
+      --text: #edf7f5;
+      --muted: #9db9b4;
+      --accent: #43c59e;
+      --accent-2: #7ec8e3;
+      --ok: #b6ffce;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(67, 197, 158, 0.22), transparent 28%),
+        radial-gradient(circle at top right, rgba(126, 200, 227, 0.18), transparent 26%),
+        linear-gradient(180deg, #071114 0%, #0d1f24 100%);
+      font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+      min-height: 100vh;
+    }
+
+    .shell {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 2rem 1rem 4rem;
+    }
+
+    .back {
+      color: var(--accent-2);
+      text-decoration: none;
+      font-size: 0.95rem;
+    }
+
+    .hero,
+    .card {
+      background: rgba(16, 32, 38, 0.9);
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      padding: 1.3rem;
+    }
+
+    .hero {
+      margin-top: 1rem;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2rem, 5vw, 3.5rem);
+    }
+
+    .lead,
+    .muted {
+      color: var(--muted);
+      line-height: 1.65;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    textarea,
+    pre,
+    .panel {
+      width: 100%;
+      margin: 0;
+      background: var(--panel-2);
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 0.9rem;
+      font: 0.92rem/1.55 Consolas, "Cascadia Mono", monospace;
+      white-space: pre-wrap;
+    }
+
+    textarea {
+      min-height: 320px;
+      resize: none;
+    }
+
+    .panel {
+      min-height: 210px;
+      font-family: inherit;
+      white-space: normal;
+    }
+
+    button {
+      appearance: none;
+      border: 0;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: #06231b;
+      font-weight: 800;
+      padding: 0.85rem 1.2rem;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: default;
+    }
+
+    #dom-output {
+      min-height: 160px;
+      color: var(--ok);
+    }
+
+    .status {
+      color: var(--muted);
+      min-height: 1.2rem;
+      margin-top: 0.75rem;
+      font-size: 0.92rem;
+    }
+
+    .pill {
+      display: inline-block;
+      padding: 0.2rem 0.65rem;
+      border-radius: 999px;
+      background: rgba(67, 197, 158, 0.12);
+      color: var(--accent);
+      font-size: 0.78rem;
+      font-weight: 700;
+      margin-bottom: 0.7rem;
+    }
+
+    @media (max-width: 900px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <a class="back" href="../">← Back to browser demos</a>
+
+    <section class="hero">
+      <span class="pill">env.ml_dom_*</span>
+      <h1>Precompiled WASM: DOM Bridge</h1>
+      <p class="lead">
+        This program was compiled ahead of time to WebAssembly. The page uses JavaScript only
+        as a host bridge for DOM access while the program logic itself stays in multilingual source.
+      </p>
+    </section>
+
+    <section class="grid">
+      <article class="card">
+        <label for="source">Bundled source program</label>
+        <textarea id="source" readonly spellcheck="false">let panel = dom_get("ml-panel")
+dom_text(panel, "")
+
+let heading = dom_create("h3")
+dom_text(heading, "DOM Bridge Demo")
+dom_style(heading, "color", "#7ec8e3")
+dom_style(heading, "marginBottom", "0.5rem")
+dom_append(panel, heading)
+
+let body = dom_create("p")
+dom_text(body, "This content was created by Multilingual WASM running in your browser.")
+dom_style(body, "color", "#c9d1d9")
+dom_append(panel, body)
+
+let note = dom_create("p")
+dom_text(note, "The DOM bridge maps multilingual dom_get / dom_text / dom_create / dom_append / dom_style calls to real browser DOM APIs.")
+dom_style(note, "color", "#7ee787")
+dom_style(note, "fontFamily", "monospace")
+dom_style(note, "fontSize", "0.85rem")
+dom_append(panel, note)</textarea>
+      </article>
+
+      <article class="card">
+        <button id="runBtn">Run DOM Bundle</button>
+        <div id="status" class="status">Ready to load `module.wasm`.</div>
+        <p class="muted">
+          On this page the DOM bridge is prewired. No rebuild step is needed for the hosted demo.
+        </p>
+        <label for="ml-panel">Live DOM output</label>
+        <div id="ml-panel" class="panel">(press Run DOM Bundle)</div>
+      </article>
+    </section>
+
+    <section class="card" style="margin-top: 1rem;">
+      <label for="dom-output">WASM stdout</label>
+      <pre id="dom-output">(press Run DOM Bundle)</pre>
+    </section>
+  </main>
+
+  <script type="module">
+    import { loadBrowserBundle } from "./browser_runtime.js";
+    import { createDomImports } from "./host_shim.js";
+
+    const runBtn = document.getElementById("runBtn");
+    const statusEl = document.getElementById("status");
+    const outputEl = document.getElementById("dom-output");
+
+    let bundle = null;
+
+    runBtn.addEventListener("click", async () => {
+      runBtn.disabled = true;
+      statusEl.textContent = "Loading prebuilt module...";
+      try {
+        if (!bundle) {
+          bundle = await loadBrowserBundle({
+            baseUrl: "./",
+            outputElement: outputEl,
+            extraImportsFactory: (memRef) => createDomImports(memRef),
+          });
+        }
+        statusEl.textContent = "Running...";
+        bundle.runMain();
+        statusEl.textContent = "Completed.";
+      } catch (err) {
+        statusEl.textContent = "Failed.";
+        outputEl.textContent = `${err.message}\n\nThis page expects the prebuilt bundle files beside index.html.`;
+      } finally {
+        runBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

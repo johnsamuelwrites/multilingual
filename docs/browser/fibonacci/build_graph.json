@@ -1,0 +1,25 @@
+{
+  "nodes": {
+    "abi_manifest": [
+      "program",
+      "module_wat"
+    ],
+    "host_shim_js": [
+      "abi_manifest"
+    ],
+    "module_wasm": [
+      "module_wat"
+    ],
+    "module_wat": [
+      "program"
+    ],
+    "program": [],
+    "renderer_template_js": [
+      "abi_manifest"
+    ],
+    "transpiled_python": [
+      "program"
+    ]
+  },
+  "version": 1
+}

@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Multilingual Browser Demos</title>
+  <style>
+    :root {
+      --bg: #f7f3ea;
+      --ink: #17211c;
+      --muted: #5d675f;
+      --panel: rgba(255, 251, 243, 0.82);
+      --line: rgba(23, 33, 28, 0.12);
+      --accent: #146356;
+      --accent-2: #d66b2d;
+      --shadow: 0 20px 60px rgba(20, 99, 86, 0.16);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(214, 107, 45, 0.18), transparent 30%),
+        radial-gradient(circle at top right, rgba(20, 99, 86, 0.18), transparent 30%),
+        linear-gradient(180deg, #fbf7ef 0%, #f1eadf 100%);
+      min-height: 100vh;
+    }
+
+    .shell {
+      max-width: 1050px;
+      margin: 0 auto;
+      padding: 3rem 1.25rem 4rem;
+    }
+
+    .hero {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      box-shadow: var(--shadow);
+      padding: 2rem;
+      backdrop-filter: blur(10px);
+    }
+
+    .eyebrow {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--accent);
+      margin: 0 0 0.8rem;
+      font-weight: 700;
+    }
+
+    h1 {
+      font-size: clamp(2.2rem, 5vw, 4.4rem);
+      line-height: 0.95;
+      margin: 0;
+      max-width: 12ch;
+    }
+
+    .lead {
+      max-width: 60ch;
+      color: var(--muted);
+      font-size: 1.05rem;
+      line-height: 1.65;
+      margin-top: 1rem;
+    }
+
+    .links {
+      display: flex;
+      gap: 0.9rem;
+      flex-wrap: wrap;
+      margin-top: 1.4rem;
+    }
+
+    .links a,
+    .card a {
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 180px;
+      padding: 0.9rem 1.2rem;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 700;
+    }
+
+    .button--solid {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .button--ghost {
+      border-color: var(--line);
+      background: rgba(255, 255, 255, 0.55);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      padding: 1.4rem;
+      box-shadow: var(--shadow);
+    }
+
+    .card .tag {
+      display: inline-block;
+      padding: 0.25rem 0.6rem;
+      border-radius: 999px;
+      background: rgba(20, 99, 86, 0.1);
+      color: var(--accent);
+      font-size: 0.78rem;
+      font-weight: 700;
+      margin-bottom: 0.8rem;
+    }
+
+    .card h2 {
+      margin: 0 0 0.7rem;
+      font-size: 1.45rem;
+    }
+
+    .card p {
+      margin: 0 0 1rem;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .card ul {
+      margin: 0 0 1rem;
+      padding-left: 1.2rem;
+      color: var(--ink);
+      line-height: 1.6;
+    }
+
+    .route {
+      font-family: "Courier New", monospace;
+      color: var(--accent-2);
+      font-size: 0.85rem;
+    }
+
+    @media (max-width: 640px) {
+      .hero {
+        padding: 1.4rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <section class="hero">
+      <p class="eyebrow">Multilingual Programming</p>
+      <h1>Two browser runtimes. One language model.</h1>
+      <p class="lead">
+        This GitHub Pages site demonstrates both interactive execution through Pyodide
+        and ahead-of-time deployment through precompiled WebAssembly bundles.
+      </p>
+      <div class="links">
+        <a class="button button--solid" href="../playground.html">Open Pyodide Playground</a>
+        <a class="button button--ghost" href="../demos/">Read the demo guide</a>
+      </div>
+    </section>
+
+    <section class="grid">
+      <article class="card">
+        <span class="tag">Scalar compute</span>
+        <h2>Fibonacci Bundle</h2>
+        <p>
+          A small precompiled WASM program built from multilingual source and executed
+          in the browser with a tiny generated host layer.
+        </p>
+        <ul>
+          <li>Prebuilt `module.wasm`</li>
+          <li>Generated ABI shim and renderer</li>
+          <li>Shows the minimal deployment flow</li>
+        </ul>
+        <p class="route">browser/fibonacci/</p>
+        <a class="button button--solid" href="./fibonacci/">Open Fibonacci Demo</a>
+      </article>
+
+      <article class="card">
+        <span class="tag">Host imports</span>
+        <h2>DOM Bridge Bundle</h2>
+        <p>
+          A precompiled WASM program that manipulates live browser DOM nodes through
+          generated `env.ml_dom_*` host imports.
+        </p>
+        <ul>
+          <li>Multilingual source to WebAssembly</li>
+          <li>JS only as host bridge, not as app logic</li>
+          <li>Shows real browser integration</li>
+        </ul>
+        <p class="route">browser/dom-demo/</p>
+        <a class="button button--solid" href="./dom-demo/">Open DOM Demo</a>
+      </article>
+    </section>
+  </main>
+</body>
+</html>

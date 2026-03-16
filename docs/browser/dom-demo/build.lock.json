@@ -1,0 +1,13 @@
+{
+  "artifacts": {
+    "abi_manifest": "abi_manifest.json",
+    "build_graph": "build_graph.json",
+    "host_shim_js": "host_shim.js",
+    "module_wasm": "module.wasm",
+    "module_wat": "module.wat",
+    "renderer_template_js": "renderer_template.js",
+    "transpiled_python": "transpiled.py"
+  },
+  "source_digest_sha256": "aa63a48ac433bcb47d35f8df87a811b7c611904f9205418a114e9c6aeb012934",
+  "version": 1
+}
