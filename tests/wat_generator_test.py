@@ -51,6 +51,8 @@ from multilingualprogramming.parser.ast_nodes import (
     NamedExpr,
     ConditionalExpr,
     GeneratorExpr,
+    ImportStatement,
+    FromImportStatement,
 )
 from multilingualprogramming.codegen.wat_generator import WATCodeGenerator
 
@@ -135,6 +137,26 @@ class WATExpressionTestSuite(unittest.TestCase):
         ))
         self.assertIn("sum_blk_", wat)
         self.assertIn("f64.add", wat)
+
+    def test_math_import_alias_sqrt_lowers_to_f64_sqrt(self):
+        wat = self.gen.generate(_prog(
+            FromImportStatement("math", [("sqrt", "root_fn")]),
+            VariableDeclaration(
+                "root",
+                CallExpr(Identifier("root_fn"), [NumeralLiteral("16")]),
+            ),
+        ))
+        self.assertIn("f64.sqrt", wat)
+
+    def test_module_alias_math_sqrt_lowers_to_f64_sqrt(self):
+        wat = self.gen.generate(_prog(
+            ImportStatement("math", alias="m"),
+            VariableDeclaration(
+                "root",
+                CallExpr(AttributeAccess(Identifier("m"), "sqrt"), [NumeralLiteral("9")]),
+            ),
+        ))
+        self.assertIn("f64.sqrt", wat)
 
     def _wat(self, expr):
         """Generate WAT for a single expression in a variable declaration."""
@@ -1647,6 +1669,13 @@ class WATInheritanceWasmExecutionTestSuite(unittest.TestCase):
             "print(obj.doubled)\n"
         )
         self.assertEqual(self._run_main(prog), [6.0])
+
+    def test_from_import_math_alias_executes(self):
+        prog = _parse_en(
+            "from math import sqrt as root_fn\n"
+            "print(root_fn(16))\n"
+        )
+        self.assertEqual(self._run_main(prog), [4.0])
 
 
 # ---------------------------------------------------------------------------

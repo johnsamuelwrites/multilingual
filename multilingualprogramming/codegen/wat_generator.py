@@ -56,6 +56,8 @@ from multilingualprogramming.parser.ast_nodes import (
     ReturnStatement,
     GlobalStatement,
     LocalStatement,
+    ImportStatement,
+    FromImportStatement,
     IfStatement,
     WhileLoop,
     ForLoop,
@@ -184,6 +186,9 @@ class WATCodeGenerator(
         self._list_locals: set[str] = set()
         # Compiler-known dict locals: var_name -> string-key to element index.
         self._dict_key_maps: dict[str, dict[str, int]] = {}
+        # Import alias resolution for recognized builtin/math lowerings.
+        self._imported_call_aliases: dict[str, str] = {}
+        self._module_aliases: dict[str, str] = {}
         # True when any heap allocation (list or OOP) is needed.
         self._need_heap_ptr: bool = False
         # Lambda table: ordered list of WAT func names registered for call_indirect.
@@ -254,6 +259,8 @@ class WATCodeGenerator(
         self._string_len_locals = {}
         self._list_locals = set()
         self._dict_key_maps = {}
+        self._imported_call_aliases = {}
+        self._module_aliases = {}
         self._need_heap_ptr = False
         self._lambda_table = []
         self._lambda_locals = {}
@@ -277,6 +284,7 @@ class WATCodeGenerator(
             self._func_real_params[fname] = _real_params(f)
             self._func_render_modes[fname] = _extract_render_mode(f)
         self._collect_class_lowering(classes)
+        self._collect_import_aliases(top)
 
         for func in funcs:
             self._emit_function(func)
@@ -775,6 +783,29 @@ class WATCodeGenerator(
         for stmt in stmts:
             self._gen_stmt(stmt, indent)
 
+    def _collect_import_aliases(self, stmts: list) -> None:
+        """Record simple import aliases for known native math lowerings."""
+        recognized = {"sqrt", "floor", "ceil", "fabs", "pow"}
+        for stmt in stmts:
+            if isinstance(stmt, ImportStatement):
+                module_alias = stmt.alias or stmt.module
+                self._module_aliases[module_alias] = stmt.module
+            elif isinstance(stmt, FromImportStatement) and stmt.module == "math":
+                for imported_name, imported_alias in stmt.names:
+                    local_name = imported_alias or imported_name
+                    if imported_name in recognized:
+                        self._imported_call_aliases[local_name] = f"math.{imported_name}"
+
+    def _resolve_callable_alias(self, fname: str) -> str:
+        """Resolve simple imported/module-qualified aliases for builtin lowering."""
+        if fname in self._imported_call_aliases:
+            return self._imported_call_aliases[fname]
+        if "." in fname:
+            module_name, attr_name = fname.split(".", 1)
+            resolved_module = self._module_aliases.get(module_name, module_name)
+            return f"{resolved_module}.{attr_name}"
+        return fname
+
     def _gen_stmt(self, stmt, indent: str):  # noqa: C901  # pylint: disable=too-many-branches,too-many-statements,too-many-locals
         if isinstance(stmt, VariableDeclaration):
             name = _name(stmt.name)
@@ -1211,10 +1242,23 @@ class WATCodeGenerator(
                 self._emit(f"{indent}call ${self._wat_symbol(_super_wat)}")
                 return
             fname = _name(node.func)
+            resolved_fname = self._resolve_callable_alias(fname)
             if fname in _PRINT_NAMES:
                 self._emit(f"{indent}f64.const 0  ;; print() used as expression")
             elif fname in _ABS_NAMES and len(node.args) == 1:
                 # abs(x) → f64.abs
+                self._gen_expr(node.args[0], indent)
+                self._emit(f"{indent}f64.abs")
+            elif resolved_fname in {"math.sqrt", "sqrt"} and len(node.args) == 1:
+                self._gen_expr(node.args[0], indent)
+                self._emit(f"{indent}f64.sqrt")
+            elif resolved_fname in {"math.floor", "floor"} and len(node.args) == 1:
+                self._gen_expr(node.args[0], indent)
+                self._emit(f"{indent}f64.floor")
+            elif resolved_fname in {"math.ceil", "ceil"} and len(node.args) == 1:
+                self._gen_expr(node.args[0], indent)
+                self._emit(f"{indent}f64.ceil")
+            elif resolved_fname in {"math.fabs", "fabs"} and len(node.args) == 1:
                 self._gen_expr(node.args[0], indent)
                 self._emit(f"{indent}f64.abs")
             elif fname in _MIN_NAMES and len(node.args) >= 1:
