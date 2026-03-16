@@ -24,7 +24,7 @@ Use the precompiled browser demo when you want:
 - a deployment model closer to a production web app
 - explicit WASI and DOM host-import bridging
 
-**[Open the Browser WASM Demo Hub](browser/){ .playground-link }**
+**[Open the Browser WASM Demo Hub](../browser/){ .playground-link }**
 
 ## What each demo proves
 
@@ -39,4 +39,3 @@ If you are presenting the project, a good flow is:
 
 1. Start with the playground to show multilingual authoring and instant feedback.
 2. Switch to the browser WASM demo to show that the same project also supports ahead-of-time deployment with prebuilt artifacts.
-
