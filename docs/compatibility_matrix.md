@@ -4,7 +4,7 @@ This matrix defines the current compatibility baseline for `multilingual`.
 
 Baseline source of truth:
 - `examples/complete_features_en.ml`
-- `tests/` (1787 tests across 130+ test suites, 2 skipped)
+- `tests/` (1995 tests across 130+ test suites, 2 skipped)
 
 Target runtime:
 - CPython `3.12.x`
@@ -191,12 +191,18 @@ WebAssembly Text (WAT), which is then compiled and executed via Wasmtime.
 | `@staticmethod` / `@classmethod` | Supported | Detected via decorator; no `self` pushed at call site |
 | `@property` | Supported | Getter call emitted on `obj.attr` access; works with stateful and stateless classes |
 | `print` with `sep=` / `end=` | Supported | Custom separator/terminator interned in data section, printed via `$print_str` |
+| `try` / `except` / `finally` | Supported | Numeric exception-code model: `raise` stores a non-zero f64 code; named `except ExcType:` matches that code; catch-all `except:` and `except Exception:` match any non-zero code; `finally` runs unconditionally on both handled and unhandled paths; `as e` binds the actual exception code |
+| `input()` | Supported | Reads a line from WASI stdin (fd 0), strips trailing CR/LF |
+| `argc()` | Supported | Returns WASI argument count as f64 |
+| `argv(i)` | Supported | Returns i-th WASI argument string as f64 pointer |
+| DOM bridge | Supported | `dom_get`, `dom_text`, `dom_html`, `dom_value`, `dom_attr`, `dom_create`, `dom_append`, `dom_style`, `dom_remove`, `dom_class`; requires `"env"` host imports provided by the JS embedding |
+| Source location comments | Supported | `;;  @line:col` WAT comment emitted at the top of each compiled statement |
 
 See [docs/wat_oop_model.md](wat_oop_model.md) for the full object model reference.
 
 ## Test Coverage
 
-1916 tests (2 skipped) across 130+ test suites covering:
+1995 tests (2 skipped) across 130+ test suites covering:
 
 | Test area | Suite count | Description |
 |---|---|---|
@@ -223,6 +229,8 @@ The following are not claimed as universally compatible at this stage:
 - Complete localization aliases for every CPython built-in function/type (41 of 70+ have aliases)
 - WAT `@property` setter/deleter protocol (getter fully supported; setter/deleter not yet lowered)
 - WAT `print` `file=` kwarg (stdout is the only target in WAT)
+- WAT DOM bridge `dom_value` (element value read) uses the argv static buffer area and may conflict if argc/argv and DOM value reads overlap in the same program
+- WAT exception model uses numeric codes, not Python exception objects; `raise` with a non-`RaiseStatement` AST form may not match the expected catch code
 
 ## Recommendation
 

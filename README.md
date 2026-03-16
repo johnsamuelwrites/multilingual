@@ -265,7 +265,7 @@ multilingual run main_en.ml --lang en
 - Date/time: `MPDate`, `MPTime`, `MPDatetime`
 - Frontend: `Lexer`, `Parser`, AST nodes, `SemanticAnalyzer`
 - Runtime: `PythonCodeGenerator`, `RuntimeBuiltins`, `ProgramExecutor`, `REPL`
-- WAT/WASM backend: `WATCodeGenerator` — compiles multilingual AST to executable WebAssembly (core language + OOP with stateful class instances)
+- WAT/WASM backend: `WATCodeGenerator` — compiles multilingual AST to executable WebAssembly (core language + OOP with stateful class instances; real `try/except/finally` with numeric exception codes; `input()` / `argc()` / `argv()` WASI builtins; DOM bridge via `"env"` host imports)
 
 Additional syntax now supported:
 

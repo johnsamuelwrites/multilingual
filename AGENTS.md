@@ -127,6 +127,7 @@ multilingual/
 │   │   ├── wat_generator_manifest.py   ← WAT: manifest/ABI metadata
 │   │   ├── wat_generator_match.py      ← WAT: match/case lowering
 │   │   ├── wat_generator_oop.py        ← WAT: OOP / class lowering
+│   │   ├── wat_generator_runtime.py    ← WAT: runtime builtins (input, DOM calls)
 │   │   ├── wat_generator_support.py    ← WAT: shared support utilities
 │   │   ├── wasm_generator.py           ← WAT → WASM binary
 │   │   ├── runtime_builtins.py         ← RuntimeBuiltins + make_exec_globals()
@@ -353,7 +354,7 @@ Translates AST to WebAssembly Text format. Supports a subset of the full languag
 | `len(list_var)` / `len(tuple_var)` | ✓ loaded from list/tuple header in linear memory |
 | List/tuple literal allocation | ✓ heap bump-allocator; layout = [len_f64, elem0, elem1, …] |
 | `list[i]` / `tuple[i]` index read | ✓ `f64.load` at `base + 8 + i*8` |
-| `try/except/finally` | ✓ best-effort (try body + finally executed; except skipped — no WASM exception model) |
+| `try/except/finally` | ✓ numeric exception-code model: `raise` stores a non-zero f64 code; `except ExcType` matches that code; `except:` / `except Exception:` catch any non-zero code; `finally` runs unconditionally (emitted on both the unhandled path before `unreachable` and the normal/handled path after the handler block); `as e` binds the actual exception code |
 | `with` statement | ✓ best-effort (body executed; `__enter__`/`__exit__` not callable from WAT) |
 | Lambda expressions | ✓ lifted to WAT functions; stored as table index (f64); called via `call_indirect` |
 | List/generator comprehension over `range` | ✓ lowered to WAT loop + f64 accumulator |
@@ -365,6 +366,11 @@ Translates AST to WebAssembly Text format. Supports a subset of the full languag
 | `async for` over `range()` / list var | ✓ best-effort (same lowering as sync `for`) |
 | `async with` | ✓ best-effort (same lowering as sync `with`) |
 | `async for` over other iterables | not supported |
+| `input()` | ✓ reads a line from WASI fd 0 (stdin), strips trailing CR/LF, returns as f64 string pointer; `$__last_str_len` is set |
+| `argc()` | ✓ builtin returning the WASI argument count as f64 |
+| `argv(i)` | ✓ builtin returning the i-th WASI argument as f64 string pointer; `$__last_str_len` is set |
+| DOM manipulation | ✓ conditional `"env"` host imports emitted when any DOM builtin is used; WAT wrapper functions for `dom_get`, `dom_text`, `dom_html`, `dom_value`, `dom_attr`, `dom_create`, `dom_append`, `dom_style`, `dom_remove`, `dom_class` |
+| Source location comments | ✓ `;;  @line:col` WAT comment emitted at the top of each compiled statement when source position is available |
 
 ### Host Imports (expected by WAT modules)
 
@@ -377,9 +383,38 @@ Translates AST to WebAssembly Text format. Supports a subset of the full languag
 (import "env" "pow_f64"       (func $pow_f64 (param f64 f64) (result f64)))
 ```
 
+WASI host imports (always emitted):
+
+```wat
+(import "wasi_snapshot_preview1" "fd_write"        (func $fd_write        (param i32 i32 i32 i32) (result i32)))
+(import "wasi_snapshot_preview1" "fd_read"         (func $fd_read         (param i32 i32 i32 i32) (result i32)))
+(import "wasi_snapshot_preview1" "args_sizes_get"  (func $args_sizes_get  (param i32 i32) (result i32)))
+(import "wasi_snapshot_preview1" "args_get"        (func $args_get        (param i32 i32) (result i32)))
+```
+
+DOM host imports (emitted only when any DOM builtin is used, module `"env"`):
+
+```wat
+(import "env" "ml_dom_get"       (func $ml_dom_get       (param i32 i32) (result f64)))
+(import "env" "ml_dom_set_text"  (func $ml_dom_set_text  (param f64 i32 i32)))
+(import "env" "ml_dom_set_html"  (func $ml_dom_set_html  (param f64 i32 i32)))
+(import "env" "ml_dom_get_value" (func $ml_dom_get_value (param f64 i32 i32) (result i32)))
+(import "env" "ml_dom_set_attr"  (func $ml_dom_set_attr  (param f64 i32 i32 i32 i32)))
+(import "env" "ml_dom_create"    (func $ml_dom_create    (param i32 i32) (result f64)))
+(import "env" "ml_dom_append"    (func $ml_dom_append    (param f64 f64)))
+(import "env" "ml_dom_set_style" (func $ml_dom_set_style (param f64 i32 i32 i32 i32)))
+(import "env" "ml_dom_remove"    (func $ml_dom_remove    (param f64)))
+(import "env" "ml_dom_toggle_class" (func $ml_dom_toggle_class (param f64 i32 i32)))
+```
+
 Internal WAT helper functions (emitted on demand, no host import needed):
 - `$__str_concat (ptr1 len1 ptr2 len2 : f64) → f64` — heap-allocates concatenated string
 - `$__str_slice (ptr start stop : f64) → f64` — heap-allocates string slice
+- `$__ml_init_argv` — reads WASI argc/argv into static memory on startup
+- `$argc` — returns argument count as f64
+- `$argv (i: f64) → f64` — returns i-th argument string pointer as f64
+- `$input → f64` — reads one line from fd 0 (stdin), strips CR/LF, returns string pointer
+- DOM wrapper functions (`$dom_get`, `$dom_text`, etc.) — thin wrappers over the raw DOM imports with caller-friendly signatures (str→ptr+len, f64 element handles)
 - Lambda `funcref` table at index 0 + `call_indirect` for lambda calls
 
 ### Stub Detection
@@ -572,7 +607,7 @@ CI gates before merge: `pythonpackage`, `pylint`, `package-artifacts`, `compatib
 - **Location**: `tests/`
 - **Files**: 67 test files, ~22,284 lines of test code
 - **Discovery**: `test_*.py` and `*_test.py`
-- **Total tests**: ~1,926 (2 skipped — require `rustc wasm32` target)
+- **Total tests**: ~1,995 (2 skipped — require `rustc wasm32` target)
 
 ### Running Tests
 
@@ -609,9 +644,9 @@ python -m pytest -k "inheritance" tests/  # tests with "inheritance" in name
 | `keyword_registry_test.py` | Keyword mapping + concept count assertion (currently 50) |
 | `executor_test.py` | Full pipeline: source → execution |
 | `runtime_builtins_test.py` | Builtin aliases (longueur→len, etc.) |
-| `wat_generator_test.py` | AST → WAT, includes OOP and inheritance tests |
-| `wat_generator_wasm_execution_test.py` | WASM execution validation for WAT generator output |
-| `wat_generator_manifest_test.py` | WAT manifest/ABI metadata generation |
+| `wat_generator_test.py` | AST → WAT, includes OOP, inheritance, and DOM bridge tests (`WATDOMBridgeTestSuite`) |
+| `wat_generator_wasm_execution_test.py` | WASM execution validation; includes `WATExceptionHandlingTestSuite` (catch-all, `finally`, `as e`) and `WATArgvTestSuite` (argc/argv) |
+| `wat_generator_manifest_test.py` | WAT manifest/ABI metadata generation; checks all 4 WASI imports and JS shim stubs |
 | `wat_generator_string_lambda_test.py` | String operations and lambda lowering in WAT |
 | `wat_oop_dispatch_test.py` | WAT OOP dynamic dispatch and type-tag tests |
 | `wasm_corpus_test.py` | 20 multilingual corpus projects (end-to-end) |
@@ -824,7 +859,7 @@ Defined in `multilingualprogramming/version.py`.
 
 | Version | Highlights |
 |---|---|
-| `0.6.0` | WAT/WASM OOP object model, inheritance, `with`/`try`/`match`/`lambda`/`async` lowering, bytes support, and WAT backend reorganization |
+| `0.6.0` | WAT/WASM OOP object model, inheritance, `with`/`try`/`match`/`lambda`/`async` lowering, bytes support, WAT backend reorganization; real `try/except/finally` with numeric exception codes; `input()` / `argc()` / `argv()` builtins; DOM bridge (`"env"` host imports + WAT wrappers); source location comments in WAT |
 | `0.5.1` | Documentation updates |
 | `0.5.0` | WAT/WASM OOP object model; class lowering; inheritance; WAT execution tests; Unicode identifier reliability |
 | `0.4.0` | WAT/WASM code generation; browser playground; WASM backend with 25+ Python fallbacks; 20 corpus projects |
@@ -841,4 +876,4 @@ via the `release-pypi.yml` GitHub Actions workflow.
 
 ---
 
-*Last updated: 2026-03-10. For changes after this date, check CHANGELOG.md and git log.*
+*Last updated: 2026-03-16. For changes after this date, check CHANGELOG.md and git log.*
