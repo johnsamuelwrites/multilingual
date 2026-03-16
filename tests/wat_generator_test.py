@@ -45,6 +45,8 @@ from multilingualprogramming.parser.ast_nodes import (
     ForLoop,
     FunctionDef,
     ClassDef,
+    TryStatement,
+    ExceptHandler,
     WithStatement,
     Parameter,
     MatchStatement,
@@ -577,6 +579,30 @@ class WATStatementTestSuite(unittest.TestCase):
         wat = self._wat(RaiseStatement(StringLiteral("boom")))
         self.assertIn("raise omitted in WAT best-effort mode", wat)
         self.assertNotIn("unsupported statement: RaiseStatement", wat)
+
+    def test_try_except_handles_explicit_value_error(self):
+        wat = self._wat(
+            TryStatement(
+                body=[RaiseStatement(CallExpr(Identifier("ValueError"), [StringLiteral("boom")]))],
+                handlers=[ExceptHandler(Identifier("ValueError"), body=[Assignment(Identifier("x"), NumeralLiteral("1"))])],
+            )
+        )
+        self.assertIn("local.set $__exc_code_", wat)
+        self.assertIn("try_end_", wat)
+        self.assertNotIn("raise omitted in WAT best-effort mode", wat)
+
+    def test_try_else_uses_no_exception_path(self):
+        wat = self._wat(
+            VariableDeclaration("x", NumeralLiteral("0")),
+            TryStatement(
+                body=[Assignment(Identifier("x"), NumeralLiteral("7"))],
+                handlers=[ExceptHandler(Identifier("ValueError"), body=[Assignment(Identifier("x"), NumeralLiteral("-1"))])],
+                else_body=[Assignment(Identifier("x"), NumeralLiteral("8"))],
+            ),
+        )
+        self.assertIn("local.get $__exc_handled_", wat)
+        self.assertIn("i32.and", wat)
+        self.assertNotIn("try (best-effort: no WASM exception handling)", wat)
 
     def test_expression_statement_non_print(self):
         """An expression statement calling a WAT function must be evaluated and dropped."""

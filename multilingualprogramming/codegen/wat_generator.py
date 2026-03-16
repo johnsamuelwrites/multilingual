@@ -230,6 +230,8 @@ class WATCodeGenerator(
         # Narrow closure-factory support for returned nested functions with one captured cell.
         self._closure_factory_funcs: dict[str, str] = {}
         self._closure_locals: dict[str, str] = {}
+        # Best-effort local exception handling stack for explicit raise statements.
+        self._try_stack: list[dict[str, str]] = []
 
     @property
     def property_getters(self):
@@ -296,6 +298,7 @@ class WATCodeGenerator(
         self._string_format_helpers_emitted = False
         self._closure_factory_funcs = {}
         self._closure_locals = {}
+        self._try_stack = []
 
         if isinstance(program, CoreIRProgram):
             program = program.ast
@@ -365,6 +368,7 @@ class WATCodeGenerator(
                  self._dict_key_maps,
                  self._lambda_locals,
                  self._closure_locals,
+                 self._try_stack,
                  self._open_aliases,
                  self._virtual_file_contents)
         self._instrs = []
@@ -377,6 +381,7 @@ class WATCodeGenerator(
         self._dict_key_maps = {}
         self._lambda_locals = {}
         self._closure_locals = {}
+        self._try_stack = []
         self._open_aliases = {}
         self._virtual_file_contents = {}
         # _current_class is NOT reset here: _emit_class sets it before each method
@@ -2000,6 +2005,20 @@ class WATCodeGenerator(
 
         return any(_stmt_returns_string(stmt) for stmt in func_def.body)
 
+    def _exception_code_for(self, value) -> int:
+        """Return a small numeric code for supported exception types."""
+        exc_name = ""
+        if isinstance(value, CallExpr):
+            exc_name = _name(value.func)
+        elif isinstance(value, Identifier):
+            exc_name = value.name
+        mapping = {
+            "ValueError": 1,
+            "RuntimeError": 2,
+            "TypeError": 3,
+        }
+        return mapping.get(exc_name, 255 if value is not None else 255)
+
     def _closure_factory_spec(self, func_def: FunctionDef):
         """Return closure-factory lowering info for the supported make_counter-like shape."""
         if len(func_def.body) != 3:
@@ -2430,24 +2449,79 @@ class WATCodeGenerator(
             self._emit(f"{indent};; assert omitted in WAT best-effort mode")
 
         elif isinstance(stmt, RaiseStatement):
-            self._emit(f"{indent};; raise omitted in WAT best-effort mode")
+            if self._try_stack:
+                ctx = self._try_stack[-1]
+                code = self._exception_code_for(stmt.value)
+                self._emit(f"{indent}f64.const {float(code)}")
+                self._emit(f"{indent}local.set ${self._wat_symbol(ctx['code_local'])}")
+                self._emit(f"{indent}br ${ctx['label']}")
+            else:
+                self._emit(f"{indent};; raise omitted in WAT best-effort mode")
 
         elif isinstance(stmt, TryStatement):
-            # Best-effort: WASM MVP has no native exception handling.
-            # Execute the try body unconditionally; skip except handlers.
-            # Always execute finally (it runs regardless of exceptions in Python).
-            self._emit(f"{indent};; try (best-effort: no WASM exception handling)")
-            self._gen_stmts(stmt.body, indent)
+            label = self._new_label()
+            code_local = f"__exc_code_{label}"
+            handled_local = f"__exc_handled_{label}"
+            self._locals.update({code_local, handled_local})
+            end_label = f"try_end_{label}"
+            done_label = f"try_done_{label}"
+            parent_ctx = self._try_stack[-1] if self._try_stack else None
+
+            self._emit(f"{indent};; try")
+            self._emit(f"{indent}f64.const 0")
+            self._emit(f"{indent}local.set ${self._wat_symbol(code_local)}")
+            self._emit(f"{indent}block ${end_label}")
+            self._try_stack.append({"code_local": code_local, "label": end_label})
+            self._gen_stmts(stmt.body, indent + "  ")
+            self._try_stack.pop()
+            self._emit(f"{indent}end")
+
+            self._emit(f"{indent}f64.const 0")
+            self._emit(f"{indent}local.set ${self._wat_symbol(handled_local)}")
             if stmt.handlers:
-                self._emit(
-                    f"{indent};; except handler(s) omitted "
-                    f"(WAT cannot intercept exceptions)"
-                )
+                for handler in stmt.handlers:
+                    expected = self._exception_code_for(handler.exc_type)
+                    match_label = f"try_match_{self._new_label()}"
+                    self._emit(f"{indent}block ${match_label}")
+                    self._emit(f"{indent}  local.get ${self._wat_symbol(code_local)}")
+                    self._emit(f"{indent}  f64.const {float(expected)}")
+                    self._emit(f"{indent}  f64.ne")
+                    self._emit(f"{indent}  br_if ${match_label}")
+                    if handler.name:
+                        self._locals.add(handler.name)
+                        self._emit(f"{indent}  f64.const 0")
+                        self._emit(f"{indent}  local.set ${self._wat_symbol(handler.name)}")
+                    self._emit(f"{indent}  f64.const 1")
+                    self._emit(f"{indent}  local.set ${self._wat_symbol(handled_local)}")
+                    self._emit(f"{indent}  f64.const 0")
+                    self._emit(f"{indent}  local.set ${self._wat_symbol(code_local)}")
+                    self._gen_stmts(handler.body, indent + "  ")
+                    self._emit(f"{indent}end")
+
             if stmt.else_body:
-                self._emit(
-                    f"{indent};; try-else omitted "
-                    f"(no exception state available in WAT)"
-                )
+                self._emit(f"{indent}local.get ${self._wat_symbol(handled_local)}")
+                self._emit(f"{indent}f64.const 0")
+                self._emit(f"{indent}f64.eq")
+                self._emit(f"{indent}local.get ${self._wat_symbol(code_local)}")
+                self._emit(f"{indent}f64.const 0")
+                self._emit(f"{indent}f64.eq")
+                self._emit(f"{indent}i32.and")
+                self._emit(f"{indent}if")
+                self._gen_stmts(stmt.else_body, indent + "  ")
+                self._emit(f"{indent}end")
+
+            self._emit(f"{indent}local.get ${self._wat_symbol(code_local)}")
+            self._emit(f"{indent}f64.const 0")
+            self._emit(f"{indent}f64.ne")
+            self._emit(f"{indent}if")
+            if parent_ctx is not None:
+                self._emit(f"{indent}  local.get ${self._wat_symbol(code_local)}")
+                self._emit(f"{indent}  local.set ${self._wat_symbol(parent_ctx['code_local'])}")
+                self._emit(f"{indent}  br ${parent_ctx['label']}")
+            else:
+                self._emit(f"{indent}  ;; unhandled exception omitted in WAT best-effort mode")
+            self._emit(f"{indent}end")
+
             if stmt.finally_body:
                 self._emit(f"{indent};; finally")
                 self._gen_stmts(stmt.finally_body, indent)
