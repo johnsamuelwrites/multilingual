@@ -1271,7 +1271,7 @@ class WATCodeGenerator(
             return
         op, right = node.comparators[0]
         if op in ("in", "not in"):
-            self._emit_membership_cmp(node.left, right, indent, negate=(op == "not in"))
+            self._emit_membership_cmp(node.left, right, indent, negate=op == "not in")
             return
         self._gen_expr(node.left, indent)
         self._gen_expr(right, indent)
