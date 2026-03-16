@@ -50,11 +50,13 @@ from types import MappingProxyType
 from multilingualprogramming.parser.ast_nodes import (
     VariableDeclaration,
     Assignment,
+    AnnAssignment,
     ExpressionStatement,
     PassStatement,
     BreakStatement,
     ContinueStatement,
     ReturnStatement,
+    DelStatement,
     GlobalStatement,
     LocalStatement,
     ImportStatement,
@@ -96,6 +98,9 @@ from multilingualprogramming.parser.ast_nodes import (
     GeneratorExpr,
     Parameter,
     FStringLiteral,
+    AssertStatement,
+    ChainedAssignment,
+    StarredExpr,
 )
 from multilingualprogramming.numeral.mp_numeral import MPNumeral
 from multilingualprogramming.core.ir import CoreIRProgram
@@ -1347,6 +1352,180 @@ class WATCodeGenerator(
         elif name in self._var_class_types:
             del self._var_class_types[name]
 
+    def _clear_assignment_tracking(self, name: str) -> None:
+        """Drop auxiliary metadata for a local after destructive-style updates."""
+        if name in self._string_len_locals:
+            del self._string_len_locals[name]
+        if name in self._list_locals:
+            self._list_locals.remove(name)
+        if name in self._tuple_locals:
+            self._tuple_locals.remove(name)
+        if name in self._dict_key_maps:
+            del self._dict_key_maps[name]
+        if name in self._lambda_locals:
+            del self._lambda_locals[name]
+        if name in self._var_class_types:
+            del self._var_class_types[name]
+
+    def _is_sequence_expr(self, value) -> bool:
+        """Return whether *value* is representable as a list/tuple pointer in WAT."""
+        if isinstance(value, (ListLiteral, TupleLiteral, SetLiteral)):
+            return True
+        if isinstance(value, Identifier):
+            return value.name in self._list_locals or value.name in self._tuple_locals
+        if isinstance(value, CallExpr) and len(value.args) == 1:
+            if _name(value.func) in (_LIST_NAMES | _TUPLE_NAMES | _SET_NAMES):
+                return True
+        if isinstance(value, CallExpr) and _name(value.func) in {"divmod", "sorted"}:
+            return True
+        if isinstance(value, (ListComprehension, SetComprehension, GeneratorExpr)):
+            return True
+        return False
+
+    def _gen_unpack_assignment(self, target, value, indent: str) -> bool:
+        """Lower tuple/starred unpacking from a list-like pointer value."""
+        if not isinstance(target, (TupleLiteral, ListLiteral)) or not self._is_sequence_expr(value):
+            return False
+        elements = target.elements
+        star_positions = [
+            index for index, element in enumerate(elements)
+            if isinstance(element, StarredExpr)
+        ]
+        if len(star_positions) > 1:
+            return False
+        for element in elements:
+            if isinstance(element, Identifier):
+                continue
+            if isinstance(element, StarredExpr) and isinstance(element.value, Identifier):
+                continue
+            return False
+
+        label = self._new_label()
+        src_ptr = f"__unpack_ptr_{label}"
+        src_len = f"__unpack_len_{label}"
+        self._locals.update({src_ptr, src_len})
+        self._gen_expr(value, indent)
+        self._emit(f"{indent}local.set ${self._wat_symbol(src_ptr)}")
+        self._emit(f"{indent}local.get ${self._wat_symbol(src_ptr)}")
+        self._emit(f"{indent}i32.trunc_f64_u")
+        self._emit(f"{indent}f64.load")
+        self._emit(f"{indent}local.set ${self._wat_symbol(src_len)}")
+
+        def emit_load_at(index_from_start=None, index_from_end=None):
+            self._emit(f"{indent}local.get ${self._wat_symbol(src_ptr)}")
+            self._emit(f"{indent}i32.trunc_f64_u")
+            if index_from_start is not None:
+                self._emit(f"{indent}i32.const {(index_from_start + 1) * 8}")
+            else:
+                self._emit(f"{indent}local.get ${self._wat_symbol(src_len)}")
+                self._emit(f"{indent}i32.trunc_f64_u")
+                self._emit(f"{indent}i32.const {index_from_end}")
+                self._emit(f"{indent}i32.sub")
+                self._emit(f"{indent}i32.const 8")
+                self._emit(f"{indent}i32.mul")
+                self._emit(f"{indent}i32.const 8")
+                self._emit(f"{indent}i32.add")
+            self._emit(f"{indent}i32.add")
+            self._emit(f"{indent}f64.load")
+
+        if not star_positions:
+            for index, element in enumerate(elements):
+                name = element.name
+                self._locals.add(name)
+                self._clear_assignment_tracking(name)
+                emit_load_at(index_from_start=index)
+                self._emit(f"{indent}local.set ${self._wat_symbol(name)}")
+            return True
+
+        star_index = star_positions[0]
+        prefix = elements[:star_index]
+        suffix = elements[star_index + 1:]
+        star_target = elements[star_index].value.name
+
+        for index, element in enumerate(prefix):
+            name = element.name
+            self._locals.add(name)
+            self._clear_assignment_tracking(name)
+            emit_load_at(index_from_start=index)
+            self._emit(f"{indent}local.set ${self._wat_symbol(name)}")
+
+        for suffix_offset, element in enumerate(suffix):
+            name = element.name
+            self._locals.add(name)
+            self._clear_assignment_tracking(name)
+            emit_load_at(index_from_end=len(suffix) - suffix_offset)
+            self._emit(f"{indent}local.set ${self._wat_symbol(name)}")
+
+        star_ptr = f"__unpack_star_ptr_{label}"
+        star_len = f"__unpack_star_len_{label}"
+        star_idx = f"__unpack_star_idx_{label}"
+        self._locals.update({star_ptr, star_len, star_idx, star_target})
+        self._need_heap_ptr = True
+        self._emit(f"{indent}local.get ${self._wat_symbol(src_len)}")
+        self._emit(f"{indent}f64.const {float(len(prefix) + len(suffix))}")
+        self._emit(f"{indent}f64.sub")
+        self._emit(f"{indent}local.set ${self._wat_symbol(star_len)}")
+        self._emit(f"{indent}global.get $__heap_ptr")
+        self._emit(f"{indent}f64.convert_i32_u")
+        self._emit(f"{indent}local.set ${self._wat_symbol(star_ptr)}")
+        self._emit(f"{indent}global.get $__heap_ptr")
+        self._emit(f"{indent}local.get ${self._wat_symbol(star_len)}")
+        self._emit(f"{indent}i32.trunc_f64_u")
+        self._emit(f"{indent}i32.const 1")
+        self._emit(f"{indent}i32.add")
+        self._emit(f"{indent}i32.const 8")
+        self._emit(f"{indent}i32.mul")
+        self._emit(f"{indent}i32.add")
+        self._emit(f"{indent}global.set $__heap_ptr")
+        self._emit(f"{indent}local.get ${self._wat_symbol(star_ptr)}")
+        self._emit(f"{indent}i32.trunc_f64_u")
+        self._emit(f"{indent}local.get ${self._wat_symbol(star_len)}")
+        self._emit(f"{indent}f64.store")
+        self._emit(f"{indent}f64.const 0")
+        self._emit(f"{indent}local.set ${self._wat_symbol(star_idx)}")
+        blk = f"unpack_star_blk_{label}"
+        loop = f"unpack_star_lp_{label}"
+        self._emit(f"{indent}block ${blk}")
+        self._emit(f"{indent}  loop ${loop}")
+        self._emit(f"{indent}    local.get ${self._wat_symbol(star_idx)}")
+        self._emit(f"{indent}    local.get ${self._wat_symbol(star_len)}")
+        self._emit(f"{indent}    f64.ge")
+        self._emit(f"{indent}    br_if ${blk}")
+        self._emit(f"{indent}    local.get ${self._wat_symbol(star_ptr)}")
+        self._emit(f"{indent}    i32.trunc_f64_u")
+        self._emit(f"{indent}    local.get ${self._wat_symbol(star_idx)}")
+        self._emit(f"{indent}    i32.trunc_f64_u")
+        self._emit(f"{indent}    i32.const 8")
+        self._emit(f"{indent}    i32.mul")
+        self._emit(f"{indent}    i32.const 8")
+        self._emit(f"{indent}    i32.add")
+        self._emit(f"{indent}    i32.add")
+        self._emit(f"{indent}    local.get ${self._wat_symbol(src_ptr)}")
+        self._emit(f"{indent}    i32.trunc_f64_u")
+        self._emit(f"{indent}    i32.const {len(prefix)}")
+        self._emit(f"{indent}    local.get ${self._wat_symbol(star_idx)}")
+        self._emit(f"{indent}    i32.trunc_f64_u")
+        self._emit(f"{indent}    i32.add")
+        self._emit(f"{indent}    i32.const 8")
+        self._emit(f"{indent}    i32.mul")
+        self._emit(f"{indent}    i32.const 8")
+        self._emit(f"{indent}    i32.add")
+        self._emit(f"{indent}    i32.add")
+        self._emit(f"{indent}    f64.load")
+        self._emit(f"{indent}    f64.store")
+        self._emit(f"{indent}    local.get ${self._wat_symbol(star_idx)}")
+        self._emit(f"{indent}    f64.const 1")
+        self._emit(f"{indent}    f64.add")
+        self._emit(f"{indent}    local.set ${self._wat_symbol(star_idx)}")
+        self._emit(f"{indent}    br ${loop}")
+        self._emit(f"{indent}  end")
+        self._emit(f"{indent}end")
+        self._emit(f"{indent}local.get ${self._wat_symbol(star_ptr)}")
+        self._emit(f"{indent}local.set ${self._wat_symbol(star_target)}")
+        self._clear_assignment_tracking(star_target)
+        self._list_locals.add(star_target)
+        return True
+
     # -----------------------------------------------------------------------
     # match/case lowering helper
     # -----------------------------------------------------------------------
@@ -1383,12 +1562,16 @@ class WATCodeGenerator(
 
     def _gen_stmt(self, stmt, indent: str):  # noqa: C901  # pylint: disable=too-many-branches,too-many-statements,too-many-locals
         if isinstance(stmt, VariableDeclaration):
-            name = _name(stmt.name)
-            self._locals.add(name)
-            self._emit(f"{indent};; let {name} = ...")
-            self._gen_expr(stmt.value, indent)
-            self._emit(f"{indent}local.set ${self._wat_symbol(name)}")
-            self._update_assignment_tracking(name, stmt.value, indent)
+            if isinstance(stmt.name, (TupleLiteral, ListLiteral)) and \
+                    self._gen_unpack_assignment(stmt.name, stmt.value, indent):
+                self._emit(f"{indent};; unpacking declaration lowered")
+            else:
+                name = _name(stmt.name)
+                self._locals.add(name)
+                self._emit(f"{indent};; let {name} = ...")
+                self._gen_expr(stmt.value, indent)
+                self._emit(f"{indent}local.set ${self._wat_symbol(name)}")
+                self._update_assignment_tracking(name, stmt.value, indent)
 
         elif isinstance(stmt, Assignment):
             target = stmt.target
@@ -1407,18 +1590,7 @@ class WATCodeGenerator(
                     self._emit(f"{indent}local.get ${self._wat_symbol(name)}")
                     self._gen_augmented_op(op, stmt.value, indent)
                     self._emit(f"{indent}local.set ${self._wat_symbol(name)}")
-                    if name in self._string_len_locals:
-                        del self._string_len_locals[name]
-                    if name in self._list_locals:
-                        self._list_locals.remove(name)
-                    if name in self._tuple_locals:
-                        self._tuple_locals.remove(name)
-                    if name in self._dict_key_maps:
-                        del self._dict_key_maps[name]
-                    if name in self._lambda_locals:
-                        del self._lambda_locals[name]
-                    if name in self._var_class_types:
-                        del self._var_class_types[name]
+                    self._clear_assignment_tracking(name)
             elif (isinstance(target, AttributeAccess)
                   and isinstance(target.obj, Identifier)):
                 # obj.attr = val  (handles self.attr inside methods and
@@ -1462,8 +1634,44 @@ class WATCodeGenerator(
                         self._emit(f"{indent}f64.store")
                 else:
                     self._emit(f"{indent};; (complex assignment target — unsupported in WAT)")
+            elif self._gen_unpack_assignment(target, stmt.value, indent):
+                self._emit(f"{indent};; unpacking assignment lowered")
             else:
                 self._emit(f"{indent};; (complex assignment target — unsupported in WAT)")
+
+        elif isinstance(stmt, AnnAssignment):
+            if isinstance(stmt.target, Identifier):
+                name = stmt.target.name
+                self._locals.add(name)
+                self._emit(f"{indent};; annotated assignment {name}: ...")
+                if stmt.value is None:
+                    self._emit(f"{indent}f64.const 0")
+                    self._clear_assignment_tracking(name)
+                else:
+                    self._gen_expr(stmt.value, indent)
+                    self._update_assignment_tracking(name, stmt.value, indent)
+                self._emit(f"{indent}local.set ${self._wat_symbol(name)}")
+            else:
+                self._emit(f"{indent};; annotated assignment with complex target (nop in WAT)")
+
+        elif isinstance(stmt, ChainedAssignment):
+            tmp_name = f"__chain_{self._new_label()}"
+            self._locals.add(tmp_name)
+            self._emit(f"{indent};; chained assignment")
+            self._gen_expr(stmt.value, indent)
+            self._emit(f"{indent}local.set ${self._wat_symbol(tmp_name)}")
+            for target in stmt.targets:
+                if isinstance(target, Identifier):
+                    name = target.name
+                    self._locals.add(name)
+                    self._emit(f"{indent}local.get ${self._wat_symbol(tmp_name)}")
+                    self._emit(f"{indent}local.set ${self._wat_symbol(name)}")
+                    self._update_assignment_tracking(name, stmt.value, indent)
+                else:
+                    self._emit(
+                        f"{indent};; chained assignment target {type(target).__name__} "
+                        f"not lowerable in WAT"
+                    )
 
         elif isinstance(stmt, ExpressionStatement):
             expr = stmt.expression
@@ -1624,9 +1832,26 @@ class WATCodeGenerator(
         elif isinstance(stmt, PassStatement):
             self._emit(f"{indent}nop")
 
+        elif isinstance(stmt, (ImportStatement, FromImportStatement)):
+            self._emit(f"{indent};; import metadata already collected (nop in WAT)")
+
+        elif isinstance(stmt, DelStatement):
+            if isinstance(stmt.target, Identifier):
+                name = stmt.target.name
+                if name in self._locals:
+                    self._emit(f"{indent}f64.const 0")
+                    self._emit(f"{indent}local.set ${self._wat_symbol(name)}")
+                self._clear_assignment_tracking(name)
+                self._emit(f"{indent};; del {name} (best-effort local clear)")
+            else:
+                self._emit(f"{indent};; del on complex target omitted in WAT")
+
         elif isinstance(stmt, (GlobalStatement, LocalStatement)):
             names = ", ".join(stmt.names)
             self._emit(f"{indent};; {type(stmt).__name__}: {names} (nop in WAT)")
+
+        elif isinstance(stmt, AssertStatement):
+            self._emit(f"{indent};; assert omitted in WAT best-effort mode")
 
         elif isinstance(stmt, TryStatement):
             # Best-effort: WASM MVP has no native exception handling.

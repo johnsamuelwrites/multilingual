@@ -28,13 +28,16 @@ from multilingualprogramming.parser.ast_nodes import (
     AttributeAccess,
     VariableDeclaration,
     Assignment,
+    AnnAssignment,
     ExpressionStatement,
     PassStatement,
     BreakStatement,
     ContinueStatement,
     ReturnStatement,
+    DelStatement,
     GlobalStatement,
     LocalStatement,
+    AssertStatement,
     IfStatement,
     WhileLoop,
     ForLoop,
@@ -50,6 +53,7 @@ from multilingualprogramming.parser.ast_nodes import (
     SetLiteral,
     SetComprehension,
     ComprehensionClause,
+    StarredExpr,
     IndexAccess,
     AwaitExpr,
     ListComprehension,
@@ -58,6 +62,7 @@ from multilingualprogramming.parser.ast_nodes import (
     GeneratorExpr,
     ImportStatement,
     FromImportStatement,
+    ChainedAssignment,
 )
 from multilingualprogramming.codegen.wat_generator import WATCodeGenerator
 
@@ -422,6 +427,48 @@ class WATStatementTestSuite(unittest.TestCase):
         )
         self.assertIn("local.set $n", wat)
 
+    def test_unpacking_declaration_with_starred_target_materializes_middle_list(self):
+        wat = self._wat(
+            VariableDeclaration(
+                TupleLiteral([
+                    Identifier("first_item"),
+                    StarredExpr(Identifier("middle_items")),
+                    Identifier("last_item"),
+                ]),
+                ListLiteral([
+                    NumeralLiteral("1"),
+                    NumeralLiteral("2"),
+                    NumeralLiteral("3"),
+                    NumeralLiteral("4"),
+                ]),
+            ),
+            ExpressionStatement(CallExpr(Identifier("print"), [Identifier("middle_items")])),
+        )
+        self.assertIn("unpacking declaration lowered", wat)
+        self.assertIn("unpack_star_blk_", wat)
+        self.assertIn("local.set $middle_items", wat)
+        self.assertIn("print_seq_blk_", wat)
+
+    def test_unpacking_assignment_with_starred_target_lowers(self):
+        wat = self._wat(
+            VariableDeclaration("values", ListLiteral([
+                NumeralLiteral("10"),
+                NumeralLiteral("20"),
+                NumeralLiteral("30"),
+                NumeralLiteral("40"),
+            ])),
+            Assignment(
+                TupleLiteral([
+                    Identifier("head"),
+                    StarredExpr(Identifier("rest")),
+                ]),
+                Identifier("values"),
+            ),
+        )
+        self.assertIn("unpacking assignment lowered", wat)
+        self.assertIn("local.set $head", wat)
+        self.assertIn("local.set $rest", wat)
+
     def test_compound_assignment_add(self):
         """Augmented += must emit local.get, value, f64.add, local.set."""
         wat = self._wat(
@@ -489,6 +536,38 @@ class WATStatementTestSuite(unittest.TestCase):
         """LocalStatement emits a nop comment."""
         wat = self._wat(LocalStatement(["lv"]))
         self.assertIn("LocalStatement", wat)
+
+    def test_import_statements_lower_to_nop_comments(self):
+        wat = self._wat(ImportStatement("math"), FromImportStatement("math", [("sqrt", "root_fn")]))
+        self.assertIn("import metadata already collected", wat)
+        self.assertNotIn("unsupported statement: ImportStatement", wat)
+        self.assertNotIn("unsupported statement: FromImportStatement", wat)
+
+    def test_annotated_assignment_with_value_lowers_like_assignment(self):
+        wat = self._wat(AnnAssignment(Identifier("x"), Identifier("float"), NumeralLiteral("4")))
+        self.assertIn("annotated assignment x", wat)
+        self.assertIn("local.set $x", wat)
+        self.assertNotIn("unsupported statement: AnnAssignment", wat)
+
+    def test_chained_assignment_copies_value_to_all_targets(self):
+        wat = self._wat(ChainedAssignment([Identifier("a"), Identifier("b")], NumeralLiteral("9")))
+        self.assertIn(";; chained assignment", wat)
+        self.assertIn("local.set $__chain_", wat)
+        self.assertIn("local.set $a", wat)
+        self.assertIn("local.set $b", wat)
+
+    def test_del_identifier_clears_local_best_effort(self):
+        wat = self._wat(
+            VariableDeclaration(Identifier("x"), NumeralLiteral("3")),
+            DelStatement(Identifier("x")),
+        )
+        self.assertIn("del x (best-effort local clear)", wat)
+        self.assertNotIn("unsupported statement: DelStatement", wat)
+
+    def test_assert_statement_is_best_effort_nop(self):
+        wat = self._wat(AssertStatement(BooleanLiteral(True)))
+        self.assertIn("assert omitted in WAT best-effort mode", wat)
+        self.assertNotIn("unsupported statement: AssertStatement", wat)
 
     def test_expression_statement_non_print(self):
         """An expression statement calling a WAT function must be evaluated and dropped."""
