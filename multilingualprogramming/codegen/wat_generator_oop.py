@@ -242,6 +242,7 @@ class WATGeneratorOOPMixin:  # pylint: disable=too-many-instance-attributes,too-
         (self._instrs, self._locals, self._loop_stack,
          self._var_class_types, self._current_class,
          self._string_len_locals, self._list_locals,
+         self._tuple_locals,
          self._dict_key_maps,
          self._lambda_locals) = saved
 

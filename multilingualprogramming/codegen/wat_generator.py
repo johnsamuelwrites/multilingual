@@ -120,6 +120,7 @@ from multilingualprogramming.codegen.wat_generator_support import (
     _TUPLE_NAMES,
     _SET_NAMES,
     _STR_NAMES,
+    _ZIP_NAMES,
     _extract_render_mode,
     _name,
     _real_params,
@@ -184,6 +185,7 @@ class WATCodeGenerator(
         self._string_len_locals: dict[str, str] = {}
         # Locals known to hold list/tuple pointers (heap-allocated).
         self._list_locals: set[str] = set()
+        self._tuple_locals: set[str] = set()
         # Compiler-known dict locals: var_name -> string-key to element index.
         self._dict_key_maps: dict[str, dict[str, int]] = {}
         # Import alias resolution for recognized builtin/math lowerings.
@@ -258,6 +260,7 @@ class WATCodeGenerator(
         self._class_bases = {}
         self._string_len_locals = {}
         self._list_locals = set()
+        self._tuple_locals = set()
         self._dict_key_maps = {}
         self._imported_call_aliases = {}
         self._module_aliases = {}
@@ -329,6 +332,7 @@ class WATCodeGenerator(
         saved = (self._instrs, self._locals, self._loop_stack,
                  self._var_class_types, self._current_class,
                  self._string_len_locals, self._list_locals,
+                 self._tuple_locals,
                  self._dict_key_maps,
                  self._lambda_locals)
         self._instrs = []
@@ -337,6 +341,7 @@ class WATCodeGenerator(
         self._var_class_types = {}
         self._string_len_locals = {}
         self._list_locals = set()
+        self._tuple_locals = set()
         self._dict_key_maps = {}
         self._lambda_locals = {}
         # _current_class is NOT reset here: _emit_class sets it before each method
@@ -454,6 +459,237 @@ class WATCodeGenerator(
         if mapping is None:
             return False
         self._gen_list_alloc(ListLiteral(list(mapping.values())), indent)
+        return True
+
+    def _gen_divmod_alloc(self, left, right, indent: str) -> None:
+        """Allocate a 2-tuple containing quotient and remainder."""
+        tmp_left = f"__divmod_left_{self._new_label()}"
+        tmp_right = f"__divmod_right_{self._new_label()}"
+        tmp_q = f"__divmod_q_{self._new_label()}"
+        self._locals.update({tmp_left, tmp_right, tmp_q})
+
+        self._gen_expr(left, indent)
+        self._emit(f"{indent}local.set ${self._wat_symbol(tmp_left)}")
+        self._gen_expr(right, indent)
+        self._emit(f"{indent}local.set ${self._wat_symbol(tmp_right)}")
+
+        self._emit(f"{indent}local.get ${self._wat_symbol(tmp_left)}")
+        self._emit(f"{indent}local.get ${self._wat_symbol(tmp_right)}")
+        self._emit(f"{indent}f64.div")
+        self._emit(f"{indent}f64.floor")
+        self._emit(f"{indent}local.set ${self._wat_symbol(tmp_q)}")
+
+        self._gen_list_alloc(
+            TupleLiteral([
+                Identifier(tmp_q),
+                BinaryOp(
+                    Identifier(tmp_left),
+                    "-",
+                    BinaryOp(Identifier(tmp_q), "*", Identifier(tmp_right)),
+                ),
+            ]),
+            indent,
+        )
+
+    def _gen_sorted_copy(self, seq_expr, indent: str) -> bool:
+        """Allocate and sort a numeric copy of a list-like pointer."""
+        if not (isinstance(seq_expr, Identifier)
+                and (seq_expr.name in self._list_locals or seq_expr.name in self._tuple_locals)):
+            return False
+        name = seq_expr.name
+        lbl = self._new_label()
+        src_ptr = f"__sort_src_{lbl}"
+        dst_ptr = f"__sort_dst_{lbl}"
+        len_local = f"__sort_len_{lbl}"
+        i_local = f"__sort_i_{lbl}"
+        j_local = f"__sort_j_{lbl}"
+        a_local = f"__sort_a_{lbl}"
+        b_local = f"__sort_b_{lbl}"
+        for local_name in (src_ptr, dst_ptr, len_local, i_local, j_local, a_local, b_local):
+            self._locals.add(local_name)
+        self._need_heap_ptr = True
+
+        self._emit(f"{indent}local.get ${self._wat_symbol(name)}")
+        self._emit(f"{indent}local.set ${self._wat_symbol(src_ptr)}")
+        self._emit(f"{indent}local.get ${self._wat_symbol(src_ptr)}")
+        self._emit(f"{indent}i32.trunc_f64_u")
+        self._emit(f"{indent}f64.load")
+        self._emit(f"{indent}local.set ${self._wat_symbol(len_local)}")
+
+        self._emit(f"{indent}global.get $__heap_ptr")
+        self._emit(f"{indent}f64.convert_i32_u")
+        self._emit(f"{indent}local.set ${self._wat_symbol(dst_ptr)}")
+        self._emit(f"{indent}global.get $__heap_ptr")
+        self._emit(f"{indent}local.get ${self._wat_symbol(len_local)}")
+        self._emit(f"{indent}i32.trunc_f64_u")
+        self._emit(f"{indent}i32.const 1")
+        self._emit(f"{indent}i32.add")
+        self._emit(f"{indent}i32.const 8")
+        self._emit(f"{indent}i32.mul")
+        self._emit(f"{indent}i32.add")
+        self._emit(f"{indent}global.set $__heap_ptr")
+
+        self._emit(f"{indent}local.get ${self._wat_symbol(dst_ptr)}")
+        self._emit(f"{indent}i32.trunc_f64_u")
+        self._emit(f"{indent}local.get ${self._wat_symbol(len_local)}")
+        self._emit(f"{indent}f64.store")
+
+        copy_blk = f"sort_copy_blk_{lbl}"
+        copy_lp = f"sort_copy_lp_{lbl}"
+        self._emit(f"{indent}f64.const 0")
+        self._emit(f"{indent}local.set ${self._wat_symbol(i_local)}")
+        self._emit(f"{indent}block ${copy_blk}")
+        self._emit(f"{indent}  loop ${copy_lp}")
+        self._emit(f"{indent}    local.get ${self._wat_symbol(i_local)}")
+        self._emit(f"{indent}    local.get ${self._wat_symbol(len_local)}")
+        self._emit(f"{indent}    f64.ge")
+        self._emit(f"{indent}    br_if ${copy_blk}")
+        self._emit(f"{indent}    local.get ${self._wat_symbol(dst_ptr)}")
+        self._emit(f"{indent}    i32.trunc_f64_u")
+        self._emit(f"{indent}    local.get ${self._wat_symbol(i_local)}")
+        self._emit(f"{indent}    i32.trunc_f64_u")
+        self._emit(f"{indent}    i32.const 8")
+        self._emit(f"{indent}    i32.mul")
+        self._emit(f"{indent}    i32.const 8")
+        self._emit(f"{indent}    i32.add")
+        self._emit(f"{indent}    i32.add")
+        self._emit(f"{indent}    local.get ${self._wat_symbol(src_ptr)}")
+        self._emit(f"{indent}    i32.trunc_f64_u")
+        self._emit(f"{indent}    local.get ${self._wat_symbol(i_local)}")
+        self._emit(f"{indent}    i32.trunc_f64_u")
+        self._emit(f"{indent}    i32.const 8")
+        self._emit(f"{indent}    i32.mul")
+        self._emit(f"{indent}    i32.const 8")
+        self._emit(f"{indent}    i32.add")
+        self._emit(f"{indent}    i32.add")
+        self._emit(f"{indent}    f64.load")
+        self._emit(f"{indent}    f64.store")
+        self._emit(f"{indent}    local.get ${self._wat_symbol(i_local)}")
+        self._emit(f"{indent}    f64.const 1")
+        self._emit(f"{indent}    f64.add")
+        self._emit(f"{indent}    local.set ${self._wat_symbol(i_local)}")
+        self._emit(f"{indent}    br ${copy_lp}")
+        self._emit(f"{indent}  end")
+        self._emit(f"{indent}end")
+
+        outer_blk = f"sort_outer_blk_{lbl}"
+        outer_lp = f"sort_outer_lp_{lbl}"
+        inner_blk = f"sort_inner_blk_{lbl}"
+        inner_lp = f"sort_inner_lp_{lbl}"
+        self._emit(f"{indent}f64.const 0")
+        self._emit(f"{indent}local.set ${self._wat_symbol(i_local)}")
+        self._emit(f"{indent}block ${outer_blk}")
+        self._emit(f"{indent}  loop ${outer_lp}")
+        self._emit(f"{indent}    local.get ${self._wat_symbol(i_local)}")
+        self._emit(f"{indent}    local.get ${self._wat_symbol(len_local)}")
+        self._emit(f"{indent}    f64.ge")
+        self._emit(f"{indent}    br_if ${outer_blk}")
+        self._emit(f"{indent}    f64.const 0")
+        self._emit(f"{indent}    local.set ${self._wat_symbol(j_local)}")
+        self._emit(f"{indent}    block ${inner_blk}")
+        self._emit(f"{indent}      loop ${inner_lp}")
+        self._emit(f"{indent}        local.get ${self._wat_symbol(j_local)}")
+        self._emit(f"{indent}        local.get ${self._wat_symbol(len_local)}")
+        self._emit(f"{indent}        f64.const 1")
+        self._emit(f"{indent}        f64.sub")
+        self._emit(f"{indent}        f64.ge")
+        self._emit(f"{indent}        br_if ${inner_blk}")
+        self._emit(f"{indent}        local.get ${self._wat_symbol(dst_ptr)}")
+        self._emit(f"{indent}        i32.trunc_f64_u")
+        self._emit(f"{indent}        local.get ${self._wat_symbol(j_local)}")
+        self._emit(f"{indent}        i32.trunc_f64_u")
+        self._emit(f"{indent}        i32.const 8")
+        self._emit(f"{indent}        i32.mul")
+        self._emit(f"{indent}        i32.const 8")
+        self._emit(f"{indent}        i32.add")
+        self._emit(f"{indent}        i32.add")
+        self._emit(f"{indent}        f64.load")
+        self._emit(f"{indent}        local.set ${self._wat_symbol(a_local)}")
+        self._emit(f"{indent}        local.get ${self._wat_symbol(dst_ptr)}")
+        self._emit(f"{indent}        i32.trunc_f64_u")
+        self._emit(f"{indent}        local.get ${self._wat_symbol(j_local)}")
+        self._emit(f"{indent}        i32.trunc_f64_u")
+        self._emit(f"{indent}        i32.const 1")
+        self._emit(f"{indent}        i32.add")
+        self._emit(f"{indent}        i32.const 8")
+        self._emit(f"{indent}        i32.mul")
+        self._emit(f"{indent}        i32.const 8")
+        self._emit(f"{indent}        i32.add")
+        self._emit(f"{indent}        i32.add")
+        self._emit(f"{indent}        f64.load")
+        self._emit(f"{indent}        local.set ${self._wat_symbol(b_local)}")
+        self._emit(f"{indent}        local.get ${self._wat_symbol(a_local)}")
+        self._emit(f"{indent}        local.get ${self._wat_symbol(b_local)}")
+        self._emit(f"{indent}        f64.gt")
+        self._emit(f"{indent}        if")
+        self._emit(f"{indent}          local.get ${self._wat_symbol(dst_ptr)}")
+        self._emit(f"{indent}          i32.trunc_f64_u")
+        self._emit(f"{indent}          local.get ${self._wat_symbol(j_local)}")
+        self._emit(f"{indent}          i32.trunc_f64_u")
+        self._emit(f"{indent}          i32.const 8")
+        self._emit(f"{indent}          i32.mul")
+        self._emit(f"{indent}          i32.const 8")
+        self._emit(f"{indent}          i32.add")
+        self._emit(f"{indent}          i32.add")
+        self._emit(f"{indent}          local.get ${self._wat_symbol(b_local)}")
+        self._emit(f"{indent}          f64.store")
+        self._emit(f"{indent}          local.get ${self._wat_symbol(dst_ptr)}")
+        self._emit(f"{indent}          i32.trunc_f64_u")
+        self._emit(f"{indent}          local.get ${self._wat_symbol(j_local)}")
+        self._emit(f"{indent}          i32.trunc_f64_u")
+        self._emit(f"{indent}          i32.const 1")
+        self._emit(f"{indent}          i32.add")
+        self._emit(f"{indent}          i32.const 8")
+        self._emit(f"{indent}          i32.mul")
+        self._emit(f"{indent}          i32.const 8")
+        self._emit(f"{indent}          i32.add")
+        self._emit(f"{indent}          i32.add")
+        self._emit(f"{indent}          local.get ${self._wat_symbol(a_local)}")
+        self._emit(f"{indent}          f64.store")
+        self._emit(f"{indent}        end")
+        self._emit(f"{indent}        local.get ${self._wat_symbol(j_local)}")
+        self._emit(f"{indent}        f64.const 1")
+        self._emit(f"{indent}        f64.add")
+        self._emit(f"{indent}        local.set ${self._wat_symbol(j_local)}")
+        self._emit(f"{indent}        br ${inner_lp}")
+        self._emit(f"{indent}      end")
+        self._emit(f"{indent}    end")
+        self._emit(f"{indent}    local.get ${self._wat_symbol(i_local)}")
+        self._emit(f"{indent}    f64.const 1")
+        self._emit(f"{indent}    f64.add")
+        self._emit(f"{indent}    local.set ${self._wat_symbol(i_local)}")
+        self._emit(f"{indent}    br ${outer_lp}")
+        self._emit(f"{indent}  end")
+        self._emit(f"{indent}end")
+        self._emit(f"{indent}local.get ${self._wat_symbol(dst_ptr)}")
+        return True
+
+    def _static_length(self, node):
+        """Return a compile-time-known sequence length, or None."""
+        if isinstance(node, (ListLiteral, TupleLiteral, SetLiteral)):
+            return len(node.elements)
+        if isinstance(node, DictLiteral):
+            mapping = self._flatten_static_dict_entries(node)
+            return None if mapping is None else len(mapping)
+        if isinstance(node, Identifier):
+            if node.name in self._dict_key_maps:
+                return len(self._dict_key_maps[node.name])
+            if node.name in self._list_locals or node.name in self._tuple_locals:
+                return None
+        return None
+
+    def _gen_static_zip_list(self, zip_call: CallExpr, indent: str) -> bool:
+        """Lower zip(a, b, ...) with static literal lengths to a placeholder list."""
+        if len(zip_call.args) < 2:
+            return False
+        lengths = [self._static_length(arg) for arg in zip_call.args]
+        if any(length is None for length in lengths):
+            return False
+        zipped_len = min(lengths)
+        self._gen_list_alloc(
+            ListLiteral([NumeralLiteral("0") for _ in range(zipped_len)]),
+            indent,
+        )
         return True
 
     def _emit_sum_over_pointer(self, ptr_expr, indent: str) -> None:
@@ -639,7 +875,8 @@ class WATCodeGenerator(
             if arg_node.name in self._string_len_locals:
                 len_local = self._string_len_locals[arg_node.name]
                 self._emit(f"{indent}local.get ${self._wat_symbol(len_local)}")
-            elif arg_node.name in self._list_locals or arg_node.name in self._dict_key_maps:
+            elif arg_node.name in self._list_locals or arg_node.name in self._tuple_locals \
+                    or arg_node.name in self._dict_key_maps:
                 # Load element count from the list header at offset 0.
                 self._emit(f"{indent}local.get ${self._wat_symbol(arg_node.name)}")
                 self._emit(f"{indent}i32.trunc_f64_u")
@@ -694,10 +931,42 @@ class WATCodeGenerator(
             and len(value.args) == 1
             and isinstance(value.args[0], (ListLiteral, TupleLiteral, SetLiteral, DictLiteral))
         )
-        if isinstance(value, (ListLiteral, TupleLiteral, SetLiteral)) or is_container_builtin:
+        returns_tuple = (
+            isinstance(value, CallExpr)
+            and _name(value.func) == "divmod"
+            and len(value.args) == 2
+        )
+        materialized_sequence = (
+            isinstance(value, (ListComprehension, SetComprehension))
+            and len(getattr(value, "clauses", [])) == 1
+            and not value.clauses[0].conditions
+        )
+        if isinstance(value, (TupleLiteral,)) or (
+            isinstance(value, CallExpr)
+            and _name(value.func) in _TUPLE_NAMES
+            and len(value.args) == 1
+            and isinstance(value.args[0], (ListLiteral, TupleLiteral))
+        ) or returns_tuple:
+            self._tuple_locals.add(name)
+            self._list_locals.discard(name)
+        elif isinstance(value, (ListLiteral, SetLiteral)) or materialized_sequence \
+                or is_container_builtin or (
+            isinstance(value, CallExpr)
+            and _name(value.func) == "sorted"
+            and len(value.args) >= 1
+        ) or (
+            isinstance(value, CallExpr)
+            and _name(value.func) in _LIST_NAMES
+            and len(value.args) == 1
+            and isinstance(value.args[0], CallExpr)
+            and _name(value.args[0].func) in _ZIP_NAMES
+        ):
             self._list_locals.add(name)
+            self._tuple_locals.discard(name)
         elif name in self._list_locals:
             self._list_locals.remove(name)
+        elif name in self._tuple_locals:
+            self._tuple_locals.remove(name)
 
     def _flatten_static_dict_entries(self, node):
         """Return an ordered mapping for a compile-time-resolvable DictLiteral."""
@@ -836,6 +1105,8 @@ class WATCodeGenerator(
                         del self._string_len_locals[name]
                     if name in self._list_locals:
                         self._list_locals.remove(name)
+                    if name in self._tuple_locals:
+                        self._tuple_locals.remove(name)
                     if name in self._dict_key_maps:
                         del self._dict_key_maps[name]
                     if name in self._lambda_locals:
@@ -1132,6 +1403,10 @@ class WATCodeGenerator(
                 self._emit(f"{indent}local.get ${self._wat_symbol(len_local)}")
                 self._emit(f"{indent}i32.trunc_f64_u")
                 self._emit(f"{indent}call $print_str")
+            elif isinstance(arg, Identifier) and arg.name in self._tuple_locals:
+                self._emit_print_sequence(arg.name, "(", ")", indent)
+            elif isinstance(arg, Identifier) and arg.name in self._list_locals:
+                self._emit_print_sequence(arg.name, "[", "]", indent)
             else:
                 self._gen_expr(arg, indent)
                 self._emit(f"{indent}call $print_f64")
@@ -1160,6 +1435,63 @@ class WATCodeGenerator(
             self._emit(f"{indent}i32.const {offset}   ;; end ptr")
             self._emit(f"{indent}i32.const {length}   ;; end len")
             self._emit(f"{indent}call $print_str")
+
+    def _emit_print_sequence(self, name: str, opening: str, closing: str, indent: str):
+        """Emit Python-like printing for a list/tuple local."""
+        lbl = self._new_label()
+        idx_local = f"__print_idx_{lbl}"
+        len_local = f"__print_len_{lbl}"
+        self._locals.add(idx_local)
+        self._locals.add(len_local)
+        open_ptr, open_len = self._intern(opening)
+        close_ptr, close_len = self._intern(closing)
+        comma_ptr, comma_len = self._intern(", ")
+        self._emit(f"{indent}i32.const {open_ptr}")
+        self._emit(f"{indent}i32.const {open_len}")
+        self._emit(f"{indent}call $print_str")
+        self._emit(f"{indent}local.get ${self._wat_symbol(name)}")
+        self._emit(f"{indent}i32.trunc_f64_u")
+        self._emit(f"{indent}f64.load")
+        self._emit(f"{indent}local.set ${self._wat_symbol(len_local)}")
+        self._emit(f"{indent}f64.const 0")
+        self._emit(f"{indent}local.set ${self._wat_symbol(idx_local)}")
+        blk = f"print_seq_blk_{lbl}"
+        loop = f"print_seq_lp_{lbl}"
+        self._emit(f"{indent}block ${blk}")
+        self._emit(f"{indent}  loop ${loop}")
+        self._emit(f"{indent}    local.get ${self._wat_symbol(idx_local)}")
+        self._emit(f"{indent}    local.get ${self._wat_symbol(len_local)}")
+        self._emit(f"{indent}    f64.ge")
+        self._emit(f"{indent}    br_if ${blk}")
+        self._emit(f"{indent}    local.get ${self._wat_symbol(idx_local)}")
+        self._emit(f"{indent}    f64.const 0")
+        self._emit(f"{indent}    f64.gt")
+        self._emit(f"{indent}    if")
+        self._emit(f"{indent}      i32.const {comma_ptr}")
+        self._emit(f"{indent}      i32.const {comma_len}")
+        self._emit(f"{indent}      call $print_str")
+        self._emit(f"{indent}    end")
+        self._emit(f"{indent}    local.get ${self._wat_symbol(name)}")
+        self._emit(f"{indent}    i32.trunc_f64_u")
+        self._emit(f"{indent}    local.get ${self._wat_symbol(idx_local)}")
+        self._emit(f"{indent}    i32.trunc_f64_u")
+        self._emit(f"{indent}    i32.const 8")
+        self._emit(f"{indent}    i32.mul")
+        self._emit(f"{indent}    i32.const 8")
+        self._emit(f"{indent}    i32.add")
+        self._emit(f"{indent}    i32.add")
+        self._emit(f"{indent}    f64.load")
+        self._emit(f"{indent}    call $print_f64")
+        self._emit(f"{indent}    local.get ${self._wat_symbol(idx_local)}")
+        self._emit(f"{indent}    f64.const 1")
+        self._emit(f"{indent}    f64.add")
+        self._emit(f"{indent}    local.set ${self._wat_symbol(idx_local)}")
+        self._emit(f"{indent}    br ${loop}")
+        self._emit(f"{indent}  end")
+        self._emit(f"{indent}end")
+        self._emit(f"{indent}i32.const {close_ptr}")
+        self._emit(f"{indent}i32.const {close_len}")
+        self._emit(f"{indent}call $print_str")
 
     # -----------------------------------------------------------------------
     # Expression generation  (each call pushes exactly one f64)
@@ -1299,6 +1631,9 @@ class WATCodeGenerator(
                 if isinstance(arg, (ListComprehension, GeneratorExpr)) and \
                         self._gen_simple_comprehension_list(arg, indent):
                     pass
+                elif isinstance(arg, CallExpr) and _name(arg.func) in _ZIP_NAMES and \
+                        self._gen_static_zip_list(arg, indent):
+                    pass
                 elif isinstance(arg, (ListLiteral, TupleLiteral, DictLiteral)):
                     self._gen_expr(arg, indent)
                 else:
@@ -1315,6 +1650,10 @@ class WATCodeGenerator(
                     self._gen_list_alloc(ListLiteral(elements), indent)
                 else:
                     self._emit(f"{indent}f64.const 0  ;; unsupported call: {fname}(...)")
+            elif fname == "divmod" and len(node.args) == 2:
+                self._gen_divmod_alloc(node.args[0], node.args[1], indent)
+            elif fname == "sorted" and len(node.args) >= 1 and self._gen_sorted_copy(node.args[0], indent):
+                pass
             elif fname in _SUM_NAMES and 1 <= len(node.args) <= 2:
                 self._emit_sum_over_pointer(node.args[0], indent)
                 if len(node.args) == 2:
@@ -1450,7 +1789,8 @@ class WATCodeGenerator(
 
         elif isinstance(node, (ListComprehension, SetComprehension,
                                 DictComprehension, GeneratorExpr)):
-            if isinstance(node, ListComprehension) and self._gen_simple_comprehension_list(node, indent):
+            if isinstance(node, (ListComprehension, SetComprehension)) \
+                    and self._gen_simple_comprehension_list(node, indent):
                 return
             # WAT has no native collection types.  For the common pattern
             # [elem for x in range(n)] with a single numeric clause, lower
@@ -1470,7 +1810,7 @@ class WATCodeGenerator(
             )
             is_list_comp = (
                 len(node.clauses) == 1
-                and iterable_name in self._list_locals
+                and (iterable_name in self._list_locals or iterable_name in self._tuple_locals)
                 and not clause.conditions
                 and isinstance(node, (ListComprehension, GeneratorExpr))
             )
@@ -1622,7 +1962,9 @@ class WATCodeGenerator(
 
         elif isinstance(node, IndexAccess):
             obj = node.obj
-            if isinstance(obj, Identifier) and obj.name in self._list_locals:
+            if isinstance(obj, Identifier) and (
+                obj.name in self._list_locals or obj.name in self._tuple_locals
+            ):
                 # list[i] / tuple[i]  →  load from base + 8 + i*8
                 self._emit(f"{indent};; {obj.name}[i]")
                 self._emit(f"{indent}local.get ${self._wat_symbol(obj.name)}")

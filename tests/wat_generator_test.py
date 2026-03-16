@@ -45,6 +45,7 @@ from multilingualprogramming.parser.ast_nodes import (
     TupleLiteral,
     DictLiteral,
     SetLiteral,
+    SetComprehension,
     IndexAccess,
     AwaitExpr,
     ListComprehension,
@@ -137,6 +138,48 @@ class WATExpressionTestSuite(unittest.TestCase):
         ))
         self.assertIn("sum_blk_", wat)
         self.assertIn("f64.add", wat)
+
+    def test_divmod_builtin_allocates_tuple(self):
+        wat = self.gen.generate(_prog(
+            VariableDeclaration(
+                "pair",
+                CallExpr(Identifier("divmod"), [NumeralLiteral("17"), NumeralLiteral("5")]),
+            )
+        ))
+        self.assertIn("f64.floor", wat)
+        self.assertIn(";; list/tuple literal [2 elements]", wat)
+
+    def test_sorted_builtin_over_list_local_emits_sort_blocks(self):
+        wat = self.gen.generate(_prog(
+            VariableDeclaration(
+                "values",
+                ListLiteral([NumeralLiteral("3"), NumeralLiteral("1"), NumeralLiteral("2")]),
+            ),
+            VariableDeclaration(
+                "sorted_values",
+                CallExpr(Identifier("sorted"), [Identifier("values")]),
+            ),
+        ))
+        self.assertIn("sort_outer_blk_", wat)
+        self.assertIn("f64.gt", wat)
+
+    def test_list_zip_with_static_literals_materializes_placeholder_sequence(self):
+        wat = self.gen.generate(_prog(
+            VariableDeclaration(
+                "pairs",
+                CallExpr(
+                    Identifier("list"),
+                    [CallExpr(
+                        Identifier("zip"),
+                        [
+                            ListLiteral([NumeralLiteral("1"), NumeralLiteral("2"), NumeralLiteral("3")]),
+                            ListLiteral([NumeralLiteral("4"), NumeralLiteral("5"), NumeralLiteral("6")]),
+                        ],
+                    )],
+                ),
+            )
+        ))
+        self.assertIn(";; list/tuple literal [3 elements]", wat)
 
     def test_math_import_alias_sqrt_lowers_to_f64_sqrt(self):
         wat = self.gen.generate(_prog(
@@ -656,6 +699,21 @@ class WATPrintTestSuite(unittest.TestCase):
             ),
         )
         self.assertGreaterEqual(wat.count(";; list/tuple literal"), 2)
+
+    def test_print_list_and_tuple_variables_emit_bracketed_output(self):
+        wat = self._wat(
+            VariableDeclaration(
+                "numbers",
+                ListLiteral([NumeralLiteral("1"), NumeralLiteral("2")]),
+            ),
+            VariableDeclaration(
+                "pair",
+                CallExpr(Identifier("divmod"), [NumeralLiteral("17"), NumeralLiteral("5")]),
+            ),
+            self._print(Identifier("numbers"), Identifier("pair")),
+        )
+        self.assertIn("print_seq_blk_", wat)
+        self.assertIn("call $print_str", wat)
 
     def test_print_multiple_args_inserts_separator(self):
         wat = self._wat(
@@ -1677,6 +1735,17 @@ class WATInheritanceWasmExecutionTestSuite(unittest.TestCase):
         )
         self.assertEqual(self._run_main(prog), [4.0])
 
+    def test_sorted_and_divmod_execute(self):
+        prog = _parse_en(
+            "let values = [3, 1, 2]\n"
+            "let sorted_values = sorted(values)\n"
+            "let pair = divmod(17, 5)\n"
+            "print(sorted_values)\n"
+            "print(pair)\n"
+        )
+        printed = self._run_main(prog)
+        self.assertEqual(printed, [1.0, 2.0, 3.0, 3.0, 2.0])
+
 
 # ---------------------------------------------------------------------------
 # New feature tests — items 1–5
@@ -2066,6 +2135,23 @@ class WATListComprehensionTestSuite(unittest.TestCase):
         self.assertIn("comp_list_blk_", wat)
         self.assertIn("global.set $__heap_ptr", wat)
         self.assertNotIn("unsupported call: list(...)", wat)
+
+    def test_setcomp_over_range_materializes_sequence_storage(self):
+        stmts = [
+            ExpressionStatement(
+                SetLiteral([NumeralLiteral("0")])
+            ),
+            ExpressionStatement(
+                SetComprehension(
+                    element=Identifier("x"),
+                    target=Identifier("x"),
+                    iterable=CallExpr(Identifier("range"), [NumeralLiteral("4")]),
+                )
+            ),
+        ]
+        wat = _gen(*stmts)
+        self.assertIn("comp_list_blk_", wat)
+        self.assertNotIn("collections not representable as f64", wat)
 
 
 class WATMatchCaseExtendedTestSuite(unittest.TestCase):

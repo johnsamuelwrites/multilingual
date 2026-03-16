@@ -46,6 +46,7 @@ _LIST_NAMES = _aliases_for("list")
 _TUPLE_NAMES = _aliases_for("tuple")
 _SET_NAMES = _aliases_for("set")
 _STR_NAMES = _aliases_for("str")
+_ZIP_NAMES = _aliases_for("zip")
 
 
 def _name(node) -> str:

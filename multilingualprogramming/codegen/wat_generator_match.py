@@ -35,7 +35,10 @@ class WATGeneratorMatchMixin:
         blk = f"__match_end_{n}"
         self._locals.add(subj_local)
         subj_var_name = _name(stmt.subject) if isinstance(stmt.subject, Identifier) else None
-        subj_is_list = bool(subj_var_name and subj_var_name in self._list_locals)
+        subj_is_list = bool(
+            subj_var_name
+            and (subj_var_name in self._list_locals or subj_var_name in self._tuple_locals)
+        )
 
         self._emit(f"{indent};; match ...")
         self._gen_expr(stmt.subject, indent)
