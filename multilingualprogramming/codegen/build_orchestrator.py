@@ -146,7 +146,10 @@ class BuildOrchestrator:  # pylint: disable=too-many-instance-attributes
                 },
             }
 
-            self._atomic_write_text(self.outputs.transpiled_python, python_source)
+            self._atomic_write_text(
+                self.outputs.transpiled_python,
+                "# pylint: skip-file\n" + python_source,
+            )
             self._atomic_write_text(self.outputs.wat, wat_source)
             if wasm_bytes is not None:
                 self._atomic_write_bytes(self.outputs.wasm, wasm_bytes)

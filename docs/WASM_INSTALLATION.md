@@ -399,7 +399,6 @@ pytest tests/wasm_codegen_poc_test.py
 
 - 🐛 [GitHub Issues](https://github.com/johnsamuelwrites/multilingual/issues)
 - 💬 [GitHub Discussions](https://github.com/johnsamuelwrites/multilingual/discussions)
-- 📧 Email: johnsamuelwrites@gmail.com
 
 ### Reporting Issues
 

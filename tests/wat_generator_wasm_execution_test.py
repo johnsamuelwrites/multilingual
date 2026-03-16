@@ -713,7 +713,7 @@ class WATCrossFunctionExceptionTestSuite(unittest.TestCase):
     _wasmtime = importlib.util.find_spec("wasmtime")
 
     def _run(self, prog):
-        from wasmtime import Store, Module, Linker, WasiConfig  # pylint: disable=import-outside-toplevel
+        from wasmtime import Store, Module, Linker, WasiConfig  # pylint: disable=import-outside-toplevel,import-error
         gen = WATCodeGenerator()
         wat = gen.generate(prog)
         with tempfile.NamedTemporaryFile(

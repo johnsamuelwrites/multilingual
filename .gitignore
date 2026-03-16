@@ -142,7 +142,7 @@ tmp_complete_*.txt
 *.wat
 *.wasm
 
-# Generated browser demo artifacts (produced by examples/browser/build.py)
+# Generated browser demo artifacts (produced by build-wasm-bundle / examples/browser/build.py)
 examples/browser/module.wat
 examples/browser/module.wasm
 examples/browser/app.wat
@@ -155,3 +155,12 @@ examples/browser/transpiled.py
 examples/browser/abi_manifest.json
 examples/browser/build.lock.json
 examples/browser/build_graph.json
+# Generated docs browser demo artifacts (produced by build-wasm-bundle)
+docs/browser/*/transpiled.py
+docs/browser/*/host_shim.js
+docs/browser/*/renderer_template.js
+docs/browser/*/abi_manifest.json
+docs/browser/*/build_graph.json
+docs/browser/*/build.lock.json
+docs/browser/*/module.wat
+docs/browser/*/module.wasm

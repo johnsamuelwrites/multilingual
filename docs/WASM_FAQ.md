@@ -400,7 +400,7 @@ pip install --upgrade multilingualprogramming
 
 **Answer**:
 - 💬 GitHub Issues/Discussions
-- 📧 johnsamuelwrites@gmail.com
+
 
 ### Q: Is there a community?
 
