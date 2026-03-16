@@ -444,17 +444,8 @@ class WATCodeGenerator(
         lbl = self._new_label()
         ptr_local = f"__list_{lbl}_ptr"
         self._locals.add(ptr_local)
-        self._need_heap_ptr = True
-
         self._emit(f"{indent};; list/tuple literal [{n} elements]")
-        # Capture old heap_ptr as f64 base address, then advance.
-        self._emit(f"{indent}global.get $__heap_ptr")
-        self._emit(f"{indent}f64.convert_i32_u")
-        self._emit(f"{indent}local.tee ${self._wat_symbol(ptr_local)}")
-        self._emit(f"{indent}i32.trunc_f64_u")
-        self._emit(f"{indent}i32.const {total_bytes}")
-        self._emit(f"{indent}i32.add")
-        self._emit(f"{indent}global.set $__heap_ptr")
+        self._emit_alloc(total_bytes, ptr_local, indent)
         # Store length header at base + 0.
         self._emit(f"{indent}local.get ${self._wat_symbol(ptr_local)}")
         self._emit(f"{indent}i32.trunc_f64_u")
@@ -535,18 +526,13 @@ class WATCodeGenerator(
         self._emit(f"{indent}f64.load")
         self._emit(f"{indent}local.set ${self._wat_symbol(len_local)}")
 
-        self._emit(f"{indent}global.get $__heap_ptr")
-        self._emit(f"{indent}f64.convert_i32_u")
-        self._emit(f"{indent}local.set ${self._wat_symbol(dst_ptr)}")
-        self._emit(f"{indent}global.get $__heap_ptr")
         self._emit(f"{indent}local.get ${self._wat_symbol(len_local)}")
         self._emit(f"{indent}i32.trunc_f64_u")
         self._emit(f"{indent}i32.const 1")
         self._emit(f"{indent}i32.add")
         self._emit(f"{indent}i32.const 8")
         self._emit(f"{indent}i32.mul")
-        self._emit(f"{indent}i32.add")
-        self._emit(f"{indent}global.set $__heap_ptr")
+        self._emit_alloc_dynamic(dst_ptr, indent)
 
         self._emit(f"{indent}local.get ${self._wat_symbol(dst_ptr)}")
         self._emit(f"{indent}i32.trunc_f64_u")
@@ -778,18 +764,13 @@ class WATCodeGenerator(
         self._emit(f"{indent}f64.sub")
         self._emit(f"{indent}local.set ${self._wat_symbol(len_local)}")
 
-        self._emit(f"{indent}global.get $__heap_ptr")
-        self._emit(f"{indent}f64.convert_i32_u")
-        self._emit(f"{indent}local.set ${self._wat_symbol(ptr_local)}")
-        self._emit(f"{indent}global.get $__heap_ptr")
         self._emit(f"{indent}local.get ${self._wat_symbol(len_local)}")
         self._emit(f"{indent}i32.trunc_f64_u")
         self._emit(f"{indent}i32.const 1")
         self._emit(f"{indent}i32.add")
         self._emit(f"{indent}i32.const 8")
         self._emit(f"{indent}i32.mul")
-        self._emit(f"{indent}i32.add")
-        self._emit(f"{indent}global.set $__heap_ptr")
+        self._emit_alloc_dynamic(ptr_local, indent)
 
         self._emit(f"{indent}local.get ${self._wat_symbol(ptr_local)}")
         self._emit(f"{indent}i32.trunc_f64_u")
@@ -882,18 +863,13 @@ class WATCodeGenerator(
         self._emit(f"    f64.sub")
         self._emit(f"    local.set ${self._wat_symbol(len_local)}")
 
-        self._emit("    global.get $__heap_ptr")
-        self._emit("    f64.convert_i32_u")
-        self._emit(f"    local.set ${self._wat_symbol(ptr_local)}")
-        self._emit("    global.get $__heap_ptr")
         self._emit(f"    local.get ${self._wat_symbol(len_local)}")
         self._emit("    i32.trunc_f64_u")
         self._emit("    i32.const 1")
         self._emit("    i32.add")
         self._emit("    i32.const 8")
         self._emit("    i32.mul")
-        self._emit("    i32.add")
-        self._emit("    global.set $__heap_ptr")
+        self._emit_alloc_dynamic(ptr_local, "    ")
 
         self._emit(f"    local.get ${self._wat_symbol(ptr_local)}")
         self._emit("    i32.trunc_f64_u")
@@ -964,21 +940,14 @@ class WATCodeGenerator(
         write_idx = f"__comp_write_{label}"
         cap_local = f"__comp_cap_{label}"
         self._locals.update({ptr_local, write_idx, cap_local})
-        self._need_heap_ptr = True
-
         def alloc_with_capacity():
-            self._emit(f"{indent}global.get $__heap_ptr")
-            self._emit(f"{indent}f64.convert_i32_u")
-            self._emit(f"{indent}local.set ${self._wat_symbol(ptr_local)}")
-            self._emit(f"{indent}global.get $__heap_ptr")
             self._emit(f"{indent}local.get ${self._wat_symbol(cap_local)}")
             self._emit(f"{indent}i32.trunc_f64_u")
             self._emit(f"{indent}i32.const 1")
             self._emit(f"{indent}i32.add")
             self._emit(f"{indent}i32.const 8")
             self._emit(f"{indent}i32.mul")
-            self._emit(f"{indent}i32.add")
-            self._emit(f"{indent}global.set $__heap_ptr")
+            self._emit_alloc_dynamic(ptr_local, indent)
             self._emit(f"{indent}local.get ${self._wat_symbol(ptr_local)}")
             self._emit(f"{indent}i32.trunc_f64_u")
             self._emit(f"{indent}f64.const 0")
@@ -1236,18 +1205,13 @@ class WATCodeGenerator(
             self._emit(f"{indent}local.get ${self._wat_symbol(src_len_local)}")
             self._emit(f"{indent}local.set ${self._wat_symbol(len_local)}")
 
-        self._emit(f"{indent}global.get $__heap_ptr")
-        self._emit(f"{indent}f64.convert_i32_u")
-        self._emit(f"{indent}local.set ${self._wat_symbol(ptr_local)}")
-        self._emit(f"{indent}global.get $__heap_ptr")
         self._emit(f"{indent}local.get ${self._wat_symbol(len_local)}")
         self._emit(f"{indent}i32.trunc_f64_u")
         self._emit(f"{indent}i32.const 1")
         self._emit(f"{indent}i32.add")
         self._emit(f"{indent}i32.const 8")
         self._emit(f"{indent}i32.mul")
-        self._emit(f"{indent}i32.add")
-        self._emit(f"{indent}global.set $__heap_ptr")
+        self._emit_alloc_dynamic(ptr_local, indent)
 
         self._emit(f"{indent}local.get ${self._wat_symbol(ptr_local)}")
         self._emit(f"{indent}i32.trunc_f64_u")
@@ -1637,18 +1601,13 @@ class WATCodeGenerator(
         self._emit(f"{indent}f64.const {float(len(prefix) + len(suffix))}")
         self._emit(f"{indent}f64.sub")
         self._emit(f"{indent}local.set ${self._wat_symbol(star_len)}")
-        self._emit(f"{indent}global.get $__heap_ptr")
-        self._emit(f"{indent}f64.convert_i32_u")
-        self._emit(f"{indent}local.set ${self._wat_symbol(star_ptr)}")
-        self._emit(f"{indent}global.get $__heap_ptr")
         self._emit(f"{indent}local.get ${self._wat_symbol(star_len)}")
         self._emit(f"{indent}i32.trunc_f64_u")
         self._emit(f"{indent}i32.const 1")
         self._emit(f"{indent}i32.add")
         self._emit(f"{indent}i32.const 8")
         self._emit(f"{indent}i32.mul")
-        self._emit(f"{indent}i32.add")
-        self._emit(f"{indent}global.set $__heap_ptr")
+        self._emit_alloc_dynamic(star_ptr, indent)
         self._emit(f"{indent}local.get ${self._wat_symbol(star_ptr)}")
         self._emit(f"{indent}i32.trunc_f64_u")
         self._emit(f"{indent}local.get ${self._wat_symbol(star_len)}")
@@ -2782,6 +2741,28 @@ class WATCodeGenerator(
 
         else:
             self._emit(f"{indent}f64.const 0  ;; unsupported expr: {type(node).__name__}")
+
+    # -----------------------------------------------------------------------
+    # Heap allocation helpers — use $ml_alloc instead of inline bump pointer
+    # -----------------------------------------------------------------------
+
+    def _emit_alloc(self, size: int, ptr_local: str, indent: str) -> None:
+        """Allocate *size* bytes via $ml_alloc; store result (f64) in ptr_local."""
+        self._emit(f"{indent}i32.const {size}")
+        self._emit_alloc_dynamic(ptr_local, indent)
+
+    def _emit_alloc_dynamic(self, ptr_local: str, indent: str) -> None:
+        """Call $ml_alloc with size already on stack (i32); store result (f64) in ptr_local."""
+        self._emit(f"{indent}call $ml_alloc")
+        self._emit(f"{indent}f64.convert_i32_u")
+        self._emit(f"{indent}local.set ${self._wat_symbol(ptr_local)}")
+
+    def _emit_free(self, ptr_local: str, size: int, indent: str) -> None:
+        """Return a constant-size block at ptr_local (f64) to the free list."""
+        self._emit(f"{indent}local.get ${self._wat_symbol(ptr_local)}")
+        self._emit(f"{indent}i32.trunc_f64_u")
+        self._emit(f"{indent}i32.const {size}")
+        self._emit(f"{indent}call $ml_free")
 
     # -----------------------------------------------------------------------
     # Condition generation (pushes i32: 0 or 1)

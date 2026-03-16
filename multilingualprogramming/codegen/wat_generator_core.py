@@ -38,7 +38,8 @@ class WATGeneratorCoreMixin:
         )
 
     def _build_module(self) -> str:
-        self._emit_wasi_runtime()
+        heap_base = max((len(self._data) + 7) // 8 * 8, 64)
+        self._emit_wasi_runtime(heap_base)
         lines = ["(module"]
         lines += [
             '  (import "wasi_snapshot_preview1" "fd_write"'
@@ -48,10 +49,8 @@ class WATGeneratorCoreMixin:
         if self._data:
             escaped = "".join(f"\\{b:02x}" for b in self._data)
             lines.append(f'  (data (i32.const 0) "{escaped}")')
-        has_stateful = any(size > 0 for size in self._class_obj_sizes.values())
-        if has_stateful or self._need_heap_ptr:
-            heap_base = max((len(self._data) + 7) // 8 * 8, 64)
-            lines.append(f'  (global $__heap_ptr (mut i32) (i32.const {heap_base}))')
+        # $__heap_ptr is always declared: $ml_alloc references it unconditionally.
+        lines.append(f'  (global $__heap_ptr (mut i32) (i32.const {heap_base}))')
         if self._lambda_table:
             n = len(self._lambda_table)
             lines.append(f'  (table {n} funcref)')
@@ -79,7 +78,7 @@ class WATGeneratorCoreMixin:
     # the heap (which grows from the data section upward) can never reach it.
     _WASM_PAGES: int = 4
 
-    def _emit_wasi_runtime(self) -> None:
+    def _emit_wasi_runtime(self, heap_base: int) -> None:
         """Emit self-contained WAT functions for I/O and math.
 
         Replaces the six former ``env`` host imports with internal WAT
@@ -541,6 +540,119 @@ class WATGeneratorCoreMixin:
       local.set $result
     end
     local.get $result
+  )
+  ;; ── Allocator ────────────────────────────────────────────────────────────
+  ;; Three segregated free lists by size class (≤32, ≤64, ≤256 bytes).
+  ;; Larger blocks are bump-allocated and never freed (no GC needed for them).
+  (global $__fl_s32  (mut i32) (i32.const 0))
+  (global $__fl_s64  (mut i32) (i32.const 0))
+  (global $__fl_s256 (mut i32) (i32.const 0))
+  ;; Heap base: fixed at compile time for reset support.
+  (global $__heap_base i32 (i32.const {heap_base}))
+  ;; Allocate `size` bytes; returns i32 pointer.
+  ;; Checks the appropriate free list first, falls back to bump allocation.
+  (func $ml_alloc (param $size i32) (result i32)
+    (local $head i32) (local $ptr i32)
+    block $miss
+      local.get $size
+      i32.const 32
+      i32.le_s
+      if
+        global.get $__fl_s32
+        local.tee $head
+        i32.eqz
+        br_if $miss
+        local.get $head
+        i32.load
+        global.set $__fl_s32
+        local.get $head
+        return
+      end
+      local.get $size
+      i32.const 64
+      i32.le_s
+      if
+        global.get $__fl_s64
+        local.tee $head
+        i32.eqz
+        br_if $miss
+        local.get $head
+        i32.load
+        global.set $__fl_s64
+        local.get $head
+        return
+      end
+      local.get $size
+      i32.const 256
+      i32.le_s
+      if
+        global.get $__fl_s256
+        local.tee $head
+        i32.eqz
+        br_if $miss
+        local.get $head
+        i32.load
+        global.set $__fl_s256
+        local.get $head
+        return
+      end
+    end
+    global.get $__heap_ptr
+    local.set $ptr
+    local.get $ptr
+    local.get $size
+    i32.add
+    global.set $__heap_ptr
+    local.get $ptr
+  )
+  ;; Return `size` bytes at `ptr` to the appropriate free list.
+  ;; Blocks larger than 256 bytes are not tracked (bump-only region).
+  (func $ml_free (param $ptr i32) (param $size i32)
+    local.get $size
+    i32.const 32
+    i32.le_s
+    if
+      local.get $ptr
+      global.get $__fl_s32
+      i32.store
+      local.get $ptr
+      global.set $__fl_s32
+      return
+    end
+    local.get $size
+    i32.const 64
+    i32.le_s
+    if
+      local.get $ptr
+      global.get $__fl_s64
+      i32.store
+      local.get $ptr
+      global.set $__fl_s64
+      return
+    end
+    local.get $size
+    i32.const 256
+    i32.le_s
+    if
+      local.get $ptr
+      global.get $__fl_s256
+      i32.store
+      local.get $ptr
+      global.set $__fl_s256
+      return
+    end
+  )
+  ;; Reset heap to its initial state and clear all free lists.
+  ;; Exported so the browser host can call it between "run" invocations.
+  (func $__ml_reset (export "__ml_reset")
+    global.get $__heap_base
+    global.set $__heap_ptr
+    i32.const 0
+    global.set $__fl_s32
+    i32.const 0
+    global.set $__fl_s64
+    i32.const 0
+    global.set $__fl_s256
   )
   ;; ── End WASI runtime ─────────────────────────────────────────────────────"""
         self._funcs.insert(0, runtime)

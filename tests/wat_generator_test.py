@@ -1534,7 +1534,9 @@ class WATOopObjectModelTestSuite(unittest.TestCase):
             ExpressionStatement(CallExpr(Identifier("Math"), [])),
         )
         self.assertIn("f64.const 0  ;; implicit self", wat)
-        self.assertNotIn("global.get $__heap_ptr", wat)
+        # Stateless class: __main should not call $ml_alloc (no heap allocation for self)
+        main_body = wat.split('(func $__main')[1].split('\n  (func ')[0] if '(func $__main' in wat else ""
+        self.assertNotIn("call $ml_alloc", main_body)
 
     def test_field_byte_offset_correct(self):
         """Second field in a two-field class must use i32.const 8."""

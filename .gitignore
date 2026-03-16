@@ -137,3 +137,9 @@ dmypy.json
 
 # Generated example temp files
 tmp_complete_*.txt
+
+# Generated browser demo artifacts (produced by examples/browser/build.py)
+examples/browser/app.wat
+examples/browser/app.wasm
+examples/browser/wasi_shim.js
+examples/browser/renderer.js

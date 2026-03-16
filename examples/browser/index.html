@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Multilingual → WASM demo</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      max-width: 720px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+      background: #0f0f0f;
+      color: #e0e0e0;
+    }
+    h1 { color: #7ec8e3; margin-bottom: 0.25rem; }
+    p.subtitle { color: #888; margin-top: 0; }
+    .card {
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1rem;
+    }
+    label { display: block; font-size: 0.85rem; color: #aaa; margin-bottom: 0.4rem; }
+    textarea {
+      width: 100%;
+      box-sizing: border-box;
+      background: #111;
+      color: #c9d1d9;
+      border: 1px solid #444;
+      border-radius: 4px;
+      font-family: "Fira Code", "Cascadia Code", monospace;
+      font-size: 0.9rem;
+      padding: 0.6rem;
+      resize: vertical;
+    }
+    .row { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+    select {
+      background: #1a1a1a;
+      color: #e0e0e0;
+      border: 1px solid #444;
+      border-radius: 4px;
+      padding: 0.4rem 0.6rem;
+      font-size: 0.9rem;
+    }
+    button {
+      background: #238636;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      padding: 0.45rem 1.1rem;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+    button:hover { background: #2ea043; }
+    button:disabled { background: #444; cursor: default; }
+    #status { font-size: 0.8rem; color: #888; }
+    pre#output {
+      background: #111;
+      border: 1px solid #333;
+      border-radius: 4px;
+      padding: 0.75rem 1rem;
+      font-family: "Fira Code", "Cascadia Code", monospace;
+      font-size: 0.875rem;
+      min-height: 3rem;
+      white-space: pre-wrap;
+      word-break: break-all;
+      color: #7ee787;
+    }
+    .badge {
+      display: inline-block;
+      background: #21262d;
+      border: 1px solid #30363d;
+      border-radius: 20px;
+      padding: 0.15rem 0.6rem;
+      font-size: 0.75rem;
+      color: #aaa;
+      margin-left: 0.4rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>Multilingual → WASM <span class="badge">browser demo</span></h1>
+  <p class="subtitle">
+    Source code compiled to WebAssembly. Only a tiny WASI <code>fd_write</code>
+    polyfill is needed — no custom JavaScript host functions.
+  </p>
+
+  <div class="card">
+    <label for="source">Source — edit and hit Run</label>
+    <textarea id="source" rows="14" spellcheck="false">def fibonacci(n):
+    let a = 0
+    let b = 1
+    let count = 0
+    while count < n:
+        let temp = b
+        b = a + b
+        a = temp
+        count = count + 1
+    return a
+
+let i = 0
+while i < 15:
+    print(fibonacci(i))
+    i = i + 1</textarea>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <label for="lang" style="margin:0">Language:</label>
+      <select id="lang">
+        <option value="en" selected>English (en)</option>
+        <option value="fr">French (fr)</option>
+        <option value="de">German (de)</option>
+        <option value="es">Spanish (es)</option>
+        <option value="it">Italian (it)</option>
+        <option value="pt">Portuguese (pt)</option>
+        <option value="nl">Dutch (nl)</option>
+        <option value="sv">Swedish (sv)</option>
+        <option value="da">Danish (da)</option>
+        <option value="fi">Finnish (fi)</option>
+        <option value="pl">Polish (pl)</option>
+        <option value="ar">Arabic (ar)</option>
+        <option value="zh">Chinese (zh)</option>
+        <option value="ja">Japanese (ja)</option>
+        <option value="hi">Hindi (hi)</option>
+        <option value="bn">Bengali (bn)</option>
+        <option value="ta">Tamil (ta)</option>
+      </select>
+      <button id="runBtn">▶ Run</button>
+      <span id="status"></span>
+    </div>
+  </div>
+
+  <div class="card">
+    <label>Output</label>
+    <pre id="output">(press Run)</pre>
+  </div>
+
+  <!--
+    The compiler runs in-browser via Pyodide (Python → WASM).
+    If Pyodide is unavailable the page falls back to a pre-built app.wasm
+    built by running:  python build.py
+  -->
+  <script type="module">
+    const runBtn   = document.getElementById("runBtn");
+    const statusEl = document.getElementById("status");
+    const outputEl = document.getElementById("output");
+    const sourceEl = document.getElementById("source");
+    const langEl   = document.getElementById("lang");
+
+    // ── WASI shim ────────────────────────────────────────────────────────────
+    // Implements wasi_snapshot_preview1.fd_write so stdout goes to outputEl.
+    function makeWasiImports(memoryRef) {
+      const dec = new TextDecoder("utf-8");
+      let buf = "";
+      function flush() {
+        let nl;
+        while ((nl = buf.indexOf("\n")) !== -1) {
+          outputEl.textContent += buf.slice(0, nl) + "\n";
+          buf = buf.slice(nl + 1);
+        }
+      }
+      return {
+        wasi_snapshot_preview1: {
+          fd_write(fd, iovsPtr, iovsLen, nwrittenPtr) {
+            if (fd !== 1 && fd !== 2) return 8;
+            const mem = memoryRef.current;
+            if (!mem) return 8;
+            const view = new DataView(mem.buffer);
+            let written = 0;
+            for (let i = 0; i < iovsLen; i++) {
+              const ptr = view.getUint32(iovsPtr + i * 8, true);
+              const len = view.getUint32(iovsPtr + i * 8 + 4, true);
+              buf += dec.decode(new Uint8Array(mem.buffer, ptr, len));
+              written += len;
+            }
+            flush();
+            view.setUint32(nwrittenPtr, written, true);
+            return 0;
+          },
+        },
+      };
+    }
+
+    // ── Run via pre-built app.wasm (fallback) ─────────────────────────────
+    async function runPrebuilt() {
+      statusEl.textContent = "Loading app.wasm …";
+      const resp = await fetch("app.wasm");
+      if (!resp.ok) throw new Error("app.wasm not found — run build.py first");
+      const bytes = await resp.arrayBuffer();
+      return runWasm(new Uint8Array(bytes));
+    }
+
+    async function runWasm(wasmBytes) {
+      const memRef = { current: null };
+      const imports = makeWasiImports(memRef);
+      const result = await WebAssembly.instantiate(wasmBytes, imports);
+      const exp = result.instance.exports;
+      memRef.current = exp.memory;
+      if (exp.__ml_reset) exp.__ml_reset();   // reset heap between runs
+      outputEl.textContent = "";
+      if (exp.__main) exp.__main();
+    }
+
+    // ── Run via Pyodide (in-browser Python compiler) ──────────────────────
+    let pyodide = null;
+
+    async function loadPyodide() {
+      if (pyodide) return pyodide;
+      statusEl.textContent = "Loading Pyodide (first run only) …";
+      const { loadPyodide: load } = await import(
+        "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/pyodide.mjs"
+      );
+      pyodide = await load();
+      // Install the multilingual package from the repo root (served locally).
+      await pyodide.loadPackage("micropip");
+      const micropip = pyodide.pyimport("micropip");
+      try {
+        await micropip.install("multilingualprogramming");
+      } catch {
+        // Fall back to loading from the current origin (dev server).
+        pyodide.runPython(`
+import sys, pathlib
+sys.path.insert(0, "/")
+`);
+      }
+      return pyodide;
+    }
+
+    async function compileAndRun(source, lang) {
+      const py = await loadPyodide();
+      statusEl.textContent = "Compiling …";
+      const wat = py.runPython(`
+from multilingualprogramming.lexer.lexer import Lexer
+from multilingualprogramming.parser.parser import Parser
+from multilingualprogramming.codegen.wat_generator import WATCodeGenerator
+tokens = Lexer(${JSON.stringify(source)}, language=${JSON.stringify(lang)}).tokenize()
+prog = Parser(tokens, source_language=${JSON.stringify(lang)}).parse()
+WATCodeGenerator().generate(prog)
+`);
+      // wat2wasm via Pyodide's wasmtime if available, else use browser API
+      let wasmBytes;
+      try {
+        wasmBytes = py.runPython(`
+import wasmtime, js
+wasmtime.wat2wasm(${JSON.stringify(wat)})
+`).toJs();
+      } catch {
+        // Browser-native wat-to-wasm is not available; encode WAT as UTF-8
+        // and use WebAssembly.validate to detect errors, then fall through.
+        throw new Error("wasmtime not available in Pyodide — run build.py and use the pre-built app.wasm");
+      }
+      await runWasm(wasmBytes);
+    }
+
+    // ── Button handler ────────────────────────────────────────────────────
+    runBtn.addEventListener("click", async () => {
+      runBtn.disabled = true;
+      statusEl.textContent = "";
+      outputEl.textContent = "";
+      const source = sourceEl.value;
+      const lang   = langEl.value;
+      try {
+        // Try Pyodide first (live compilation), fall back to pre-built WASM.
+        if (typeof window !== "undefined" && window.location.protocol !== "file:") {
+          await compileAndRun(source, lang);
+        } else {
+          await runPrebuilt();
+        }
+        statusEl.textContent = "✓ done";
+      } catch (err) {
+        // Pyodide unavailable or no wasmtime → try pre-built wasm
+        try {
+          await runPrebuilt();
+          statusEl.textContent = "✓ done (pre-built wasm)";
+        } catch (e2) {
+          statusEl.textContent = "✗ error";
+          outputEl.textContent = `${err.message}\n\nFallback also failed: ${e2.message}`;
+        }
+      } finally {
+        runBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
