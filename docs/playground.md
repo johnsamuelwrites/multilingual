@@ -2,12 +2,16 @@
 
 Try the **Multilingual Programming Language** directly in your browser — no installation required.
 
-The interactive playground still uses [Pyodide](https://pyodide.org) for live,
-in-browser compilation and execution. For deployed web applications, the
-canonical browser path is now the prebuilt bundle flow shown in
-[`examples/browser`](../examples/browser/): compile ahead of time with
-`build-wasm-bundle`, ship `module.wasm`, and load it with the generated
-`host_shim.js` and `renderer_template.js`.
+For zero-install, instant-load browser execution the canonical path is the
+**prebuilt bundle flow**: compile ahead of time with `build-wasm-bundle`,
+ship `module.wasm`, and load it with the generated `host_shim.js` — no
+runtime download required.  Live demos using this approach are in
+[`examples/browser`](../examples/browser/).
+
+The interactive playground below uses [Pyodide](https://pyodide.org) for
+live, in-browser compilation (the source → WAT step requires a Python
+runtime).  If first-load size matters for your use case, prefer the
+prebuilt bundle flow above.
 
 ## What you can do
 

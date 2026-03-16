@@ -6,6 +6,234 @@ This guide explains how the WASM backend works and how to develop with it.
 
 ---
 
+## Wasmtime CLI Quickstart
+
+This section covers the **actual, working** WAT/WASM pipeline: write multilingual source code,
+compile it to a WASI-compatible `.wasm` binary, and run it natively with `wasmtime`.
+
+### Prerequisites
+
+| Requirement | Install |
+|---|---|
+| `wasmtime` CLI | `curl https://wasmtime.dev/install.sh -sSf \| bash` (Linux/macOS) or [wasmtime releases](https://github.com/bytecodealliance/wasmtime/releases) (Windows) |
+| `wasmtime` Python package | `pip install wasmtime` (used to compile WAT → WASM during the build step) |
+
+Verify both are available:
+
+```bash
+wasmtime --version          # e.g., wasmtime-cli 27.0.0
+python -c "import wasmtime; print(wasmtime.__version__)"
+```
+
+> **WAT-only mode:** If the `wasmtime` Python package is not installed, the build still
+> produces a valid `module.wat` text file — you can then compile it manually:
+> ```bash
+> wat2wasm module.wat -o module.wasm  # from the WABT toolkit
+> ```
+
+---
+
+### Step 1 — Write a multilingual source file
+
+Save the following as `hello_wasi.ml` (English keywords; runs in any WASI runtime):
+
+```text
+def fibonacci(n):
+    let a = 0
+    let b = 1
+    let count = 0
+    while count < n:
+        let temp = b
+        b = a + b
+        a = temp
+        count = count + 1
+    return a
+
+let i = 0
+while i < 15:
+    print(fibonacci(i))
+    i = i + 1
+```
+
+The same program in French (`hello_wasi_fr.ml`):
+
+```text
+déf fibonacci(n):
+    soit a = 0
+    soit b = 1
+    soit compteur = 0
+    tant que compteur < n:
+        soit temp = b
+        b = a + b
+        a = temp
+        compteur = compteur + 1
+    retour a
+
+soit i = 0
+tant que i < 15:
+    afficher(fibonacci(i))
+    i = i + 1
+```
+
+---
+
+### Step 2 — Build the WASM bundle
+
+```bash
+python -m multilingualprogramming build-wasm-bundle hello_wasi.ml \
+    --wasm-target wasi \
+    --out-dir build/wasi
+```
+
+Expected output (when `wasmtime` Python package is installed):
+
+```
+[PASS] build/wasi/transpiled.py
+[PASS] build/wasi/module.wat
+[PASS] build/wasi/module.wasm
+[PASS] build/wasi/abi_manifest.json
+[PASS] build/wasi/host_shim.js
+[PASS] build/wasi/renderer_template.js
+[PASS] build/wasi/build_graph.json
+[PASS] build/wasi/build.lock.json
+```
+
+Key flag: `--wasm-target wasi` suppresses browser DOM host imports, producing a module
+that satisfies WASI without requiring a JavaScript embedding.
+
+For a French source file, add `--lang fr` (or omit it — the language is auto-detected):
+
+```bash
+python -m multilingualprogramming build-wasm-bundle hello_wasi_fr.ml \
+    --wasm-target wasi \
+    --out-dir build/wasi
+```
+
+---
+
+### Step 3 — Run with wasmtime
+
+```bash
+wasmtime build/wasi/module.wasm
+```
+
+Expected output:
+
+```
+0
+1
+1
+2
+3
+5
+8
+13
+21
+34
+55
+89
+144
+233
+377
+```
+
+---
+
+### Step 4 — Pass command-line arguments
+
+Programs that call `argc()` / `argv(index)` can receive arguments at runtime:
+
+```text
+# args_demo.ml
+let count = argc()
+print(count)
+let name = argv(0)
+print(name)
+```
+
+Build and run:
+
+```bash
+python -m multilingualprogramming build-wasm-bundle args_demo.ml \
+    --wasm-target wasi \
+    --out-dir build/wasi
+
+wasmtime build/wasi/module.wasm -- Alice
+```
+
+Expected output:
+```
+1
+Alice
+```
+
+> The `--` separator passes arguments to the WASM module rather than to `wasmtime` itself.
+
+---
+
+### Step 5 — Read stdin with `input()`
+
+Programs using `input()` read from stdin under WASI automatically:
+
+```text
+# greet.ml
+let name = input("Enter your name: ")
+print("Hello,", name)
+```
+
+```bash
+python -m multilingualprogramming build-wasm-bundle greet.ml \
+    --wasm-target wasi --out-dir build/wasi
+
+echo "World" | wasmtime build/wasi/module.wasm
+# Hello, World
+```
+
+---
+
+### Artifacts produced
+
+| File | Description |
+|---|---|
+| `module.wat` | Human-readable WebAssembly Text format source |
+| `module.wasm` | Binary WASM ready for `wasmtime` / any WASI runtime |
+| `transpiled.py` | Equivalent Python (for debugging/inspection) |
+| `abi_manifest.json` | Exported function signatures |
+| `host_shim.js` | Browser embedding shim (browser target only) |
+| `build_graph.json` | Reproducible build metadata |
+| `build.lock.json` | Content hashes for artifact verification |
+
+---
+
+### Difference between `--wasm-target browser` and `--wasm-target wasi`
+
+| Aspect | `browser` (default) | `wasi` |
+|---|---|---|
+| DOM imports | Included (`env` host imports: `_dom_set_text`, etc.) | Omitted |
+| `input()` | Uses `window.prompt` fallback | Reads from WASI stdin (`fd_read`) |
+| `print()` | Writes via `fd_write` (WASI) | Writes via `fd_write` (WASI) |
+| Run with | Browser `<script type="module">` + `host_shim.js` | `wasmtime module.wasm` |
+| `argc`/`argv` | Available (reads WASI args) | Available (reads WASI args) |
+
+---
+
+### Troubleshooting
+
+**`[WARN] module.wasm (wasmtime not installed; WAT only)`**
+Install the Python package: `pip install wasmtime`.
+You can still compile manually: `wat2wasm build/wasi/module.wat -o build/wasi/module.wasm`.
+
+**`error: import of unknown module 'env'`**
+You built with `--wasm-target browser` but are running under wasmtime.
+Rebuild with `--wasm-target wasi`.
+
+**`wasm trap: unreachable executed`**
+An unhandled exception was raised inside the WASM module.
+Check the logic in your source file; try running the transpiled Python first:
+`python build/wasi/transpiled.py`
+
+---
+
 ## Architecture
 
 ### Backend Selection Flow
