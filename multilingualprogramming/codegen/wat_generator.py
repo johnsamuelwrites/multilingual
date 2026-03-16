@@ -59,6 +59,7 @@ from multilingualprogramming.parser.ast_nodes import (
     DelStatement,
     GlobalStatement,
     LocalStatement,
+    YieldStatement,
     ImportStatement,
     FromImportStatement,
     IfStatement,
@@ -197,6 +198,9 @@ class WATCodeGenerator(
         # Import alias resolution for recognized builtin/math lowerings.
         self._imported_call_aliases: dict[str, str] = {}
         self._module_aliases: dict[str, str] = {}
+        # Best-effort virtual files for simple with-open lowering.
+        self._open_aliases: dict[str, tuple[str, str]] = {}
+        self._virtual_file_contents: dict[str, str] = {}
         # True when any heap allocation (list or OOP) is needed.
         self._need_heap_ptr: bool = False
         # Lambda table: ordered list of WAT func names registered for call_indirect.
@@ -216,6 +220,8 @@ class WATCodeGenerator(
         # _dispatch_func_names: method_name -> WAT dispatch func name
         # Populated for methods that are overridden in ≥1 subclass.
         self._dispatch_func_names: dict[str, str] = {}
+        # Functions known to return heap-backed sequence pointers.
+        self._sequence_func_names: set[str] = set()
 
     @property
     def property_getters(self):
@@ -270,11 +276,14 @@ class WATCodeGenerator(
         self._dict_key_maps = {}
         self._imported_call_aliases = {}
         self._module_aliases = {}
+        self._open_aliases = {}
+        self._virtual_file_contents = {}
         self._need_heap_ptr = False
         self._lambda_table = []
         self._lambda_locals = {}
         self._str_concat_helper_emitted = False
         self._str_slice_helper_emitted = False
+        self._sequence_func_names = set()
 
         if isinstance(program, CoreIRProgram):
             program = program.ast
@@ -340,7 +349,9 @@ class WATCodeGenerator(
                  self._string_len_locals, self._list_locals,
                  self._tuple_locals,
                  self._dict_key_maps,
-                 self._lambda_locals)
+                 self._lambda_locals,
+                 self._open_aliases,
+                 self._virtual_file_contents)
         self._instrs = []
         self._locals = set()
         self._loop_stack = []
@@ -350,6 +361,8 @@ class WATCodeGenerator(
         self._tuple_locals = set()
         self._dict_key_maps = {}
         self._lambda_locals = {}
+        self._open_aliases = {}
+        self._virtual_file_contents = {}
         # _current_class is NOT reset here: _emit_class sets it before each method
         # and it must persist into the method body.
         return saved
@@ -818,6 +831,129 @@ class WATCodeGenerator(
         self._emit(f"{indent}local.get ${self._wat_symbol(ptr_local)}")
         return True
 
+    def _simple_generator_spec(self, func_def: FunctionDef):
+        """Return lowering info for a simple yield-based generator function."""
+        if len(func_def.body) != 1:
+            return None
+        stmt = func_def.body[0]
+        if isinstance(stmt, YieldStatement) and stmt.is_from:
+            bounds = self._parse_range_bounds(stmt.value)
+            if bounds is None:
+                return None
+            iter_name = f"__gen_item_{self._new_label()}"
+            return bounds[0], bounds[1], iter_name, Identifier(iter_name)
+        if isinstance(stmt, ForLoop):
+            bounds = self._parse_range_bounds(stmt.iterable)
+            if bounds is None or len(stmt.body) != 1:
+                return None
+            inner = stmt.body[0]
+            if not isinstance(inner, YieldStatement) or inner.is_from:
+                return None
+            if not isinstance(stmt.target, Identifier):
+                return None
+            return bounds[0], bounds[1], stmt.target.name, inner.value or stmt.target
+        return None
+
+    def _emit_simple_generator_function(self, func_def: FunctionDef, emitted_name: str | None = None) -> bool:
+        """Lower a simple generator function to a sequence-returning WAT function."""
+        spec = self._simple_generator_spec(func_def)
+        if spec is None:
+            return False
+
+        saved = self._save_func_state()
+        func_name = emitted_name or _name(func_def.name)
+        param_names = _real_params(func_def)
+        self._locals = set(param_names)
+        start_node, end_node, iter_var, element_expr = spec
+
+        ptr_local = f"__gen_ptr_{self._new_label()}"
+        idx_local = f"__gen_idx_{self._new_label()}"
+        len_local = f"__gen_len_{self._new_label()}"
+        end_local = f"__gen_end_{self._new_label()}"
+        self._locals.update({iter_var, ptr_local, idx_local, len_local, end_local})
+        self._need_heap_ptr = True
+
+        self._gen_expr(start_node, "    ")
+        self._emit(f"    local.set ${self._wat_symbol(iter_var)}")
+        self._gen_expr(end_node, "    ")
+        self._emit(f"    local.set ${self._wat_symbol(end_local)}")
+        self._emit(f"    local.get ${self._wat_symbol(end_local)}")
+        self._emit(f"    local.get ${self._wat_symbol(iter_var)}")
+        self._emit(f"    f64.sub")
+        self._emit(f"    local.set ${self._wat_symbol(len_local)}")
+
+        self._emit("    global.get $__heap_ptr")
+        self._emit("    f64.convert_i32_u")
+        self._emit(f"    local.set ${self._wat_symbol(ptr_local)}")
+        self._emit("    global.get $__heap_ptr")
+        self._emit(f"    local.get ${self._wat_symbol(len_local)}")
+        self._emit("    i32.trunc_f64_u")
+        self._emit("    i32.const 1")
+        self._emit("    i32.add")
+        self._emit("    i32.const 8")
+        self._emit("    i32.mul")
+        self._emit("    i32.add")
+        self._emit("    global.set $__heap_ptr")
+
+        self._emit(f"    local.get ${self._wat_symbol(ptr_local)}")
+        self._emit("    i32.trunc_f64_u")
+        self._emit(f"    local.get ${self._wat_symbol(len_local)}")
+        self._emit("    f64.store")
+        self._emit("    f64.const 0")
+        self._emit(f"    local.set ${self._wat_symbol(idx_local)}")
+
+        label = self._new_label()
+        blk = f"gen_blk_{label}"
+        loop = f"gen_lp_{label}"
+        self._emit(f"    block ${blk}")
+        self._emit(f"      loop ${loop}")
+        self._emit(f"        local.get ${self._wat_symbol(iter_var)}")
+        self._emit(f"        local.get ${self._wat_symbol(end_local)}")
+        self._emit("        f64.ge")
+        self._emit(f"        br_if ${blk}")
+        self._emit(f"        local.get ${self._wat_symbol(ptr_local)}")
+        self._emit("        i32.trunc_f64_u")
+        self._emit(f"        local.get ${self._wat_symbol(idx_local)}")
+        self._emit("        i32.trunc_f64_u")
+        self._emit("        i32.const 8")
+        self._emit("        i32.mul")
+        self._emit("        i32.const 8")
+        self._emit("        i32.add")
+        self._emit("        i32.add")
+        self._gen_expr(element_expr, "        ")
+        self._emit("        f64.store")
+        self._emit(f"        local.get ${self._wat_symbol(iter_var)}")
+        self._emit("        f64.const 1")
+        self._emit("        f64.add")
+        self._emit(f"        local.set ${self._wat_symbol(iter_var)}")
+        self._emit(f"        local.get ${self._wat_symbol(idx_local)}")
+        self._emit("        f64.const 1")
+        self._emit("        f64.add")
+        self._emit(f"        local.set ${self._wat_symbol(idx_local)}")
+        self._emit(f"        br ${loop}")
+        self._emit("      end")
+        self._emit("    end")
+        self._emit(f"    local.get ${self._wat_symbol(ptr_local)}")
+        self._emit("    return")
+
+        body_instrs = list(self._instrs)
+        local_names = sorted(self._locals - set(param_names))
+        wat_func_name = self._wat_symbol(func_name)
+        lines = [f'  (func ${wat_func_name} (export "{func_name}")']
+        for param_name in param_names:
+            lines.append(f"    (param ${self._wat_symbol(param_name)} f64)")
+        lines.append("    (result f64)")
+        for local_name in local_names:
+            lines.append(f"    (local ${self._wat_symbol(local_name)} f64)")
+        lines.extend(body_instrs)
+        lines.append("    f64.const 0  ;; implicit return")
+        lines.append("  )")
+
+        self._funcs.append("\n".join(lines))
+        self._sequence_func_names.add(func_name)
+        self._restore_func_state(saved)
+        return True
+
     def _gen_filtered_or_nested_comprehension_list(self, node, indent: str) -> bool:
         """Lower selected filtered or nested comprehensions to heap-backed lists."""
         if not isinstance(node, (ListComprehension, SetComprehension, GeneratorExpr)):
@@ -1213,6 +1349,11 @@ class WATCodeGenerator(
             len_local = self._string_len_locals[node.name]
             self._emit(f"{indent}local.get ${self._wat_symbol(len_local)}")
             return True
+        virtual_read = self._virtual_file_read_content(node)
+        if virtual_read is not None:
+            _, byte_len = self._intern(virtual_read)
+            self._emit(f"{indent}f64.const {float(byte_len)}")
+            return True
         if isinstance(node, BinaryOp) and node.op == "+" and self._is_string_binop(node):
             self._gen_string_len_expr(node.left, indent)
             self._gen_string_len_expr(node.right, indent)
@@ -1263,10 +1404,16 @@ class WATCodeGenerator(
             and len(value.args) >= 1
         ) or (
             isinstance(value, CallExpr)
+            and _name(value.func) in self._sequence_func_names
+        ) or (
+            isinstance(value, CallExpr)
             and _name(value.func) in _LIST_NAMES
             and len(value.args) == 1
             and isinstance(value.args[0], CallExpr)
-            and _name(value.args[0].func) in _ZIP_NAMES
+            and (
+                _name(value.args[0].func) in _ZIP_NAMES
+                or _name(value.args[0].func) in self._sequence_func_names
+            )
         ):
             self._list_locals.add(name)
             self._tuple_locals.discard(name)
@@ -1366,6 +1513,31 @@ class WATCodeGenerator(
             del self._lambda_locals[name]
         if name in self._var_class_types:
             del self._var_class_types[name]
+
+    def _resolve_virtual_file_op(self, call_expr: CallExpr):
+        """Return metadata for a tracked open-handle method call, or None."""
+        if not isinstance(call_expr.func, AttributeAccess):
+            return None
+        obj = call_expr.func.obj
+        if not isinstance(obj, Identifier):
+            return None
+        alias = obj.name
+        if alias not in self._open_aliases:
+            return None
+        path, mode = self._open_aliases[alias]
+        return alias, path, mode, call_expr.func.attr
+
+    def _virtual_file_read_content(self, node):
+        """Return compile-time string content for a tracked file-handle read call."""
+        if not isinstance(node, CallExpr):
+            return None
+        resolved = self._resolve_virtual_file_op(node)
+        if resolved is None:
+            return None
+        _alias, path, mode, method = resolved
+        if method != "read" or "r" not in mode:
+            return None
+        return self._virtual_file_contents.get(path, "")
 
     def _is_sequence_expr(self, value) -> bool:
         """Return whether *value* is representable as a list/tuple pointer in WAT."""
@@ -1688,8 +1860,15 @@ class WATCodeGenerator(
                     )
                     return
                 fname = _name(expr.func)
+                resolved_fname = self._resolve_callable_alias(fname)
                 if fname in _PRINT_NAMES:
                     self._gen_print(expr, indent)
+                elif resolved_fname == "asyncio.run" and len(expr.args) == 1:
+                    self._gen_expr(expr.args[0], indent)
+                    self._emit(f"{indent}drop")
+                elif resolved_fname == "asyncio.sleep":
+                    self._emit(f"{indent}f64.const 0  ;; asyncio.sleep no-op in WAT")
+                    self._emit(f"{indent}drop")
                 elif fname in _ABS_NAMES and len(expr.args) == 1:
                     self._gen_expr(expr.args[0], indent)
                     self._emit(f"{indent}f64.abs")
@@ -1783,6 +1962,21 @@ class WATCodeGenerator(
                             f"{indent}call_indirect (result f64)"
                         )
                     self._emit(f"{indent}drop")
+                elif self._resolve_virtual_file_op(expr):
+                    _alias, path, mode, method = self._resolve_virtual_file_op(expr)
+                    if method == "write" and expr.args and isinstance(expr.args[0], StringLiteral):
+                        text = expr.args[0].value
+                        if "a" in mode:
+                            self._virtual_file_contents[path] = (
+                                self._virtual_file_contents.get(path, "") + text
+                            )
+                        else:
+                            self._virtual_file_contents[path] = text
+                        self._emit(f"{indent};; virtual file write {path!r}")
+                    elif method == "read":
+                        self._emit(f"{indent};; virtual file read {path!r} (result dropped)")
+                    else:
+                        self._emit(f"{indent};; virtual file op {method} omitted in WAT")
                 elif (isinstance(expr.func, AttributeAccess)
                       and isinstance(expr.func.obj, Identifier)
                       and expr.func.attr in self._dispatch_func_names):
@@ -1879,6 +2073,7 @@ class WATCodeGenerator(
             self._emit(
                 f"{indent};; with (context-manager hooks not lowerable in WAT)"
             )
+            saved_aliases = dict(self._open_aliases)
             for _, alias in stmt.items:
                 if alias:
                     self._locals.add(alias)
@@ -1887,7 +2082,19 @@ class WATCodeGenerator(
                         f";; placeholder for 'as {alias}' binding"
                     )
                     self._emit(f"{indent}local.set ${self._wat_symbol(alias)}")
+            for expr, alias in stmt.items:
+                if not alias:
+                    continue
+                if not (isinstance(expr, CallExpr) and _name(expr.func) == "open" and expr.args):
+                    continue
+                path_arg = expr.args[0]
+                mode = "r"
+                if len(expr.args) >= 2 and isinstance(expr.args[1], StringLiteral):
+                    mode = expr.args[1].value
+                if isinstance(path_arg, StringLiteral):
+                    self._open_aliases[alias] = (path_arg.value, mode)
             self._gen_stmts(stmt.body, indent)
+            self._open_aliases = saved_aliases
 
         elif isinstance(stmt, FunctionDef):
             # Nested function def — not directly supported
@@ -2045,6 +2252,11 @@ class WATCodeGenerator(
             offset, _ = self._intern(node.value)
             self._emit(f"{indent}f64.const {float(offset)}  ;; str offset (not a numeric value)")
 
+        elif isinstance(node, CallExpr) and self._virtual_file_read_content(node) is not None:
+            content = self._virtual_file_read_content(node)
+            offset, _ = self._intern(content)
+            self._emit(f"{indent}f64.const {float(offset)}  ;; virtual file read")
+
         elif isinstance(node, FStringLiteral):
             self._emit(f"{indent}f64.const 0  ;; unsupported expr: FStringLiteral")
 
@@ -2108,6 +2320,10 @@ class WATCodeGenerator(
             resolved_fname = self._resolve_callable_alias(fname)
             if fname in _PRINT_NAMES:
                 self._emit(f"{indent}f64.const 0  ;; print() used as expression")
+            elif resolved_fname == "asyncio.run" and len(node.args) == 1:
+                self._gen_expr(node.args[0], indent)
+            elif resolved_fname == "asyncio.sleep":
+                self._emit(f"{indent}f64.const 0  ;; asyncio.sleep no-op in WAT")
             elif fname in _ABS_NAMES and len(node.args) == 1:
                 # abs(x) → f64.abs
                 self._gen_expr(node.args[0], indent)
@@ -2162,6 +2378,8 @@ class WATCodeGenerator(
                 if isinstance(arg, (ListComprehension, GeneratorExpr)) and \
                         self._gen_simple_comprehension_list(arg, indent):
                     pass
+                elif isinstance(arg, CallExpr) and _name(arg.func) in self._sequence_func_names:
+                    self._gen_expr(arg, indent)
                 elif isinstance(arg, CallExpr) and _name(arg.func) in _ZIP_NAMES and \
                         self._gen_static_zip_list(arg, indent):
                     pass

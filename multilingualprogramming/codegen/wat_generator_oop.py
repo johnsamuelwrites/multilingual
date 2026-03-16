@@ -244,7 +244,9 @@ class WATGeneratorOOPMixin:  # pylint: disable=too-many-instance-attributes,too-
          self._string_len_locals, self._list_locals,
          self._tuple_locals,
          self._dict_key_maps,
-         self._lambda_locals) = saved
+         self._lambda_locals,
+         self._open_aliases,
+         self._virtual_file_contents) = saved
 
     def _infer_class_name(self, expr) -> str | None:
         """Infer a tracked class name from a simple expression."""
@@ -276,6 +278,9 @@ class WATGeneratorOOPMixin:  # pylint: disable=too-many-instance-attributes,too-
 
     def _emit_function(self, func_def: FunctionDef, emitted_name: str | None = None) -> None:
         """Generate WAT for a user-defined function."""
+        if self._emit_simple_generator_function(func_def, emitted_name=emitted_name):
+            return
+
         saved = self._save_func_state()
 
         func_name = emitted_name or _name(func_def.name)

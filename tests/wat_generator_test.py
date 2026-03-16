@@ -38,11 +38,13 @@ from multilingualprogramming.parser.ast_nodes import (
     GlobalStatement,
     LocalStatement,
     AssertStatement,
+    YieldStatement,
     IfStatement,
     WhileLoop,
     ForLoop,
     FunctionDef,
     ClassDef,
+    WithStatement,
     Parameter,
     MatchStatement,
     CaseClause,
@@ -1140,6 +1142,44 @@ class WATFunctionTestSuite(unittest.TestCase):
         )
         self.assertIn("(local $tmp f64)", wat)
 
+    def test_simple_generator_function_over_range_returns_sequence_pointer(self):
+        wat = self._wat(
+            FunctionDef(
+                "produce_three",
+                [],
+                [
+                    ForLoop(
+                        Identifier("idx"),
+                        CallExpr(Identifier("range"), [NumeralLiteral("3")]),
+                        [YieldStatement(Identifier("idx"))],
+                    )
+                ],
+            ),
+            VariableDeclaration(
+                "total",
+                CallExpr(Identifier("sum"), [CallExpr(Identifier("produce_three"), [])]),
+            ),
+        )
+        self.assertIn("gen_blk_", wat)
+        self.assertNotIn("unsupported statement: YieldStatement", wat)
+        self.assertNotIn("unsupported call: produce_three(...)", wat)
+
+    def test_list_builtin_accepts_simple_generator_function_result(self):
+        wat = self._wat(
+            FunctionDef(
+                "delegating_gen",
+                [],
+                [YieldStatement(CallExpr(Identifier("range"), [NumeralLiteral("3")]), is_from=True)],
+            ),
+            VariableDeclaration(
+                "delegated",
+                CallExpr(Identifier("list"), [CallExpr(Identifier("delegating_gen"), [])]),
+            ),
+        )
+        self.assertIn("gen_blk_", wat)
+        self.assertNotIn("unsupported statement: YieldStatement", wat)
+        self.assertNotIn("unsupported call: list(...)", wat)
+
     def test_param_not_redeclared_as_local(self):
         """Parameters must not appear in the locals list."""
         wat = self._wat(
@@ -2096,6 +2136,33 @@ class WATAsyncAwaitTestSuite(unittest.TestCase):
         self.assertIn("call $work", wat)
         self.assertNotIn("unsupported expr: AwaitExpr", wat)
 
+    def test_await_asyncio_sleep_is_noop(self):
+        stmt = ExpressionStatement(
+            AwaitExpr(
+                CallExpr(AttributeAccess(Identifier("asyncio"), "sleep"), [NumeralLiteral("0")])
+            )
+        )
+        wat = _gen(stmt)
+        self.assertIn("asyncio.sleep no-op in WAT", wat)
+        self.assertNotIn("unsupported call: asyncio.sleep(...)", wat)
+
+    def test_asyncio_run_evaluates_inner_call(self):
+        func = FunctionDef(
+            Identifier("work"),
+            params=[_param("x")],
+            body=[ReturnStatement(Identifier("x"))],
+        )
+        stmt = VariableDeclaration(
+            "result",
+            CallExpr(
+                AttributeAccess(Identifier("asyncio"), "run"),
+                [CallExpr(Identifier("work"), [NumeralLiteral("5")])],
+            ),
+        )
+        wat = _gen(func, stmt)
+        self.assertIn("call $work", wat)
+        self.assertNotIn("unsupported call: asyncio.run(...)", wat)
+
     def test_async_def_lowers_as_regular_function(self):
         """async def f() is emitted as a normal WAT function."""
         func = FunctionDef(
@@ -2107,6 +2174,74 @@ class WATAsyncAwaitTestSuite(unittest.TestCase):
         wat = _gen(func)
         self.assertIn('(func $f', wat)
         self.assertIn('(export "f")', wat)
+
+
+class WATWithOpenTestSuite(unittest.TestCase):
+    """Best-effort WAT lowering for simple with-open file operations."""
+
+    def test_with_open_write_is_tracked_as_virtual_file(self):
+        wat = _gen(
+            WithStatement(
+                items=[(
+                    CallExpr(
+                        Identifier("open"),
+                        [StringLiteral("tmp.txt"), StringLiteral("w")],
+                    ),
+                    "handle_w",
+                )],
+                body=[
+                    ExpressionStatement(
+                        CallExpr(
+                            AttributeAccess(Identifier("handle_w"), "write"),
+                            [StringLiteral("ok")],
+                        )
+                    )
+                ],
+            )
+        )
+        self.assertIn("virtual file write 'tmp.txt'", wat)
+        self.assertNotIn("unsupported call: handle_w.write(...)", wat)
+
+    def test_with_open_read_materializes_string_value(self):
+        wat = _gen(
+            WithStatement(
+                items=[(
+                    CallExpr(
+                        Identifier("open"),
+                        [StringLiteral("tmp.txt"), StringLiteral("w")],
+                    ),
+                    "handle_w",
+                )],
+                body=[
+                    ExpressionStatement(
+                        CallExpr(
+                            AttributeAccess(Identifier("handle_w"), "write"),
+                            [StringLiteral("ok")],
+                        )
+                    )
+                ],
+            ),
+            VariableDeclaration("file_text", StringLiteral("")),
+            WithStatement(
+                items=[(
+                    CallExpr(
+                        Identifier("open"),
+                        [StringLiteral("tmp.txt"), StringLiteral("r")],
+                    ),
+                    "handle_r",
+                )],
+                body=[
+                    Assignment(
+                        Identifier("file_text"),
+                        CallExpr(AttributeAccess(Identifier("handle_r"), "read"), []),
+                    )
+                ],
+            ),
+            ExpressionStatement(CallExpr(Identifier("print"), [Identifier("file_text")])),
+        )
+        self.assertIn("virtual file write 'tmp.txt'", wat)
+        self.assertIn("file_text_strlen", wat)
+        self.assertNotIn("unsupported call: handle_r.read(...)", wat)
 
 
 class WATForListTestSuite(unittest.TestCase):
