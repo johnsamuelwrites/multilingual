@@ -52,6 +52,7 @@ class WATGeneratorCoreMixin:
         # $__heap_ptr is always declared: $ml_alloc references it unconditionally.
         lines.append(f'  (global $__heap_ptr (mut i32) (i32.const {heap_base}))')
         lines.append('  (global $__last_str_len (mut i32) (i32.const 0))')
+        lines.append('  (global $__last_exc_code (export "__last_exception_code") (mut i32) (i32.const 0))')
         if self._lambda_table:
             n = len(self._lambda_table)
             lines.append(f'  (table {n} funcref)')
@@ -322,7 +323,7 @@ class WATGeneratorCoreMixin:
     end
   )
   ;; Print a double-precision float.
-  ;; Integer values (v == trunc(v), |v| < 1e15) are printed as "N.0".
+  ;; Integer values (v == trunc(v), |v| < 1e15) are printed as plain "N".
   ;; Other values are printed with up to 6 fractional decimal places.
   (func $print_f64 (param $v f64)
     (local $int_part i64)
@@ -398,15 +399,6 @@ class WATGeneratorCoreMixin:
       local.set $ptr
       local.get $ptr
       local.get $len
-      call $__wasi_write
-      i32.const {fmt}
-      i32.const 46
-      i32.store8
-      i32.const {fmt+1}
-      i32.const 48
-      i32.store8
-      i32.const {fmt}
-      i32.const 2
       call $__wasi_write
       return
     end

@@ -168,8 +168,21 @@ class WATGeneratorManifestMixin:
             },
             indent=2,
         )
+        # Build a per-function signature comment block for the caller's reference.
+        sig_lines = []
+        for entry in exports:
+            name = entry["name"]
+            arg_types = entry.get("arg_types", [])
+            ret = entry.get("return_type", "void")
+            args_str = ", ".join(f"arg{i}: {t}" for i, t in enumerate(arg_types))
+            sig_lines.append(f"//   {name}({args_str}) -> {ret}")
+        sig_comment = "\n".join(sig_lines) if sig_lines else "//   (no exports)"
+
         lines = [
             "// Auto-generated renderer skeleton from multilingual WASM ABI manifest",
+            "//",
+            "// Exported functions (all numeric args/returns are f64):",
+            sig_comment,
             "export const ABI_EXPORTS = " + export_map_literal + ";",
             "",
             "export async function loadWasmModule(url, importsFactory) {",
@@ -181,11 +194,20 @@ class WATGeneratorManifestMixin:
             "  return { instance: result.instance, exports, memoryRef };",
             "}",
             "",
+            "// Call any exported numeric function by name.",
+            "// args: array of numbers (f64).  Returns the f64 result, or undefined for void.",
+            "// Example: callFunction(exports, 'fibonacci', [10]) // => 55",
+            "export function callFunction(exports, name, args = []) {",
+            "  const fn = exports[name];",
+            "  if (!fn) throw new Error(`No export named '${name}'`);",
+            "  return fn(...args);",
+            "}",
+            "",
             "export function renderByMode(ctx, abiName, exports, args = []) {",
             "  const abi = ABI_EXPORTS[abiName];",
             "  if (!abi) throw new Error(`Unknown ABI export: ${abiName}`);",
             "  if (abi.mode === 'scalar_field') {",
-            "    return exports[abiName](...args);",
+            "    return callFunction(exports, abiName, args);",
             "  }",
             "  if (abi.mode === 'point_stream' || abi.mode === 'polyline') {",
             "    const stream = abi.stream_output;",

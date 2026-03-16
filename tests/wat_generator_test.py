@@ -562,22 +562,25 @@ class WATStatementTestSuite(unittest.TestCase):
         self.assertIn("local.set $a", wat)
         self.assertIn("local.set $b", wat)
 
-    def test_del_identifier_clears_local_best_effort(self):
+    def test_del_identifier_clears_local(self):
         wat = self._wat(
             VariableDeclaration(Identifier("x"), NumeralLiteral("3")),
             DelStatement(Identifier("x")),
         )
-        self.assertIn("del x (best-effort local clear)", wat)
+        self.assertIn("f64.const 0", wat)
+        self.assertIn("local.set $x", wat)
         self.assertNotIn("unsupported statement: DelStatement", wat)
 
-    def test_assert_statement_is_best_effort_nop(self):
+    def test_assert_statement_raises_assertion_error(self):
         wat = self._wat(AssertStatement(BooleanLiteral(True)))
-        self.assertIn("assert omitted in WAT best-effort mode", wat)
+        self.assertIn("block $assert_ok_", wat)
+        self.assertIn("global.set $__last_exc_code", wat)
         self.assertNotIn("unsupported statement: AssertStatement", wat)
 
-    def test_raise_statement_is_best_effort_nop(self):
+    def test_raise_statement_sets_exception_code(self):
         wat = self._wat(RaiseStatement(StringLiteral("boom")))
-        self.assertIn("raise omitted in WAT best-effort mode", wat)
+        self.assertIn("global.set $__last_exc_code", wat)
+        self.assertIn("unreachable", wat)
         self.assertNotIn("unsupported statement: RaiseStatement", wat)
 
     def test_try_except_handles_explicit_value_error(self):
@@ -1951,9 +1954,8 @@ class WATInheritanceWasmExecutionTestSuite(unittest.TestCase):
         tokens = self._run_main(prog)
         # WAT formats lists/tuples with brackets; check the numeric values appear.
         combined = " ".join(str(t) for t in tokens)
-        self.assertIn("1.0", combined)
-        self.assertIn("2.0", combined)
-        self.assertIn("3.0", combined)
+        self.assertIn("[1, 2, 3]", combined)
+        self.assertIn("(3, 2)", combined)
 
 
 # ---------------------------------------------------------------------------

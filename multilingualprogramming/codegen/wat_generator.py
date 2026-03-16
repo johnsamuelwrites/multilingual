@@ -2016,6 +2016,7 @@ class WATCodeGenerator(
             "ValueError": 1,
             "RuntimeError": 2,
             "TypeError": 3,
+            "AssertionError": 4,
         }
         return mapping.get(exc_name, 255 if value is not None else 255)
 
@@ -2437,16 +2438,28 @@ class WATCodeGenerator(
                     self._emit(f"{indent}f64.const 0")
                     self._emit(f"{indent}local.set ${self._wat_symbol(name)}")
                 self._clear_assignment_tracking(name)
-                self._emit(f"{indent};; del {name} (best-effort local clear)")
             else:
-                self._emit(f"{indent};; del on complex target omitted in WAT")
+                self._emit(f"{indent}nop")
 
         elif isinstance(stmt, (GlobalStatement, LocalStatement)):
             names = ", ".join(stmt.names)
             self._emit(f"{indent};; {type(stmt).__name__}: {names} (nop in WAT)")
 
         elif isinstance(stmt, AssertStatement):
-            self._emit(f"{indent};; assert omitted in WAT best-effort mode")
+            fail_label = f"assert_ok_{self._new_label()}"
+            self._emit(f"{indent}block ${fail_label}")
+            self._gen_cond(stmt.test, indent + "  ")
+            self._emit(f"{indent}  br_if ${fail_label}")
+            if self._try_stack:
+                ctx = self._try_stack[-1]
+                self._emit(f"{indent}  f64.const 4")
+                self._emit(f"{indent}  local.set ${self._wat_symbol(ctx['code_local'])}")
+                self._emit(f"{indent}  br ${ctx['label']}")
+            else:
+                self._emit(f"{indent}  i32.const 4")
+                self._emit(f"{indent}  global.set $__last_exc_code")
+                self._emit(f"{indent}  unreachable")
+            self._emit(f"{indent}end")
 
         elif isinstance(stmt, RaiseStatement):
             if self._try_stack:
@@ -2456,7 +2469,10 @@ class WATCodeGenerator(
                 self._emit(f"{indent}local.set ${self._wat_symbol(ctx['code_local'])}")
                 self._emit(f"{indent}br ${ctx['label']}")
             else:
-                self._emit(f"{indent};; raise omitted in WAT best-effort mode")
+                code = self._exception_code_for(stmt.value)
+                self._emit(f"{indent}i32.const {code}")
+                self._emit(f"{indent}global.set $__last_exc_code")
+                self._emit(f"{indent}unreachable")
 
         elif isinstance(stmt, TryStatement):
             label = self._new_label()
@@ -2519,7 +2535,10 @@ class WATCodeGenerator(
                 self._emit(f"{indent}  local.set ${self._wat_symbol(parent_ctx['code_local'])}")
                 self._emit(f"{indent}  br ${parent_ctx['label']}")
             else:
-                self._emit(f"{indent}  ;; unhandled exception omitted in WAT best-effort mode")
+                self._emit(f"{indent}  local.get ${self._wat_symbol(code_local)}")
+                self._emit(f"{indent}  i32.trunc_f64_u")
+                self._emit(f"{indent}  global.set $__last_exc_code")
+                self._emit(f"{indent}  unreachable")
             self._emit(f"{indent}end")
 
             if stmt.finally_body:
