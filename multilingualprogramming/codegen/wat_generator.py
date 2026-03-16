@@ -4,45 +4,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 
-"""
-WebAssembly Text (WAT) code generator for the multilingual programming language.
-
-Generates valid, executable WAT (WebAssembly Text format) from the
-arithmetic / loop / conditional subset of the multilingual AST.
-
-The generated WAT can be:
-  - Displayed to the user as human-readable WASM source
-  - Compiled to binary .wasm via wabt/wat2wasm (browser or CLI)
-  - Executed directly in any WASM runtime (browser, wasmtime, wasmer …)
-
-Supported AST constructs:
-  - VariableDeclaration / Assignment (all values are f64)
-  - NumeralLiteral (decimal, Unicode script digits via MPNumeral)
-  - StringLiteral  (stored in WAT linear memory data section)
-  - BooleanLiteral / NoneLiteral
-  - BinaryOp:  +  -  *  /  %  //  ==  !=  <  <=  >  >=
-  - UnaryOp:   -  not
-  - BooleanOp: and  or
-  - CompareOp  (chained comparisons — first pair used)
-  - IfStatement  (if / elif / else)
-  - WhileLoop
-  - ForLoop over range(stop) or range(start, stop)
-  - FunctionDef  (f64 parameters, f64 return)
-  - ReturnStatement
-  - ExpressionStatement containing a print / display builtin call
-  - CallExpr to user-defined functions
-
-Unsupported constructs (classes, imports, closures …) emit WAT comments
-so the output remains syntactically valid.
-
-Host imports expected by the generated module:
-  (import "wasi_snapshot_preview1" "fd_write" (func (param i32 i32 i32 i32) (result i32)))
-
-All I/O (print_str, print_f64, print_bool, print_sep, print_newline) and the
-power function (pow_f64) are implemented as self-contained WAT functions backed
-by the single WASI fd_write syscall.  No JavaScript host shim is required for
-CLI or wasmtime execution; browser execution needs only a standard WASI polyfill.
-"""
+"""Generate executable WAT modules from multilingual AST programs."""
 # pylint: disable=mixed-line-endings
 
 from types import MappingProxyType
@@ -111,6 +73,11 @@ from multilingualprogramming.codegen.wat_generator_oop import WATGeneratorOOPMix
 from multilingualprogramming.codegen.wat_generator_sequence import WATGeneratorSequenceMixin
 from multilingualprogramming.codegen.wat_generator_support import (
     _ABS_NAMES,
+    _ARGC_NAMES,
+    _ARGV_NAMES,
+    _DOM_BUILTINS,
+    _DOM_CANONICAL_NAMES,
+    _DOM_HOST_SIGNATURES,
     _INPUT_NAMES,
     _INT_NAMES,
     _LEN_NAMES,
@@ -131,10 +98,6 @@ from multilingualprogramming.codegen.wat_generator_support import (
     _real_params,
 )
 
-# ---------------------------------------------------------------------------
-# WATCodeGenerator
-# ---------------------------------------------------------------------------
-
 class WATCodeGenerator(
     WATGeneratorManifestMixin,
     WATGeneratorCoreMixin,
@@ -142,25 +105,16 @@ class WATCodeGenerator(
     WATGeneratorOOPMixin,
     WATGeneratorSequenceMixin,
 ):  # pylint: disable=too-many-instance-attributes
-    """
-    Visitor-based WAT source code generator.
-
-    Usage::
-
-        gen = WATCodeGenerator()
-        wat_text = gen.generate(ast_program)   # str
-    """
+    """Visitor-based WAT source code generator."""
 
     def __init__(self):
-        # Per-generation mutable state (reset on each generate() call)
-        self._instrs: list[str] = []      # current instruction lines
-        self._locals: set[str] = set()    # local names in current function
-        self._label_count: int = 0        # monotone counter for unique labels
-        self._loop_stack: list[tuple[str, str]] = []  # (break_lbl, cont_lbl)
+        self._instrs: list[str] = []
+        self._locals: set[str] = set()
+        self._label_count: int = 0
+        self._loop_stack: list[tuple[str, str]] = []
         self._data: bytearray = bytearray()
         self._strings: dict[str, tuple[int, int]] = {}
         self._funcs: list[str] = []
-        # Names of functions compiled to WAT in this module (populated in generate())
         self._defined_func_names: set[str] = set()
         # Maps function name → ordered list of real WAT param names (separators excluded)
         self._func_real_params: dict[str, list] = {}
@@ -200,6 +154,8 @@ class WATCodeGenerator(
         self._virtual_file_contents: dict[str, str] = {}
         # True when any heap allocation (list or OOP) is needed.
         self._need_heap_ptr: bool = False
+        # True when any DOM builtin is used (triggers env host import emission).
+        self._uses_dom: bool = False
         # Lambda table: ordered list of WAT func names registered for call_indirect.
         self._lambda_table: list[str] = []
         # Per-function: maps local var name -> lambda WAT func name (for call_indirect).
@@ -249,10 +205,6 @@ class WATCodeGenerator(
         """Read-only view of computed object sizes in bytes."""
         return MappingProxyType(self._class_obj_sizes)
 
-    # -----------------------------------------------------------------------
-    # Public API
-    # -----------------------------------------------------------------------
-
     def generate(self, program) -> str:
         """Generate a complete WAT module string from an AST node."""
         self._reset_generation_state()
@@ -299,6 +251,7 @@ class WATCodeGenerator(
         self._open_aliases = {}
         self._virtual_file_contents = {}
         self._need_heap_ptr = False
+        self._uses_dom = False
         self._lambda_table = []
         self._lambda_locals = {}
         self._str_concat_helper_emitted = False
@@ -341,10 +294,6 @@ class WATCodeGenerator(
         if top:
             self._emit_main(top)
 
-    # -----------------------------------------------------------------------
-    # Function generation helpers
-    # -----------------------------------------------------------------------
-
     def _gen_call_args(self, call_expr: CallExpr, indent: str, fname: str, skip_params: int = 0):
         """Push argument values for a call to a known WAT function.
 
@@ -375,10 +324,6 @@ class WATCodeGenerator(
         # _current_class is NOT reset here: _emit_class sets it before each method
         # and it must persist into the method body.
         return saved
-
-    # -----------------------------------------------------------------------
-    # Augmented-assignment helper
-    # -----------------------------------------------------------------------
 
     def _gen_augmented_op(self, op: str, rhs_node, indent: str):
         """Emit the compound-assignment arithmetic.
@@ -436,10 +381,6 @@ class WATCodeGenerator(
         else:
             self._gen_expr(rhs_node, indent)
             self._emit(f"{indent}f64.add  ;; unknown augmented op {op!r}")
-
-    # -----------------------------------------------------------------------
-    # List / tuple allocation helper
-    # -----------------------------------------------------------------------
 
     def _gen_list_alloc(self, node, indent: str):
         """Allocate a list or tuple literal in linear memory.
@@ -676,6 +617,18 @@ class WATCodeGenerator(
                 elif fname in _INPUT_NAMES and len(expr.args) <= 1:
                     self._gen_expr(expr, indent)
                     self._emit(f"{indent}drop")
+                elif fname in _ARGC_NAMES and len(expr.args) == 0:
+                    self._emit(f"{indent}call $argc")
+                    self._emit(f"{indent}drop")
+                elif fname in _ARGV_NAMES and len(expr.args) == 1:
+                    self._gen_expr(expr.args[0], indent)
+                    self._emit(f"{indent}call $argv")
+                    self._emit(f"{indent}drop")
+                elif fname in _DOM_CANONICAL_NAMES:
+                    self._gen_dom_call(fname, expr.args, indent)
+                    wat_name = _DOM_BUILTINS[fname]
+                    if _DOM_HOST_SIGNATURES[wat_name][1]:
+                        self._emit(f"{indent}drop")
                 elif fname in self._defined_func_names:
                     # Known WAT function — emit args then call
                     self._emit(f"{indent};; call {fname}(...)")
@@ -899,7 +852,7 @@ class WATCodeGenerator(
                         self._emit(f"{indent}  br_if ${match_label}")
                     if handler.name:
                         self._locals.add(handler.name)
-                        self._emit(f"{indent}  f64.const 0")
+                        self._emit(f"{indent}  local.get ${self._wat_symbol(code_local)}")
                         self._emit(f"{indent}  local.set ${self._wat_symbol(handler.name)}")
                     self._emit(f"{indent}  f64.const 1")
                     self._emit(f"{indent}  local.set ${self._wat_symbol(handled_local)}")
@@ -924,6 +877,9 @@ class WATCodeGenerator(
             self._emit(f"{indent}f64.const 0")
             self._emit(f"{indent}f64.ne")
             self._emit(f"{indent}if")
+            if stmt.finally_body:
+                self._emit(f"{indent}  ;; finally (unhandled exception path)")
+                self._gen_stmts(stmt.finally_body, indent + "  ")
             if parent_ctx is not None:
                 self._emit(f"{indent}  local.get ${self._wat_symbol(code_local)}")
                 self._emit(f"{indent}  local.set ${self._wat_symbol(parent_ctx['code_local'])}")
@@ -936,7 +892,7 @@ class WATCodeGenerator(
             self._emit(f"{indent}end")
 
             if stmt.finally_body:
-                self._emit(f"{indent};; finally")
+                self._emit(f"{indent};; finally (normal/handled path)")
                 self._gen_stmts(stmt.finally_body, indent)
 
         elif isinstance(stmt, WithStatement):
@@ -977,10 +933,6 @@ class WATCodeGenerator(
 
         else:
             self._emit(f"{indent};; (unsupported statement: {type(stmt).__name__})")
-
-    # -----------------------------------------------------------------------
-    # Print call
-    # -----------------------------------------------------------------------
 
     def _gen_expr(self, node, indent: str):  # noqa: C901  # pylint: disable=too-many-branches,too-many-statements,too-many-locals
         if isinstance(node, NumeralLiteral):
@@ -1113,13 +1065,20 @@ class WATCodeGenerator(
             elif fname in _INPUT_NAMES and len(node.args) <= 1:
                 # input() / input("prompt") — reads one line from stdin via fd_read
                 if node.args and isinstance(node.args[0], StringLiteral):
-                    ptr, slen = self._intern_string(node.args[0].value)
+                    ptr, slen = self._intern(node.args[0].value)
                     self._emit(f"{indent}i32.const {ptr}")
                     self._emit(f"{indent}i32.const {slen}")
                 else:
                     self._emit(f"{indent}i32.const 0")
                     self._emit(f"{indent}i32.const 0")
                 self._emit(f"{indent}call $input")
+            elif fname in _ARGC_NAMES and len(node.args) == 0:
+                self._emit(f"{indent}call $argc")
+            elif fname in _ARGV_NAMES and len(node.args) == 1:
+                self._gen_expr(node.args[0], indent)
+                self._emit(f"{indent}call $argv")
+            elif fname in _DOM_CANONICAL_NAMES:
+                self._gen_dom_call(fname, node.args, indent)
             elif fname in _INT_NAMES and len(node.args) == 1:
                 arg = node.args[0]
                 if isinstance(arg, StringLiteral):
@@ -1571,10 +1530,6 @@ class WATCodeGenerator(
         self._emit(f"{indent}i32.const {size}")
         self._emit(f"{indent}call $ml_free")
 
-    # -----------------------------------------------------------------------
-    # Condition generation (pushes i32: 0 or 1)
-    # -----------------------------------------------------------------------
-
     def _gen_cond(self, node, indent: str):
         if isinstance(node, CompareOp):
             self._gen_cmp(node, indent)
@@ -1659,10 +1614,6 @@ class WATCodeGenerator(
         for _ in range(len(node.values) - 1):
             self._emit(f"{indent}{op_instr}")
 
-    # -----------------------------------------------------------------------
-    # Binary / unary expression helpers
-    # -----------------------------------------------------------------------
-
     def _gen_unaryop(self, node: UnaryOp, indent: str):
         if node.op == "-":
             self._gen_expr(node.operand, indent)
@@ -1675,10 +1626,6 @@ class WATCodeGenerator(
             self._gen_expr(node.operand, indent)
         else:
             self._gen_expr(node.operand, indent)
-
-    # -----------------------------------------------------------------------
-    # Compound statement generation
-    # -----------------------------------------------------------------------
 
     def _gen_if(self, stmt: IfStatement, indent: str):
         self._emit(f"{indent};; if ...")
@@ -1948,10 +1895,6 @@ class WATCodeGenerator(
         self._emit(f"{indent}  end  ;; loop")
         self._emit(f"{indent}end  ;; block (for list)")
 
-    # -----------------------------------------------------------------------
-    # Numeric helpers
-    # -----------------------------------------------------------------------
-
     def _to_f64(self, raw) -> str:
         """Convert a raw numeral value to a WAT f64 literal string."""
         try:
@@ -1964,10 +1907,6 @@ class WATCodeGenerator(
         except (ValueError, TypeError):
             return "0.0"
 
-
-# ---------------------------------------------------------------------------
-# Module-level utility
-# ---------------------------------------------------------------------------
 
 _STUB_MARKER = ";; unsupported call:"
 

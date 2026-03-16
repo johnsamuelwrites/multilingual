@@ -107,10 +107,10 @@ class WATGeneratorManifestMixin:
     def generate_js_host_shim(self, _manifest: dict) -> str:
         """Generate a JavaScript WASI shim for browser execution.
 
-        The generated module imports ``wasi_snapshot_preview1.fd_write`` (stdout)
-        and ``wasi_snapshot_preview1.fd_read`` (stdin / input() builtin).
-        For browser execution the fd_read stub returns EOF — use a full WASI
-        polyfill (e.g. ``@bjorn3/browser_wasi_shim``) for interactive input.
+        The generated module imports ``wasi_snapshot_preview1.{fd_write, fd_read,
+        args_sizes_get, args_get}``.  Browser stubs for fd_read (returns EOF) and
+        args_get (returns empty argv) are included.  Use a full WASI polyfill
+        (e.g. ``@bjorn3/browser_wasi_shim``) for full WASI compatibility.
         """
         lines = [
             "// Auto-generated WASI shim from multilingual WASM ABI manifest",
@@ -170,6 +170,15 @@ class WATGeneratorManifestMixin:
             "      view.setUint32(nreadPtr, nread, true);",
             "      return 0;",
             "    },",
+            "    args_sizes_get(argcPtr, argvBufSizePtr) {",
+            "      // Browser stub: reports 0 arguments.",
+            "      if (!memoryRef.current) return 8;",
+            "      const view = new DataView(memoryRef.current.buffer);",
+            "      view.setUint32(argcPtr, 0, true);",
+            "      view.setUint32(argvBufSizePtr, 0, true);",
+            "      return 0;",
+            "    },",
+            "    args_get(_argvPtr, _argvBufPtr) { return 0; },",
             "  };",
             "  return { wasi_snapshot_preview1, memoryRef };",
             "}",
@@ -228,6 +237,12 @@ class WATGeneratorManifestMixin:
             "  const exports = result.instance.exports;",
             "  memoryRef.current = exports.memory || null;",
             "  return { instance: result.instance, exports, memoryRef };",
+            "}",
+            "",
+            "// Load the canonical bundle emitted by `build-wasm-bundle` from a directory URL.",
+            "export async function loadWasmBundle(baseUrl, importsFactory) {",
+            "  const bundleUrl = new URL('module.wasm', new URL(baseUrl, import.meta.url));",
+            "  return loadWasmModule(bundleUrl, importsFactory);",
             "}",
             "",
             "// Call any exported numeric function by name.",

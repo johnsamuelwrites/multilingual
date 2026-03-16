@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Multilingual → WASM demo</title>
+  <title>Multilingual to WASM demo</title>
   <style>
     body {
       font-family: system-ui, sans-serif;
@@ -78,17 +78,68 @@
       color: #aaa;
       margin-left: 0.4rem;
     }
+    /* DOM bridge demo section */
+    .dom-divider {
+      border: none;
+      border-top: 1px solid #333;
+      margin: 1.5rem 0;
+    }
+    .dom-heading {
+      color: #7ec8e3;
+      font-size: 1.1rem;
+      margin-bottom: 0.25rem;
+    }
+    .dom-intro {
+      color: #888;
+      margin-top: 0;
+      font-size: 0.875rem;
+    }
+    .card--dom {
+      border-color: #1e2a1e;
+    }
+    .card--dom-source {
+      border-color: #2a3a2a;
+    }
+    #dom-source {
+      background: #0a110a;
+      color: #8db98d;
+      border-color: #2a3a2a;
+    }
+    #dom-status {
+      font-size: 0.8rem;
+      color: #888;
+    }
+    #ml-panel {
+      min-height: 5rem;
+      padding: 0.75rem;
+      background: #0a110a;
+      border: 1px dashed #2a4a2a;
+      border-radius: 4px;
+      color: #8db98d;
+      font-size: 0.875rem;
+    }
+    #dom-output {
+      background: #0a110a;
+      border: 1px solid #2a3a2a;
+      border-radius: 4px;
+      padding: 0.75rem;
+      font-family: monospace;
+      font-size: 0.875rem;
+      color: #7ee787;
+      min-height: 2rem;
+      white-space: pre-wrap;
+    }
   </style>
 </head>
 <body>
-  <h1>Multilingual → WASM <span class="badge">browser demo</span></h1>
+  <h1>Multilingual to WASM <span class="badge">browser demo</span></h1>
   <p class="subtitle">
-    Source code compiled to WebAssembly. Only a tiny WASI <code>fd_write</code>
-    polyfill is needed — no custom JavaScript host functions.
+    This page runs the prebuilt <code>module.wasm</code> bundle emitted by
+    <code>python build.py</code>. Edit a source template, rebuild, then run.
   </p>
 
   <div class="card">
-    <label for="source">Source — edit and hit Run</label>
+    <label for="source">Source template - rebuild after editing</label>
     <textarea id="source" rows="14" spellcheck="false">def fibonacci(n):
     let a = 0
     let b = 1
@@ -128,29 +179,80 @@ while i < 15:
         <option value="bn">Bengali (bn)</option>
         <option value="ta">Tamil (ta)</option>
       </select>
-      <button id="runBtn">▶ Run</button>
+      <button id="runBtn">Run Bundle</button>
       <span id="status"></span>
     </div>
   </div>
 
   <div class="card">
     <label>Output</label>
-    <pre id="output">(press Run)</pre>
+    <pre id="output">(press Run Bundle)</pre>
   </div>
 
-  <!--
-    The compiler runs in-browser via Pyodide (Python → WASM).
-    If Pyodide is unavailable the page falls back to a pre-built app.wasm
-    built by running:  python build.py
-  -->
+  <hr class="dom-divider" />
+  <h2 class="dom-heading">
+    DOM Bridge Demo <span class="badge">env.*</span>
+  </h2>
+  <p class="dom-intro">
+    Rebuild <code>module.wasm</code> with the DOM demo source, then press
+    <em>Run DOM Demo</em> to see WASM manipulate live DOM elements.
+    <br/>
+    <code>python build.py dom_demo_en.ml</code>
+  </p>
+
+  <div class="card card--dom-source">
+    <label for="dom-source">DOM demo source (<code>dom_demo_en.ml</code>)</label>
+    <textarea id="dom-source" rows="12" spellcheck="false" readonly
+      title="DOM demo source program">let panel = dom_get("ml-panel")
+dom_text(panel, "")
+
+let heading = dom_create("h3")
+dom_text(heading, "DOM Bridge Demo")
+dom_style(heading, "color", "#7ec8e3")
+dom_append(panel, heading)
+
+let body = dom_create("p")
+dom_text(body, "This content was created by Multilingual WASM running in your browser.")
+dom_append(panel, body)
+
+let note = dom_create("p")
+dom_text(note, "dom_get / dom_create / dom_text / dom_append / dom_style mapped to real DOM APIs.")
+dom_style(note, "color", "#7ee787")
+dom_style(note, "fontFamily", "monospace")
+dom_append(panel, note)
+
+print("dom_demo: DOM elements created successfully.")</textarea>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <button id="domRunBtn">Run DOM Demo</button>
+      <span id="dom-status"></span>
+    </div>
+  </div>
+
+  <div class="card card--dom">
+    <label>DOM target — elements below are created/modified by WASM</label>
+    <div id="ml-panel">
+      (press Run DOM Demo to populate)
+    </div>
+  </div>
+
+  <div class="card card--dom">
+    <label>WASM stdout (print calls from dom_demo)</label>
+    <pre id="dom-output">(press Run DOM Demo)</pre>
+  </div>
+
   <script type="module">
-    const runBtn   = document.getElementById("runBtn");
+    import { loadBrowserBundle } from "./browser_runtime.js";
+    import { createDomImports } from "./host_shim.js";
+
+    const runBtn = document.getElementById("runBtn");
     const statusEl = document.getElementById("status");
     const outputEl = document.getElementById("output");
     const sourceEl = document.getElementById("source");
-    const langEl   = document.getElementById("lang");
+    const langEl = document.getElementById("lang");
 
-    // ── Per-language Fibonacci examples ───────────────────────────────────
     const EXAMPLES = {
       en: `def fibonacci(n):
     let a = 0
@@ -167,8 +269,7 @@ let i = 0
 while i < 15:
     print(fibonacci(i))
     i = i + 1`,
-
-      fr: `déf fibonacci(n):
+      fr: `def fibonacci(n):
     soit a = 0
     soit b = 1
     soit count = 0
@@ -183,7 +284,6 @@ soit i = 0
 tantque i < 15:
     afficher(fibonacci(i))
     i = i + 1`,
-
       de: `def fibonacci(n):
     sei a = 0
     sei b = 1
@@ -193,13 +293,12 @@ tantque i < 15:
         b = a + b
         a = temp
         count = count + 1
-    rückgabe a
+    ruckgabe a
 
 sei i = 0
 solange i < 15:
     ausgeben(fibonacci(i))
     i = i + 1`,
-
       es: `def fibonacci(n):
     sea a = 0
     sea b = 1
@@ -215,7 +314,6 @@ sea i = 0
 mientras i < 15:
     imprimir(fibonacci(i))
     i = i + 1`,
-
       it: `definisci fibonacci(n):
     sia a = 0
     sia b = 1
@@ -231,7 +329,6 @@ sia i = 0
 mentre i < 15:
     stampa(fibonacci(i))
     i = i + 1`,
-
       pt: `defina fibonacci(n):
     seja a = 0
     seja b = 1
@@ -247,7 +344,6 @@ seja i = 0
 enquanto i < 15:
     imprima(fibonacci(i))
     i = i + 1`,
-
       nl: `definieer fibonacci(n):
     laat a = 0
     laat b = 1
@@ -263,7 +359,6 @@ laat i = 0
 terwijl i < 15:
     afdrukken(fibonacci(i))
     i = i + 1`,
-
       sv: `definiera fibonacci(n):
     lat a = 0
     lat b = 1
@@ -279,7 +374,6 @@ lat i = 0
 medan i < 15:
     skriv(fibonacci(i))
     i = i + 1`,
-
       da: `definer fibonacci(n):
     lad a = 0
     lad b = 1
@@ -295,7 +389,6 @@ lad i = 0
 mens i < 15:
     skriv(fibonacci(i))
     i = i + 1`,
-
       fi: `maarittele fibonacci(n):
     olkoon a = 0
     olkoon b = 1
@@ -311,7 +404,6 @@ olkoon i = 0
 kun i < 15:
     tulosta(fibonacci(i))
     i = i + 1`,
-
       pl: `funkcja fibonacci(n):
     niech a = 0
     niech b = 1
@@ -327,300 +419,84 @@ niech i = 0
 dopoki i < 15:
     drukuj(fibonacci(i))
     i = i + 1`,
-
-      ar: `دالة fibonacci(n):
-    ليكن a = 0
-    ليكن b = 1
-    ليكن count = 0
-    طالما count < n:
-        ليكن temp = b
-        b = a + b
-        a = temp
-        count = count + 1
-    إرجاع a
-
-ليكن i = 0
-طالما i < 15:
-    اطبع(fibonacci(i))
-    i = i + 1`,
-
-      zh: `函数 fibonacci(n):
-    令 a = 0
-    令 b = 1
-    令 count = 0
-    当 count < n:
-        令 temp = b
-        b = a + b
-        a = temp
-        count = count + 1
-    返回 a
-
-令 i = 0
-当 i < 15:
-    打印(fibonacci(i))
-    i = i + 1`,
-
-      ja: `関数 fibonacci(n):
-    変数 a = 0
-    変数 b = 1
-    変数 count = 0
-    間 count < n:
-        変数 temp = b
-        b = a + b
-        a = temp
-        count = count + 1
-    戻る a
-
-変数 i = 0
-間 i < 15:
-    表示(fibonacci(i))
-    i = i + 1`,
-
-      hi: `परिभाषा fibonacci(n):
-    मान a = 0
-    मान b = 1
-    मान count = 0
-    जबतक count < n:
-        मान temp = b
-        b = a + b
-        a = temp
-        count = count + 1
-    वापसी a
-
-मान i = 0
-जबतक i < 15:
-    छापो(fibonacci(i))
-    i = i + 1`,
-
-      bn: `সংজ্ঞা fibonacci(n):
-    ধরি a = 0
-    ধরি b = 1
-    ধরি count = 0
-    যতক্ষণ count < n:
-        ধরি temp = b
-        b = a + b
-        a = temp
-        count = count + 1
-    ফেরত a
-
-ধরি i = 0
-যতক্ষণ i < 15:
-    ছাপাও(fibonacci(i))
-    i = i + 1`,
-
-      ta: `வரையறு fibonacci(n):
-    இருக்கட்டும் a = 0
-    இருக்கட்டும் b = 1
-    இருக்கட்டும் count = 0
-    வரை count < n:
-        இருக்கட்டும் temp = b
-        b = a + b
-        a = temp
-        count = count + 1
-    திருப்பு a
-
-இருக்கட்டும் i = 0
-வரை i < 15:
-    அச்சிடு(fibonacci(i))
-    i = i + 1`,
+      ar: sourceEl.value,
+      zh: sourceEl.value,
+      ja: sourceEl.value,
+      hi: sourceEl.value,
+      bn: sourceEl.value,
+      ta: sourceEl.value,
     };
 
-    // Swap the example source when the language changes.
     langEl.addEventListener("change", () => {
       const lang = langEl.value;
       if (EXAMPLES[lang]) {
         sourceEl.value = EXAMPLES[lang];
-        outputEl.textContent = "(press Run)";
-        statusEl.textContent = "";
+      }
+      outputEl.textContent = "(rebuild module.wasm, then press Run Bundle)";
+      statusEl.textContent = "Source changed - rebuild required";
+    });
+
+    let bundle = null;
+    window.wasmExports = null;
+
+    runBtn.addEventListener("click", async () => {
+      runBtn.disabled = true;
+      statusEl.textContent = "Loading module.wasm ...";
+      try {
+        if (!bundle) {
+          bundle = await loadBrowserBundle({
+            baseUrl: "./",
+            outputElement: outputEl,
+          });
+          window.wasmExports = bundle.exports;
+          const callable = bundle.callableExports();
+          if (callable.length) {
+            console.info(
+              "[multilingual] callable exports: "
+              + callable.join(", ")
+              + "\nCall via: wasmExports.<name>(...args)"
+            );
+          }
+        }
+        statusEl.textContent = "Running module.wasm ...";
+        bundle.runMain();
+        statusEl.textContent = "done";
+      } catch (err) {
+        statusEl.textContent = "error";
+        outputEl.textContent =
+          `${err.message}\n\nRun python build.py to regenerate module.wasm.`;
+      } finally {
+        runBtn.disabled = false;
       }
     });
 
-    // ── WASI shim ────────────────────────────────────────────────────────────
-    // Implements wasi_snapshot_preview1.fd_write so stdout goes to outputEl.
-    function makeWasiImports(memoryRef) {
-      const dec = new TextDecoder("utf-8");
-      let buf = "";
-      function flush() {
-        let nl;
-        while ((nl = buf.indexOf("\n")) !== -1) {
-          outputEl.textContent += buf.slice(0, nl) + "\n";
-          buf = buf.slice(nl + 1);
+    // ---- DOM bridge demo ----
+    const domRunBtn = document.getElementById("domRunBtn");
+    const domStatusEl = document.getElementById("dom-status");
+    const domOutputEl = document.getElementById("dom-output");
+
+    let domBundle = null;
+
+    domRunBtn.addEventListener("click", async () => {
+      domRunBtn.disabled = true;
+      domStatusEl.textContent = "Loading module.wasm with DOM bridge ...";
+      try {
+        if (!domBundle) {
+          domBundle = await loadBrowserBundle({
+            baseUrl: "./",
+            outputElement: domOutputEl,
+            extraImportsFactory: (memRef) => createDomImports(memRef),
+          });
         }
-      }
-      return {
-        wasi_snapshot_preview1: {
-          fd_write(fd, iovsPtr, iovsLen, nwrittenPtr) {
-            if (fd !== 1 && fd !== 2) return 8;
-            const mem = memoryRef.current;
-            if (!mem) return 8;
-            const view = new DataView(mem.buffer);
-            let written = 0;
-            for (let i = 0; i < iovsLen; i++) {
-              const ptr = view.getUint32(iovsPtr + i * 8, true);
-              const len = view.getUint32(iovsPtr + i * 8 + 4, true);
-              buf += dec.decode(new Uint8Array(mem.buffer, ptr, len));
-              written += len;
-            }
-            flush();
-            view.setUint32(nwrittenPtr, written, true);
-            return 0;
-          },
-        },
-      };
-    }
-
-    // ── Run via pre-built app.wasm (fallback) ─────────────────────────────
-    async function runPrebuilt() {
-      statusEl.textContent = "Loading app.wasm …";
-      const resp = await fetch("app.wasm");
-      if (!resp.ok) throw new Error("app.wasm not found — run build.py first");
-      const bytes = await resp.arrayBuffer();
-      return runWasm(new Uint8Array(bytes));
-    }
-
-    // Last loaded WASM exports, accessible from the browser console.
-    // E.g.: wasmExports.fibonacci(10)
-    window.wasmExports = null;
-
-    async function runWasm(wasmBytes) {
-      const memRef = { current: null };
-      const imports = makeWasiImports(memRef);
-      const result = await WebAssembly.instantiate(wasmBytes, imports);
-      const exp = result.instance.exports;
-      memRef.current = exp.memory;
-      window.wasmExports = exp;
-      if (exp.__ml_reset) exp.__ml_reset();   // reset heap between runs
-      outputEl.textContent = "";
-      if (exp.__main) exp.__main();
-      // List callable numeric exports in the console for discoverability.
-      const callable = Object.keys(exp).filter(
-        k => typeof exp[k] === "function" && !k.startsWith("__") && k !== "memory"
-      );
-      if (callable.length) {
-        console.info(
-          "[multilingual] callable exports: " + callable.join(", ") +
-          "\nCall via: wasmExports.<name>(...args)"
-        );
-      }
-    }
-
-    // ── Run via Pyodide (in-browser Python compiler) ──────────────────────
-    let pyodide = null;
-
-    async function loadPyodide() {
-      if (pyodide) return pyodide;
-      statusEl.textContent = "Loading Pyodide (first run only) …";
-      const { loadPyodide: load } = await import(
-        "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/pyodide.mjs"
-      );
-      pyodide = await load();
-      // Install the multilingual package from the repo root (served locally).
-      await pyodide.loadPackage("micropip");
-      const micropip = pyodide.pyimport("micropip");
-      try {
-        await micropip.install("multilingualprogramming");
-      } catch {
-        // Fall back to loading from the current origin (dev server).
-        pyodide.runPython(`
-import sys, pathlib
-sys.path.insert(0, "/")
-`);
-      }
-      return pyodide;
-    }
-
-    // Sentinel type so the button handler can tell compilation errors apart
-    // from infrastructure failures (Pyodide not loading, wasmtime missing).
-    class CompileError extends Error {
-      constructor(msg) { super(msg); this.name = "CompileError"; }
-    }
-
-    function formatPythonError(raw) {
-      // Pyodide wraps Python tracebacks in PythonError.message.
-      // Extract the last "ErrorType: message" line for a concise display.
-      const lines = String(raw).split("\n").filter(Boolean);
-      const summary = lines[lines.length - 1] || String(raw);
-      return summary;
-    }
-
-    // ── WAT → WASM via wabt.js (no Python wasmtime needed) ───────────────
-    let wabtModule = null;
-
-    async function loadWabt() {
-      if (wabtModule) return wabtModule;
-      // wabt is the WebAssembly Binary Toolkit compiled to JS/WASM.
-      // It handles the full WAT text format including multi-value returns,
-      // mutable globals, tables, and every feature this compiler generates.
-      const { default: WabtModule } = await import(
-        "https://cdn.jsdelivr.net/npm/wabt@1.0.36/index.js"
-      );
-      wabtModule = await WabtModule();
-      return wabtModule;
-    }
-
-    async function watToWasm(watText) {
-      const wabt = await loadWabt();
-      const mod = wabt.parseWat("input.wat", watText, {});
-      mod.validate();
-      const { buffer } = mod.toBinary({});
-      mod.destroy();
-      return new Uint8Array(buffer);
-    }
-
-    async function compileAndRun(source, lang) {
-      const py = await loadPyodide();
-      statusEl.textContent = "Compiling …";
-      let wat;
-      try {
-        wat = py.runPython(`
-from multilingualprogramming.lexer.lexer import Lexer
-from multilingualprogramming.parser.parser import Parser
-from multilingualprogramming.codegen.wat_generator import WATCodeGenerator
-tokens = Lexer(${JSON.stringify(source)}, language=${JSON.stringify(lang)}).tokenize()
-prog = Parser(tokens, source_language=${JSON.stringify(lang)}).parse()
-WATCodeGenerator().generate(prog)
-`);
+        domStatusEl.textContent = "Running ...";
+        domBundle.runMain();
+        domStatusEl.textContent = "done";
       } catch (err) {
-        throw new CompileError(formatPythonError(err.message ?? err));
-      }
-      // Compile WAT → WASM using wabt.js (pure JS, no Python wasmtime needed).
-      statusEl.textContent = "Assembling …";
-      const wasmBytes = await watToWasm(wat);
-      await runWasm(wasmBytes);
-    }
-
-    // ── Button handler ────────────────────────────────────────────────────
-    runBtn.addEventListener("click", async () => {
-      runBtn.disabled = true;
-      statusEl.textContent = "";
-      outputEl.textContent = "";
-      const source = sourceEl.value;
-      const lang   = langEl.value;
-      try {
-        // Try Pyodide first (live compilation), fall back to pre-built WASM.
-        if (typeof window !== "undefined" && window.location.protocol !== "file:") {
-          await compileAndRun(source, lang);
-        } else {
-          await runPrebuilt();
-        }
-        statusEl.textContent = "✓ done";
-      } catch (err) {
-        if (err instanceof CompileError) {
-          // Syntax / parse error in the user's source — show it, don't fall back.
-          statusEl.textContent = "✗ compile error";
-          outputEl.textContent = err.message;
-        } else {
-          // Infrastructure failure (Pyodide unavailable, wasmtime missing) → try pre-built.
-          try {
-            await runPrebuilt();
-            statusEl.textContent = "✓ done (pre-built wasm)";
-          } catch (e2) {
-            statusEl.textContent = "✗ error";
-            outputEl.textContent = `${err.message}\n\nFallback also failed: ${e2.message}`;
-          }
-        }
+        domStatusEl.textContent = "error";
+        domOutputEl.textContent =
+          `${err.message}\n\nRebuild: python build.py dom_demo_en.ml`;
       } finally {
-        runBtn.disabled = false;
+        domRunBtn.disabled = false;
       }
     });
   </script>

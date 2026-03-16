@@ -35,6 +35,7 @@ from multilingualprogramming.parser.ast_nodes import (
 )
 
 from multilingualprogramming.codegen.wat_generator_support import (
+    _DOM_CALLER_PARAMS,
     _LIST_NAMES,
     _SET_NAMES,
     _TUPLE_NAMES,
@@ -50,6 +51,40 @@ class WATGeneratorRuntimeMixin:
     def supports_runtime_lowering(self) -> bool:
         """Expose runtime helper availability for mixin-aware callers."""
         return True
+
+    def _gen_dom_call(self, fname: str, args, indent: str) -> None:
+        """Lower a DOM builtin call to its WAT wrapper function.
+
+        Each "str" caller param is lowered from the next argument:
+          StringLiteral  -> i32.const ptr, i32.const len  (interned)
+          other expr     -> gen_expr (f64 ptr), i32.trunc_f64_u, $__last_str_len
+        Each "f64" caller param is lowered from the next argument as-is.
+        Returns: f64 (handle or str ptr) left on stack; "" = void.
+        """
+        self._uses_dom = True
+        caller_params = _DOM_CALLER_PARAMS.get(fname, [])
+        arg_iter = iter(args)
+        for pkind in caller_params:
+            arg = next(arg_iter, None)
+            if pkind == "str":
+                if arg is None:
+                    self._emit(f"{indent}i32.const 0")
+                    self._emit(f"{indent}i32.const 0")
+                elif isinstance(arg, StringLiteral):
+                    ptr, slen = self._intern(arg.value)
+                    self._emit(f"{indent}i32.const {ptr}")
+                    self._emit(f"{indent}i32.const {slen}")
+                else:
+                    self._gen_expr(arg, indent)
+                    self._emit(f"{indent}i32.trunc_f64_u")
+                    self._emit(f"{indent}global.get $__last_str_len")
+            else:  # "f64" handle
+                if arg is None:
+                    self._emit(f"{indent}f64.const 0")
+                else:
+                    self._gen_expr(arg, indent)
+        wat_fn = fname  # WAT wrapper function has the same name as the builtin
+        self._emit(f"{indent}call ${wat_fn}")
 
     def _gen_len(self, arg_node, indent: str):
         """Emit WAT that pushes the length of a string or list variable."""

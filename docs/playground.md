@@ -2,9 +2,12 @@
 
 Try the **Multilingual Programming Language** directly in your browser — no installation required.
 
-The playground runs entirely via **WebAssembly**: the full Python interpreter is compiled to
-WASM using [Pyodide](https://pyodide.org), so your multilingual code executes client-side with
-no server round-trips.
+The interactive playground still uses [Pyodide](https://pyodide.org) for live,
+in-browser compilation and execution. For deployed web applications, the
+canonical browser path is now the prebuilt bundle flow shown in
+[`examples/browser`](../examples/browser/): compile ahead of time with
+`build-wasm-bundle`, ship `module.wasm`, and load it with the generated
+`host_shim.js` and `renderer_template.js`.
 
 ## What you can do
 
@@ -16,6 +19,8 @@ no server round-trips.
 - Inspect the **Generated Python** — the transpiled source code the interpreter produces
 - Explore the **WAT / WASM** view to see the real WebAssembly Text (WAT) emitted by
   `WATCodeGenerator` and watch it execute natively in your browser via `wabt.js`
+- Use the browser example and `build-wasm-bundle` when you want a minimal-JS,
+  precompiled deployment path instead of live compilation
 
 ## Launch the playground
 

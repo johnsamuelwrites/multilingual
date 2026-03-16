@@ -64,6 +64,8 @@ class WATModuleStructureTestSuite(unittest.TestCase):
         wat = _gen()
         self.assertIn('(import "wasi_snapshot_preview1" "fd_write"', wat)
         self.assertIn('(import "wasi_snapshot_preview1" "fd_read"', wat)
+        self.assertIn('(import "wasi_snapshot_preview1" "args_sizes_get"', wat)
+        self.assertIn('(import "wasi_snapshot_preview1" "args_get"', wat)
         self.assertNotIn('(import "env"', wat)
 
     def test_module_exports_memory(self):
@@ -100,10 +102,12 @@ class WATABIManifestTestSuite(unittest.TestCase):
     def test_manifest_contains_required_host_import_signatures(self):
         manifest = WATCodeGenerator().generate_abi_manifest(_prog())
         imports = manifest["required_host_imports"]
-        self.assertEqual(len(imports), 2)
+        self.assertEqual(len(imports), 4)
         names = {i["name"] for i in imports}
         self.assertIn("fd_write", names)
         self.assertIn("fd_read", names)
+        self.assertIn("args_sizes_get", names)
+        self.assertIn("args_get", names)
         for imp in imports:
             self.assertEqual(imp["module"], "wasi_snapshot_preview1")
 
@@ -171,12 +175,14 @@ class WATStreamBufferExportsTestSuite(unittest.TestCase):
 class WATFrontendTemplateTestSuite(unittest.TestCase):
     """Verify frontend template generation from ABI manifest."""
 
-    def test_generate_js_host_shim_contains_wasi_fd_write_and_fd_read(self):
+    def test_generate_js_host_shim_contains_all_wasi_stubs(self):
         manifest = WATCodeGenerator().generate_abi_manifest(_prog())
         shim = WATCodeGenerator().generate_js_host_shim(manifest)
         self.assertIn("createWasiImports", shim)
         self.assertIn("fd_write", shim)
         self.assertIn("fd_read", shim)
+        self.assertIn("args_sizes_get", shim)
+        self.assertIn("args_get", shim)
         self.assertIn("wasi_snapshot_preview1", shim)
 
     def test_generate_renderer_template_contains_mode_dispatch(self):
@@ -198,6 +204,13 @@ class WATFrontendTemplateTestSuite(unittest.TestCase):
         template = WATCodeGenerator().generate_renderer_template(manifest)
         self.assertIn("export function callFunction", template)
         self.assertIn("exports[name]", template)
+
+    def test_renderer_template_exposes_bundle_loader(self):
+        """Renderer should load canonical build-wasm-bundle output directories."""
+        manifest = WATCodeGenerator().generate_abi_manifest(_prog())
+        template = WATCodeGenerator().generate_renderer_template(manifest)
+        self.assertIn("export async function loadWasmBundle", template)
+        self.assertIn("new URL('module.wasm'", template)
 
     def test_renderer_template_includes_function_signatures(self):
         """Renderer must include a comment listing exported function signatures."""

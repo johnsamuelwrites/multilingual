@@ -48,6 +48,65 @@ _SET_NAMES = _aliases_for("set")
 _STR_NAMES = _aliases_for("str")
 _ZIP_NAMES = _aliases_for("zip")
 _INPUT_NAMES = _aliases_for("input")
+_ARGC_NAMES = _aliases_for("argc")
+_ARGV_NAMES = _aliases_for("argv")
+
+# DOM bridge builtins — map canonical name → WAT host import name
+_DOM_BUILTINS: dict[str, str] = {
+    "dom_get":     "ml_dom_get",      # (id_ptr, id_len) -> f64 handle
+    "dom_text":    "ml_dom_set_text", # (handle, ptr, len)
+    "dom_html":    "ml_dom_set_html", # (handle, ptr, len)
+    "dom_value":   "ml_dom_get_value",# (handle, buf_ptr, buf_len) -> i32 bytes_written
+    "dom_attr":    "ml_dom_set_attr", # (handle, name_ptr, name_len, val_ptr, val_len)
+    "dom_create":  "ml_dom_create",   # (tag_ptr, tag_len) -> f64 handle
+    "dom_append":  "ml_dom_append",   # (parent_handle, child_handle)
+    "dom_style":   "ml_dom_style",    # (handle, prop_ptr, prop_len, val_ptr, val_len)
+    "dom_remove":  "ml_dom_remove",   # (handle)
+    "dom_class":   "ml_dom_set_class",# (handle, cls_ptr, cls_len)
+}
+
+# WAT signatures for each DOM host import (param types, return type)
+_DOM_HOST_SIGNATURES: dict[str, tuple[list[str], str]] = {
+    "ml_dom_get":       (["i32", "i32"],                    "f64"),
+    "ml_dom_set_text":  (["f64", "i32", "i32"],             ""),
+    "ml_dom_set_html":  (["f64", "i32", "i32"],             ""),
+    "ml_dom_get_value": (["f64", "i32", "i32"],             "i32"),
+    "ml_dom_set_attr":  (["f64", "i32", "i32", "i32", "i32"], ""),
+    "ml_dom_create":    (["i32", "i32"],                    "f64"),
+    "ml_dom_append":    (["f64", "f64"],                    ""),
+    "ml_dom_style":     (["f64", "i32", "i32", "i32", "i32"], ""),
+    "ml_dom_remove":    (["f64"],                           ""),
+    "ml_dom_set_class": (["f64", "i32", "i32"],             ""),
+}
+
+_DOM_CANONICAL_NAMES: frozenset = frozenset(_DOM_BUILTINS.keys())
+
+# Caller-facing parameter kinds for each DOM builtin ("str" = ptr+len pair, "f64" = handle).
+# "ret_str" = returns string (f64 ptr, length in $__last_str_len).
+_DOM_CALLER_PARAMS: dict[str, list[str]] = {
+    "dom_get":    ["str"],
+    "dom_text":   ["f64", "str"],
+    "dom_html":   ["f64", "str"],
+    "dom_value":  ["f64"],
+    "dom_attr":   ["f64", "str", "str"],
+    "dom_create": ["str"],
+    "dom_append": ["f64", "f64"],
+    "dom_style":  ["f64", "str", "str"],
+    "dom_remove": ["f64"],
+    "dom_class":  ["f64", "str"],
+}
+_DOM_CALLER_RETURNS: dict[str, str] = {
+    "dom_get":    "f64",
+    "dom_text":   "",
+    "dom_html":   "",
+    "dom_value":  "ret_str",
+    "dom_attr":   "",
+    "dom_create": "f64",
+    "dom_append": "",
+    "dom_style":  "",
+    "dom_remove": "",
+    "dom_class":  "",
+}
 
 
 def _name(node) -> str:
@@ -85,6 +144,18 @@ _WAT_HOST_IMPORT_SIGNATURES = [
         "module": "wasi_snapshot_preview1",
         "name": "fd_read",
         "param_types": ["i32", "i32", "i32", "i32"],
+        "return_type": "i32",
+    },
+    {
+        "module": "wasi_snapshot_preview1",
+        "name": "args_sizes_get",
+        "param_types": ["i32", "i32"],
+        "return_type": "i32",
+    },
+    {
+        "module": "wasi_snapshot_preview1",
+        "name": "args_get",
+        "param_types": ["i32", "i32"],
         "return_type": "i32",
     },
 ]

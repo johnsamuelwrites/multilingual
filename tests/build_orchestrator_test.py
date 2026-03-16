@@ -6,7 +6,7 @@
 
 """Tests for deterministic, atomic WAT build orchestration."""
 
-import tempfile
+import shutil
 import unittest
 from pathlib import Path
 
@@ -24,25 +24,36 @@ def _parse(source: str, lang: str = "en"):
 class BuildOrchestratorTestSuite(unittest.TestCase):
     """Validate bundle generation and deterministic outputs."""
 
+    @staticmethod
+    def _tmpdir(test_name: str) -> Path:
+        path = Path("tests") / ".tmp_build_orchestrator" / test_name
+        if path.exists():
+            shutil.rmtree(path)
+        path.mkdir(parents=True, exist_ok=True)
+        return path
+
     def test_build_generates_expected_artifacts(self):
         source = "def f(x):\n    return x + 1\nprint(f(2))\n"
         program = _parse(source)
-        with tempfile.TemporaryDirectory() as tmp:
-            out = Path(tmp)
+        out = self._tmpdir("artifacts")
+        try:
             outputs = BuildOrchestrator(out).build_from_program(program)
             self.assertTrue(outputs.transpiled_python.exists())
             self.assertTrue(outputs.wat.exists())
+            self.assertTrue(outputs.wasm.exists())
             self.assertTrue(outputs.abi_manifest.exists())
             self.assertTrue(outputs.host_shim_js.exists())
             self.assertTrue(outputs.renderer_template_js.exists())
             self.assertTrue(outputs.build_graph.exists())
             self.assertTrue(outputs.build_lockfile.exists())
+        finally:
+            shutil.rmtree(out)
 
     def test_build_is_deterministic_for_same_input(self):
         source = "def f(x):\n    return x + 1\nprint(f(2))\n"
         program = _parse(source)
-        with tempfile.TemporaryDirectory() as tmp:
-            out = Path(tmp)
+        out = self._tmpdir("deterministic")
+        try:
             orchestrator = BuildOrchestrator(out)
             first = orchestrator.build_from_program(program)
             first_manifest = first.abi_manifest.read_text(encoding="utf-8")
@@ -52,6 +63,8 @@ class BuildOrchestratorTestSuite(unittest.TestCase):
             second_lock = second.build_lockfile.read_text(encoding="utf-8")
             self.assertEqual(first_manifest, second_manifest)
             self.assertEqual(first_lock, second_lock)
+        finally:
+            shutil.rmtree(out)
 
 
 if __name__ == "__main__":

@@ -4,7 +4,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
-"""Build script: compile a multilingual source file to a self-contained WASM bundle.
+"""Build the canonical browser-ready WASM bundle for the demo directory.
 
 Usage:
     python build.py [source.ml [language]]
@@ -12,15 +12,14 @@ Usage:
 Defaults: fibonacci_en.ml  language=en
 
 Outputs (all in the same directory as this script):
-    app.wat          — WebAssembly Text format
-    app.wasm         — binary WASM module
-    wasi_shim.js     — minimal WASI fd_write polyfill for browsers
-    renderer.js      — ABI manifest + WebAssembly loader skeleton
-
-The generated WASM exports:
-    __main           — runs the top-level program
-    __ml_reset       — resets heap to initial state (call before re-running)
-    memory           — linear memory (required by the WASI shim)
+    module.wat
+    module.wasm
+    abi_manifest.json
+    host_shim.js
+    renderer_template.js
+    transpiled.py
+    build_graph.json
+    build.lock.json
 """
 
 from __future__ import annotations
@@ -30,52 +29,38 @@ import sys
 
 HERE = pathlib.Path(__file__).parent
 ROOT = HERE.parent.parent
-
-# Allow running without installing the package.
 sys.path.insert(0, str(ROOT))
 
-from multilingualprogramming.codegen.wat_generator import WATCodeGenerator  # noqa: E402
+from multilingualprogramming.codegen.build_orchestrator import BuildOrchestrator  # noqa: E402
 from multilingualprogramming.lexer.lexer import Lexer  # noqa: E402
 from multilingualprogramming.parser.parser import Parser  # noqa: E402
 
 
 def _detect_language(path: pathlib.Path) -> str:
-    """Infer language code from filename suffix like _en, _fr, etc."""
     stem = path.stem
     if "_" in stem:
         return stem.rsplit("_", 1)[-1]
     return "en"
 
 
-def build(source_path: pathlib.Path, language: str) -> None:
+def _parse_program(source_path: pathlib.Path, language: str):
     code = source_path.read_text(encoding="utf-8")
     tokens = Lexer(code, language=language).tokenize()
-    prog = Parser(tokens, source_language=language).parse()
+    return Parser(tokens, source_language=language).parse()
 
-    gen = WATCodeGenerator()
-    wat = gen.generate(prog)
-    manifest = gen.generate_abi_manifest(prog)
 
-    wat_path = HERE / "app.wat"
-    wat_path.write_text(wat, encoding="utf-8")
-    print(f"  WAT  -> {wat_path}")
-
-    try:
-        import wasmtime  # type: ignore
-        wasm_bytes = wasmtime.wat2wasm(wat)
-        wasm_path = HERE / "app.wasm"
-        wasm_path.write_bytes(wasm_bytes)
-        print(f"  WASM -> {wasm_path}  ({len(wasm_bytes):,} bytes)")
-    except ImportError:
-        print("  WASM -> skipped (wasmtime not installed; compile app.wat manually)")
-
-    shim_path = HERE / "wasi_shim.js"
-    shim_path.write_text(gen.generate_js_host_shim(manifest), encoding="utf-8")
-    print(f"  shim -> {shim_path}")
-
-    renderer_path = HERE / "renderer.js"
-    renderer_path.write_text(gen.generate_renderer_template(manifest), encoding="utf-8")
-    print(f"  rend -> {renderer_path}")
+def build(source_path: pathlib.Path, language: str) -> None:
+    outputs = BuildOrchestrator(HERE).build_from_program(
+        _parse_program(source_path, language)
+    )
+    print(f"  WAT  -> {outputs.wat}")
+    if outputs.wasm.exists():
+        print(f"  WASM -> {outputs.wasm}  ({outputs.wasm.stat().st_size:,} bytes)")
+    else:
+        print("  WASM -> skipped (install wasmtime to emit module.wasm)")
+    print(f"  ABI  -> {outputs.abi_manifest}")
+    print(f"  shim -> {outputs.host_shim_js}")
+    print(f"  rend -> {outputs.renderer_template_js}")
 
 
 def main() -> None:
@@ -92,7 +77,7 @@ def main() -> None:
 
     print(f"Building {source_path.name}  (language={language})")
     build(source_path, language)
-    print("Done — open index.html with a local HTTP server to run the demo.")
+    print("Done - serve examples/browser/ over HTTP and open index.html.")
 
 
 if __name__ == "__main__":

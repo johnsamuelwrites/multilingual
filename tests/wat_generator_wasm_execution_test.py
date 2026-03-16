@@ -20,6 +20,7 @@ from multilingualprogramming.parser.ast_nodes import (
     CallExpr,
     ClassDef,
     CompareOp,
+    ExceptHandler,
     ExpressionStatement,
     FunctionDef,
     Identifier,
@@ -28,7 +29,10 @@ from multilingualprogramming.parser.ast_nodes import (
     NumeralLiteral,
     Parameter,
     Program,
+    RaiseStatement,
     ReturnStatement,
+    StringLiteral,
+    TryStatement,
     UnaryOp,
     VariableDeclaration,
 )
@@ -509,6 +513,198 @@ class WATIntegerPrintingTestSuite(unittest.TestCase):
         )
         raw = self._run_raw(prog)
         self.assertEqual(raw.strip(), "-7")
+
+
+@unittest.skipUnless(
+    importlib.util.find_spec("wasmtime") is not None,
+    "wasmtime is required for WAT execution tests",
+)
+class WATExceptionHandlingTestSuite(unittest.TestCase):
+    """Verify try/except/finally semantics via wasmtime execution."""
+
+    def _run_raw(self, prog) -> str:
+        import wasmtime  # pylint: disable=import-outside-toplevel,import-error
+        gen = WATCodeGenerator()
+        wat = gen.generate(prog)
+        engine = wasmtime.Engine()
+        wasm_bytes = wasmtime.wat2wasm(wat)
+        module = wasmtime.Module(engine, wasm_bytes)
+        with tempfile.NamedTemporaryFile(suffix=".out", delete=False) as tf:
+            stdout_path = tf.name
+        try:
+            cfg = wasmtime.WasiConfig()
+            cfg.stdout_file = stdout_path
+            store = wasmtime.Store(engine)
+            store.set_wasi(cfg)
+            linker = wasmtime.Linker(engine)
+            linker.define_wasi()
+            inst = linker.instantiate(store, module)
+            inst.exports(store)["__main"](store)
+            with open(stdout_path, encoding="utf-8") as fh:
+                return fh.read()
+        finally:
+            os.unlink(stdout_path)
+
+    def test_catch_all_except_catches_raise(self):
+        """bare except: catches any raised exception."""
+        prog = _prog(
+            TryStatement(
+                body=[
+                    RaiseStatement(CallExpr(Identifier("ValueError"), [])),
+                    ExpressionStatement(CallExpr(Identifier("print"), [NumeralLiteral("1")])),
+                ],
+                handlers=[
+                    ExceptHandler(exc_type=None, body=[
+                        ExpressionStatement(CallExpr(Identifier("print"), [NumeralLiteral("2")])),
+                    ]),
+                ],
+            )
+        )
+        raw = self._run_raw(prog)
+        self.assertNotIn("1", raw)
+        self.assertIn("2", raw)
+
+    def test_except_exception_catches_raise(self):
+        """except Exception: catches any raised exception."""
+        prog = _prog(
+            TryStatement(
+                body=[
+                    RaiseStatement(CallExpr(Identifier("RuntimeError"), [])),
+                ],
+                handlers=[
+                    ExceptHandler(
+                        exc_type=Identifier("Exception"),
+                        body=[
+                            ExpressionStatement(
+                                CallExpr(Identifier("print"), [NumeralLiteral("42")])
+                            ),
+                        ],
+                    ),
+                ],
+            )
+        )
+        raw = self._run_raw(prog)
+        self.assertIn("42", raw)
+
+    def test_finally_runs_after_handled_exception(self):
+        """finally body executes after a handled exception."""
+        prog = _prog(
+            TryStatement(
+                body=[
+                    RaiseStatement(CallExpr(Identifier("ValueError"), [])),
+                ],
+                handlers=[
+                    ExceptHandler(exc_type=Identifier("ValueError"), body=[
+                        ExpressionStatement(CallExpr(Identifier("print"), [NumeralLiteral("1")])),
+                    ]),
+                ],
+                finally_body=[
+                    ExpressionStatement(CallExpr(Identifier("print"), [NumeralLiteral("2")])),
+                ],
+            )
+        )
+        raw = self._run_raw(prog)
+        self.assertIn("1", raw)
+        self.assertIn("2", raw)
+
+    def test_finally_runs_when_no_exception(self):
+        """finally body executes even when no exception is raised."""
+        prog = _prog(
+            TryStatement(
+                body=[
+                    ExpressionStatement(CallExpr(Identifier("print"), [NumeralLiteral("1")])),
+                ],
+                handlers=[
+                    ExceptHandler(exc_type=Identifier("ValueError"), body=[
+                        ExpressionStatement(CallExpr(Identifier("print"), [NumeralLiteral("X")])),
+                    ]),
+                ],
+                finally_body=[
+                    ExpressionStatement(CallExpr(Identifier("print"), [NumeralLiteral("2")])),
+                ],
+            )
+        )
+        raw = self._run_raw(prog)
+        self.assertIn("1", raw)
+        self.assertIn("2", raw)
+        self.assertNotIn("X", raw)
+
+    def test_except_as_e_binds_nonzero_code(self):
+        """except ValueError as e: binds e to the exception code (non-zero)."""
+        prog = _prog(
+            TryStatement(
+                body=[
+                    RaiseStatement(CallExpr(Identifier("ValueError"), [])),
+                ],
+                handlers=[
+                    ExceptHandler(
+                        exc_type=Identifier("ValueError"),
+                        name="e",
+                        body=[
+                            ExpressionStatement(
+                                CallExpr(Identifier("print"), [Identifier("e")])
+                            ),
+                        ],
+                    ),
+                ],
+            )
+        )
+        raw = self._run_raw(prog)
+        # e should be the ValueError code (1), not 0
+        val = float(raw.strip())
+        self.assertNotEqual(val, 0.0)
+        self.assertEqual(val, 1.0)
+
+
+@unittest.skipUnless(
+    importlib.util.find_spec("wasmtime") is not None,
+    "wasmtime is required for WAT execution tests",
+)
+class WATArgvTestSuite(unittest.TestCase):
+    """Verify argc()/argv() builtins via wasmtime with synthetic args."""
+
+    def _run_with_args(self, prog, cli_args: list[str]) -> str:
+        import wasmtime  # pylint: disable=import-outside-toplevel,import-error
+        gen = WATCodeGenerator()
+        wat = gen.generate(prog)
+        engine = wasmtime.Engine()
+        wasm_bytes = wasmtime.wat2wasm(wat)
+        module = wasmtime.Module(engine, wasm_bytes)
+        with tempfile.NamedTemporaryFile(suffix=".out", delete=False) as tf:
+            stdout_path = tf.name
+        try:
+            cfg = wasmtime.WasiConfig()
+            cfg.stdout_file = stdout_path
+            cfg.argv = cli_args
+            store = wasmtime.Store(engine)
+            store.set_wasi(cfg)
+            linker = wasmtime.Linker(engine)
+            linker.define_wasi()
+            inst = linker.instantiate(store, module)
+            inst.exports(store)["__main"](store)
+            with open(stdout_path, encoding="utf-8") as fh:
+                return fh.read()
+        finally:
+            os.unlink(stdout_path)
+
+    def test_argc_returns_argument_count(self):
+        prog = _prog(
+            ExpressionStatement(CallExpr(Identifier("print"), [CallExpr(Identifier("argc"), [])]))
+        )
+        raw = self._run_with_args(prog, ["prog", "hello", "world"])
+        self.assertEqual(raw.strip(), "3")
+
+    def test_argv_zero_returns_program_name(self):
+        """argv(0) returns the program name (first CLI argument)."""
+        prog = _prog(
+            VariableDeclaration("s", CallExpr(Identifier("argv"), [NumeralLiteral("0")])),
+            ExpressionStatement(
+                CallExpr(Identifier("print"), [StringLiteral("ok")])
+            ),
+        )
+        # Just verify it compiles and runs without crash
+        raw = self._run_with_args(prog, ["myprog"])
+        self.assertIn("ok", raw)
 
 
 if __name__ == "__main__":

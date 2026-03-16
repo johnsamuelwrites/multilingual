@@ -207,12 +207,16 @@ def cmd_encoding_check_generated(args):
 
 
 def cmd_build_wasm_bundle(args):
-    """Build deterministic WAT artifact bundle with atomic writes."""
+    """Build deterministic browser-ready WAT/WASM artifact bundle."""
     program = _parse_program_from_file(args.file, args.lang)
     orchestrator = BuildOrchestrator(args.out_dir)
     outputs = orchestrator.build_from_program(program)
     print(f"[PASS] {outputs.transpiled_python}")
     print(f"[PASS] {outputs.wat}")
+    if outputs.wasm.exists():
+        print(f"[PASS] {outputs.wasm}")
+    else:
+        print(f"[WARN] {outputs.wasm} (wasmtime not installed; WAT only)")
     print(f"[PASS] {outputs.abi_manifest}")
     print(f"[PASS] {outputs.host_shim_js}")
     print(f"[PASS] {outputs.renderer_template_js}")
@@ -363,7 +367,7 @@ def main():  # pylint: disable=too-many-statements
 
     build_bundle_parser = subparsers.add_parser(
         "build-wasm-bundle",
-        help="Build deterministic WAT artifacts (WAT, ABI, JS shim, renderer)",
+        help="Build deterministic browser-ready WAT/WASM artifacts",
     )
     build_bundle_parser.add_argument("file", help="Path to the source file")
     build_bundle_parser.add_argument(

@@ -383,6 +383,7 @@ class WATGeneratorOOPMixin:  # pylint: disable=too-many-instance-attributes,too-
         """Generate the exported ``__main`` entry-point function."""
         saved = self._save_func_state()
 
+        self._emit("    call $__ml_init_argv  ;; populate argc/argv from WASI args")
         self._gen_stmts(stmts, "    ")
         body_instrs = list(self._instrs)
         local_names = sorted(self._locals)

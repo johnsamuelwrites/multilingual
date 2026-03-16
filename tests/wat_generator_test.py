@@ -1974,8 +1974,93 @@ class WATInheritanceWasmExecutionTestSuite(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
-# New feature tests — items 1–5
+# DOM bridge tests
 # ---------------------------------------------------------------------------
+
+
+class WATDOMBridgeTestSuite(unittest.TestCase):
+    """Verify DOM host imports and WAT wrappers are emitted correctly."""
+
+    def setUp(self):
+        self.gen = WATCodeGenerator()
+
+    def _gen(self, *stmts):
+        return self.gen.generate(Program(list(stmts)))
+
+    def test_dom_get_emits_env_import(self):
+        """dom_get("id") must emit env.ml_dom_get import and call $dom_get."""
+        wat = self._gen(
+            VariableDeclaration(
+                "el",
+                CallExpr(Identifier("dom_get"), [StringLiteral("myDiv")]),
+            )
+        )
+        self.assertIn('(import "env" "ml_dom_get"', wat)
+        self.assertIn("call $dom_get", wat)
+
+    def test_dom_text_emits_set_text_import(self):
+        """dom_text(el, "Hello") must emit ml_dom_set_text import."""
+        wat = self._gen(
+            VariableDeclaration("el", CallExpr(Identifier("dom_get"), [StringLiteral("x")])),
+            ExpressionStatement(
+                CallExpr(Identifier("dom_text"), [Identifier("el"), StringLiteral("Hello")])
+            ),
+        )
+        self.assertIn('(import "env" "ml_dom_set_text"', wat)
+        self.assertIn("call $dom_text", wat)
+
+    def test_dom_html_emits_set_html_import(self):
+        wat = self._gen(
+            VariableDeclaration("el", CallExpr(Identifier("dom_get"), [StringLiteral("x")])),
+            ExpressionStatement(
+                CallExpr(Identifier("dom_html"), [Identifier("el"), StringLiteral("<b>hi</b>")])
+            ),
+        )
+        self.assertIn('(import "env" "ml_dom_set_html"', wat)
+
+    def test_dom_create_and_append(self):
+        wat = self._gen(
+            VariableDeclaration("parent", CallExpr(Identifier("dom_get"), [StringLiteral("root")])),
+            VariableDeclaration("child", CallExpr(Identifier("dom_create"), [StringLiteral("div")])),
+            ExpressionStatement(
+                CallExpr(Identifier("dom_append"), [Identifier("parent"), Identifier("child")])
+            ),
+        )
+        self.assertIn('(import "env" "ml_dom_create"', wat)
+        self.assertIn('(import "env" "ml_dom_append"', wat)
+
+    def test_dom_style_and_attr(self):
+        wat = self._gen(
+            VariableDeclaration("el", CallExpr(Identifier("dom_get"), [StringLiteral("box")])),
+            ExpressionStatement(
+                CallExpr(
+                    Identifier("dom_style"),
+                    [Identifier("el"), StringLiteral("color"), StringLiteral("red")],
+                )
+            ),
+            ExpressionStatement(
+                CallExpr(
+                    Identifier("dom_attr"),
+                    [Identifier("el"), StringLiteral("class"), StringLiteral("active")],
+                )
+            ),
+        )
+        self.assertIn('(import "env" "ml_dom_style"', wat)
+        self.assertIn('(import "env" "ml_dom_set_attr"', wat)
+
+    def test_dom_wrappers_emitted_in_module(self):
+        """When DOM builtins are used, WAT wrapper functions must appear."""
+        wat = self._gen(
+            VariableDeclaration("el", CallExpr(Identifier("dom_get"), [StringLiteral("x")])),
+        )
+        self.assertIn("(func $dom_get", wat)
+
+    def test_no_dom_imports_when_unused(self):
+        """Without DOM calls, no env imports should appear."""
+        wat = self._gen(
+            ExpressionStatement(CallExpr(Identifier("print"), [NumeralLiteral("1")])),
+        )
+        self.assertNotIn('(import "env"', wat)
 
 
 if __name__ == "__main__":

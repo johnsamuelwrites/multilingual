@@ -16,6 +16,7 @@ class WATGeneratorCoreMixin:
     _strings: dict[str, tuple[int, int]]
     _class_obj_sizes: dict[str, int]
     _need_heap_ptr: bool
+    _uses_dom: bool
     _lambda_table: list[str]
     _funcs: list[str]
     _label_count: int = 0
@@ -30,6 +31,7 @@ class WATGeneratorCoreMixin:
             "_strings",
             "_class_obj_sizes",
             "_need_heap_ptr",
+            "_uses_dom",
             "_lambda_table",
             "_funcs",
             "_label_count",
@@ -40,20 +42,38 @@ class WATGeneratorCoreMixin:
     def _build_module(self) -> str:
         heap_base = max((len(self._data) + 7) // 8 * 8, 64)
         self._emit_wasi_runtime(heap_base)
+        if self._uses_dom:
+            self._emit_dom_runtime()
         lines = ["(module"]
         lines += [
             '  (import "wasi_snapshot_preview1" "fd_write"'
             ' (func $fd_write (param i32 i32 i32 i32) (result i32)))',
             '  (import "wasi_snapshot_preview1" "fd_read"'
             ' (func $fd_read (param i32 i32 i32 i32) (result i32)))',
+            '  (import "wasi_snapshot_preview1" "args_sizes_get"'
+            ' (func $args_sizes_get (param i32 i32) (result i32)))',
+            '  (import "wasi_snapshot_preview1" "args_get"'
+            ' (func $args_get (param i32 i32) (result i32)))',
             f'  (memory (export "memory") {self._WASM_PAGES})',
         ]
+        if self._uses_dom:
+            from multilingualprogramming.codegen.wat_generator_support import (  # pylint: disable=import-outside-toplevel
+                _DOM_HOST_SIGNATURES,
+            )
+            for wat_name, (params, ret) in _DOM_HOST_SIGNATURES.items():
+                param_str = " ".join(f"(param {t})" for t in params)
+                ret_str = f" (result {ret})" if ret else ""
+                lines.append(
+                    f'  (import "env" "{wat_name}"'
+                    f' (func ${wat_name} {param_str}{ret_str}))'
+                )
         if self._data:
             escaped = "".join(f"\\{b:02x}" for b in self._data)
             lines.append(f'  (data (i32.const 0) "{escaped}")')
         # $__heap_ptr is always declared: $ml_alloc references it unconditionally.
         lines.append(f'  (global $__heap_ptr (mut i32) (i32.const {heap_base}))')
         lines.append('  (global $__last_str_len (mut i32) (i32.const 0))')
+        lines.append('  (global $__ml_argc (mut i32) (i32.const 0))')
         lines.append(
             '  (global $__last_exc_code (export "__last_exception_code") (mut i32) (i32.const 0))'
         )
@@ -185,6 +205,10 @@ class WATGeneratorCoreMixin:
         fmt = scratch + 12        # format buffer base
         input_buf = mem_end - 320  # 256-byte stdin line buffer (before scratch)
         input_buf_size = 256
+        # argv static layout (top 1024 bytes minus lower areas):
+        argv_data = mem_end - 1024  # 512-byte buffer for null-terminated arg strings
+        argv_ptrs = mem_end - 512   # 128-byte table of i32 ptrs (32 args max)
+        argc_addr = mem_end - 384   # 4-byte i32 storing argc after init
 
         runtime = f"""
   ;; ── WASI runtime ────────────────────────────────────────────────────────────
@@ -874,6 +898,73 @@ class WATGeneratorCoreMixin:
       call $__wasi_write
     end
   )
+  ;; argv support ─────────────────────────────────────────────────────────────
+  ;; $__ml_argc caches the argument count after $__ml_init_argv is called.
+  ;; Populated at module startup; never written by user code.
+  ;; Init: reads argc + argv via WASI args_sizes_get / args_get into static buffers.
+  ;; Layout: argv_data [{argv_data}..{argv_data+511}], argv_ptrs [{argv_ptrs}..{argv_ptrs+127}]
+  (func $__ml_init_argv
+    i32.const {argc_addr}
+    i32.const {scratch}
+    call $args_sizes_get
+    drop
+    i32.const {argc_addr}
+    i32.load
+    global.set $__ml_argc
+    i32.const {argv_ptrs}
+    i32.const {argv_data}
+    call $args_get
+    drop
+  )
+  ;; Return argument count as f64.
+  (func $argc (export "argc") (result f64)
+    global.get $__ml_argc
+    f64.convert_i32_u
+  )
+  ;; Return i-th argument as a string (ptr as f64, length in $__last_str_len).
+  (func $argv (param $i f64) (result f64)
+    (local $idx i32)
+    (local $ptr i32)
+    (local $cur i32)
+    local.get $i
+    i32.trunc_f64_u
+    local.tee $idx
+    global.get $__ml_argc
+    i32.ge_u
+    if
+      i32.const 0
+      global.set $__last_str_len
+      f64.const 0
+      return
+    end
+    i32.const {argv_ptrs}
+    local.get $idx
+    i32.const 4
+    i32.mul
+    i32.add
+    i32.load
+    local.tee $ptr
+    local.set $cur
+    block $len_done
+      loop $len_loop
+        local.get $cur
+        i32.load8_u
+        i32.eqz
+        br_if $len_done
+        local.get $cur
+        i32.const 1
+        i32.add
+        local.set $cur
+        br $len_loop
+      end
+    end
+    local.get $cur
+    local.get $ptr
+    i32.sub
+    global.set $__last_str_len
+    local.get $ptr
+    f64.convert_i32_u
+  )
   ;; Read one line from stdin (fd 0) into a fixed buffer, strip trailing CR/LF.
   ;; Writes the prompt (if len > 0) to stdout first.
   ;; Returns: buffer address as f64; sets $__last_str_len to byte length.
@@ -944,6 +1035,73 @@ class WATGeneratorCoreMixin:
   )
   ;; ── End WASI runtime ─────────────────────────────────────────────────────"""
         self._funcs.insert(0, runtime)
+
+    def _emit_dom_runtime(self) -> None:
+        """Emit thin WAT wrapper functions for DOM host builtins.
+
+        These wrappers present the caller-facing interface (string args as
+        ptr+len, handles as f64) and forward to the env.* host imports.
+        The dom_value wrapper uses argv_data as its internal string buffer.
+        """
+        from multilingualprogramming.codegen.wat_generator_support import (  # pylint: disable=import-outside-toplevel
+            _DOM_CALLER_PARAMS,
+            _DOM_CALLER_RETURNS,
+        )
+        mem_end = self._WASM_PAGES * 65536
+        dom_buf = mem_end - 1024   # reuse argv_data area for dom_value result
+        dom_buf_size = 255
+
+        wrappers = ["  ;; ── DOM runtime wrappers ───────────────────────────────────────────────"]
+        for fname, wat_host in {
+            "dom_get":    "ml_dom_get",
+            "dom_text":   "ml_dom_set_text",
+            "dom_html":   "ml_dom_set_html",
+            "dom_value":  "ml_dom_get_value",
+            "dom_attr":   "ml_dom_set_attr",
+            "dom_create": "ml_dom_create",
+            "dom_append": "ml_dom_append",
+            "dom_style":  "ml_dom_style",
+            "dom_remove": "ml_dom_remove",
+            "dom_class":  "ml_dom_set_class",
+        }.items():
+            caller_params = _DOM_CALLER_PARAMS.get(fname, [])
+            ret = _DOM_CALLER_RETURNS.get(fname, "")
+
+            # Build WAT param list
+            params = []
+            for i, pkind in enumerate(caller_params):
+                if pkind == "str":
+                    params.append(f"(param $p{i}_ptr i32)")
+                    params.append(f"(param $p{i}_len i32)")
+                else:
+                    params.append(f"(param $p{i} f64)")
+            result = " (result f64)" if ret in ("f64", "ret_str") else ""
+            param_str = " ".join(params)
+
+            fn_lines = [f"  (func ${fname} {param_str}{result}"]
+            # Push args to host import
+            for i, pkind in enumerate(caller_params):
+                if pkind == "str":
+                    fn_lines.append(f"    local.get $p{i}_ptr")
+                    fn_lines.append(f"    local.get $p{i}_len")
+                else:
+                    fn_lines.append(f"    local.get $p{i}")
+
+            if fname == "dom_value":
+                # dom_value: append internal buffer args then call
+                fn_lines.append(f"    i32.const {dom_buf}")
+                fn_lines.append(f"    i32.const {dom_buf_size}")
+                fn_lines.append(f"    call ${wat_host}")
+                fn_lines.append(f"    global.set $__last_str_len")
+                fn_lines.append(f"    i32.const {dom_buf}")
+                fn_lines.append(f"    f64.convert_i32_u")
+            else:
+                fn_lines.append(f"    call ${wat_host}")
+
+            fn_lines.append("  )")
+            wrappers.append("\n".join(fn_lines))
+
+        self._funcs.append("\n".join(wrappers))
 
     def _wat_symbol(self, name: str) -> str:
         """Return a deterministic, WAT-safe symbol for a source identifier."""

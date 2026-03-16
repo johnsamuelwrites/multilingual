@@ -14,6 +14,11 @@ from dataclasses import dataclass
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
+try:
+    import wasmtime  # type: ignore
+except ImportError:  # pragma: no cover - optional dependency
+    wasmtime = None
+
 from multilingualprogramming.codegen.python_generator import PythonCodeGenerator
 from multilingualprogramming.codegen.wat_generator import WATCodeGenerator
 
@@ -23,6 +28,7 @@ class BuildOutputs:  # pylint: disable=too-many-instance-attributes
     """Resolved output file paths for build artifacts."""
 
     wat: Path
+    wasm: Path
     abi_manifest: Path
     host_shim_js: Path
     renderer_template_js: Path
@@ -40,6 +46,7 @@ class BuildOrchestrator:  # pylint: disable=too-many-instance-attributes
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.outputs = BuildOutputs(
             wat=self.output_dir / "module.wat",
+            wasm=self.output_dir / "module.wasm",
             abi_manifest=self.output_dir / "abi_manifest.json",
             host_shim_js=self.output_dir / "host_shim.js",
             renderer_template_js=self.output_dir / "renderer_template.js",
@@ -80,6 +87,20 @@ class BuildOrchestrator:  # pylint: disable=too-many-instance-attributes
             tmp_path = Path(tmp.name)
         os.replace(tmp_path, path)
 
+    @staticmethod
+    def _atomic_write_bytes(path: Path, content: bytes):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with NamedTemporaryFile("wb", delete=False, dir=path.parent) as tmp:
+            tmp.write(content)
+            tmp_path = Path(tmp.name)
+        os.replace(tmp_path, path)
+
+    @staticmethod
+    def _compile_wasm_bytes(wat_source: str) -> bytes | None:
+        if wasmtime is None:
+            return None
+        return wasmtime.wat2wasm(wat_source)
+
     def build_from_program(self, program) -> BuildOutputs:
         """Generate and atomically write all build artifacts from parsed Program."""
         self._acquire_lock()
@@ -87,6 +108,7 @@ class BuildOrchestrator:  # pylint: disable=too-many-instance-attributes
             wat_generator = WATCodeGenerator()
             python_source = PythonCodeGenerator().generate(program)
             wat_source = wat_generator.generate(program)
+            wasm_bytes = self._compile_wasm_bytes(wat_source)
             manifest = wat_generator.generate_abi_manifest(program)
             host_shim = wat_generator.generate_js_host_shim(manifest)
             renderer_template = wat_generator.generate_renderer_template(manifest)
@@ -98,6 +120,7 @@ class BuildOrchestrator:  # pylint: disable=too-many-instance-attributes
                     "program": [],
                     "transpiled_python": ["program"],
                     "module_wat": ["program"],
+                    "module_wasm": ["module_wat"],
                     "abi_manifest": ["program", "module_wat"],
                     "host_shim_js": ["abi_manifest"],
                     "renderer_template_js": ["abi_manifest"],
@@ -109,6 +132,7 @@ class BuildOrchestrator:  # pylint: disable=too-many-instance-attributes
                 "artifacts": {
                     "transpiled_python": self.outputs.transpiled_python.name,
                     "module_wat": self.outputs.wat.name,
+                    "module_wasm": self.outputs.wasm.name,
                     "abi_manifest": self.outputs.abi_manifest.name,
                     "host_shim_js": self.outputs.host_shim_js.name,
                     "renderer_template_js": self.outputs.renderer_template_js.name,
@@ -118,6 +142,8 @@ class BuildOrchestrator:  # pylint: disable=too-many-instance-attributes
 
             self._atomic_write_text(self.outputs.transpiled_python, python_source)
             self._atomic_write_text(self.outputs.wat, wat_source)
+            if wasm_bytes is not None:
+                self._atomic_write_bytes(self.outputs.wasm, wasm_bytes)
             self._atomic_write_text(
                 self.outputs.abi_manifest,
                 json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True),
