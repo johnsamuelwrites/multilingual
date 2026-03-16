@@ -69,42 +69,15 @@ _SUPPORTED_RENDER_MODES = frozenset({"scalar_field", "point_stream", "polyline"}
 _STREAM_RENDER_MODES = frozenset({"point_stream", "polyline"})
 _BUFFER_OUTPUT_DECORATOR_NAMES = frozenset({"buffer_output", "sortie_tampon"})
 
+# All I/O and math helpers (print_*, pow_f64) are now implemented as internal
+# WAT functions backed by the single WASI fd_write syscall.  The only external
+# import the generated module requires is the standard WASI fd_write function.
 _WAT_HOST_IMPORT_SIGNATURES = [
     {
-        "module": "env",
-        "name": "print_str",
-        "param_types": ["i32", "i32"],
-        "return_type": "void",
-    },
-    {
-        "module": "env",
-        "name": "print_f64",
-        "param_types": ["f64"],
-        "return_type": "void",
-    },
-    {
-        "module": "env",
-        "name": "print_bool",
-        "param_types": ["i32"],
-        "return_type": "void",
-    },
-    {
-        "module": "env",
-        "name": "print_sep",
-        "param_types": [],
-        "return_type": "void",
-    },
-    {
-        "module": "env",
-        "name": "print_newline",
-        "param_types": [],
-        "return_type": "void",
-    },
-    {
-        "module": "env",
-        "name": "pow_f64",
-        "param_types": ["f64", "f64"],
-        "return_type": "f64",
+        "module": "wasi_snapshot_preview1",
+        "name": "fd_write",
+        "param_types": ["i32", "i32", "i32", "i32"],
+        "return_type": "i32",
     },
 ]
 

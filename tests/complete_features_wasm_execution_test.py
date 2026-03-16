@@ -44,7 +44,7 @@ def _parse(code: str, lang: str):
 class CompleteFeaturesWasmExecutionSuite(unittest.TestCase):
     """Generate WAT/WASM artifacts and execute them for every language example."""
 
-    def _instantiate_and_run_main(self, wasm_bytes: bytes):  # noqa: PLR0915
+    def _instantiate_and_run_main(self, wasm_bytes: bytes):
         # Imported lazily so this module still imports when wasmtime is absent.
         import wasmtime  # pylint: disable=import-outside-toplevel,import-error
 
@@ -52,77 +52,13 @@ class CompleteFeaturesWasmExecutionSuite(unittest.TestCase):
         config.consume_fuel = True
         engine = wasmtime.Engine(config)
         module = wasmtime.Module(engine, wasm_bytes)
+        wasi_cfg = wasmtime.WasiConfig()
+        wasi_cfg.inherit_stdout()
         store = wasmtime.Store(engine)
+        store.set_wasi(wasi_cfg)
         store.set_fuel(_EXECUTION_FUEL_LIMIT)
         linker = wasmtime.Linker(engine)
-
-        def _noop():
-            return None
-
-        def _noop_str(_ptr, _length):
-            return None
-
-        def _noop_f64(_value):
-            return None
-
-        def _noop_bool(_value):
-            return None
-
-        linker.define(
-            store,
-            "env",
-            "print_str",
-            wasmtime.Func(
-                store,
-                wasmtime.FuncType([wasmtime.ValType.i32(), wasmtime.ValType.i32()], []),
-                _noop_str,
-            ),
-        )
-        linker.define(
-            store,
-            "env",
-            "print_f64",
-            wasmtime.Func(
-                store,
-                wasmtime.FuncType([wasmtime.ValType.f64()], []),
-                _noop_f64,
-            ),
-        )
-        linker.define(
-            store,
-            "env",
-            "print_bool",
-            wasmtime.Func(
-                store,
-                wasmtime.FuncType([wasmtime.ValType.i32()], []),
-                _noop_bool,
-            ),
-        )
-        linker.define(
-            store,
-            "env",
-            "print_sep",
-            wasmtime.Func(store, wasmtime.FuncType([], []), _noop),
-        )
-        linker.define(
-            store,
-            "env",
-            "print_newline",
-            wasmtime.Func(store, wasmtime.FuncType([], []), _noop),
-        )
-        linker.define(
-            store,
-            "env",
-            "pow_f64",
-            wasmtime.Func(
-                store,
-                wasmtime.FuncType(
-                    [wasmtime.ValType.f64(), wasmtime.ValType.f64()],
-                    [wasmtime.ValType.f64()],
-                ),
-                lambda base, exp: base ** exp,
-            ),
-        )
+        linker.define_wasi()
         instance = linker.instantiate(store, module)
         exports = instance.exports(store)
         if "__main" in exports:

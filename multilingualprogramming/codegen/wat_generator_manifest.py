@@ -104,47 +104,55 @@ class WATGeneratorManifestMixin:
         }
 
     def generate_js_host_shim(self, manifest: dict) -> str:
-        """Generate a JavaScript host-import shim from an ABI manifest."""
-        imports = manifest.get("required_host_imports", [])
+        """Generate a JavaScript WASI shim for browser execution.
+
+        The generated module only imports ``wasi_snapshot_preview1.fd_write``
+        — all print_* functions and pow_f64 are implemented in WAT.  For
+        browser execution, pass a standard WASI polyfill (e.g.
+        ``@bjorn3/browser_wasi_shim``) or the minimal inline shim below.
+        """
         lines = [
-            "// Auto-generated host shim from multilingual WASM ABI manifest",
-            "export function createEnvHost(memoryRef = { current: null }) {",
+            "// Auto-generated WASI shim from multilingual WASM ABI manifest",
+            "//",
+            "// The module only requires wasi_snapshot_preview1.fd_write.",
+            "// For production use, prefer a full WASI polyfill such as:",
+            "//   npm install @bjorn3/browser_wasi_shim",
+            "//",
+            "// Minimal inline shim (line-buffers stdout to outputCallback):",
+            "export function createWasiImports(",
+            "  memoryRef = { current: null },",
+            "  outputCallback = (line) => console.log(line),",
+            ") {",
             "  const textDecoder = new TextDecoder('utf-8');",
-            "  function readUtf8(ptr, len) {",
-            "    const memory = memoryRef.current;",
-            "    if (!memory) return '';",
-            "    const bytes = new Uint8Array(memory.buffer, ptr, len);",
-            "    return textDecoder.decode(bytes);",
+            "  let stdoutBuf = '';",
+            "  function flushLine() {",
+            "    let nl;",
+            "    while ((nl = stdoutBuf.indexOf('\\n')) !== -1) {",
+            "      outputCallback(stdoutBuf.slice(0, nl));",
+            "      stdoutBuf = stdoutBuf.slice(nl + 1);",
+            "    }",
             "  }",
-            "",
-            "  return {",
-            "    env: {",
-        ]
-        for entry in imports:
-            name = entry["name"]
-            if name == "print_str":
-                lines.append("      print_str: (ptr, len) => { console.log(readUtf8(ptr, len)); },")
-            elif name == "print_f64":
-                lines.append("      print_f64: (value) => { console.log(value); },")
-            elif name == "print_bool":
-                lines.append("      print_bool: (value) => { console.log(Boolean(value)); },")
-            elif name == "print_sep":
-                lines.append("      print_sep: () => { /* spacing hook */ },")
-            elif name == "print_newline":
-                lines.append("      print_newline: () => { /* newline hook */ },")
-            elif name == "pow_f64":
-                lines.append("      pow_f64: (base, exp) => Math.pow(base, exp),")
-            else:
-                unhandled = (
-                    f"      {name}: (...args) => "
-                    f"{{ console.warn('Unhandled import {name}', args); }},"
-                )
-                lines.append(unhandled)
-        lines.extend([
+            "  const wasi_snapshot_preview1 = {",
+            "    fd_write(fd, iovsPtr, iovsLen, nwrittenPtr) {",
+            "      if (fd !== 1 && fd !== 2) return 8;",
+            "      const mem = memoryRef.current;",
+            "      if (!mem) return 8;",
+            "      const view = new DataView(mem.buffer);",
+            "      let written = 0;",
+            "      for (let i = 0; i < iovsLen; i++) {",
+            "        const ptr = view.getUint32(iovsPtr + i * 8, true);",
+            "        const len = view.getUint32(iovsPtr + i * 8 + 4, true);",
+            "        stdoutBuf += textDecoder.decode(new Uint8Array(mem.buffer, ptr, len));",
+            "        written += len;",
+            "      }",
+            "      flushLine();",
+            "      view.setUint32(nwrittenPtr, written, true);",
+            "      return 0;",
             "    },",
             "  };",
+            "  return { wasi_snapshot_preview1, memoryRef };",
             "}",
-        ])
+        ]
         return "\n".join(lines)
 
     def generate_renderer_template(self, manifest: dict) -> str:

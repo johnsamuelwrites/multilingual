@@ -36,11 +36,12 @@ Unsupported constructs (classes, imports, closures …) emit WAT comments
 so the output remains syntactically valid.
 
 Host imports expected by the generated module:
-  (import "env" "print_str"     (func (param i32 i32)))  ;; ptr, len
-  (import "env" "print_f64"     (func (param f64)))
-  (import "env" "print_bool"    (func (param i32)))
-  (import "env" "print_sep"     (func))                  ;; space between args
-  (import "env" "print_newline" (func))
+  (import "wasi_snapshot_preview1" "fd_write" (func (param i32 i32 i32 i32) (result i32)))
+
+All I/O (print_str, print_f64, print_bool, print_sep, print_newline) and the
+power function (pow_f64) are implemented as self-contained WAT functions backed
+by the single WASI fd_write syscall.  No JavaScript host shim is required for
+CLI or wasmtime execution; browser execution needs only a standard WASI polyfill.
 """
 # pylint: disable=mixed-line-endings
 
@@ -892,7 +893,7 @@ class WATCodeGenerator(
             self._emit(f"{indent}    f64.ge")
             self._emit(f"{indent}    br_if ${blk}")
             for cond in clause.conditions:
-                self._gen_expr(cond, indent + "    ")
+                self._gen_cond(cond, indent + "    ")
                 self._emit(f"{indent}    if")
                 emit_store(indent + "      ")
                 self._emit(f"{indent}    end")

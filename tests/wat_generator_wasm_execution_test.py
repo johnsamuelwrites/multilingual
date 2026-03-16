@@ -8,6 +8,8 @@
 # pylint: disable=duplicate-code
 
 import importlib.util
+import os
+import tempfile
 import unittest
 
 from multilingualprogramming.codegen.wat_generator import WATCodeGenerator
@@ -41,6 +43,27 @@ def _param(name: str) -> Parameter:
     return Parameter(Identifier(name))
 
 
+def _parse_wasi_output(text: str) -> list:
+    """Parse WASI stdout text into a list of Python values.
+
+    Tokens separated by whitespace are converted to float, bool, or string.
+    """
+    values = []
+    for token in text.split():
+        if token == "True":
+            values.append(True)
+        elif token == "False":
+            values.append(False)
+        elif token in ("nan", "inf", "-inf"):
+            values.append(float(token))
+        else:
+            try:
+                values.append(float(token))
+            except ValueError:
+                values.append(token)
+    return values
+
+
 def _parse_source(source: str, language: str):
     """Parse source text through the lexer/parser frontend for the given language."""
     from multilingualprogramming.lexer.lexer import Lexer  # pylint: disable=import-outside-toplevel
@@ -67,80 +90,22 @@ class WATClassWasmExecutionTestSuite(unittest.TestCase):
         engine = wasmtime.Engine()
         wasm_bytes = wasmtime.wat2wasm(wat)
         module = wasmtime.Module(engine, wasm_bytes)
-        store = wasmtime.Store(engine)
-        printed = []
-        linker = wasmtime.Linker(engine)
 
-        def _noop():
-            return None
-
-        def _noop_print_str(_ptr, _length):
-            return None
-
-        def _capture_f64(value):
-            printed.append(value)
-
-        def _capture_bool(value):
-            printed.append(bool(value))
-
-        linker.define(
-            store,
-            "env",
-            "print_str",
-            wasmtime.Func(
-                store,
-                wasmtime.FuncType([wasmtime.ValType.i32(), wasmtime.ValType.i32()], []),
-                _noop_print_str,
-            ),
-        )
-        linker.define(
-            store,
-            "env",
-            "print_f64",
-            wasmtime.Func(
-                store,
-                wasmtime.FuncType([wasmtime.ValType.f64()], []),
-                _capture_f64,
-            ),
-        )
-        linker.define(
-            store,
-            "env",
-            "print_bool",
-            wasmtime.Func(
-                store,
-                wasmtime.FuncType([wasmtime.ValType.i32()], []),
-                _capture_bool,
-            ),
-        )
-        linker.define(
-            store,
-            "env",
-            "print_sep",
-            wasmtime.Func(store, wasmtime.FuncType([], []), _noop),
-        )
-        linker.define(
-            store,
-            "env",
-            "print_newline",
-            wasmtime.Func(store, wasmtime.FuncType([], []), _noop),
-        )
-        linker.define(
-            store,
-            "env",
-            "pow_f64",
-            wasmtime.Func(
-                store,
-                wasmtime.FuncType(
-                    [wasmtime.ValType.f64(), wasmtime.ValType.f64()],
-                    [wasmtime.ValType.f64()],
-                ),
-                lambda base, exp: base ** exp,
-            ),
-        )
-        instance = linker.instantiate(store, module)
-        instance.exports(store)["__main"](store)
-        return printed
+        with tempfile.NamedTemporaryFile(suffix=".out", delete=False) as tf:
+            stdout_path = tf.name
+        try:
+            wasi_cfg = wasmtime.WasiConfig()
+            wasi_cfg.stdout_file = stdout_path
+            store = wasmtime.Store(engine)
+            store.set_wasi(wasi_cfg)
+            linker = wasmtime.Linker(engine)
+            linker.define_wasi()
+            instance = linker.instantiate(store, module)
+            instance.exports(store)["__main"](store)
+            with open(stdout_path, encoding="utf-8") as fh:
+                return _parse_wasi_output(fh.read())
+        finally:
+            os.unlink(stdout_path)
 
     def test_constructor_statement_compiles_and_runs(self):
         prog = _prog(
@@ -376,47 +341,12 @@ class WATExpressionSemanticsWasmExecutionTestSuite(unittest.TestCase):
         engine = wasmtime.Engine()
         wasm_bytes = wasmtime.wat2wasm(wat)
         module = wasmtime.Module(engine, wasm_bytes)
+        wasi_cfg = wasmtime.WasiConfig()
+        wasi_cfg.inherit_stdout()
         store = wasmtime.Store(engine)
+        store.set_wasi(wasi_cfg)
         linker = wasmtime.Linker(engine)
-        linker.allow_shadowing = True
-
-        linker.define_func(
-            "env",
-            "print_str",
-            wasmtime.FuncType([wasmtime.ValType.i32(), wasmtime.ValType.i32()], []),
-            lambda _ptr, _length: None,
-        )
-        linker.define_func(
-            "env",
-            "print_f64",
-            wasmtime.FuncType([wasmtime.ValType.f64()], []),
-            lambda _value: None,
-        )
-        linker.define_func(
-            "env",
-            "print_bool",
-            wasmtime.FuncType([wasmtime.ValType.i32()], []),
-            lambda _value: None,
-        )
-        linker.define_func(
-            "env",
-            "print_sep",
-            wasmtime.FuncType([], []),
-            lambda: None,
-        )
-        linker.define_func(
-            "env",
-            "print_newline",
-            wasmtime.FuncType([], []),
-            lambda: None,
-        )
-        linker.define_func(
-            "env",
-            "pow_f64",
-            wasmtime.FuncType([wasmtime.ValType.f64(), wasmtime.ValType.f64()],
-                              [wasmtime.ValType.f64()]),
-            lambda base, exp: base ** exp,
-        )
+        linker.define_wasi()
         instance = linker.instantiate(store, module)
         return store, instance
 

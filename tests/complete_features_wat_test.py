@@ -39,7 +39,7 @@ from multilingualprogramming.parser.parser import Parser
 _EXAMPLES_DIR = pathlib.Path(__file__).parent.parent / "examples"
 
 # The five host functions the generated WAT module imports from the browser.
-_WAT_HOST_IMPORTS = frozenset({
+_WAT_RUNTIME_FUNCS = frozenset({
     "print_str",
     "print_f64",
     "print_bool",
@@ -85,7 +85,7 @@ def _wat_validity_errors(wat: str) -> list:
 
     # Collect all function names defined or imported in the module
     defined = set(re.findall(r'\(func \$(\w+)', wat))
-    allowed_calls = defined | _WAT_HOST_IMPORTS
+    allowed_calls = defined | _WAT_RUNTIME_FUNCS
 
     # Check for calls to undefined symbols
     for call_target in re.findall(r'call \$(\w+)', wat):
@@ -291,15 +291,16 @@ class CompleteFeaturesWATValiditySuite(unittest.TestCase):
 class CompleteFeaturesWATContentSuite(unittest.TestCase):
     """Generated WAT must contain the structural elements expected by the runtime."""
 
-    def test_all_wat_declares_five_host_imports(self):
-        """Every WAT module must import the five host print functions."""
+    def test_all_wat_defines_wasi_runtime_functions(self):
+        """Every WAT module must define the five print runtime functions internally."""
         for lang, code in _load_examples():
             with self.subTest(lang=lang):
                 wat = _generate_wat(code, lang)
-                for imp in sorted(_WAT_HOST_IMPORTS):
+                for fn in sorted(_WAT_RUNTIME_FUNCS):
                     self.assertIn(
-                        f'"{imp}"', wat,
-                        f"[{lang}] Missing host import: {imp}"
+                        f"${fn}",
+                        wat,
+                        f"[{lang}] Missing runtime function: {fn}"
                     )
 
     def test_all_wat_exports_linear_memory(self):
