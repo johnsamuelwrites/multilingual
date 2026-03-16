@@ -44,8 +44,10 @@ from multilingualprogramming.parser.ast_nodes import (
     ListLiteral,
     TupleLiteral,
     DictLiteral,
+    DictComprehension,
     SetLiteral,
     SetComprehension,
+    ComprehensionClause,
     IndexAccess,
     AwaitExpr,
     ListComprehension,
@@ -2152,6 +2154,71 @@ class WATListComprehensionTestSuite(unittest.TestCase):
         wat = _gen(*stmts)
         self.assertIn("comp_list_blk_", wat)
         self.assertNotIn("collections not representable as f64", wat)
+
+    def test_filtered_listcomp_over_range_materializes_storage(self):
+        stmts = [
+            ExpressionStatement(
+                ListComprehension(
+                    element=Identifier("x"),
+                    target=Identifier("x"),
+                    iterable=CallExpr(Identifier("range"), [NumeralLiteral("6")]),
+                    conditions=[
+                        BinaryOp(
+                            BinaryOp(Identifier("x"), "%", NumeralLiteral("2")),
+                            "==",
+                            NumeralLiteral("0"),
+                        )
+                    ],
+                )
+            ),
+        ]
+        wat = _gen(*stmts)
+        self.assertIn("comp_filter_blk_", wat)
+        self.assertIn("local.set $__comp_write_", wat)
+        self.assertNotIn("collections not representable as f64", wat)
+
+    def test_nested_listcomp_over_ranges_materializes_storage(self):
+        stmts = [
+            ExpressionStatement(
+                ListComprehension(
+                    element=BinaryOp(Identifier("i"), "+", Identifier("j")),
+                    target=Identifier("i"),
+                    iterable=CallExpr(Identifier("range"), [NumeralLiteral("2")]),
+                    clauses=[
+                        ComprehensionClause(
+                            Identifier("i"),
+                            CallExpr(Identifier("range"), [NumeralLiteral("2")]),
+                        ),
+                        ComprehensionClause(
+                            Identifier("j"),
+                            CallExpr(Identifier("range"), [NumeralLiteral("2")]),
+                        ),
+                    ],
+                )
+            ),
+        ]
+        wat = _gen(*stmts)
+        self.assertIn("comp_outer_blk_", wat)
+        self.assertIn("comp_inner_blk_", wat)
+        self.assertNotIn("collections not representable as f64", wat)
+
+    def test_dictcomp_over_range_materializes_dict_storage(self):
+        stmts = [
+            VariableDeclaration(
+                "values",
+                DictComprehension(
+                    key=CallExpr(Identifier("str"), [Identifier("k")]),
+                    value=BinaryOp(Identifier("k"), "*", Identifier("k")),
+                    target=Identifier("k"),
+                    iterable=CallExpr(Identifier("range"), [NumeralLiteral("3")]),
+                ),
+            ),
+            ExpressionStatement(IndexAccess(Identifier("values"), StringLiteral("2"))),
+        ]
+        wat = _gen(*stmts)
+        self.assertIn("dict_comp_blk_", wat)
+        self.assertNotIn("unsupported expr DictComprehension", wat)
+        self.assertNotIn("unsupported index access", wat)
 
 
 class WATMatchCaseExtendedTestSuite(unittest.TestCase):

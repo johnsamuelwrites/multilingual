@@ -692,6 +692,307 @@ class WATCodeGenerator(
         )
         return True
 
+    def _parse_range_bounds(self, iterable):
+        """Return (start_node, end_node) for a supported range(...) call."""
+        if not (isinstance(iterable, CallExpr) and _name(iterable.func) in _RANGE_NAMES):
+            return None
+        if len(iterable.args) == 1:
+            return NumeralLiteral("0"), iterable.args[0]
+        if len(iterable.args) == 2:
+            return iterable.args[0], iterable.args[1]
+        return None
+
+    def _static_dict_comp_keys(self, node):
+        """Return compile-time keys for a simple dict comprehension, or None."""
+        if not isinstance(node, DictComprehension) or len(node.clauses) != 1:
+            return None
+        clause = node.clauses[0]
+        if clause.conditions:
+            return None
+        bounds = self._parse_range_bounds(clause.iterable)
+        if bounds is None:
+            return None
+        start_node, end_node = bounds
+        if not (isinstance(start_node, NumeralLiteral) and isinstance(end_node, NumeralLiteral)):
+            return None
+        if not (isinstance(clause.target, Identifier)
+                and isinstance(node.key, CallExpr)
+                and _name(node.key.func) in _STR_NAMES
+                and len(node.key.args) == 1
+                and isinstance(node.key.args[0], Identifier)
+                and node.key.args[0].name == clause.target.name):
+            return None
+        start = int(float(start_node.value))
+        end = int(float(end_node.value))
+        return [str(i) for i in range(start, end)]
+
+    def _gen_simple_dict_comprehension(self, node, indent: str) -> bool:
+        """Lower a simple {str(i): expr for i in range(...)} dict comprehension."""
+        keys = self._static_dict_comp_keys(node)
+        if keys is None:
+            return False
+        clause = node.clauses[0]
+        bounds = self._parse_range_bounds(clause.iterable)
+        if bounds is None:
+            return False
+        start_node, end_node = bounds
+
+        label = self._new_label()
+        iter_var = (
+            _name(clause.target)
+            if isinstance(clause.target, Identifier) else f"__dict_item_{label}"
+        )
+        ptr_local = f"__dict_ptr_{label}"
+        idx_local = f"__dict_idx_{label}"
+        end_local = f"__dict_end_{label}"
+        len_local = f"__dict_len_{label}"
+        for local_name in (iter_var, ptr_local, idx_local, end_local, len_local):
+            self._locals.add(local_name)
+
+        self._need_heap_ptr = True
+        self._gen_expr(start_node, indent)
+        self._emit(f"{indent}local.set ${self._wat_symbol(iter_var)}")
+        self._gen_expr(end_node, indent)
+        self._emit(f"{indent}local.set ${self._wat_symbol(end_local)}")
+        self._emit(f"{indent}local.get ${self._wat_symbol(end_local)}")
+        self._emit(f"{indent}local.get ${self._wat_symbol(iter_var)}")
+        self._emit(f"{indent}f64.sub")
+        self._emit(f"{indent}local.set ${self._wat_symbol(len_local)}")
+
+        self._emit(f"{indent}global.get $__heap_ptr")
+        self._emit(f"{indent}f64.convert_i32_u")
+        self._emit(f"{indent}local.set ${self._wat_symbol(ptr_local)}")
+        self._emit(f"{indent}global.get $__heap_ptr")
+        self._emit(f"{indent}local.get ${self._wat_symbol(len_local)}")
+        self._emit(f"{indent}i32.trunc_f64_u")
+        self._emit(f"{indent}i32.const 1")
+        self._emit(f"{indent}i32.add")
+        self._emit(f"{indent}i32.const 8")
+        self._emit(f"{indent}i32.mul")
+        self._emit(f"{indent}i32.add")
+        self._emit(f"{indent}global.set $__heap_ptr")
+
+        self._emit(f"{indent}local.get ${self._wat_symbol(ptr_local)}")
+        self._emit(f"{indent}i32.trunc_f64_u")
+        self._emit(f"{indent}local.get ${self._wat_symbol(len_local)}")
+        self._emit(f"{indent}f64.store")
+        self._emit(f"{indent}f64.const 0")
+        self._emit(f"{indent}local.set ${self._wat_symbol(idx_local)}")
+
+        blk = f"dict_comp_blk_{label}"
+        loop = f"dict_comp_lp_{label}"
+        self._emit(f"{indent}block ${blk}")
+        self._emit(f"{indent}  loop ${loop}")
+        self._emit(f"{indent}    local.get ${self._wat_symbol(iter_var)}")
+        self._emit(f"{indent}    local.get ${self._wat_symbol(end_local)}")
+        self._emit(f"{indent}    f64.ge")
+        self._emit(f"{indent}    br_if ${blk}")
+        self._emit(f"{indent}    local.get ${self._wat_symbol(ptr_local)}")
+        self._emit(f"{indent}    i32.trunc_f64_u")
+        self._emit(f"{indent}    local.get ${self._wat_symbol(idx_local)}")
+        self._emit(f"{indent}    i32.trunc_f64_u")
+        self._emit(f"{indent}    i32.const 8")
+        self._emit(f"{indent}    i32.mul")
+        self._emit(f"{indent}    i32.const 8")
+        self._emit(f"{indent}    i32.add")
+        self._emit(f"{indent}    i32.add")
+        self._gen_expr(node.value, indent + "    ")
+        self._emit(f"{indent}    f64.store")
+        self._emit(f"{indent}    local.get ${self._wat_symbol(idx_local)}")
+        self._emit(f"{indent}    f64.const 1")
+        self._emit(f"{indent}    f64.add")
+        self._emit(f"{indent}    local.set ${self._wat_symbol(idx_local)}")
+        self._emit(f"{indent}    local.get ${self._wat_symbol(iter_var)}")
+        self._emit(f"{indent}    f64.const 1")
+        self._emit(f"{indent}    f64.add")
+        self._emit(f"{indent}    local.set ${self._wat_symbol(iter_var)}")
+        self._emit(f"{indent}    br ${loop}")
+        self._emit(f"{indent}  end")
+        self._emit(f"{indent}end")
+        self._emit(f"{indent}local.get ${self._wat_symbol(ptr_local)}")
+        return True
+
+    def _gen_filtered_or_nested_comprehension_list(self, node, indent: str) -> bool:
+        """Lower selected filtered or nested comprehensions to heap-backed lists."""
+        if not isinstance(node, (ListComprehension, SetComprehension, GeneratorExpr)):
+            return False
+
+        label = self._new_label()
+        ptr_local = f"__comp_ptr_{label}"
+        write_idx = f"__comp_write_{label}"
+        cap_local = f"__comp_cap_{label}"
+        self._locals.update({ptr_local, write_idx, cap_local})
+        self._need_heap_ptr = True
+
+        def alloc_with_capacity():
+            self._emit(f"{indent}global.get $__heap_ptr")
+            self._emit(f"{indent}f64.convert_i32_u")
+            self._emit(f"{indent}local.set ${self._wat_symbol(ptr_local)}")
+            self._emit(f"{indent}global.get $__heap_ptr")
+            self._emit(f"{indent}local.get ${self._wat_symbol(cap_local)}")
+            self._emit(f"{indent}i32.trunc_f64_u")
+            self._emit(f"{indent}i32.const 1")
+            self._emit(f"{indent}i32.add")
+            self._emit(f"{indent}i32.const 8")
+            self._emit(f"{indent}i32.mul")
+            self._emit(f"{indent}i32.add")
+            self._emit(f"{indent}global.set $__heap_ptr")
+            self._emit(f"{indent}local.get ${self._wat_symbol(ptr_local)}")
+            self._emit(f"{indent}i32.trunc_f64_u")
+            self._emit(f"{indent}f64.const 0")
+            self._emit(f"{indent}f64.store")
+            self._emit(f"{indent}f64.const 0")
+            self._emit(f"{indent}local.set ${self._wat_symbol(write_idx)}")
+
+        def emit_store(value_indent: str):
+            self._emit(f"{value_indent}local.get ${self._wat_symbol(ptr_local)}")
+            self._emit(f"{value_indent}i32.trunc_f64_u")
+            self._emit(f"{value_indent}local.get ${self._wat_symbol(write_idx)}")
+            self._emit(f"{value_indent}i32.trunc_f64_u")
+            self._emit(f"{value_indent}i32.const 8")
+            self._emit(f"{value_indent}i32.mul")
+            self._emit(f"{value_indent}i32.const 8")
+            self._emit(f"{value_indent}i32.add")
+            self._emit(f"{value_indent}i32.add")
+            self._gen_expr(node.element, value_indent)
+            self._emit(f"{value_indent}f64.store")
+            self._emit(f"{value_indent}local.get ${self._wat_symbol(write_idx)}")
+            self._emit(f"{value_indent}f64.const 1")
+            self._emit(f"{value_indent}f64.add")
+            self._emit(f"{value_indent}local.set ${self._wat_symbol(write_idx)}")
+
+        if len(node.clauses) == 1:
+            clause = node.clauses[0]
+            bounds = self._parse_range_bounds(clause.iterable)
+            if bounds is None or not clause.conditions:
+                return False
+            start_node, end_node = bounds
+            iter_var = (
+                _name(clause.target)
+                if isinstance(clause.target, Identifier) else f"__comp_item_{label}"
+            )
+            end_local = f"__comp_end_{label}"
+            self._locals.update({iter_var, end_local})
+            self._gen_expr(start_node, indent)
+            self._emit(f"{indent}local.set ${self._wat_symbol(iter_var)}")
+            self._gen_expr(end_node, indent)
+            self._emit(f"{indent}local.set ${self._wat_symbol(end_local)}")
+            self._emit(f"{indent}local.get ${self._wat_symbol(end_local)}")
+            self._emit(f"{indent}local.get ${self._wat_symbol(iter_var)}")
+            self._emit(f"{indent}f64.sub")
+            self._emit(f"{indent}local.set ${self._wat_symbol(cap_local)}")
+            alloc_with_capacity()
+
+            blk = f"comp_filter_blk_{label}"
+            loop = f"comp_filter_lp_{label}"
+            self._emit(f"{indent}block ${blk}")
+            self._emit(f"{indent}  loop ${loop}")
+            self._emit(f"{indent}    local.get ${self._wat_symbol(iter_var)}")
+            self._emit(f"{indent}    local.get ${self._wat_symbol(end_local)}")
+            self._emit(f"{indent}    f64.ge")
+            self._emit(f"{indent}    br_if ${blk}")
+            for cond in clause.conditions:
+                self._gen_expr(cond, indent + "    ")
+                self._emit(f"{indent}    if")
+                emit_store(indent + "      ")
+                self._emit(f"{indent}    end")
+            self._emit(f"{indent}    local.get ${self._wat_symbol(iter_var)}")
+            self._emit(f"{indent}    f64.const 1")
+            self._emit(f"{indent}    f64.add")
+            self._emit(f"{indent}    local.set ${self._wat_symbol(iter_var)}")
+            self._emit(f"{indent}    br ${loop}")
+            self._emit(f"{indent}  end")
+            self._emit(f"{indent}end")
+        elif len(node.clauses) == 2:
+            outer, inner = node.clauses
+            outer_bounds = self._parse_range_bounds(outer.iterable)
+            inner_bounds = self._parse_range_bounds(inner.iterable)
+            if outer_bounds is None or inner_bounds is None or outer.conditions or inner.conditions:
+                return False
+            outer_var = (
+                _name(outer.target)
+                if isinstance(outer.target, Identifier) else f"__comp_outer_{label}"
+            )
+            inner_var = (
+                _name(inner.target)
+                if isinstance(inner.target, Identifier) else f"__comp_inner_{label}"
+            )
+            outer_end = f"__comp_outer_end_{label}"
+            inner_start = f"__comp_inner_start_{label}"
+            inner_end = f"__comp_inner_end_{label}"
+            outer_span = f"__comp_outer_span_{label}"
+            inner_span = f"__comp_inner_span_{label}"
+            self._locals.update({
+                outer_var, inner_var, outer_end, inner_start, inner_end, outer_span, inner_span
+            })
+            outer_start_node, outer_end_node = outer_bounds
+            inner_start_node, inner_end_node = inner_bounds
+
+            self._gen_expr(outer_start_node, indent)
+            self._emit(f"{indent}local.set ${self._wat_symbol(outer_var)}")
+            self._gen_expr(outer_end_node, indent)
+            self._emit(f"{indent}local.set ${self._wat_symbol(outer_end)}")
+            self._emit(f"{indent}local.get ${self._wat_symbol(outer_end)}")
+            self._emit(f"{indent}local.get ${self._wat_symbol(outer_var)}")
+            self._emit(f"{indent}f64.sub")
+            self._emit(f"{indent}local.set ${self._wat_symbol(outer_span)}")
+            self._gen_expr(inner_start_node, indent)
+            self._emit(f"{indent}local.set ${self._wat_symbol(inner_start)}")
+            self._gen_expr(inner_end_node, indent)
+            self._emit(f"{indent}local.set ${self._wat_symbol(inner_end)}")
+            self._emit(f"{indent}local.get ${self._wat_symbol(inner_end)}")
+            self._emit(f"{indent}local.get ${self._wat_symbol(inner_start)}")
+            self._emit(f"{indent}f64.sub")
+            self._emit(f"{indent}local.set ${self._wat_symbol(inner_span)}")
+            self._emit(f"{indent}local.get ${self._wat_symbol(outer_span)}")
+            self._emit(f"{indent}local.get ${self._wat_symbol(inner_span)}")
+            self._emit(f"{indent}f64.mul")
+            self._emit(f"{indent}local.set ${self._wat_symbol(cap_local)}")
+            alloc_with_capacity()
+
+            outer_blk = f"comp_outer_blk_{label}"
+            outer_loop = f"comp_outer_lp_{label}"
+            inner_blk = f"comp_inner_blk_{label}"
+            inner_loop = f"comp_inner_lp_{label}"
+            self._emit(f"{indent}block ${outer_blk}")
+            self._emit(f"{indent}  loop ${outer_loop}")
+            self._emit(f"{indent}    local.get ${self._wat_symbol(outer_var)}")
+            self._emit(f"{indent}    local.get ${self._wat_symbol(outer_end)}")
+            self._emit(f"{indent}    f64.ge")
+            self._emit(f"{indent}    br_if ${outer_blk}")
+            self._emit(f"{indent}    local.get ${self._wat_symbol(inner_start)}")
+            self._emit(f"{indent}    local.set ${self._wat_symbol(inner_var)}")
+            self._emit(f"{indent}    block ${inner_blk}")
+            self._emit(f"{indent}      loop ${inner_loop}")
+            self._emit(f"{indent}        local.get ${self._wat_symbol(inner_var)}")
+            self._emit(f"{indent}        local.get ${self._wat_symbol(inner_end)}")
+            self._emit(f"{indent}        f64.ge")
+            self._emit(f"{indent}        br_if ${inner_blk}")
+            emit_store(indent + "        ")
+            self._emit(f"{indent}        local.get ${self._wat_symbol(inner_var)}")
+            self._emit(f"{indent}        f64.const 1")
+            self._emit(f"{indent}        f64.add")
+            self._emit(f"{indent}        local.set ${self._wat_symbol(inner_var)}")
+            self._emit(f"{indent}        br ${inner_loop}")
+            self._emit(f"{indent}      end")
+            self._emit(f"{indent}    end")
+            self._emit(f"{indent}    local.get ${self._wat_symbol(outer_var)}")
+            self._emit(f"{indent}    f64.const 1")
+            self._emit(f"{indent}    f64.add")
+            self._emit(f"{indent}    local.set ${self._wat_symbol(outer_var)}")
+            self._emit(f"{indent}    br ${outer_loop}")
+            self._emit(f"{indent}  end")
+            self._emit(f"{indent}end")
+        else:
+            return False
+
+        self._emit(f"{indent}local.get ${self._wat_symbol(ptr_local)}")
+        self._emit(f"{indent}i32.trunc_f64_u")
+        self._emit(f"{indent}local.get ${self._wat_symbol(write_idx)}")
+        self._emit(f"{indent}f64.store")
+        self._emit(f"{indent}local.get ${self._wat_symbol(ptr_local)}")
+        return True
+
     def _emit_sum_over_pointer(self, ptr_expr, indent: str) -> None:
         """Emit a numeric sum over a list-like pointer expression."""
         lbl = self._new_label()
@@ -1022,6 +1323,10 @@ class WATCodeGenerator(
         mapping = self._flatten_static_dict_entries(value)
         if mapping is not None:
             self._dict_key_maps[name] = {key: index for index, key in enumerate(mapping)}
+            return
+        keys = self._static_dict_comp_keys(value)
+        if keys is not None:
+            self._dict_key_maps[name] = {key: index for index, key in enumerate(keys)}
         elif name in self._dict_key_maps:
             del self._dict_key_maps[name]
 
@@ -1789,6 +2094,10 @@ class WATCodeGenerator(
 
         elif isinstance(node, (ListComprehension, SetComprehension,
                                 DictComprehension, GeneratorExpr)):
+            if isinstance(node, DictComprehension) and self._gen_simple_dict_comprehension(node, indent):
+                return
+            if self._gen_filtered_or_nested_comprehension_list(node, indent):
+                return
             if isinstance(node, (ListComprehension, SetComprehension)) \
                     and self._gen_simple_comprehension_list(node, indent):
                 return
