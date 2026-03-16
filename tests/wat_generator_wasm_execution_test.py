@@ -29,6 +29,7 @@ from multilingualprogramming.parser.ast_nodes import (
     Parameter,
     Program,
     ReturnStatement,
+    UnaryOp,
     VariableDeclaration,
 )
 
@@ -432,6 +433,82 @@ class WATExpressionSemanticsWasmExecutionTestSuite(unittest.TestCase):
         )
         self.assertEqual(self._call_export(prog, "cellule_suivante", 90.0, 1.0, 0.0, 1.0), 0.0)
         self.assertEqual(self._call_export(prog, "classe_wolfram", 30.0), 3.0)
+
+
+@unittest.skipUnless(
+    importlib.util.find_spec("wasmtime") is not None,
+    "wasmtime is required for WAT execution tests",
+)
+class WATIntegerPrintingTestSuite(unittest.TestCase):
+    """Verify that integer-valued floats are printed without a decimal point."""
+
+    def _run_raw(self, prog) -> str:
+        """Return the raw stdout text (not parsed) from running prog.__main."""
+        import wasmtime  # pylint: disable=import-outside-toplevel,import-error
+
+        gen = WATCodeGenerator()
+        wat = gen.generate(prog)
+        engine = wasmtime.Engine()
+        wasm_bytes = wasmtime.wat2wasm(wat)
+        module = wasmtime.Module(engine, wasm_bytes)
+        with tempfile.NamedTemporaryFile(suffix=".out", delete=False) as tf:
+            stdout_path = tf.name
+        try:
+            cfg = wasmtime.WasiConfig()
+            cfg.stdout_file = stdout_path
+            store = wasmtime.Store(engine)
+            store.set_wasi(cfg)
+            linker = wasmtime.Linker(engine)
+            linker.define_wasi()
+            inst = linker.instantiate(store, module)
+            inst.exports(store)["__main"](store)
+            with open(stdout_path, encoding="utf-8") as fh:
+                return fh.read()
+        finally:
+            os.unlink(stdout_path)
+
+    def test_integer_literal_prints_without_decimal(self):
+        """print(42) must output '42', not '42.0'."""
+        prog = _prog(
+            ExpressionStatement(
+                CallExpr(Identifier("print"), [NumeralLiteral("42")])
+            )
+        )
+        raw = self._run_raw(prog)
+        self.assertIn("42\n", raw)
+        self.assertNotIn("42.0", raw)
+
+    def test_zero_prints_without_decimal(self):
+        prog = _prog(
+            ExpressionStatement(
+                CallExpr(Identifier("print"), [NumeralLiteral("0")])
+            )
+        )
+        raw = self._run_raw(prog)
+        self.assertEqual(raw.strip(), "0")
+
+    def test_float_literal_still_prints_decimal(self):
+        """print(1.5) must still output '1.5'."""
+        prog = _prog(
+            ExpressionStatement(
+                CallExpr(Identifier("print"), [NumeralLiteral("1.5")])
+            )
+        )
+        raw = self._run_raw(prog)
+        self.assertEqual(raw.strip(), "1.5")
+
+    def test_negative_integer_prints_without_decimal(self):
+        """print(-7) must output '-7', not '-7.0'."""
+        prog = _prog(
+            ExpressionStatement(
+                CallExpr(
+                    Identifier("print"),
+                    [UnaryOp("-", NumeralLiteral("7"))],
+                )
+            )
+        )
+        raw = self._run_raw(prog)
+        self.assertEqual(raw.strip(), "-7")
 
 
 if __name__ == "__main__":

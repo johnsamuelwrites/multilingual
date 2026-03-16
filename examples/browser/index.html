@@ -150,6 +150,291 @@ while i < 15:
     const sourceEl = document.getElementById("source");
     const langEl   = document.getElementById("lang");
 
+    // ── Per-language Fibonacci examples ───────────────────────────────────
+    const EXAMPLES = {
+      en: `def fibonacci(n):
+    let a = 0
+    let b = 1
+    let count = 0
+    while count < n:
+        let temp = b
+        b = a + b
+        a = temp
+        count = count + 1
+    return a
+
+let i = 0
+while i < 15:
+    print(fibonacci(i))
+    i = i + 1`,
+
+      fr: `déf fibonacci(n):
+    soit a = 0
+    soit b = 1
+    soit count = 0
+    tantque count < n:
+        soit temp = b
+        b = a + b
+        a = temp
+        count = count + 1
+    retour a
+
+soit i = 0
+tantque i < 15:
+    afficher(fibonacci(i))
+    i = i + 1`,
+
+      de: `def fibonacci(n):
+    sei a = 0
+    sei b = 1
+    sei count = 0
+    solange count < n:
+        sei temp = b
+        b = a + b
+        a = temp
+        count = count + 1
+    rückgabe a
+
+sei i = 0
+solange i < 15:
+    ausgeben(fibonacci(i))
+    i = i + 1`,
+
+      es: `def fibonacci(n):
+    sea a = 0
+    sea b = 1
+    sea count = 0
+    mientras count < n:
+        sea temp = b
+        b = a + b
+        a = temp
+        count = count + 1
+    devolver a
+
+sea i = 0
+mientras i < 15:
+    imprimir(fibonacci(i))
+    i = i + 1`,
+
+      it: `definisci fibonacci(n):
+    sia a = 0
+    sia b = 1
+    sia count = 0
+    mentre count < n:
+        sia temp = b
+        b = a + b
+        a = temp
+        count = count + 1
+    ritorna a
+
+sia i = 0
+mentre i < 15:
+    stampa(fibonacci(i))
+    i = i + 1`,
+
+      pt: `defina fibonacci(n):
+    seja a = 0
+    seja b = 1
+    seja count = 0
+    enquanto count < n:
+        seja temp = b
+        b = a + b
+        a = temp
+        count = count + 1
+    retorne a
+
+seja i = 0
+enquanto i < 15:
+    imprima(fibonacci(i))
+    i = i + 1`,
+
+      nl: `definieer fibonacci(n):
+    laat a = 0
+    laat b = 1
+    laat count = 0
+    terwijl count < n:
+        laat temp = b
+        b = a + b
+        a = temp
+        count = count + 1
+    retourneer a
+
+laat i = 0
+terwijl i < 15:
+    afdrukken(fibonacci(i))
+    i = i + 1`,
+
+      sv: `definiera fibonacci(n):
+    lat a = 0
+    lat b = 1
+    lat count = 0
+    medan count < n:
+        lat temp = b
+        b = a + b
+        a = temp
+        count = count + 1
+    retur a
+
+lat i = 0
+medan i < 15:
+    skriv(fibonacci(i))
+    i = i + 1`,
+
+      da: `definer fibonacci(n):
+    lad a = 0
+    lad b = 1
+    lad count = 0
+    mens count < n:
+        lad temp = b
+        b = a + b
+        a = temp
+        count = count + 1
+    returner a
+
+lad i = 0
+mens i < 15:
+    skriv(fibonacci(i))
+    i = i + 1`,
+
+      fi: `maarittele fibonacci(n):
+    olkoon a = 0
+    olkoon b = 1
+    olkoon count = 0
+    kun count < n:
+        olkoon temp = b
+        b = a + b
+        a = temp
+        count = count + 1
+    palauta a
+
+olkoon i = 0
+kun i < 15:
+    tulosta(fibonacci(i))
+    i = i + 1`,
+
+      pl: `funkcja fibonacci(n):
+    niech a = 0
+    niech b = 1
+    niech count = 0
+    dopoki count < n:
+        niech temp = b
+        b = a + b
+        a = temp
+        count = count + 1
+    zwroc a
+
+niech i = 0
+dopoki i < 15:
+    drukuj(fibonacci(i))
+    i = i + 1`,
+
+      ar: `دالة fibonacci(n):
+    ليكن a = 0
+    ليكن b = 1
+    ليكن count = 0
+    طالما count < n:
+        ليكن temp = b
+        b = a + b
+        a = temp
+        count = count + 1
+    إرجاع a
+
+ليكن i = 0
+طالما i < 15:
+    اطبع(fibonacci(i))
+    i = i + 1`,
+
+      zh: `函数 fibonacci(n):
+    令 a = 0
+    令 b = 1
+    令 count = 0
+    当 count < n:
+        令 temp = b
+        b = a + b
+        a = temp
+        count = count + 1
+    返回 a
+
+令 i = 0
+当 i < 15:
+    打印(fibonacci(i))
+    i = i + 1`,
+
+      ja: `関数 fibonacci(n):
+    変数 a = 0
+    変数 b = 1
+    変数 count = 0
+    間 count < n:
+        変数 temp = b
+        b = a + b
+        a = temp
+        count = count + 1
+    戻る a
+
+変数 i = 0
+間 i < 15:
+    表示(fibonacci(i))
+    i = i + 1`,
+
+      hi: `परिभाषा fibonacci(n):
+    मान a = 0
+    मान b = 1
+    मान count = 0
+    जबतक count < n:
+        मान temp = b
+        b = a + b
+        a = temp
+        count = count + 1
+    वापसी a
+
+मान i = 0
+जबतक i < 15:
+    छापो(fibonacci(i))
+    i = i + 1`,
+
+      bn: `সংজ্ঞা fibonacci(n):
+    ধরি a = 0
+    ধরি b = 1
+    ধরি count = 0
+    যতক্ষণ count < n:
+        ধরি temp = b
+        b = a + b
+        a = temp
+        count = count + 1
+    ফেরত a
+
+ধরি i = 0
+যতক্ষণ i < 15:
+    ছাপাও(fibonacci(i))
+    i = i + 1`,
+
+      ta: `வரையறு fibonacci(n):
+    இருக்கட்டும் a = 0
+    இருக்கட்டும் b = 1
+    இருக்கட்டும் count = 0
+    வரை count < n:
+        இருக்கட்டும் temp = b
+        b = a + b
+        a = temp
+        count = count + 1
+    திருப்பு a
+
+இருக்கட்டும் i = 0
+வரை i < 15:
+    அச்சிடு(fibonacci(i))
+    i = i + 1`,
+    };
+
+    // Swap the example source when the language changes.
+    langEl.addEventListener("change", () => {
+      const lang = langEl.value;
+      if (EXAMPLES[lang]) {
+        sourceEl.value = EXAMPLES[lang];
+        outputEl.textContent = "(press Run)";
+        statusEl.textContent = "";
+      }
+    });
+
     // ── WASI shim ────────────────────────────────────────────────────────────
     // Implements wasi_snapshot_preview1.fd_write so stdout goes to outputEl.
     function makeWasiImports(memoryRef) {

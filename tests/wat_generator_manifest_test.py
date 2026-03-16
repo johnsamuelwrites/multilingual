@@ -181,3 +181,37 @@ class WATFrontendTemplateTestSuite(unittest.TestCase):
         self.assertIn("renderByMode", template)
         self.assertIn("point_stream", template)
         self.assertIn("draw_write_points", template)
+
+    def test_renderer_template_exports_call_function_helper(self):
+        """callFunction(exports, name, args) must be present in the renderer."""
+        fn = FunctionDef(
+            Identifier("fibonacci"),
+            [Parameter(Identifier("n"))],
+            [ReturnStatement(NumeralLiteral("0"))],
+        )
+        manifest = WATCodeGenerator().generate_abi_manifest(_prog(fn))
+        template = WATCodeGenerator().generate_renderer_template(manifest)
+        self.assertIn("export function callFunction", template)
+        self.assertIn("exports[name]", template)
+
+    def test_renderer_template_includes_function_signatures(self):
+        """Renderer must include a comment listing exported function signatures."""
+        fn = FunctionDef(
+            Identifier("add"),
+            [Parameter(Identifier("x")), Parameter(Identifier("y"))],
+            [ReturnStatement(NumeralLiteral("0"))],
+        )
+        manifest = WATCodeGenerator().generate_abi_manifest(_prog(fn))
+        template = WATCodeGenerator().generate_renderer_template(manifest)
+        self.assertIn("add(arg0: f64, arg1: f64) -> f64", template)
+
+    def test_renderer_call_function_used_in_render_by_mode(self):
+        """renderByMode must delegate to callFunction for scalar_field exports."""
+        fn = FunctionDef(
+            Identifier("compute"),
+            [Parameter(Identifier("x"))],
+            [ReturnStatement(NumeralLiteral("0"))],
+        )
+        manifest = WATCodeGenerator().generate_abi_manifest(_prog(fn))
+        template = WATCodeGenerator().generate_renderer_template(manifest)
+        self.assertIn("callFunction(exports, abiName, args)", template)
