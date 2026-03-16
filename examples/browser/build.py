@@ -24,16 +24,34 @@ Outputs (all in the same directory as this script):
 
 from __future__ import annotations
 
+import importlib
 import pathlib
 import sys
 
 HERE = pathlib.Path(__file__).parent
 ROOT = HERE.parent.parent
-sys.path.insert(0, str(ROOT))
 
-from multilingualprogramming.codegen.build_orchestrator import BuildOrchestrator  # noqa: E402
-from multilingualprogramming.lexer.lexer import Lexer  # noqa: E402
-from multilingualprogramming.parser.parser import Parser  # noqa: E402
+
+def _load_multilingual_symbols():
+    """Load project modules whether the script runs from repo root or this folder."""
+    try:
+        build_orchestrator = importlib.import_module(
+            "multilingualprogramming.codegen.build_orchestrator"
+        )
+        lexer_module = importlib.import_module("multilingualprogramming.lexer.lexer")
+        parser_module = importlib.import_module("multilingualprogramming.parser.parser")
+    except ModuleNotFoundError:
+        sys.path.insert(0, str(ROOT))
+        build_orchestrator = importlib.import_module(
+            "multilingualprogramming.codegen.build_orchestrator"
+        )
+        lexer_module = importlib.import_module("multilingualprogramming.lexer.lexer")
+        parser_module = importlib.import_module("multilingualprogramming.parser.parser")
+    return (
+        build_orchestrator.BuildOrchestrator,
+        lexer_module.Lexer,
+        parser_module.Parser,
+    )
 
 
 def _detect_language(path: pathlib.Path) -> str:
@@ -44,13 +62,17 @@ def _detect_language(path: pathlib.Path) -> str:
 
 
 def _parse_program(source_path: pathlib.Path, language: str):
+    """Parse a multilingual source file into an AST program."""
+    _, lexer_cls, parser_cls = _load_multilingual_symbols()
     code = source_path.read_text(encoding="utf-8")
-    tokens = Lexer(code, language=language).tokenize()
-    return Parser(tokens, source_language=language).parse()
+    tokens = lexer_cls(code, language=language).tokenize()
+    return parser_cls(tokens, source_language=language).parse()
 
 
 def build(source_path: pathlib.Path, language: str) -> None:
-    outputs = BuildOrchestrator(HERE).build_from_program(
+    """Build browser demo artifacts for the given source file."""
+    build_orchestrator_cls, _, _ = _load_multilingual_symbols()
+    outputs = build_orchestrator_cls(HERE).build_from_program(
         _parse_program(source_path, language)
     )
     print(f"  WAT  -> {outputs.wat}")
@@ -64,6 +86,7 @@ def build(source_path: pathlib.Path, language: str) -> None:
 
 
 def main() -> None:
+    """Build the default or requested browser demo bundle."""
     args = sys.argv[1:]
     if args:
         source_path = pathlib.Path(args[0])
