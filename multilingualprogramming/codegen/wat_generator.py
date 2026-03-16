@@ -68,7 +68,9 @@ from multilingualprogramming.core.ir import CoreIRProgram
 
 from multilingualprogramming.codegen.wat_generator_core import WATGeneratorCoreMixin
 from multilingualprogramming.codegen.wat_generator_expression import WATGeneratorExpressionMixin
+from multilingualprogramming.codegen.wat_generator_loop import WATGeneratorLoopMixin
 from multilingualprogramming.codegen.wat_generator_manifest import WATGeneratorManifestMixin
+from multilingualprogramming.codegen.wat_generator_match import WATGeneratorMatchMixin
 from multilingualprogramming.codegen.wat_generator_oop import WATGeneratorOOPMixin
 from multilingualprogramming.codegen.wat_generator_sequence import WATGeneratorSequenceMixin
 from multilingualprogramming.codegen.wat_generator_support import (
@@ -99,7 +101,6 @@ from multilingualprogramming.codegen.wat_generator_support import (
 )
 
 class WATCodeGenerator(
-    WATGeneratorManifestMixin,
     WATGeneratorCoreMixin,
     WATGeneratorExpressionMixin,
     WATGeneratorOOPMixin,
@@ -1627,6 +1628,15 @@ class WATCodeGenerator(
         else:
             self._gen_expr(node.operand, indent)
 
+    def _gen_match(self, stmt, indent: str):
+        raise NotImplementedError
+
+    def _gen_for(self, stmt, indent: str):
+        raise NotImplementedError
+
+    def _emit_counted_loop_increment(self, iter_var: str, loop_label: str, indent: str):
+        raise NotImplementedError
+
     def _gen_if(self, stmt: IfStatement, indent: str):
         self._emit(f"{indent};; if ...")
         self._gen_cond(stmt.condition, indent)
@@ -1930,3 +1940,35 @@ def has_stub_calls(wat_text: str) -> bool:
             print("WAT module is fully functional")
     """
     return _STUB_MARKER in wat_text
+
+
+WATCodeGenerator.generate_abi_manifest = WATGeneratorManifestMixin.generate_abi_manifest
+WATCodeGenerator.generate_js_host_shim = WATGeneratorManifestMixin.generate_js_host_shim
+WATCodeGenerator.generate_renderer_template = WATGeneratorManifestMixin.generate_renderer_template
+for _method_name in (
+    "_gen_match",
+    "_emit_default_match_case",
+    "_emit_literal_match_case",
+    "_emit_scalar_match_case",
+    "_emit_capture_match_case",
+    "_emit_sequence_match_case",
+    "_emit_sequence_length_check",
+    "_emit_sequence_element_check",
+    "_emit_case_guard",
+    "_emit_case_body",
+    "_emit_unsupported_match_case",
+):
+    setattr(WATCodeGenerator, _method_name, getattr(WATGeneratorMatchMixin, _method_name))
+for _method_name in (
+    "_gen_for",
+    "_resolve_for_iter_var",
+    "_decode_range_iterable",
+    "_emit_range_for",
+    "_emit_counted_loop_increment",
+):
+    setattr(WATCodeGenerator, _method_name, getattr(WATGeneratorLoopMixin, _method_name))
+setattr(
+    WATCodeGenerator,
+    "_build_stream_buffer_helpers",
+    getattr(WATGeneratorManifestMixin, "_build_stream_buffer_helpers"),
+)

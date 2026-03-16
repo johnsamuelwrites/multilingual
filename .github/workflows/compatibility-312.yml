@@ -31,12 +31,39 @@ jobs:
 
       - name: Run differential compatibility tests
         run: |
-          python -m pytest -q tests/compatibility/differential_312_test.py --junitxml=compatibility-junit.xml
+          set +e
+          python -m pytest -q tests/compatibility/differential_312_test.py | tee compatibility-output.txt
+          status=${PIPESTATUS[0]}
+          python - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import re
+          from pathlib import Path
 
-      - name: Publish compatibility score
-        if: always()
-        run: |
-          python -c "import xml.etree.ElementTree as ET; root = ET.parse('compatibility-junit.xml').getroot(); tests = int(root.attrib.get('tests', 0)); failures = int(root.attrib.get('failures', 0)); errors = int(root.attrib.get('errors', 0)); skipped = int(root.attrib.get('skipped', 0)); passed = tests - failures - errors - skipped; ratio = (passed / tests * 100.0) if tests else 0.0; print('## Compatibility Score (Python 3.12)'); print(f'- Passed: {passed}/{tests} ({ratio:.1f}%)'); print(f'- Failures: {failures}'); print(f'- Errors: {errors}'); print(f'- Skipped: {skipped}')" >> $GITHUB_STEP_SUMMARY
+          text = Path("compatibility-output.txt").read_text(encoding="utf-8")
+          summary_line = next(
+              (line.strip() for line in reversed(text.splitlines()) if " in " in line and "," in line),
+              "",
+          )
+          counts = {name: int(value) for value, name in re.findall(
+              r"(\d+)\s+(passed|failed|errors?|skipped)",
+              summary_line,
+          )}
+          passed = counts.get("passed", 0)
+          failures = counts.get("failed", 0)
+          errors = counts.get("error", 0) + counts.get("errors", 0)
+          skipped = counts.get("skipped", 0)
+          total = passed + failures + errors + skipped
+          ratio = (passed / total * 100.0) if total else 0.0
+
+          print("## Compatibility Score (Python 3.12)")
+          if total:
+              print(f"- Passed: {passed}/{total} ({ratio:.1f}%)")
+              print(f"- Failures: {failures}")
+              print(f"- Errors: {errors}")
+              print(f"- Skipped: {skipped}")
+          else:
+              print("- Unable to parse compatibility summary from pytest output.")
+          PY
+          exit $status
 
       - name: Run compatibility smoke examples
         run: |

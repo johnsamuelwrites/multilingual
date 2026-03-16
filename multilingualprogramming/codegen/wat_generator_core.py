@@ -1092,9 +1092,9 @@ class WATGeneratorCoreMixin:
                 fn_lines.append(f"    i32.const {dom_buf}")
                 fn_lines.append(f"    i32.const {dom_buf_size}")
                 fn_lines.append(f"    call ${wat_host}")
-                fn_lines.append(f"    global.set $__last_str_len")
+                fn_lines.append("    global.set $__last_str_len")
                 fn_lines.append(f"    i32.const {dom_buf}")
-                fn_lines.append(f"    f64.convert_i32_u")
+                fn_lines.append("    f64.convert_i32_u")
             else:
                 fn_lines.append(f"    call ${wat_host}")
 

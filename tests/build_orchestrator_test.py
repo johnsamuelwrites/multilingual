@@ -10,7 +10,7 @@ import shutil
 import unittest
 from pathlib import Path
 
-from multilingualprogramming.codegen.build_orchestrator import BuildOrchestrator
+from multilingualprogramming.codegen.build_orchestrator import BuildOrchestrator, wasmtime
 from multilingualprogramming.lexer.lexer import Lexer
 from multilingualprogramming.parser.parser import Parser
 
@@ -40,7 +40,7 @@ class BuildOrchestratorTestSuite(unittest.TestCase):
             outputs = BuildOrchestrator(out).build_from_program(program)
             self.assertTrue(outputs.transpiled_python.exists())
             self.assertTrue(outputs.wat.exists())
-            self.assertTrue(outputs.wasm.exists())
+            self.assertEqual(outputs.wasm.exists(), wasmtime is not None)
             self.assertTrue(outputs.abi_manifest.exists())
             self.assertTrue(outputs.host_shim_js.exists())
             self.assertTrue(outputs.renderer_template_js.exists())

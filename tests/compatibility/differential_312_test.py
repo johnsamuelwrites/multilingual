@@ -8,8 +8,8 @@
 """Differential compatibility checks against CPython 3.12 behavior."""
 
 import io
+import shutil
 import sys
-import tempfile
 import unittest
 from contextlib import redirect_stdout
 from pathlib import Path
@@ -65,6 +65,14 @@ def _run_multilingual_source(source, check_semantics=True):
 
 class DifferentialCompatibility312TestSuite(unittest.TestCase):
     """Compare multilingual execution against equivalent CPython programs."""
+
+    @staticmethod
+    def _tmpdir(test_name: str) -> Path:
+        path = Path("tests") / ".tmp_compatibility" / test_name
+        if path.exists():
+            shutil.rmtree(path)
+        path.mkdir(parents=True, exist_ok=True)
+        return path
 
     def _assert_equivalent(
         self,
@@ -273,8 +281,8 @@ print(asyncio.run(main()))
         )
 
     def test_import_package_resolution_parity(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
+        root = self._tmpdir("import_package_resolution")
+        try:
             pkg_dir = root / "pkg"
             pkg_dir.mkdir(parents=True, exist_ok=True)
             (pkg_dir / "__init__.ml").write_text(
@@ -308,6 +316,8 @@ print(tools.double(default_value))
                 sys.path[:] = original_path
                 for module_name in ("pkg", "pkg.tools"):
                     sys.modules.pop(module_name, None)
+        finally:
+            shutil.rmtree(root)
 
             self.assertEqual(ml["success"], py["success"])
             self.assertEqual(ml["output"], py["output"])
