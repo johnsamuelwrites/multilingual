@@ -77,16 +77,22 @@ from multilingualprogramming.parser.ast_nodes import (
     NoneLiteral,
     ListLiteral,
     TupleLiteral,
+    DictLiteral,
+    SetLiteral,
+    DictUnpackEntry,
     AttributeAccess,
     IndexAccess,
     AwaitExpr,
     LambdaExpr,
     SliceExpr,
+    NamedExpr,
+    ConditionalExpr,
     ListComprehension,
     DictComprehension,
     SetComprehension,
     GeneratorExpr,
     Parameter,
+    FStringLiteral,
 )
 from multilingualprogramming.numeral.mp_numeral import MPNumeral
 from multilingualprogramming.core.ir import CoreIRProgram
@@ -99,12 +105,19 @@ from multilingualprogramming.codegen.wat_generator_match import WATGeneratorMatc
 from multilingualprogramming.codegen.wat_generator_oop import WATGeneratorOOPMixin
 from multilingualprogramming.codegen.wat_generator_support import (
     _ABS_NAMES,
+    _INT_NAMES,
     _LEN_NAMES,
     _MAX_NAMES,
     _MIN_NAMES,
+    _POW_NAMES,
     _PARAM_SEPARATORS,
     _PRINT_NAMES,
     _RANGE_NAMES,
+    _SUM_NAMES,
+    _LIST_NAMES,
+    _TUPLE_NAMES,
+    _SET_NAMES,
+    _STR_NAMES,
     _extract_render_mode,
     _name,
     _real_params,
@@ -169,6 +182,8 @@ class WATCodeGenerator(
         self._string_len_locals: dict[str, str] = {}
         # Locals known to hold list/tuple pointers (heap-allocated).
         self._list_locals: set[str] = set()
+        # Compiler-known dict locals: var_name -> string-key to element index.
+        self._dict_key_maps: dict[str, dict[str, int]] = {}
         # True when any heap allocation (list or OOP) is needed.
         self._need_heap_ptr: bool = False
         # Lambda table: ordered list of WAT func names registered for call_indirect.
@@ -238,6 +253,7 @@ class WATCodeGenerator(
         self._class_bases = {}
         self._string_len_locals = {}
         self._list_locals = set()
+        self._dict_key_maps = {}
         self._need_heap_ptr = False
         self._lambda_table = []
         self._lambda_locals = {}
@@ -305,6 +321,7 @@ class WATCodeGenerator(
         saved = (self._instrs, self._locals, self._loop_stack,
                  self._var_class_types, self._current_class,
                  self._string_len_locals, self._list_locals,
+                 self._dict_key_maps,
                  self._lambda_locals)
         self._instrs = []
         self._locals = set()
@@ -312,6 +329,7 @@ class WATCodeGenerator(
         self._var_class_types = {}
         self._string_len_locals = {}
         self._list_locals = set()
+        self._dict_key_maps = {}
         self._lambda_locals = {}
         # _current_class is NOT reset here: _emit_class sets it before each method
         # and it must persist into the method body.
@@ -422,6 +440,181 @@ class WATCodeGenerator(
         # Push the pointer as f64.
         self._emit(f"{indent}local.get ${self._wat_symbol(ptr_local)}")
 
+    def _gen_static_dict_alloc(self, node: DictLiteral, indent: str) -> bool:
+        """Allocate a compile-time-known dict as a values array plus key metadata."""
+        mapping = self._flatten_static_dict_entries(node)
+        if mapping is None:
+            return False
+        self._gen_list_alloc(ListLiteral(list(mapping.values())), indent)
+        return True
+
+    def _emit_sum_over_pointer(self, ptr_expr, indent: str) -> None:
+        """Emit a numeric sum over a list-like pointer expression."""
+        lbl = self._new_label()
+        ptr_local = f"__sum_ptr_{lbl}"
+        idx_local = f"__sum_idx_{lbl}"
+        len_local = f"__sum_len_{lbl}"
+        acc_local = f"__sum_acc_{lbl}"
+        blk = f"sum_blk_{lbl}"
+        loop = f"sum_lp_{lbl}"
+        for local_name in (ptr_local, idx_local, len_local, acc_local):
+            self._locals.add(local_name)
+
+        self._gen_expr(ptr_expr, indent)
+        self._emit(f"{indent}local.set ${self._wat_symbol(ptr_local)}")
+        self._emit(f"{indent}local.get ${self._wat_symbol(ptr_local)}")
+        self._emit(f"{indent}i32.trunc_f64_u")
+        self._emit(f"{indent}f64.load")
+        self._emit(f"{indent}local.set ${self._wat_symbol(len_local)}")
+        self._emit(f"{indent}f64.const 0")
+        self._emit(f"{indent}local.set ${self._wat_symbol(idx_local)}")
+        self._emit(f"{indent}f64.const 0")
+        self._emit(f"{indent}local.set ${self._wat_symbol(acc_local)}")
+        self._emit(f"{indent}block ${blk}")
+        self._emit(f"{indent}  loop ${loop}")
+        self._emit(f"{indent}    local.get ${self._wat_symbol(idx_local)}")
+        self._emit(f"{indent}    local.get ${self._wat_symbol(len_local)}")
+        self._emit(f"{indent}    f64.ge")
+        self._emit(f"{indent}    br_if ${blk}")
+        self._emit(f"{indent}    local.get ${self._wat_symbol(acc_local)}")
+        self._emit(f"{indent}    local.get ${self._wat_symbol(ptr_local)}")
+        self._emit(f"{indent}    i32.trunc_f64_u")
+        self._emit(f"{indent}    local.get ${self._wat_symbol(idx_local)}")
+        self._emit(f"{indent}    i32.trunc_f64_u")
+        self._emit(f"{indent}    i32.const 8")
+        self._emit(f"{indent}    i32.mul")
+        self._emit(f"{indent}    i32.const 8")
+        self._emit(f"{indent}    i32.add")
+        self._emit(f"{indent}    i32.add")
+        self._emit(f"{indent}    f64.load")
+        self._emit(f"{indent}    f64.add")
+        self._emit(f"{indent}    local.set ${self._wat_symbol(acc_local)}")
+        self._emit(f"{indent}    local.get ${self._wat_symbol(idx_local)}")
+        self._emit(f"{indent}    f64.const 1")
+        self._emit(f"{indent}    f64.add")
+        self._emit(f"{indent}    local.set ${self._wat_symbol(idx_local)}")
+        self._emit(f"{indent}    br ${loop}")
+        self._emit(f"{indent}  end")
+        self._emit(f"{indent}end")
+        self._emit(f"{indent}local.get ${self._wat_symbol(acc_local)}")
+
+    def _gen_simple_comprehension_list(self, node, indent: str) -> bool:
+        """Lower a simple range/list comprehension or generator expression to a list."""
+        clause = node.clauses[0] if node.clauses else None
+        if clause is None or len(node.clauses) != 1 or clause.conditions:
+            return False
+
+        iterable_name = _name(clause.iterable) if isinstance(clause.iterable, Identifier) else None
+        is_range = (
+            isinstance(clause.iterable, CallExpr)
+            and _name(clause.iterable.func) in _RANGE_NAMES
+        )
+        is_list = iterable_name in self._list_locals
+        if not (is_range or is_list):
+            return False
+
+        label = self._new_label()
+        iter_var = _name(clause.target) if isinstance(clause.target, Identifier) else f"__comp_item_{label}"
+        ptr_local = f"__comp_ptr_{label}"
+        idx_local = f"__comp_idx_{label}"
+        len_local = f"__comp_len_{label}"
+        src_len_local = f"__comp_src_len_{label}"
+        end_local = f"__comp_end_{label}"
+        for local_name in (iter_var, ptr_local, idx_local, len_local, src_len_local, end_local):
+            self._locals.add(local_name)
+
+        self._need_heap_ptr = True
+        if is_range:
+            range_args = clause.iterable.args
+            if len(range_args) == 1:
+                start_node = NumeralLiteral("0")
+                end_node = range_args[0]
+            elif len(range_args) == 2:
+                start_node, end_node = range_args
+            else:
+                return False
+            self._gen_expr(start_node, indent)
+            self._emit(f"{indent}local.set ${self._wat_symbol(iter_var)}")
+            self._gen_expr(end_node, indent)
+            self._emit(f"{indent}local.set ${self._wat_symbol(end_local)}")
+            self._emit(f"{indent}local.get ${self._wat_symbol(end_local)}")
+            self._emit(f"{indent}local.get ${self._wat_symbol(iter_var)}")
+            self._emit(f"{indent}f64.sub")
+            self._emit(f"{indent}local.set ${self._wat_symbol(len_local)}")
+        else:
+            self._emit(f"{indent}local.get ${self._wat_symbol(iterable_name)}")
+            self._emit(f"{indent}i32.trunc_f64_u")
+            self._emit(f"{indent}f64.load")
+            self._emit(f"{indent}local.set ${self._wat_symbol(src_len_local)}")
+            self._emit(f"{indent}local.get ${self._wat_symbol(src_len_local)}")
+            self._emit(f"{indent}local.set ${self._wat_symbol(len_local)}")
+
+        self._emit(f"{indent}global.get $__heap_ptr")
+        self._emit(f"{indent}f64.convert_i32_u")
+        self._emit(f"{indent}local.set ${self._wat_symbol(ptr_local)}")
+        self._emit(f"{indent}global.get $__heap_ptr")
+        self._emit(f"{indent}local.get ${self._wat_symbol(len_local)}")
+        self._emit(f"{indent}i32.trunc_f64_u")
+        self._emit(f"{indent}i32.const 1")
+        self._emit(f"{indent}i32.add")
+        self._emit(f"{indent}i32.const 8")
+        self._emit(f"{indent}i32.mul")
+        self._emit(f"{indent}i32.add")
+        self._emit(f"{indent}global.set $__heap_ptr")
+
+        self._emit(f"{indent}local.get ${self._wat_symbol(ptr_local)}")
+        self._emit(f"{indent}i32.trunc_f64_u")
+        self._emit(f"{indent}local.get ${self._wat_symbol(len_local)}")
+        self._emit(f"{indent}f64.store")
+
+        self._emit(f"{indent}f64.const 0")
+        self._emit(f"{indent}local.set ${self._wat_symbol(idx_local)}")
+        blk = f"comp_list_blk_{label}"
+        loop = f"comp_list_lp_{label}"
+        self._emit(f"{indent}block ${blk}")
+        self._emit(f"{indent}  loop ${loop}")
+        self._emit(f"{indent}    local.get ${self._wat_symbol(idx_local)}")
+        self._emit(f"{indent}    local.get ${self._wat_symbol(len_local)}")
+        self._emit(f"{indent}    f64.ge")
+        self._emit(f"{indent}    br_if ${blk}")
+        if is_list:
+            self._emit(f"{indent}    local.get ${self._wat_symbol(iterable_name)}")
+            self._emit(f"{indent}    i32.trunc_f64_u")
+            self._emit(f"{indent}    local.get ${self._wat_symbol(idx_local)}")
+            self._emit(f"{indent}    i32.trunc_f64_u")
+            self._emit(f"{indent}    i32.const 8")
+            self._emit(f"{indent}    i32.mul")
+            self._emit(f"{indent}    i32.const 8")
+            self._emit(f"{indent}    i32.add")
+            self._emit(f"{indent}    i32.add")
+            self._emit(f"{indent}    f64.load")
+            self._emit(f"{indent}    local.set ${self._wat_symbol(iter_var)}")
+        self._emit(f"{indent}    local.get ${self._wat_symbol(ptr_local)}")
+        self._emit(f"{indent}    i32.trunc_f64_u")
+        self._emit(f"{indent}    local.get ${self._wat_symbol(idx_local)}")
+        self._emit(f"{indent}    i32.trunc_f64_u")
+        self._emit(f"{indent}    i32.const 8")
+        self._emit(f"{indent}    i32.mul")
+        self._emit(f"{indent}    i32.const 8")
+        self._emit(f"{indent}    i32.add")
+        self._emit(f"{indent}    i32.add")
+        self._gen_expr(node.element, indent + "    ")
+        self._emit(f"{indent}    f64.store")
+        if is_range:
+            self._emit(f"{indent}    local.get ${self._wat_symbol(iter_var)}")
+            self._emit(f"{indent}    f64.const 1")
+            self._emit(f"{indent}    f64.add")
+            self._emit(f"{indent}    local.set ${self._wat_symbol(iter_var)}")
+        self._emit(f"{indent}    local.get ${self._wat_symbol(idx_local)}")
+        self._emit(f"{indent}    f64.const 1")
+        self._emit(f"{indent}    f64.add")
+        self._emit(f"{indent}    local.set ${self._wat_symbol(idx_local)}")
+        self._emit(f"{indent}    br ${loop}")
+        self._emit(f"{indent}  end")
+        self._emit(f"{indent}end")
+        self._emit(f"{indent}local.get ${self._wat_symbol(ptr_local)}")
+        return True
+
     # -----------------------------------------------------------------------
     # len() helper
     # -----------------------------------------------------------------------
@@ -431,11 +624,14 @@ class WATCodeGenerator(
         if isinstance(arg_node, StringLiteral):
             _, byte_len = self._intern(arg_node.value)
             self._emit(f"{indent}f64.const {float(byte_len)}  ;; len of string literal")
+        elif isinstance(arg_node, BytesLiteral):
+            _, byte_len = self._intern(arg_node.value)
+            self._emit(f"{indent}f64.const {float(byte_len)}  ;; len of bytes literal")
         elif isinstance(arg_node, Identifier):
             if arg_node.name in self._string_len_locals:
                 len_local = self._string_len_locals[arg_node.name]
                 self._emit(f"{indent}local.get ${self._wat_symbol(len_local)}")
-            elif arg_node.name in self._list_locals:
+            elif arg_node.name in self._list_locals or arg_node.name in self._dict_key_maps:
                 # Load element count from the list header at offset 0.
                 self._emit(f"{indent}local.get ${self._wat_symbol(arg_node.name)}")
                 self._emit(f"{indent}i32.trunc_f64_u")
@@ -450,6 +646,123 @@ class WATCodeGenerator(
                 f"{indent}f64.const 0  "
                 f";; unsupported: len() of {type(arg_node).__name__}"
             )
+
+    def _gen_string_len_expr(self, node, indent: str) -> bool:
+        """Emit WAT that pushes a tracked UTF-8 byte length for *node*."""
+        if isinstance(node, StringLiteral):
+            _, byte_len = self._intern(node.value)
+            self._emit(f"{indent}f64.const {float(byte_len)}")
+            return True
+        if isinstance(node, BytesLiteral):
+            _, byte_len = self._intern(node.value)
+            self._emit(f"{indent}f64.const {float(byte_len)}")
+            return True
+        if isinstance(node, Identifier) and node.name in self._string_len_locals:
+            len_local = self._string_len_locals[node.name]
+            self._emit(f"{indent}local.get ${self._wat_symbol(len_local)}")
+            return True
+        if isinstance(node, BinaryOp) and node.op == "+" and self._is_string_binop(node):
+            self._gen_string_len_expr(node.left, indent)
+            self._gen_string_len_expr(node.right, indent)
+            self._emit(f"{indent}f64.add")
+            return True
+        return False
+
+    def _update_string_tracking(self, name: str, value, indent: str) -> None:
+        """Refresh tracked string-length metadata after storing into *name*."""
+        if self._gen_string_len_expr(value, indent):
+            len_local = f"{name}_strlen"
+            self._locals.add(len_local)
+            self._emit(f"{indent}local.set ${self._wat_symbol(len_local)}")
+            self._string_len_locals[name] = len_local
+        elif name in self._string_len_locals:
+            del self._string_len_locals[name]
+
+    def _update_collection_tracking(self, name: str, value) -> None:
+        """Refresh tracked list/tuple metadata after storing into *name*."""
+        is_container_builtin = (
+            isinstance(value, CallExpr)
+            and _name(value.func) in (_LIST_NAMES | _TUPLE_NAMES | _SET_NAMES)
+            and len(value.args) == 1
+            and isinstance(value.args[0], (ListLiteral, TupleLiteral, SetLiteral, DictLiteral))
+        )
+        if isinstance(value, (ListLiteral, TupleLiteral, SetLiteral)) or is_container_builtin:
+            self._list_locals.add(name)
+        elif name in self._list_locals:
+            self._list_locals.remove(name)
+
+    def _flatten_static_dict_entries(self, node):
+        """Return an ordered mapping for a compile-time-resolvable DictLiteral."""
+        if not isinstance(node, DictLiteral):
+            return None
+        flat: dict[str, object] = {}
+        for entry in node.entries:
+            if isinstance(entry, DictUnpackEntry):
+                nested = self._flatten_static_dict_entries(entry.value)
+                if nested is None:
+                    return None
+                flat.update(nested)
+                continue
+            if not (isinstance(entry, tuple) and len(entry) == 2):
+                return None
+            key_node, value_node = entry
+            if not isinstance(key_node, StringLiteral):
+                return None
+            flat[key_node.value] = value_node
+        return flat
+
+    def _static_set_elements(self, node):
+        """Return compile-time-deduplicated elements for a static set(...) call."""
+        seq = None
+        if isinstance(node, SetLiteral):
+            seq = node.elements
+        elif isinstance(node, (ListLiteral, TupleLiteral)):
+            seq = node.elements
+        if seq is None:
+            return None
+        result = []
+        seen = set()
+        for elem in seq:
+            if isinstance(elem, NumeralLiteral):
+                key = ("num", elem.value)
+            elif isinstance(elem, StringLiteral):
+                key = ("str", elem.value)
+            elif isinstance(elem, BooleanLiteral):
+                key = ("bool", elem.value)
+            else:
+                return None
+            if key not in seen:
+                seen.add(key)
+                result.append(elem)
+        return result
+
+    def _update_dict_tracking(self, name: str, value) -> None:
+        """Refresh tracked static-dict metadata after storing into *name*."""
+        if (isinstance(value, CallExpr)
+                and _name(value.func) in _LIST_NAMES
+                and len(value.args) == 1):
+            value = value.args[0]
+        mapping = self._flatten_static_dict_entries(value)
+        if mapping is not None:
+            self._dict_key_maps[name] = {key: index for index, key in enumerate(mapping)}
+        elif name in self._dict_key_maps:
+            del self._dict_key_maps[name]
+
+    def _update_assignment_tracking(self, name: str, value, indent: str) -> None:
+        """Refresh side metadata after assignment-like stores into *name*."""
+        self._update_string_tracking(name, value, indent)
+        self._update_collection_tracking(name, value)
+        self._update_dict_tracking(name, value)
+        if isinstance(value, LambdaExpr):
+            if self._lambda_table:
+                self._lambda_locals[name] = self._lambda_table[-1]
+        elif name in self._lambda_locals:
+            del self._lambda_locals[name]
+        inferred_class = self._infer_class_name(value)
+        if inferred_class:
+            self._var_class_types[name] = inferred_class
+        elif name in self._var_class_types:
+            del self._var_class_types[name]
 
     # -----------------------------------------------------------------------
     # match/case lowering helper
@@ -469,26 +782,7 @@ class WATCodeGenerator(
             self._emit(f"{indent};; let {name} = ...")
             self._gen_expr(stmt.value, indent)
             self._emit(f"{indent}local.set ${self._wat_symbol(name)}")
-            # Track string length and list pointer locals.
-            if isinstance(stmt.value, StringLiteral):
-                _, byte_len = self._intern(stmt.value.value)
-                len_local = f"{name}_strlen"
-                self._locals.add(len_local)
-                self._emit(f"{indent}f64.const {float(byte_len)}  ;; strlen for {name}")
-                self._emit(f"{indent}local.set ${self._wat_symbol(len_local)}")
-                self._string_len_locals[name] = len_local
-            elif isinstance(stmt.value, (ListLiteral, TupleLiteral)):
-                self._list_locals.add(name)
-            elif isinstance(stmt.value, LambdaExpr):
-                # The lambda was just registered; its table index is len-1.
-                if self._lambda_table:
-                    lam_fn = self._lambda_table[-1]
-                    self._lambda_locals[name] = lam_fn
-            inferred_class = self._infer_class_name(stmt.value)
-            if inferred_class:
-                self._var_class_types[name] = inferred_class
-            elif name in self._var_class_types:
-                del self._var_class_types[name]
+            self._update_assignment_tracking(name, stmt.value, indent)
 
         elif isinstance(stmt, Assignment):
             target = stmt.target
@@ -500,32 +794,21 @@ class WATCodeGenerator(
                     self._emit(f"{indent};; {name} = ...")
                     self._gen_expr(stmt.value, indent)
                     self._emit(f"{indent}local.set ${self._wat_symbol(name)}")
-                    # Track string/list types after assignment.
-                    if isinstance(stmt.value, StringLiteral):
-                        _, byte_len = self._intern(stmt.value.value)
-                        len_local = f"{name}_strlen"
-                        self._locals.add(len_local)
-                        self._emit(
-                            f"{indent}f64.const {float(byte_len)}  ;; strlen for {name}"
-                        )
-                        self._emit(f"{indent}local.set ${self._wat_symbol(len_local)}")
-                        self._string_len_locals[name] = len_local
-                    elif isinstance(stmt.value, (ListLiteral, TupleLiteral)):
-                        self._list_locals.add(name)
-                    elif isinstance(stmt.value, LambdaExpr):
-                        if self._lambda_table:
-                            self._lambda_locals[name] = self._lambda_table[-1]
-                    inferred_class = self._infer_class_name(stmt.value)
-                    if inferred_class:
-                        self._var_class_types[name] = inferred_class
-                    elif name in self._var_class_types:
-                        del self._var_class_types[name]
+                    self._update_assignment_tracking(name, stmt.value, indent)
                 else:
                     # Compound assignment: a op= b
                     self._emit(f"{indent};; {name} {op} ...")
                     self._emit(f"{indent}local.get ${self._wat_symbol(name)}")
                     self._gen_augmented_op(op, stmt.value, indent)
                     self._emit(f"{indent}local.set ${self._wat_symbol(name)}")
+                    if name in self._string_len_locals:
+                        del self._string_len_locals[name]
+                    if name in self._list_locals:
+                        self._list_locals.remove(name)
+                    if name in self._dict_key_maps:
+                        del self._dict_key_maps[name]
+                    if name in self._lambda_locals:
+                        del self._lambda_locals[name]
                     if name in self._var_class_types:
                         del self._var_class_types[name]
             elif (isinstance(target, AttributeAccess)
@@ -633,7 +916,12 @@ class WATCodeGenerator(
                 elif fname in self._class_attr_call_names:
                     lowered = self._class_attr_call_names[fname]
                     self._emit(f"{indent};; class call {fname}(...)")
-                    self._gen_call_args(expr, indent, lowered)
+                    real_params = self._func_real_params.get(lowered, [])
+                    if lowered in self._static_method_names and real_params[:1] == ["cls"]:
+                        self._emit(f"{indent}f64.const 0  ;; implicit cls")
+                        self._gen_call_args(expr, indent, lowered, skip_params=1)
+                    else:
+                        self._gen_call_args(expr, indent, lowered)
                     self._emit(f"{indent}call ${self._wat_symbol(lowered)}")
                     self._emit(f"{indent}drop")
                 elif self._class_method_target_from_call(expr):
@@ -642,8 +930,13 @@ class WATCodeGenerator(
                     cls = self._var_class_types.get(_name(obj_expr))
                     self._emit(f"{indent};; instance call {fname}(...)")
                     if lowered in self._static_method_names:
-                        # @staticmethod/@classmethod: no self pushed
-                        self._gen_call_args(expr, indent, lowered)
+                        # @staticmethod/@classmethod: no instance pushed
+                        real_params = self._func_real_params.get(lowered, [])
+                        if real_params[:1] == ["cls"]:
+                            self._emit(f"{indent}f64.const 0  ;; implicit cls")
+                            self._gen_call_args(expr, indent, lowered, skip_params=1)
+                        else:
+                            self._gen_call_args(expr, indent, lowered)
                     elif cls and self._is_stateful_class(cls):
                         self._gen_expr(obj_expr, indent)   # push actual f64 pointer
                         self._gen_call_args(expr, indent, lowered, skip_params=1)
@@ -801,6 +1094,13 @@ class WATCodeGenerator(
             elif isinstance(arg, BooleanLiteral):
                 self._emit(f"{indent}i32.const {1 if arg.value else 0}")
                 self._emit(f"{indent}call $print_bool")
+            elif isinstance(arg, Identifier) and arg.name in self._string_len_locals:
+                len_local = self._string_len_locals[arg.name]
+                self._emit(f"{indent}local.get ${self._wat_symbol(arg.name)}")
+                self._emit(f"{indent}i32.trunc_f64_u")
+                self._emit(f"{indent}local.get ${self._wat_symbol(len_local)}")
+                self._emit(f"{indent}i32.trunc_f64_u")
+                self._emit(f"{indent}call $print_str")
             else:
                 self._gen_expr(arg, indent)
                 self._emit(f"{indent}call $print_f64")
@@ -851,10 +1151,17 @@ class WATCodeGenerator(
             offset, _ = self._intern(node.value)
             self._emit(f"{indent}f64.const {float(offset)}  ;; str offset (not a numeric value)")
 
+        elif isinstance(node, FStringLiteral):
+            self._emit(f"{indent}f64.const 0  ;; unsupported expr: FStringLiteral")
+
         elif isinstance(node, BytesLiteral):
             # Bytes literals stored in linear memory just like strings
             offset, _ = self._intern(node.value)
             self._emit(f"{indent}f64.const {float(offset)}  ;; bytes offset")
+
+        elif isinstance(node, DictLiteral):
+            if not self._gen_static_dict_alloc(node, indent):
+                self._emit(f"{indent}f64.const 0  ;; unsupported expr: DictLiteral")
 
         elif isinstance(node, Identifier):
             if node.name in self._locals:
@@ -877,6 +1184,23 @@ class WATCodeGenerator(
         elif isinstance(node, BooleanOp):
             self._gen_boolop(node, indent)    # pushes i32
             self._emit(f"{indent}f64.convert_i32_s")
+
+        elif isinstance(node, ConditionalExpr):
+            self._gen_cond(node.condition, indent)
+            self._emit(f"{indent}if (result f64)")
+            self._gen_expr(node.true_expr, indent + "  ")
+            self._emit(f"{indent}else")
+            self._gen_expr(node.false_expr, indent + "  ")
+            self._emit(f"{indent}end")
+
+        elif isinstance(node, NamedExpr):
+            if isinstance(node.target, Identifier):
+                target_name = node.target.name
+                self._locals.add(target_name)
+                self._gen_expr(node.value, indent)
+                self._emit(f"{indent}local.tee ${self._wat_symbol(target_name)}")
+            else:
+                self._gen_expr(node.value, indent)
 
         elif isinstance(node, CallExpr):
             # super().method(args) — lower to direct parent WAT call (expression ctx).
@@ -907,6 +1231,51 @@ class WATCodeGenerator(
                     self._emit(f"{indent}f64.max")
             elif fname in _LEN_NAMES and len(node.args) == 1:
                 self._gen_len(node.args[0], indent)
+            elif fname in _INT_NAMES and len(node.args) == 1:
+                arg = node.args[0]
+                if isinstance(arg, StringLiteral):
+                    try:
+                        parsed = int(float(arg.value.strip()))
+                    except ValueError:
+                        self._emit(f"{indent}f64.const 0  ;; int() parse failure")
+                    else:
+                        self._emit(f"{indent}f64.const {float(parsed)}")
+                else:
+                    self._gen_expr(arg, indent)
+                    self._emit(f"{indent}i32.trunc_f64_s")
+                    self._emit(f"{indent}f64.convert_i32_s")
+            elif fname in _POW_NAMES and len(node.args) == 2:
+                self._gen_expr(node.args[0], indent)
+                self._gen_expr(node.args[1], indent)
+                self._emit(f"{indent}call $pow_f64")
+            elif fname in _STR_NAMES and len(node.args) == 1:
+                self._gen_expr(node.args[0], indent)
+            elif fname in _LIST_NAMES and len(node.args) == 1:
+                arg = node.args[0]
+                if isinstance(arg, (ListComprehension, GeneratorExpr)) and \
+                        self._gen_simple_comprehension_list(arg, indent):
+                    pass
+                elif isinstance(arg, (ListLiteral, TupleLiteral, DictLiteral)):
+                    self._gen_expr(arg, indent)
+                else:
+                    self._emit(f"{indent}f64.const 0  ;; unsupported call: {fname}(...)")
+            elif fname in _TUPLE_NAMES and len(node.args) == 1:
+                arg = node.args[0]
+                if isinstance(arg, (ListLiteral, TupleLiteral)):
+                    self._gen_expr(arg, indent)
+                else:
+                    self._emit(f"{indent}f64.const 0  ;; unsupported call: {fname}(...)")
+            elif fname in _SET_NAMES and len(node.args) == 1:
+                elements = self._static_set_elements(node.args[0])
+                if elements is not None:
+                    self._gen_list_alloc(ListLiteral(elements), indent)
+                else:
+                    self._emit(f"{indent}f64.const 0  ;; unsupported call: {fname}(...)")
+            elif fname in _SUM_NAMES and 1 <= len(node.args) <= 2:
+                self._emit_sum_over_pointer(node.args[0], indent)
+                if len(node.args) == 2:
+                    self._gen_expr(node.args[1], indent)
+                    self._emit(f"{indent}f64.add")
             elif fname in self._defined_func_names:
                 # Known WAT function — emit args then call
                 self._gen_call_args(node, indent, fname)
@@ -921,15 +1290,35 @@ class WATCodeGenerator(
                     self._emit(f"{indent}call ${self._wat_symbol(ctor)}")
             elif fname in self._class_attr_call_names:
                 lowered = self._class_attr_call_names[fname]
-                self._gen_call_args(node, indent, lowered)
+                real_params = self._func_real_params.get(lowered, [])
+                if lowered in self._static_method_names and real_params[:1] == ["cls"]:
+                    self._emit(f"{indent}f64.const 0  ;; implicit cls")
+                    self._gen_call_args(node, indent, lowered, skip_params=1)
+                else:
+                    self._gen_call_args(node, indent, lowered)
                 self._emit(f"{indent}call ${self._wat_symbol(lowered)}")
+            elif fname == "cls" and self._current_class in self._class_ctor_names:
+                ctor = self._class_ctor_names[self._current_class]
+                if self._is_stateful_class(self._current_class):
+                    self._emit_stateful_ctor(
+                        self._current_class, ctor, node, indent, keep_ref=True
+                    )
+                else:
+                    self._emit(f"{indent}f64.const 0  ;; implicit self")
+                    self._gen_call_args(node, indent, ctor, skip_params=1)
+                    self._emit(f"{indent}call ${self._wat_symbol(ctor)}")
             elif self._class_method_target_from_call(node):
                 lowered = self._class_method_target_from_call(node)
                 obj_expr = node.func.obj
                 cls = self._var_class_types.get(_name(obj_expr))
                 if lowered in self._static_method_names:
-                    # @staticmethod/@classmethod: no self pushed
-                    self._gen_call_args(node, indent, lowered)
+                    # @staticmethod/@classmethod: no instance pushed
+                    real_params = self._func_real_params.get(lowered, [])
+                    if real_params[:1] == ["cls"]:
+                        self._emit(f"{indent}f64.const 0  ;; implicit cls")
+                        self._gen_call_args(node, indent, lowered, skip_params=1)
+                    else:
+                        self._gen_call_args(node, indent, lowered)
                 elif cls and self._is_stateful_class(cls):
                     self._gen_expr(obj_expr, indent)   # push actual f64 pointer
                     self._gen_call_args(node, indent, lowered, skip_params=1)
@@ -1017,6 +1406,8 @@ class WATCodeGenerator(
 
         elif isinstance(node, (ListComprehension, SetComprehension,
                                 DictComprehension, GeneratorExpr)):
+            if isinstance(node, ListComprehension) and self._gen_simple_comprehension_list(node, indent):
+                return
             # WAT has no native collection types.  For the common pattern
             # [elem for x in range(n)] with a single numeric clause, lower
             # to a WAT loop that accumulates into an f64 sum-accumulator local.
@@ -1182,7 +1573,7 @@ class WATCodeGenerator(
                         f"AttributeAccess {obj_name}.{node.attr}"
                     )
 
-        elif isinstance(node, (ListLiteral, TupleLiteral)):
+        elif isinstance(node, (ListLiteral, TupleLiteral, SetLiteral)):
             self._gen_list_alloc(node, indent)
 
         elif isinstance(node, IndexAccess):
@@ -1228,6 +1619,19 @@ class WATCodeGenerator(
                     self._emit(f"{indent}i32.add")
                     self._emit(f"{indent}i32.load8_u")
                     self._emit(f"{indent}f64.convert_i32_u  ;; char code as f64")
+            elif isinstance(obj, Identifier) and obj.name in self._dict_key_maps \
+                    and isinstance(node.index, StringLiteral):
+                key_map = self._dict_key_maps[obj.name]
+                if node.index.value in key_map:
+                    element_index = key_map[node.index.value]
+                    self._emit(f"{indent};; {obj.name}[{node.index.value!r}]")
+                    self._emit(f"{indent}local.get ${self._wat_symbol(obj.name)}")
+                    self._emit(f"{indent}i32.trunc_f64_u")
+                    self._emit(f"{indent}i32.const {(element_index + 1) * 8}")
+                    self._emit(f"{indent}i32.add")
+                    self._emit(f"{indent}f64.load")
+                else:
+                    self._emit(f"{indent}f64.const 0  ;; unknown dict key: {node.index.value}")
             else:
                 self._emit(
                     f"{indent}f64.const 0  ;; unsupported: IndexAccess on non-list"

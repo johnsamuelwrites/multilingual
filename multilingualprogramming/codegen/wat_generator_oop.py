@@ -242,6 +242,7 @@ class WATGeneratorOOPMixin:  # pylint: disable=too-many-instance-attributes,too-
         (self._instrs, self._locals, self._loop_stack,
          self._var_class_types, self._current_class,
          self._string_len_locals, self._list_locals,
+         self._dict_key_maps,
          self._lambda_locals) = saved
 
     def _infer_class_name(self, expr) -> str | None:
@@ -250,6 +251,11 @@ class WATGeneratorOOPMixin:  # pylint: disable=too-many-instance-attributes,too-
             called_name = _name(expr.func)
             if called_name in self._class_ctor_names:
                 return called_name
+            if "." in called_name:
+                owner_name, _method_name = called_name.split(".", 1)
+                lowered = self._class_attr_call_names.get(called_name)
+                if owner_name in self._class_ctor_names and lowered in self._static_method_names:
+                    return owner_name
         if isinstance(expr, Identifier):
             return self._var_class_types.get(expr.name)
         return None

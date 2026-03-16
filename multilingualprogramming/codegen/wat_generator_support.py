@@ -39,6 +39,13 @@ _ABS_NAMES = _aliases_for("abs")
 _MIN_NAMES = _aliases_for("min")
 _MAX_NAMES = _aliases_for("max")
 _LEN_NAMES = _aliases_for("len")
+_INT_NAMES = _aliases_for("int")
+_POW_NAMES = _aliases_for("pow")
+_SUM_NAMES = _aliases_for("sum")
+_LIST_NAMES = _aliases_for("list")
+_TUPLE_NAMES = _aliases_for("tuple")
+_SET_NAMES = _aliases_for("set")
+_STR_NAMES = _aliases_for("str")
 
 
 def _name(node) -> str:

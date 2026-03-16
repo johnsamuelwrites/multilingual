@@ -43,9 +43,14 @@ from multilingualprogramming.parser.ast_nodes import (
     CaseClause,
     ListLiteral,
     TupleLiteral,
+    DictLiteral,
+    SetLiteral,
     IndexAccess,
     AwaitExpr,
     ListComprehension,
+    NamedExpr,
+    ConditionalExpr,
+    GeneratorExpr,
 )
 from multilingualprogramming.codegen.wat_generator import WATCodeGenerator
 
@@ -77,6 +82,59 @@ class WATExpressionTestSuite(unittest.TestCase):
 
     def setUp(self):
         self.gen = WATCodeGenerator()
+
+    def test_named_expression_uses_local_tee(self):
+        wat = self.gen.generate(_prog(
+            VariableDeclaration(
+                "value",
+                NamedExpr(Identifier("seed"), NumeralLiteral("9")),
+            )
+        ))
+        self.assertIn("local.tee $seed", wat)
+
+    def test_conditional_expression_emits_if_result_f64(self):
+        wat = self.gen.generate(_prog(
+            VariableDeclaration(
+                "label",
+                ConditionalExpr(
+                    CompareOp(Identifier("x"), [(">", NumeralLiteral("0"))]),
+                    NumeralLiteral("1"),
+                    NumeralLiteral("0"),
+                ),
+            )
+        ))
+        self.assertIn("if (result f64)", wat)
+
+    def test_pow_builtin_lowers_to_pow_host_import(self):
+        wat = self.gen.generate(_prog(
+            VariableDeclaration(
+                "power",
+                CallExpr(Identifier("pow"), [NumeralLiteral("2"), NumeralLiteral("8")]),
+            )
+        ))
+        self.assertIn("call $pow_f64", wat)
+
+    def test_int_builtin_truncates_numeric_expression(self):
+        wat = self.gen.generate(_prog(
+            VariableDeclaration(
+                "whole",
+                CallExpr(Identifier("int"), [NumeralLiteral("7.9")]),
+            )
+        ))
+        self.assertIn("i32.trunc_f64_s", wat)
+        self.assertIn("f64.convert_i32_s", wat)
+
+    def test_sum_builtin_over_list_literal_emits_loop(self):
+        wat = self.gen.generate(_prog(
+            VariableDeclaration(
+                "total",
+                CallExpr(Identifier("sum"), [ListLiteral([
+                    NumeralLiteral("1"), NumeralLiteral("2"), NumeralLiteral("3")
+                ])]),
+            )
+        ))
+        self.assertIn("sum_blk_", wat)
+        self.assertIn("f64.add", wat)
 
     def _wat(self, expr):
         """Generate WAT for a single expression in a variable declaration."""
@@ -550,6 +608,32 @@ class WATPrintTestSuite(unittest.TestCase):
     def test_print_bool_calls_print_bool(self):
         wat = self._wat(self._print(BooleanLiteral(True)))
         self.assertIn("call $print_bool", wat)
+
+    def test_print_string_variable_calls_print_str(self):
+        wat = self._wat(
+            VariableDeclaration("message", StringLiteral("hello")),
+            self._print(Identifier("message")),
+        )
+        self.assertIn("local.get $message", wat)
+        self.assertIn("local.get $message_strlen", wat)
+        self.assertIn("call $print_str", wat)
+
+    def test_list_tuple_set_builtins_lower_known_containers(self):
+        wat = self._wat(
+            VariableDeclaration(
+                "values",
+                CallExpr(Identifier("list"), [TupleLiteral([
+                    NumeralLiteral("1"), NumeralLiteral("2")
+                ])]),
+            ),
+            VariableDeclaration(
+                "unique_values",
+                CallExpr(Identifier("set"), [ListLiteral([
+                    NumeralLiteral("1"), NumeralLiteral("1"), NumeralLiteral("2")
+                ])]),
+            ),
+        )
+        self.assertGreaterEqual(wat.count(";; list/tuple literal"), 2)
 
     def test_print_multiple_args_inserts_separator(self):
         wat = self._wat(
@@ -1291,6 +1375,24 @@ class WATOopObjectModelTestSuite(unittest.TestCase):
         )
         self.assertIn("f64.load", wat)
 
+    def test_static_dict_literal_index_loads_value_slot(self):
+        wat = self._wat(
+            VariableDeclaration(
+                "mapping",
+                DictLiteral([
+                    (StringLiteral("x"), NumeralLiteral("1")),
+                    (StringLiteral("y"), NumeralLiteral("2")),
+                ]),
+            ),
+            ExpressionStatement(
+                CallExpr(Identifier("print"), [
+                    IndexAccess(Identifier("mapping"), StringLiteral("y"))
+                ])
+            ),
+        )
+        self.assertIn(";; mapping['y']", wat)
+        self.assertIn("i32.const 16", wat)
+
 
 
 
@@ -1528,6 +1630,23 @@ class WATInheritanceWasmExecutionTestSuite(unittest.TestCase):
             "print(d.get_both())\n"
         )
         self.assertEqual(self._run_main(prog), [103.0])
+
+    def test_classmethod_build_tracks_instance_type_for_property_reads(self):
+        prog = _parse_en(
+            "class Base:\n"
+            "    def __init__(self, value):\n"
+            "        self.value = value\n"
+            "class Combined(Base):\n"
+            "    @classmethod\n"
+            "    def build(cls, value):\n"
+            "        return cls(value)\n"
+            "    @property\n"
+            "    def doubled(self):\n"
+            "        return self.value * 2\n"
+            "obj = Combined.build(3)\n"
+            "print(obj.doubled)\n"
+        )
+        self.assertEqual(self._run_main(prog), [6.0])
 
 
 # ---------------------------------------------------------------------------
@@ -1880,10 +1999,44 @@ class WATListComprehensionTestSuite(unittest.TestCase):
             ),
         ]
         wat = _gen(*stmts)
-        self.assertIn("listcomp over list variable", wat)
+        self.assertIn("comp_list_blk_", wat)
         self.assertIn("f64.load", wat)
         self.assertIn("i32.mul", wat)
         self.assertNotIn("collections not representable as f64", wat)
+
+    def test_listcomp_over_range_materializes_list_storage(self):
+        stmts = [
+            ExpressionStatement(
+                ListComprehension(
+                    element=Identifier("x"),
+                    target=Identifier("x"),
+                    iterable=CallExpr(Identifier("range"), [NumeralLiteral("3")]),
+                )
+            ),
+        ]
+        wat = _gen(*stmts)
+        self.assertIn("comp_list_blk_", wat)
+        self.assertIn("global.set $__heap_ptr", wat)
+        self.assertNotIn("collections not representable as f64", wat)
+
+    def test_list_builtin_over_generator_expr_over_range_materializes_list(self):
+        stmts = [
+            VariableDeclaration(
+                "values",
+                CallExpr(
+                    Identifier("list"),
+                    [GeneratorExpr(
+                        element=Identifier("x"),
+                        target=Identifier("x"),
+                        iterable=CallExpr(Identifier("range"), [NumeralLiteral("3")]),
+                    )],
+                ),
+            ),
+        ]
+        wat = _gen(*stmts)
+        self.assertIn("comp_list_blk_", wat)
+        self.assertIn("global.set $__heap_ptr", wat)
+        self.assertNotIn("unsupported call: list(...)", wat)
 
 
 class WATMatchCaseExtendedTestSuite(unittest.TestCase):
