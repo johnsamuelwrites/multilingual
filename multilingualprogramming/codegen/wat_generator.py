@@ -361,29 +361,8 @@ class WATCodeGenerator(
                 self._gen_expr(arg, indent)
 
     def _save_func_state(self):
-        saved = (self._instrs, self._locals, self._loop_stack,
-                 self._var_class_types, self._current_class,
-                 self._string_len_locals, self._list_locals,
-                 self._tuple_locals,
-                 self._dict_key_maps,
-                 self._lambda_locals,
-                 self._closure_locals,
-                 self._try_stack,
-                 self._open_aliases,
-                 self._virtual_file_contents)
-        self._instrs = []
-        self._locals = set()
-        self._loop_stack = []
-        self._var_class_types = {}
-        self._string_len_locals = {}
-        self._list_locals = set()
-        self._tuple_locals = set()
-        self._dict_key_maps = {}
-        self._lambda_locals = {}
-        self._closure_locals = {}
-        self._try_stack = []
-        self._open_aliases = {}
-        self._virtual_file_contents = {}
+        saved = self._capture_func_state()
+        self._reset_func_state()
         # _current_class is NOT reset here: _emit_class sets it before each method
         # and it must persist into the method body.
         return saved
@@ -934,19 +913,7 @@ class WATCodeGenerator(
         self._emit("    return")
 
         body_instrs = list(self._instrs)
-        local_names = sorted(self._locals - set(param_names))
-        wat_func_name = self._wat_symbol(func_name)
-        lines = [f'  (func ${wat_func_name} (export "{func_name}")']
-        for param_name in param_names:
-            lines.append(f"    (param ${self._wat_symbol(param_name)} f64)")
-        lines.append("    (result f64)")
-        for local_name in local_names:
-            lines.append(f"    (local ${self._wat_symbol(local_name)} f64)")
-        lines.extend(body_instrs)
-        lines.append("    f64.const 0  ;; implicit return")
-        lines.append("  )")
-
-        self._funcs.append("\n".join(lines))
+        self._append_wat_function(func_name, param_names, body_instrs)
         self._sequence_func_names.add(func_name)
         self._restore_func_state(saved)
         return True
@@ -2113,18 +2080,7 @@ class WATCodeGenerator(
         self._gen_list_alloc(ListLiteral([spec["init_value"]]), "    ")
         self._emit("    return")
         body_instrs = list(self._instrs)
-        local_names = sorted(self._locals - set(param_names))
-        wat_func_name = self._wat_symbol(outer_name)
-        lines = [f'  (func ${wat_func_name} (export "{outer_name}")']
-        for param_name in param_names:
-            lines.append(f"    (param ${self._wat_symbol(param_name)} f64)")
-        lines.append("    (result f64)")
-        for local_name in local_names:
-            lines.append(f"    (local ${self._wat_symbol(local_name)} f64)")
-        lines.extend(body_instrs)
-        lines.append("    f64.const 0  ;; implicit return")
-        lines.append("  )")
-        self._funcs.append("\n".join(lines))
+        self._append_wat_function(outer_name, param_names, body_instrs)
         self._restore_func_state(saved)
         return True
 
@@ -3034,18 +2990,12 @@ class WATCodeGenerator(
             self._locals = set(param_names)
             self._gen_expr(node.body, "    ")
             body_instrs = list(self._instrs)
-            local_names = sorted(self._locals - set(param_names))
-
-            wat_lam = self._wat_symbol(lam_name)
-            lines = [f'  (func ${wat_lam} (export "{lam_name}")']
-            for pn in param_names:
-                lines.append(f"    (param ${self._wat_symbol(pn)} f64)")
-            lines.append("    (result f64)")
-            for ln in local_names:
-                lines.append(f"    (local ${self._wat_symbol(ln)} f64)")
-            lines.extend(body_instrs)
-            lines.append("  )")
-            self._funcs.append("\n".join(lines))
+            self._append_wat_function(
+                lam_name,
+                param_names,
+                body_instrs,
+                implicit_return=False,
+            )
             self._defined_func_names.add(lam_name)
             self._func_real_params[lam_name] = param_names
 
@@ -3053,7 +3003,9 @@ class WATCodeGenerator(
             # Register lambda in the module-level table; its table index is its f64 value.
             table_idx = len(self._lambda_table)
             self._lambda_table.append(lam_name)
-            self._emit(f"{indent}f64.const {float(table_idx)}  ;; lambda ${wat_lam} table idx")
+            self._emit(
+                f"{indent}f64.const {float(table_idx)}  ;; lambda ${self._wat_symbol(lam_name)} table idx"
+            )
 
         elif isinstance(node, (ListComprehension, SetComprehension,
                                 DictComprehension, GeneratorExpr)):

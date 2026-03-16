@@ -239,16 +239,7 @@ class WATGeneratorOOPMixin:  # pylint: disable=too-many-instance-attributes,too-
 
     def _restore_func_state(self, saved) -> None:
         """Restore function-local generation state after emitting a nested function."""
-        (self._instrs, self._locals, self._loop_stack,
-         self._var_class_types, self._current_class,
-         self._string_len_locals, self._list_locals,
-         self._tuple_locals,
-         self._dict_key_maps,
-         self._lambda_locals,
-         self._closure_locals,
-         self._try_stack,
-         self._open_aliases,
-         self._virtual_file_contents) = saved
+        self._restore_captured_func_state(saved)
 
     def _infer_class_name(self, expr) -> str | None:
         """Infer a tracked class name from a simple expression."""
@@ -293,20 +284,7 @@ class WATGeneratorOOPMixin:  # pylint: disable=too-many-instance-attributes,too-
 
         self._gen_stmts(func_def.body, "    ")
         body_instrs = list(self._instrs)
-        local_names = sorted(self._locals - set(param_names))
-
-        wat_func_name = self._wat_symbol(func_name)
-        lines = [f'  (func ${wat_func_name} (export "{func_name}")']
-        for param_name in param_names:
-            lines.append(f"    (param ${self._wat_symbol(param_name)} f64)")
-        lines.append("    (result f64)")
-        for local_name in local_names:
-            lines.append(f"    (local ${self._wat_symbol(local_name)} f64)")
-        lines.extend(body_instrs)
-        lines.append("    f64.const 0  ;; implicit return")
-        lines.append("  )")
-
-        self._funcs.append("\n".join(lines))
+        self._append_wat_function(func_name, param_names, body_instrs)
         if self._func_render_modes.get(func_name) in _STREAM_RENDER_MODES:
             self._funcs.append(self._build_stream_buffer_helpers(func_name))
         self._restore_func_state(saved)

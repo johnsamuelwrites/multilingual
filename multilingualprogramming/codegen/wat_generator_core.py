@@ -62,6 +62,84 @@ class WATGeneratorCoreMixin:
         lines.append(")")
         return "\n".join(lines)
 
+    @staticmethod
+    def function_state_attribute_names() -> tuple[str, ...]:
+        """Return mutable function-generation fields shared across mixins."""
+        return (
+            "_instrs",
+            "_locals",
+            "_loop_stack",
+            "_var_class_types",
+            "_current_class",
+            "_string_len_locals",
+            "_list_locals",
+            "_tuple_locals",
+            "_dict_key_maps",
+            "_lambda_locals",
+            "_closure_locals",
+            "_try_stack",
+            "_open_aliases",
+            "_virtual_file_contents",
+        )
+
+    @staticmethod
+    def function_state_reset_factories() -> tuple[tuple[str, object], ...]:
+        """Return factories used when entering nested function emission."""
+        return (
+            ("_instrs", list),
+            ("_locals", set),
+            ("_loop_stack", list),
+            ("_var_class_types", dict),
+            ("_string_len_locals", dict),
+            ("_list_locals", set),
+            ("_tuple_locals", set),
+            ("_dict_key_maps", dict),
+            ("_lambda_locals", dict),
+            ("_closure_locals", dict),
+            ("_try_stack", list),
+            ("_open_aliases", dict),
+            ("_virtual_file_contents", dict),
+        )
+
+    def _capture_func_state(self):
+        """Snapshot mutable function-generation state for nested emission."""
+        return tuple(getattr(self, name) for name in self.function_state_attribute_names())
+
+    def _restore_captured_func_state(self, saved) -> None:
+        """Restore a snapshot produced by :meth:`_capture_func_state`."""
+        for name, value in zip(self.function_state_attribute_names(), saved):
+            setattr(self, name, value)
+
+    def _reset_func_state(self) -> None:
+        """Reset nested-function state while preserving the current class."""
+        for name, factory in self.function_state_reset_factories():
+            setattr(self, name, factory())
+
+    def _append_wat_function(
+        self,
+        func_name: str,
+        param_names: list[str],
+        body_instrs: list[str],
+        local_names: list[str] | None = None,
+        *,
+        implicit_return: bool = True,
+    ) -> None:
+        """Append a standard exported WAT function to the module."""
+        if local_names is None:
+            local_names = sorted(self._locals - set(param_names))
+        wat_func_name = self._wat_symbol(func_name)
+        lines = [f'  (func ${wat_func_name} (export "{func_name}")']
+        for param_name in param_names:
+            lines.append(f"    (param ${self._wat_symbol(param_name)} f64)")
+        lines.append("    (result f64)")
+        for local_name in local_names:
+            lines.append(f"    (local ${self._wat_symbol(local_name)} f64)")
+        lines.extend(body_instrs)
+        if implicit_return:
+            lines.append("    f64.const 0  ;; implicit return")
+        lines.append("  )")
+        self._funcs.append("\n".join(lines))
+
     def _intern(self, s: str) -> tuple[int, int]:
         """Return (byte_offset, byte_length) for a string in the data section."""
         if s not in self._strings:
