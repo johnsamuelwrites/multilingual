@@ -47,6 +47,7 @@ _TUPLE_NAMES = _aliases_for("tuple")
 _SET_NAMES = _aliases_for("set")
 _STR_NAMES = _aliases_for("str")
 _ZIP_NAMES = _aliases_for("zip")
+_INPUT_NAMES = _aliases_for("input")
 
 
 def _name(node) -> str:
@@ -70,12 +71,19 @@ _STREAM_RENDER_MODES = frozenset({"point_stream", "polyline"})
 _BUFFER_OUTPUT_DECORATOR_NAMES = frozenset({"buffer_output", "sortie_tampon"})
 
 # All I/O and math helpers (print_*, pow_f64) are now implemented as internal
-# WAT functions backed by the single WASI fd_write syscall.  The only external
-# import the generated module requires is the standard WASI fd_write function.
+# WAT functions backed by WASI syscalls.  The generated module requires:
+#   fd_write — stdout (always)
+#   fd_read  — stdin / input() builtin
 _WAT_HOST_IMPORT_SIGNATURES = [
     {
         "module": "wasi_snapshot_preview1",
         "name": "fd_write",
+        "param_types": ["i32", "i32", "i32", "i32"],
+        "return_type": "i32",
+    },
+    {
+        "module": "wasi_snapshot_preview1",
+        "name": "fd_read",
         "param_types": ["i32", "i32", "i32", "i32"],
         "return_type": "i32",
     },

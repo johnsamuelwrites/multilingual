@@ -111,6 +111,7 @@ from multilingualprogramming.codegen.wat_generator_oop import WATGeneratorOOPMix
 from multilingualprogramming.codegen.wat_generator_sequence import WATGeneratorSequenceMixin
 from multilingualprogramming.codegen.wat_generator_support import (
     _ABS_NAMES,
+    _INPUT_NAMES,
     _INT_NAMES,
     _LEN_NAMES,
     _MAX_NAMES,
@@ -510,6 +511,10 @@ class WATCodeGenerator(
         )
 
     def _gen_stmt(self, stmt, indent: str):  # noqa: C901  # pylint: disable=too-many-branches,too-many-statements,too-many-locals
+        line = getattr(stmt, "line", 0)
+        col = getattr(stmt, "column", 0)
+        if line:
+            self._emit(f"{indent};; @{line}:{col}")
         if isinstance(stmt, VariableDeclaration):
             if isinstance(stmt.name, (TupleLiteral, ListLiteral)) and \
                     self._gen_unpack_assignment(stmt.name, stmt.value, indent):
@@ -667,6 +672,9 @@ class WATCodeGenerator(
                 elif fname in _LEN_NAMES and len(expr.args) == 1:
                     self._emit(f"{indent};; len(...)")
                     self._gen_len(expr.args[0], indent)
+                    self._emit(f"{indent}drop")
+                elif fname in _INPUT_NAMES and len(expr.args) <= 1:
+                    self._gen_expr(expr, indent)
                     self._emit(f"{indent}drop")
                 elif fname in self._defined_func_names:
                     # Known WAT function — emit args then call
@@ -876,13 +884,19 @@ class WATCodeGenerator(
             self._emit(f"{indent}local.set ${self._wat_symbol(handled_local)}")
             if stmt.handlers:
                 for handler in stmt.handlers:
-                    expected = self._exception_code_for(handler.exc_type)
                     match_label = f"try_match_{self._new_label()}"
                     self._emit(f"{indent}block ${match_label}")
                     self._emit(f"{indent}  local.get ${self._wat_symbol(code_local)}")
-                    self._emit(f"{indent}  f64.const {float(expected)}")
-                    self._emit(f"{indent}  f64.ne")
-                    self._emit(f"{indent}  br_if ${match_label}")
+                    if self._is_catch_all_handler(handler):
+                        # catch any raised exception (code != 0)
+                        self._emit(f"{indent}  f64.const 0")
+                        self._emit(f"{indent}  f64.eq")
+                        self._emit(f"{indent}  br_if ${match_label}")
+                    else:
+                        expected = self._exception_code_for(handler.exc_type)
+                        self._emit(f"{indent}  f64.const {float(expected)}")
+                        self._emit(f"{indent}  f64.ne")
+                        self._emit(f"{indent}  br_if ${match_label}")
                     if handler.name:
                         self._locals.add(handler.name)
                         self._emit(f"{indent}  f64.const 0")
@@ -1096,6 +1110,16 @@ class WATCodeGenerator(
                     self._emit(f"{indent}f64.max")
             elif fname in _LEN_NAMES and len(node.args) == 1:
                 self._gen_len(node.args[0], indent)
+            elif fname in _INPUT_NAMES and len(node.args) <= 1:
+                # input() / input("prompt") — reads one line from stdin via fd_read
+                if node.args and isinstance(node.args[0], StringLiteral):
+                    ptr, slen = self._intern_string(node.args[0].value)
+                    self._emit(f"{indent}i32.const {ptr}")
+                    self._emit(f"{indent}i32.const {slen}")
+                else:
+                    self._emit(f"{indent}i32.const 0")
+                    self._emit(f"{indent}i32.const 0")
+                self._emit(f"{indent}call $input")
             elif fname in _INT_NAMES and len(node.args) == 1:
                 arg = node.args[0]
                 if isinstance(arg, StringLiteral):

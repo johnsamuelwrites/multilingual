@@ -60,9 +60,10 @@ class WATModuleStructureTestSuite(unittest.TestCase):
         self.assertTrue(wat.strip().startswith("(module"))
         self.assertTrue(wat.strip().endswith(")"))
 
-    def test_module_contains_wasi_import(self):
+    def test_module_contains_wasi_imports(self):
         wat = _gen()
         self.assertIn('(import "wasi_snapshot_preview1" "fd_write"', wat)
+        self.assertIn('(import "wasi_snapshot_preview1" "fd_read"', wat)
         self.assertNotIn('(import "env"', wat)
 
     def test_module_exports_memory(self):
@@ -99,9 +100,12 @@ class WATABIManifestTestSuite(unittest.TestCase):
     def test_manifest_contains_required_host_import_signatures(self):
         manifest = WATCodeGenerator().generate_abi_manifest(_prog())
         imports = manifest["required_host_imports"]
-        self.assertEqual(len(imports), 1)
-        self.assertEqual(imports[0]["module"], "wasi_snapshot_preview1")
-        self.assertEqual(imports[0]["name"], "fd_write")
+        self.assertEqual(len(imports), 2)
+        names = {i["name"] for i in imports}
+        self.assertIn("fd_write", names)
+        self.assertIn("fd_read", names)
+        for imp in imports:
+            self.assertEqual(imp["module"], "wasi_snapshot_preview1")
 
     def test_manifest_tracks_export_signatures(self):
         fn = FunctionDef(
@@ -167,11 +171,12 @@ class WATStreamBufferExportsTestSuite(unittest.TestCase):
 class WATFrontendTemplateTestSuite(unittest.TestCase):
     """Verify frontend template generation from ABI manifest."""
 
-    def test_generate_js_host_shim_contains_wasi_fd_write(self):
+    def test_generate_js_host_shim_contains_wasi_fd_write_and_fd_read(self):
         manifest = WATCodeGenerator().generate_abi_manifest(_prog())
         shim = WATCodeGenerator().generate_js_host_shim(manifest)
         self.assertIn("createWasiImports", shim)
         self.assertIn("fd_write", shim)
+        self.assertIn("fd_read", shim)
         self.assertIn("wasi_snapshot_preview1", shim)
 
     def test_generate_renderer_template_contains_mode_dispatch(self):

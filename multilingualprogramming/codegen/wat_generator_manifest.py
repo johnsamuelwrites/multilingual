@@ -107,24 +107,26 @@ class WATGeneratorManifestMixin:
     def generate_js_host_shim(self, _manifest: dict) -> str:
         """Generate a JavaScript WASI shim for browser execution.
 
-        The generated module only imports ``wasi_snapshot_preview1.fd_write``
-        — all print_* functions and pow_f64 are implemented in WAT.  For
-        browser execution, pass a standard WASI polyfill (e.g.
-        ``@bjorn3/browser_wasi_shim``) or the minimal inline shim below.
+        The generated module imports ``wasi_snapshot_preview1.fd_write`` (stdout)
+        and ``wasi_snapshot_preview1.fd_read`` (stdin / input() builtin).
+        For browser execution the fd_read stub returns EOF — use a full WASI
+        polyfill (e.g. ``@bjorn3/browser_wasi_shim``) for interactive input.
         """
         lines = [
             "// Auto-generated WASI shim from multilingual WASM ABI manifest",
             "//",
-            "// The module only requires wasi_snapshot_preview1.fd_write.",
+            "// Requires: wasi_snapshot_preview1.{fd_write, fd_read}",
             "// For production use, prefer a full WASI polyfill such as:",
             "//   npm install @bjorn3/browser_wasi_shim",
             "//",
-            "// Minimal inline shim (line-buffers stdout to outputCallback):",
+            "// Minimal inline shim (line-buffers stdout; fd_read returns EOF in browser):",
             "export function createWasiImports(",
             "  memoryRef = { current: null },",
             "  outputCallback = (line) => console.log(line),",
+            "  inputProvider = null,",
             ") {",
             "  const textDecoder = new TextDecoder('utf-8');",
+            "  const textEncoder = new TextEncoder();",
             "  let stdoutBuf = '';",
             "  function flushLine() {",
             "    let nl;",
@@ -148,6 +150,24 @@ class WATGeneratorManifestMixin:
             "      }",
             "      flushLine();",
             "      view.setUint32(nwrittenPtr, written, true);",
+            "      return 0;",
+            "    },",
+            "    fd_read(fd, iovsPtr, iovsLen, nreadPtr) {",
+            "      // Browser stub: calls inputProvider() if provided, else returns EOF.",
+            "      if (fd !== 0) return 8;",
+            "      const mem = memoryRef.current;",
+            "      if (!mem || !inputProvider) {",
+            "        new DataView(mem.buffer).setUint32(nreadPtr, 0, true);",
+            "        return 0;",
+            "      }",
+            "      const line = (inputProvider() ?? '') + '\\n';",
+            "      const encoded = textEncoder.encode(line);",
+            "      const view = new DataView(mem.buffer);",
+            "      const ptr = view.getUint32(iovsPtr, true);",
+            "      const len = view.getUint32(iovsPtr + 4, true);",
+            "      const nread = Math.min(encoded.length, len);",
+            "      new Uint8Array(mem.buffer, ptr, nread).set(encoded.subarray(0, nread));",
+            "      view.setUint32(nreadPtr, nread, true);",
             "      return 0;",
             "    },",
             "  };",

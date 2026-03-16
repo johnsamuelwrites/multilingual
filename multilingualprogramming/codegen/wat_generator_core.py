@@ -44,6 +44,8 @@ class WATGeneratorCoreMixin:
         lines += [
             '  (import "wasi_snapshot_preview1" "fd_write"'
             ' (func $fd_write (param i32 i32 i32 i32) (result i32)))',
+            '  (import "wasi_snapshot_preview1" "fd_read"'
+            ' (func $fd_read (param i32 i32 i32 i32) (result i32)))',
             f'  (memory (export "memory") {self._WASM_PAGES})',
         ]
         if self._data:
@@ -181,6 +183,8 @@ class WATGeneratorCoreMixin:
         iovec_len = scratch + 4   # iovec.len  (i32 at scratch+4)
         nwritten = scratch + 8    # nwritten   (i32 at scratch+8)
         fmt = scratch + 12        # format buffer base
+        input_buf = mem_end - 320  # 256-byte stdin line buffer (before scratch)
+        input_buf_size = 256
 
         runtime = f"""
   ;; ── WASI runtime ────────────────────────────────────────────────────────────
@@ -869,6 +873,74 @@ class WATGeneratorCoreMixin:
       local.get $len
       call $__wasi_write
     end
+  )
+  ;; Read one line from stdin (fd 0) into a fixed buffer, strip trailing CR/LF.
+  ;; Writes the prompt (if len > 0) to stdout first.
+  ;; Returns: buffer address as f64; sets $__last_str_len to byte length.
+  ;; Input buffer: [{input_buf} .. {input_buf + input_buf_size - 1}] ({input_buf_size} bytes).
+  (func $input (param $prompt_ptr i32) (param $prompt_len i32) (result f64)
+    (local $nread i32)
+    (local $tail i32)
+    (local $byte i32)
+    local.get $prompt_len
+    i32.const 0
+    i32.gt_s
+    if
+      local.get $prompt_ptr
+      local.get $prompt_len
+      call $__wasi_write
+    end
+    ;; iovec: ptr = input_buf, len = input_buf_size
+    i32.const {iovec}
+    i32.const {input_buf}
+    i32.store
+    i32.const {iovec_len}
+    i32.const {input_buf_size}
+    i32.store
+    i32.const 0
+    i32.const {iovec}
+    i32.const 1
+    i32.const {nwritten}
+    call $fd_read
+    drop
+    i32.const {nwritten}
+    i32.load
+    local.set $nread
+    ;; strip trailing CR (13) and LF (10)
+    block $strip_done
+      loop $strip_loop
+        local.get $nread
+        i32.const 0
+        i32.le_s
+        br_if $strip_done
+        i32.const {input_buf}
+        local.get $nread
+        i32.const 1
+        i32.sub
+        i32.add
+        i32.load8_u
+        local.set $byte
+        local.get $byte
+        i32.const 10
+        i32.eq
+        local.get $byte
+        i32.const 13
+        i32.eq
+        i32.or
+        if
+          local.get $nread
+          i32.const 1
+          i32.sub
+          local.set $nread
+          br $strip_loop
+        end
+        br $strip_done
+      end
+    end
+    local.get $nread
+    global.set $__last_str_len
+    i32.const {input_buf}
+    f64.convert_i32_u
   )
   ;; ── End WASI runtime ─────────────────────────────────────────────────────"""
         self._funcs.insert(0, runtime)

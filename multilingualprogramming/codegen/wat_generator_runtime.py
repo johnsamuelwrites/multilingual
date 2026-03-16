@@ -649,6 +649,17 @@ class WATGeneratorRuntimeMixin:
         }
         return mapping.get(exc_name, 255 if value is not None else 255)
 
+    def _is_catch_all_handler(self, handler) -> bool:
+        """Return True for bare ``except:`` or ``except Exception/BaseException:``."""
+        if handler.exc_type is None:
+            return True
+        exc_name = ""
+        if isinstance(handler.exc_type, Identifier):
+            exc_name = handler.exc_type.name
+        elif isinstance(handler.exc_type, CallExpr):
+            exc_name = _name(handler.exc_type.func)
+        return exc_name in ("Exception", "BaseException")
+
     def _closure_factory_spec(self, func_def: FunctionDef):
         """Return closure-factory lowering info for the supported make_counter-like shape."""
         if len(func_def.body) != 3:
