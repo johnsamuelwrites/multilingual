@@ -557,6 +557,168 @@ class WATGeneratorRuntimeMixin:
         ]
         self._funcs.append("\n".join(lines))
 
+    @staticmethod
+    def _parse_fixed_format_spec(spec: str):
+        """Return decimal-places count if *spec* matches ``.Nf`` (N=0..9), else None."""
+        import re  # pylint: disable=import-outside-toplevel
+        m = re.fullmatch(r"\.(\d)f", spec)
+        if m:
+            return int(m.group(1))
+        return None
+
+    def _ensure_fixedN_format_helper(self, n: int) -> str:
+        """Emit (once) a ``$__fmt_fixedN_tmpstr`` helper for N decimal places."""
+        attr = f"_string_format_fixed{n}_emitted"
+        if getattr(self, attr, False):
+            return f"$__fmt_fixed{n}_tmpstr"
+        setattr(self, attr, True)
+        if n == 1:
+            # Already emitted by _ensure_string_format_helpers.
+            return "$__fmt_fixed1_tmpstr"
+        self._ensure_string_format_helpers()
+        mem_end = self._WASM_PAGES * 65536
+        scratch = mem_end - 64
+        fmt = scratch + 12
+        multiplier = 10 ** n
+        lines = [
+            f"  (func $__fmt_fixed{n}_tmpstr (param $v f64) (result f64 f64)",
+            "    (local $int_part i64)",
+            f"    (local $frac_digits i64)",
+            "    (local $ptr i32)",
+            "    (local $len i32)",
+            "    (local $neg i32)",
+            "    (local $copy_i i32)",
+            "    (local $rem i64)",
+            "    (local $dig i32)",
+            "    (local $j i32)",
+            "    local.get $v",
+            "    f64.const 0",
+            "    f64.lt",
+            "    local.set $neg",
+            "    local.get $neg",
+            "    if",
+            "      local.get $v",
+            "      f64.neg",
+            "      local.set $v",
+            "    end",
+            "    local.get $v",
+            "    f64.trunc",
+            "    i64.trunc_f64_u",
+            "    local.set $int_part",
+            "    local.get $int_part",
+            "    call $__fmt_u64",
+            "    local.set $len",
+            "    local.set $ptr",
+            f"    i32.const {fmt}",
+            "    local.set $copy_i",
+            "    local.get $neg",
+            "    if",
+            "      local.get $copy_i",
+            "      i32.const 45",
+            "      i32.store8",
+            "      local.get $copy_i",
+            "      i32.const 1",
+            "      i32.add",
+            "      local.set $copy_i",
+            "    end",
+            "    block $copy_done",
+            "      loop $copy_lp",
+            "        local.get $len",
+            "        i32.eqz",
+            "        br_if $copy_done",
+            "        local.get $copy_i",
+            "        local.get $ptr",
+            "        i32.load8_u",
+            "        i32.store8",
+            "        local.get $copy_i",
+            "        i32.const 1",
+            "        i32.add",
+            "        local.set $copy_i",
+            "        local.get $ptr",
+            "        i32.const 1",
+            "        i32.add",
+            "        local.set $ptr",
+            "        local.get $len",
+            "        i32.const 1",
+            "        i32.sub",
+            "        local.set $len",
+            "        br $copy_lp",
+            "      end",
+            "    end",
+            "    ;; decimal point",
+            "    local.get $copy_i",
+            "    i32.const 46",
+            "    i32.store8",
+            "    local.get $copy_i",
+            "    i32.const 1",
+            "    i32.add",
+            "    local.set $copy_i",
+            "    ;; fractional digits",
+            "    local.get $v",
+            "    local.get $v",
+            "    f64.trunc",
+            "    f64.sub",
+            f"    f64.const {float(multiplier)}",
+            "    f64.mul",
+            "    f64.nearest",
+            "    i64.trunc_f64_u",
+            "    local.set $frac_digits",
+        ]
+        # Emit n digits (most-significant first) via repeated div/mod.
+        # We emit them into a temp buffer then copy forward.
+        # Simpler: emit digits in reverse then write in order.
+        # Use a digit-by-digit approach with repeated mod 10.
+        # Store all N digits by computing them from high to low.
+        digit_positions = []
+        denom = multiplier
+        for i in range(n):
+            denom //= 10
+            if denom == 0:
+                lines += [
+                    "    local.get $copy_i",
+                    "    local.get $frac_digits",
+                    "    i64.const 10",
+                    "    i64.rem_u",
+                    "    i32.wrap_i64",
+                    "    i32.const 48",
+                    "    i32.add",
+                    "    i32.store8",
+                    "    local.get $copy_i",
+                    "    i32.const 1",
+                    "    i32.add",
+                    "    local.set $copy_i",
+                ]
+                break
+            lines += [
+                "    local.get $copy_i",
+                "    local.get $frac_digits",
+                f"    i64.const {denom * 10}",
+                "    i64.div_u",
+                f"    i64.const 10",
+                "    i64.rem_u",
+                "    i32.wrap_i64",
+                "    i32.const 48",
+                "    i32.add",
+                "    i32.store8",
+                "    local.get $copy_i",
+                "    i32.const 1",
+                "    i32.add",
+                "    local.set $copy_i",
+            ]
+        # Compute total length = (neg ? 1 : 0) + int_part_len + 1 (dot) + n.
+        # We track copy_i - fmt to get the total length.
+        lines += [
+            f"    i32.const {fmt}",
+            "    f64.convert_i32_u",
+            "    local.get $copy_i",
+            f"    i32.const {fmt}",
+            "    i32.sub",
+            "    f64.convert_i32_u",
+            "  )",
+        ]
+        self._funcs.append("\n".join(lines))
+        return f"$__fmt_fixed{n}_tmpstr"
+
     def _emit_fstring_part_ptr_len(self, part, indent: str) -> bool:
         """Emit ptr/len f64 pairs for a supported f-string part."""
         if isinstance(part, str):
@@ -569,7 +731,45 @@ class WATGeneratorRuntimeMixin:
             self._gen_expr(part, indent)
             self._gen_string_len_expr(part, indent)
             return True
-        if format_spec not in ("", ".1f"):
+        # Support integer format specs: d, i → truncate to int and format as integer.
+        if format_spec in ("d", "i"):
+            self._ensure_string_format_helpers()
+            label = self._new_label()
+            ptr_local = f"__fmt_ptr_{label}"
+            len_local = f"__fmt_len_{label}"
+            self._locals.update({ptr_local, len_local})
+            self._gen_expr(part, indent)
+            self._emit(f"{indent}f64.trunc  ;; truncate to int for 'd'/'i' format")
+            self._emit(f"{indent}call $__fmt_default_tmpstr")
+            self._emit(f"{indent}local.set ${self._wat_symbol(len_local)}")
+            self._emit(f"{indent}local.set ${self._wat_symbol(ptr_local)}")
+            self._emit(f"{indent}local.get ${self._wat_symbol(ptr_local)}")
+            self._emit(f"{indent}local.get ${self._wat_symbol(len_local)}")
+            return True
+        # Support .Nf format specs (N = 0..9).
+        n_decimals = self._parse_fixed_format_spec(format_spec)
+        if n_decimals is not None:
+            self._ensure_string_format_helpers()
+            label = self._new_label()
+            ptr_local = f"__fmt_ptr_{label}"
+            len_local = f"__fmt_len_{label}"
+            self._locals.update({ptr_local, len_local})
+            self._gen_expr(part, indent)
+            if n_decimals == 0:
+                # Round and format as integer.
+                self._emit(f"{indent}f64.nearest")
+                helper = "$__fmt_default_tmpstr"
+            elif n_decimals == 1:
+                helper = "$__fmt_fixed1_tmpstr"
+            else:
+                helper = self._ensure_fixedN_format_helper(n_decimals)
+            self._emit(f"{indent}call {helper}")
+            self._emit(f"{indent}local.set ${self._wat_symbol(len_local)}")
+            self._emit(f"{indent}local.set ${self._wat_symbol(ptr_local)}")
+            self._emit(f"{indent}local.get ${self._wat_symbol(ptr_local)}")
+            self._emit(f"{indent}local.get ${self._wat_symbol(len_local)}")
+            return True
+        if format_spec not in ("",):
             return False
         self._ensure_string_format_helpers()
         label = self._new_label()
@@ -577,8 +777,7 @@ class WATGeneratorRuntimeMixin:
         len_local = f"__fmt_len_{label}"
         self._locals.update({ptr_local, len_local})
         self._gen_expr(part, indent)
-        helper = "$__fmt_fixed1_tmpstr" if format_spec == ".1f" else "$__fmt_default_tmpstr"
-        self._emit(f"{indent}call {helper}")
+        self._emit(f"{indent}call $__fmt_default_tmpstr")
         self._emit(f"{indent}local.set ${self._wat_symbol(len_local)}")
         self._emit(f"{indent}local.set ${self._wat_symbol(ptr_local)}")
         self._emit(f"{indent}local.get ${self._wat_symbol(ptr_local)}")

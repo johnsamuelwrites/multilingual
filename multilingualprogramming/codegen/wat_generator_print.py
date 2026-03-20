@@ -7,6 +7,7 @@
 """Print-lowering helpers for the WAT generator."""
 
 from multilingualprogramming.parser.ast_nodes import (
+    AttributeAccess,
     BooleanLiteral,
     CallExpr,
     FStringLiteral,
@@ -24,26 +25,40 @@ class WATGeneratorPrintMixin:
         """Expose print lowering support for mixin-aware callers."""
         return True
 
-    def _print_options(self, call_expr: CallExpr) -> tuple[str, str]:
-        """Return ``(sep, end)`` for a print call."""
+    def _print_options(self, call_expr: CallExpr) -> tuple[str, str, int]:
+        """Return ``(sep, end, fd)`` for a print call.  fd=1 stdout, fd=2 stderr."""
         sep_val = " "
         end_val = "\n"
+        fd = 1  # default: stdout
         for kw_name, kw_node in (call_expr.keywords or []):
             if kw_name == "sep" and isinstance(kw_node, StringLiteral):
                 sep_val = kw_node.value
             elif kw_name == "end" and isinstance(kw_node, StringLiteral):
                 end_val = kw_node.value
-        return sep_val, end_val
+            elif kw_name == "file":
+                # Detect sys.stderr / sys.stdout
+                if isinstance(kw_node, AttributeAccess):
+                    attr = kw_node.attr
+                    if attr == "stderr":
+                        fd = 2
+                    elif attr == "stdout":
+                        fd = 1
+        return sep_val, end_val, fd
 
     def _gen_print(self, call_expr: CallExpr, indent: str):
         """Emit WAT for a ``print(...)`` call."""
         self._emit(f"{indent};; print(...)")
-        sep_val, end_val = self._print_options(call_expr)
+        sep_val, end_val, fd = self._print_options(call_expr)
+        if fd != 1:
+            # Temporarily override the write fd for this print call.
+            self._print_fd_override = fd
         for index, arg in enumerate(call_expr.args):
             if index > 0:
                 self._emit_print_separator(sep_val, indent)
             self._emit_print_arg(arg, indent)
         self._emit_print_end(end_val, indent)
+        if fd != 1:
+            del self._print_fd_override
 
     def _emit_print_arg(self, arg, indent: str) -> None:
         """Emit one print argument."""
@@ -69,6 +84,24 @@ class WATGeneratorPrintMixin:
         if isinstance(arg, CallExpr) and _name(arg.func) in self._string_return_funcs:
             self._emit_print_string_call(arg, indent)
             return
+        # If the argument is a tracked class instance and has __str__, call it.
+        if isinstance(arg, Identifier):
+            cls_name = self._var_class_types.get(arg.name)
+            if cls_name:
+                str_key = f"{cls_name}.__str__"
+                str_fn = self._class_special_methods.get(str_key)
+                if str_fn:
+                    self._emit(f"{indent};; print(obj) via {cls_name}.__str__")
+                    tmp_len = f"__print_str_len_{self._new_label()}"
+                    self._locals.add(tmp_len)
+                    self._emit(f"{indent}local.get ${self._wat_symbol(arg.name)}")
+                    self._emit(f"{indent}call ${self._wat_symbol(str_fn)}")
+                    self._emit(f"{indent}global.get $__last_str_len")
+                    self._emit(f"{indent}local.set ${self._wat_symbol(tmp_len)}")
+                    self._emit(f"{indent}i32.trunc_f64_u")
+                    self._emit(f"{indent}local.get ${self._wat_symbol(tmp_len)}")
+                    self._emit(f"{indent}call $print_str")
+                    return
         if isinstance(arg, NumeralLiteral) and "." in arg.value:
             self._gen_expr(arg, indent)
             self._emit(f"{indent}call $print_f64_float")
@@ -76,12 +109,36 @@ class WATGeneratorPrintMixin:
         self._gen_expr(arg, indent)
         self._emit(f"{indent}call $print_f64")
 
+    def _print_fd(self) -> int:
+        """Return the active print file descriptor (1=stdout, 2=stderr)."""
+        return getattr(self, "_print_fd_override", 1)
+
+    def _emit_write_fd(self, ptr_instr: str, len_instr: str, indent: str) -> None:
+        """Emit a write to the active print fd (stdout or stderr)."""
+        fd = self._print_fd()
+        if fd == 1:
+            self._emit(f"{indent}{ptr_instr}")
+            self._emit(f"{indent}{len_instr}")
+            self._emit(f"{indent}call $print_str")
+        else:
+            self._emit(f"{indent}i32.const {fd}  ;; fd={fd}")
+            self._emit(f"{indent}{ptr_instr}")
+            self._emit(f"{indent}{len_instr}")
+            self._emit(f"{indent}call $__wasi_write_fd")
+
     def _emit_print_literal_string(self, value: str, indent: str, note: str) -> None:
         """Emit a string literal directly."""
         offset, length = self._intern(value)
-        self._emit(f"{indent}i32.const {offset}   ;; {note} ptr")
-        self._emit(f"{indent}i32.const {length}   ;; {note} len")
-        self._emit(f"{indent}call $print_str")
+        fd = self._print_fd()
+        if fd == 1:
+            self._emit(f"{indent}i32.const {offset}   ;; {note} ptr")
+            self._emit(f"{indent}i32.const {length}   ;; {note} len")
+            self._emit(f"{indent}call $print_str")
+        else:
+            self._emit(f"{indent}i32.const {fd}  ;; fd={fd}")
+            self._emit(f"{indent}i32.const {offset}   ;; {note} ptr")
+            self._emit(f"{indent}i32.const {length}   ;; {note} len")
+            self._emit(f"{indent}call $__wasi_write_fd")
 
     def _emit_print_fstring(self, arg: FStringLiteral, indent: str) -> None:
         """Emit a formatted string argument."""

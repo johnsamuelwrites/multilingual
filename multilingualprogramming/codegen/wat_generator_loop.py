@@ -42,7 +42,9 @@ class WATGeneratorLoopMixin:
             )
         else:
             iterable_name = _name(stmt.iterable) if isinstance(stmt.iterable, Identifier) else None
-            if iterable_name and iterable_name in self._list_locals:
+            if iterable_name and (
+                iterable_name in self._list_locals or iterable_name in self._tuple_locals
+            ):
                 self._gen_for_list(stmt, iterable_name, iter_var, blk, lp, n, indent)
             else:
                 self._emit(f"{indent};; for loop over non-range iterable - not supported in WAT")

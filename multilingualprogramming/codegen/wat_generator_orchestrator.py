@@ -139,6 +139,14 @@ def _reset_generator_state(generator) -> None:
         "_closure_factory_funcs": {},
         "_closure_locals": {},
         "_try_stack": [],
+        "_property_setters": {},
+        "_property_deleters": {},
+        "_class_special_methods": {},
+        "_str_slice_step_helper_emitted": False,
+        "_static_method_names": set(),
+        "_property_getters": {},
+        "_class_ids": {},
+        "_dispatch_func_names": {},
     }
     for name, value in state.items():
         setattr(generator, name, value)

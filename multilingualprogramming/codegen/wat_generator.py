@@ -96,6 +96,7 @@ from multilingualprogramming.codegen.wat_generator_support import (
     _STR_NAMES,
     _ZIP_NAMES,
     _name,
+    _real_params,
 )
 
 class WATCodeGenerator(
@@ -189,6 +190,13 @@ class WATCodeGenerator(
         self._closure_locals: dict[str, str] = {}
         # Best-effort local exception handling stack for explicit raise statements.
         self._try_stack: list[dict[str, str]] = []
+        # @property setter/deleter registrations: "ClassName.attr" -> lowered WAT func name.
+        self._property_setters: dict[str, str] = {}
+        self._property_deleters: dict[str, str] = {}
+        # Special dunder method registrations: "ClassName.__str__" -> lowered WAT func name.
+        self._class_special_methods: dict[str, str] = {}
+        # Tracks whether the fixedN format helper has been emitted per N.
+        self._str_slice_step_helper_emitted: bool = False
 
     @property
     def property_getters(self):
@@ -381,8 +389,21 @@ class WATCodeGenerator(
                     cls = self._current_class
                 else:
                     cls = self._var_class_types.get(obj_name)
+                # Check for @property setter before direct field store.
+                prop_setter_key = f"{cls}.{attr}" if cls else None
+                prop_setter_fn = (
+                    self._property_setters.get(prop_setter_key)
+                    if prop_setter_key else None
+                )
+                if prop_setter_fn is not None and stmt.op == "=":
+                    self._emit(f"{indent};; @property.setter {obj_name}.{attr}(val)")
+                    self._emit(f"{indent}local.get ${self._wat_symbol(obj_name)}")
+                    self._gen_expr(stmt.value, indent)
+                    self._emit(f"{indent}call ${self._wat_symbol(prop_setter_fn)}")
+                    self._emit(f"{indent}drop")
+                    # Continue to next statement.
                 offset = self._resolve_field(cls, attr) if cls else None
-                if offset is not None:
+                if prop_setter_fn is None and offset is not None:
                     op = stmt.op
                     if op == "=":
                         self._emit(f"{indent};; {obj_name}.{attr} = ...")
@@ -412,7 +433,7 @@ class WATCodeGenerator(
                         self._emit(f"{indent}i32.add")
                         self._emit(f"{indent}local.get ${self._wat_symbol(tmp)}")
                         self._emit(f"{indent}f64.store")
-                else:
+                elif prop_setter_fn is None:
                     self._emit(f"{indent};; (complex assignment target — unsupported in WAT)")
             elif self._gen_unpack_assignment(target, stmt.value, indent):
                 self._emit(f"{indent};; unpacking assignment lowered")
@@ -846,37 +867,95 @@ class WATCodeGenerator(
                 self._gen_stmts(stmt.finally_body, indent)
 
         elif isinstance(stmt, WithStatement):
-            # Best-effort: lower the body; __enter__/__exit__ hooks are not
-            # callable through the WAT f64 model without a vtable.
-            self._emit(
-                f"{indent};; with (context-manager hooks not lowerable in WAT)"
-            )
             saved_aliases = dict(self._open_aliases)
-            for _, alias in stmt.items:
-                if alias:
-                    self._locals.add(alias)
-                    self._emit(
-                        f"{indent}f64.const 0  "
-                        f";; placeholder for 'as {alias}' binding"
-                    )
-                    self._emit(f"{indent}local.set ${self._wat_symbol(alias)}")
             for expr, alias in stmt.items:
-                if not alias:
+                # Detect open() calls for virtual file handling.
+                if (isinstance(expr, CallExpr) and _name(expr.func) == "open"
+                        and expr.args and alias):
+                    path_arg = expr.args[0]
+                    mode = "r"
+                    if len(expr.args) >= 2 and isinstance(expr.args[1], StringLiteral):
+                        mode = expr.args[1].value
+                    if isinstance(path_arg, StringLiteral):
+                        self._open_aliases[alias] = (path_arg.value, mode)
+                    if alias:
+                        self._locals.add(alias)
+                        self._emit(f"{indent}f64.const 0  ;; open handle placeholder")
+                        self._emit(f"{indent}local.set ${self._wat_symbol(alias)}")
                     continue
-                if not (isinstance(expr, CallExpr) and _name(expr.func) == "open" and expr.args):
-                    continue
-                path_arg = expr.args[0]
-                mode = "r"
-                if len(expr.args) >= 2 and isinstance(expr.args[1], StringLiteral):
-                    mode = expr.args[1].value
-                if isinstance(path_arg, StringLiteral):
-                    self._open_aliases[alias] = (path_arg.value, mode)
+                # Try to call __enter__ if the expr is a known class constructor.
+                cls_name = None
+                enter_fn = None
+                if isinstance(expr, CallExpr):
+                    cls_name = _name(expr.func) if _name(expr.func) in self._class_ctor_names else None
+                if cls_name:
+                    enter_key = f"{cls_name}.__enter__"
+                    exit_key = f"{cls_name}.__exit__"
+                    enter_fn = self._class_attr_call_names.get(enter_key)
+                    exit_fn = self._class_attr_call_names.get(exit_key)
+                if enter_fn:
+                    self._emit(f"{indent};; with {cls_name}() as {alias}: __enter__/__exit__")
+                    # Allocate instance.
+                    ctor = self._class_ctor_names[cls_name]
+                    self._emit_stateful_ctor(cls_name, ctor, expr, indent, keep_ref=True)
+                    obj_local = f"__with_obj_{self._new_label()}"
+                    self._locals.add(obj_local)
+                    self._emit(f"{indent}local.set ${self._wat_symbol(obj_local)}")
+                    # Call __enter__.
+                    self._emit(f"{indent}local.get ${self._wat_symbol(obj_local)}")
+                    self._emit(f"{indent}call ${self._wat_symbol(enter_fn)}")
+                    if alias:
+                        self._locals.add(alias)
+                        self._emit(f"{indent}local.set ${self._wat_symbol(alias)}")
+                    else:
+                        self._emit(f"{indent}drop")
+                    # Body.
+                    self._gen_stmts(stmt.body, indent)
+                    # Call __exit__(None, None, None) — use 0 for all args.
+                    if exit_fn:
+                        self._emit(f"{indent}local.get ${self._wat_symbol(obj_local)}")
+                        self._emit(f"{indent}f64.const 0  ;; exc_type=None")
+                        self._emit(f"{indent}f64.const 0  ;; exc_val=None")
+                        self._emit(f"{indent}f64.const 0  ;; traceback=None")
+                        self._emit(f"{indent}call ${self._wat_symbol(exit_fn)}")
+                        self._emit(f"{indent}drop")
+                    self._open_aliases = saved_aliases
+                    return
+                else:
+                    # Fallback: run body without __enter__/__exit__.
+                    self._emit(
+                        f"{indent};; with (context-manager hooks not lowerable in WAT)"
+                    )
+                    if alias:
+                        self._locals.add(alias)
+                        self._emit(
+                            f"{indent}f64.const 0  ;; placeholder for 'as {alias}'"
+                        )
+                        self._emit(f"{indent}local.set ${self._wat_symbol(alias)}")
             self._gen_stmts(stmt.body, indent)
             self._open_aliases = saved_aliases
 
         elif isinstance(stmt, FunctionDef):
-            # Nested function def — not directly supported
-            self._emit(f"{indent};; nested def {_name(stmt.name)} — skipped in WAT")
+            # Lift nested (non-capturing) function defs to module level.
+            nested_name = _name(stmt.name)
+            outer_prefix = (
+                f"{self._current_class}__{self._current_func_name}"
+                if getattr(self, "_current_func_name", None)
+                else nested_name
+            )
+            lifted_name = f"__nested_{outer_prefix}__{nested_name}"
+            self._emit(
+                f"{indent};; nested def {nested_name} -> lifted as {lifted_name}"
+            )
+            # Register so it can be called by name inside the outer scope.
+            self._defined_func_names.add(lifted_name)
+            self._func_real_params[lifted_name] = _real_params(stmt)
+            # Emit the function at module level.
+            self._emit_function(stmt, emitted_name=lifted_name)
+            # Bind the nested name as a lambda-table entry in the current scope.
+            if self._lambda_table and self._lambda_table[-1] != lifted_name:
+                pass  # lambda_table already updated by _emit_function
+            self._lambda_locals[nested_name] = lifted_name
 
         elif isinstance(stmt, MatchStatement):
             self._gen_match(stmt, indent)
@@ -1935,6 +2014,10 @@ for _method_name in (
     "_emit_case_guard",
     "_emit_case_body",
     "_emit_unsupported_match_case",
+    "_emit_or_match_case",
+    "_emit_as_match_case",
+    "_emit_class_match_case",
+    "_emit_mapping_match_case",
 ):
     setattr(WATCodeGenerator, _method_name, getattr(WATGeneratorMatchMixin, _method_name))
 for _method_name in (

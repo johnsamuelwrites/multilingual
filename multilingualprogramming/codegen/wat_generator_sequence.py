@@ -336,25 +336,47 @@ class WATGeneratorSequenceMixin(WATGeneratorRuntimeMixin, WATGeneratorPrintMixin
         return True
 
     def _simple_generator_spec(self, func_def: FunctionDef):
+        """Return lowering spec for supported generator shapes, or None."""
         if len(func_def.body) != 1:
             return None
         stmt = func_def.body[0]
-        if isinstance(stmt, YieldStatement):
+        # Shape 1: yield range(n)  /  yield range(start, stop)
+        if isinstance(stmt, YieldStatement) and not stmt.is_from:
             bounds = self._parse_range_bounds(stmt.value)
-            if bounds is None:
-                return None
-            iter_name = f"__gen_item_{self._new_label()}"
-            return bounds[0], bounds[1], iter_name, Identifier(iter_name)
+            if bounds is not None:
+                iter_name = f"__gen_item_{self._new_label()}"
+                return ("range", bounds[0], bounds[1], iter_name, Identifier(iter_name))
+        # Shape 1b: yield from range(n)  /  yield from range(start, stop)
+        if isinstance(stmt, YieldStatement) and stmt.is_from:
+            bounds = self._parse_range_bounds(stmt.value)
+            if bounds is not None:
+                iter_name = f"__gen_item_{self._new_label()}"
+                return ("range", bounds[0], bounds[1], iter_name, Identifier(iter_name))
+        # Shape 2: yield from seq  (tracked list/tuple)
+        if isinstance(stmt, YieldStatement) and stmt.is_from:
+            if isinstance(stmt.value, Identifier):
+                src = stmt.value.name
+                if src in self._list_locals or src in self._tuple_locals:
+                    return ("list_copy", src)
+        # Shape 3: for x in range(...): yield expr
         if isinstance(stmt, ForLoop):
             bounds = self._parse_range_bounds(stmt.iterable)
-            if bounds is None or len(stmt.body) != 1:
-                return None
-            inner = stmt.body[0]
-            if not isinstance(inner, YieldStatement) or inner.is_from:
-                return None
-            if not isinstance(stmt.target, Identifier):
-                return None
-            return bounds[0], bounds[1], stmt.target.name, inner.value or stmt.target
+            if bounds is not None and len(stmt.body) == 1:
+                inner = stmt.body[0]
+                if isinstance(inner, YieldStatement) and not inner.is_from:
+                    if isinstance(stmt.target, Identifier):
+                        return ("range", bounds[0], bounds[1],
+                                stmt.target.name, inner.value or stmt.target)
+        # Shape 4: for x in list_var: yield x  (or yield expr)
+        if isinstance(stmt, ForLoop):
+            if isinstance(stmt.iterable, Identifier):
+                src = stmt.iterable.name
+                if (src in self._list_locals or src in self._tuple_locals) and len(stmt.body) == 1:
+                    inner = stmt.body[0]
+                    if isinstance(inner, YieldStatement) and not inner.is_from:
+                        if isinstance(stmt.target, Identifier):
+                            return ("list_iter", src, stmt.target.name,
+                                    inner.value or stmt.target)
         return None
 
     def _emit_simple_generator_function(
@@ -367,44 +389,94 @@ class WATGeneratorSequenceMixin(WATGeneratorRuntimeMixin, WATGeneratorPrintMixin
         func_name = emitted_name or _name(func_def.name)
         param_names = _real_params(func_def)
         self._locals = set(param_names)
-        start_node, end_node, iter_var, element_expr = spec
-        label = self._new_label()
-        ptr_local = f"__gen_ptr_{label}"
-        idx_local = f"__gen_idx_{label}"
-        len_local = f"__gen_len_{label}"
-        end_local = f"__gen_end_{label}"
-        self._add_local_names(iter_var, ptr_local, idx_local, len_local, end_local)
         self._need_heap_ptr = True
-        self._gen_expr(start_node, "    ")
-        self._emit(f"    local.set ${self._wat_symbol(iter_var)}")
-        self._gen_expr(end_node, "    ")
-        self._emit(f"    local.set ${self._wat_symbol(end_local)}")
-        self._emit(f"    local.get ${self._wat_symbol(end_local)}")
-        self._emit(f"    local.get ${self._wat_symbol(iter_var)}")
-        self._emit("    f64.sub")
-        self._emit(f"    local.set ${self._wat_symbol(len_local)}")
-        self._emit_length_allocation(ptr_local, len_local, "    ")
-        self._emit_sequence_header(ptr_local, len_local, "    ")
-        self._emit("    f64.const 0")
-        self._emit(f"    local.set ${self._wat_symbol(idx_local)}")
-        block_label = f"gen_blk_{label}"
-        loop_label = f"gen_lp_{label}"
-        self._emit(f"    block ${block_label}")
-        self._emit(f"      loop ${loop_label}")
-        self._emit(f"        local.get ${self._wat_symbol(iter_var)}")
-        self._emit(f"        local.get ${self._wat_symbol(end_local)}")
-        self._emit("        f64.ge")
-        self._emit(f"        br_if ${block_label}")
-        self._emit_sequence_element_address(ptr_local, idx_local, "        ")
-        self._gen_expr(element_expr, "        ")
-        self._emit("        f64.store")
-        self._emit_local_increment(iter_var, "        ")
-        self._emit_local_increment(idx_local, "        ")
-        self._emit(f"        br ${loop_label}")
-        self._emit("      end")
-        self._emit("    end")
-        self._emit(f"    local.get ${self._wat_symbol(ptr_local)}")
-        self._emit("    return")
+
+        if spec[0] == "list_copy":
+            # yield from seq — return a copy of the source list as the generator result.
+            src_name = spec[1]
+            self._emit(f"    ;; generator: yield from {src_name}")
+            self._emit(f"    local.get ${self._wat_symbol(src_name)}")
+            self._emit("    return")
+
+        elif spec[0] == "list_iter":
+            # for x in list_var: yield expr — iterate and materialise.
+            _, src_name, iter_var, element_expr = spec
+            label = self._new_label()
+            src_ptr = f"__gen_src_{label}"
+            ptr_local = f"__gen_ptr_{label}"
+            idx_local = f"__gen_idx_{label}"
+            len_local = f"__gen_len_{label}"
+            self._add_local_names(src_ptr, ptr_local, idx_local, len_local, iter_var)
+            self._emit(f"    local.get ${self._wat_symbol(src_name)}")
+            self._emit(f"    local.set ${self._wat_symbol(src_ptr)}")
+            self._emit(f"    local.get ${self._wat_symbol(src_ptr)}")
+            self._emit("    i32.trunc_f64_u")
+            self._emit("    f64.load")
+            self._emit(f"    local.set ${self._wat_symbol(len_local)}")
+            self._emit_length_allocation(ptr_local, len_local, "    ")
+            self._emit_sequence_header(ptr_local, len_local, "    ")
+            self._emit("    f64.const 0")
+            self._emit(f"    local.set ${self._wat_symbol(idx_local)}")
+            blk = f"gen_blk_{label}"
+            lp = f"gen_lp_{label}"
+            self._emit(f"    block ${blk}")
+            self._emit(f"      loop ${lp}")
+            self._emit(f"        local.get ${self._wat_symbol(idx_local)}")
+            self._emit(f"        local.get ${self._wat_symbol(len_local)}")
+            self._emit("        f64.ge")
+            self._emit(f"        br_if ${blk}")
+            self._emit_sequence_value_load(src_ptr, idx_local, "        ")
+            self._emit(f"        local.set ${self._wat_symbol(iter_var)}")
+            self._emit_sequence_element_address(ptr_local, idx_local, "        ")
+            self._gen_expr(element_expr, "        ")
+            self._emit("        f64.store")
+            self._emit_local_increment(idx_local, "        ")
+            self._emit(f"        br ${lp}")
+            self._emit("      end")
+            self._emit("    end")
+            self._emit(f"    local.get ${self._wat_symbol(ptr_local)}")
+            self._emit("    return")
+
+        else:
+            # range-based generator
+            _, start_node, end_node, iter_var, element_expr = spec
+            label = self._new_label()
+            ptr_local = f"__gen_ptr_{label}"
+            idx_local = f"__gen_idx_{label}"
+            len_local = f"__gen_len_{label}"
+            end_local = f"__gen_end_{label}"
+            self._add_local_names(iter_var, ptr_local, idx_local, len_local, end_local)
+            self._gen_expr(start_node, "    ")
+            self._emit(f"    local.set ${self._wat_symbol(iter_var)}")
+            self._gen_expr(end_node, "    ")
+            self._emit(f"    local.set ${self._wat_symbol(end_local)}")
+            self._emit(f"    local.get ${self._wat_symbol(end_local)}")
+            self._emit(f"    local.get ${self._wat_symbol(iter_var)}")
+            self._emit("    f64.sub")
+            self._emit(f"    local.set ${self._wat_symbol(len_local)}")
+            self._emit_length_allocation(ptr_local, len_local, "    ")
+            self._emit_sequence_header(ptr_local, len_local, "    ")
+            self._emit("    f64.const 0")
+            self._emit(f"    local.set ${self._wat_symbol(idx_local)}")
+            block_label = f"gen_blk_{label}"
+            loop_label = f"gen_lp_{label}"
+            self._emit(f"    block ${block_label}")
+            self._emit(f"      loop ${loop_label}")
+            self._emit(f"        local.get ${self._wat_symbol(iter_var)}")
+            self._emit(f"        local.get ${self._wat_symbol(end_local)}")
+            self._emit("        f64.ge")
+            self._emit(f"        br_if ${block_label}")
+            self._emit_sequence_element_address(ptr_local, idx_local, "        ")
+            self._gen_expr(element_expr, "        ")
+            self._emit("        f64.store")
+            self._emit_local_increment(iter_var, "        ")
+            self._emit_local_increment(idx_local, "        ")
+            self._emit(f"        br ${loop_label}")
+            self._emit("      end")
+            self._emit("    end")
+            self._emit(f"    local.get ${self._wat_symbol(ptr_local)}")
+            self._emit("    return")
+
         self._append_wat_function(func_name, param_names, list(self._instrs))
         self._sequence_func_names.add(func_name)
         self._restore_func_state(saved)
@@ -414,10 +486,75 @@ class WATGeneratorSequenceMixin(WATGeneratorRuntimeMixin, WATGeneratorPrintMixin
         if not isinstance(node, (ListComprehension, SetComprehension, GeneratorExpr)):
             return False
         if len(node.clauses) == 1:
-            return self._gen_filtered_range_comprehension(node, indent)
+            if self._gen_filtered_range_comprehension(node, indent):
+                return True
+            return self._gen_filtered_list_comprehension(node, indent)
         if len(node.clauses) == 2:
             return self._gen_nested_range_comprehension(node, indent)
         return False
+
+    def _gen_filtered_list_comprehension(self, node, indent: str) -> bool:
+        """Lower ``[expr for x in list_var if cond]`` when iterable is a tracked list/tuple."""
+        clause = node.clauses[0]
+        if not clause.conditions:
+            return False
+        iterable = clause.iterable
+        if not isinstance(iterable, Identifier):
+            return False
+        if iterable.name not in self._list_locals and iterable.name not in self._tuple_locals:
+            return False
+        src_name = iterable.name
+        iter_var = (
+            _name(clause.target)
+            if isinstance(clause.target, Identifier)
+            else f"__comp_item_{self._new_label()}"
+        )
+        label = self._new_label()
+        src_ptr = f"__flt_src_{label}"
+        ptr_local = f"__flt_dst_{label}"
+        src_len = f"__flt_src_len_{label}"
+        write_idx = f"__flt_write_{label}"
+        read_idx = f"__flt_read_{label}"
+        self._add_local_names(src_ptr, ptr_local, src_len, write_idx, read_idx, iter_var)
+        self._need_heap_ptr = True
+        # Source list pointer and length.
+        self._emit(f"{indent}local.get ${self._wat_symbol(src_name)}")
+        self._emit(f"{indent}local.set ${self._wat_symbol(src_ptr)}")
+        self._emit(f"{indent}local.get ${self._wat_symbol(src_ptr)}")
+        self._emit(f"{indent}i32.trunc_f64_u")
+        self._emit(f"{indent}f64.load")
+        self._emit(f"{indent}local.set ${self._wat_symbol(src_len)}")
+        # Allocate output list with capacity = source length (worst case).
+        self._emit_length_allocation(ptr_local, src_len, indent)
+        self._emit(f"{indent}f64.const 0")
+        self._emit(f"{indent}local.set ${self._wat_symbol(write_idx)}")
+        self._emit(f"{indent}f64.const 0")
+        self._emit(f"{indent}local.set ${self._wat_symbol(read_idx)}")
+        blk = f"flt_blk_{label}"
+        lp = f"flt_lp_{label}"
+        self._emit(f"{indent}block ${blk}")
+        self._emit(f"{indent}  loop ${lp}")
+        self._emit(f"{indent}    local.get ${self._wat_symbol(read_idx)}")
+        self._emit(f"{indent}    local.get ${self._wat_symbol(src_len)}")
+        self._emit(f"{indent}    f64.ge")
+        self._emit(f"{indent}    br_if ${blk}")
+        self._emit_sequence_value_load(src_ptr, read_idx, indent + "    ")
+        self._emit(f"{indent}    local.set ${self._wat_symbol(iter_var)}")
+        for cond in clause.conditions:
+            self._gen_cond(cond, indent + "    ")
+            self._emit(f"{indent}    if")
+            self._emit_sequence_element_address(ptr_local, write_idx, indent + "      ")
+            self._gen_expr(node.element, indent + "      ")
+            self._emit(f"{indent}      f64.store")
+            self._emit_local_increment(write_idx, indent + "      ")
+            self._emit(f"{indent}    end")
+        self._emit_local_increment(read_idx, indent + "    ")
+        self._emit(f"{indent}    br ${lp}")
+        self._emit(f"{indent}  end")
+        self._emit(f"{indent}end")
+        self._emit_sequence_header(ptr_local, write_idx, indent)
+        self._emit(f"{indent}local.get ${self._wat_symbol(ptr_local)}")
+        return True
 
     def _gen_filtered_range_comprehension(self, node, indent: str) -> bool:
         clause = node.clauses[0]

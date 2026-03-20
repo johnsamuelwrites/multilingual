@@ -227,6 +227,21 @@ class WATGeneratorCoreMixin:
     call $fd_write
     drop
   )
+  ;; Write `len` bytes at `ptr` to file-descriptor `fd` via WASI fd_write.
+  (func $__wasi_write_fd (param $fd i32) (param $ptr i32) (param $len i32)
+    i32.const {iovec}
+    local.get $ptr
+    i32.store
+    i32.const {iovec_len}
+    local.get $len
+    i32.store
+    local.get $fd
+    i32.const {iovec}
+    i32.const 1
+    i32.const {nwritten}
+    call $fd_write
+    drop
+  )
   ;; Format a non-negative i64 as decimal, writing backwards from address {mem_end}.
   ;; Returns: (start_ptr: i32, byte_len: i32)
   (func $__fmt_u64 (param $n i64) (result i32 i32)
@@ -969,6 +984,7 @@ class WATGeneratorCoreMixin:
   ;; Writes the prompt (if len > 0) to stdout first.
   ;; Returns: buffer address as f64; sets $__last_str_len to byte length.
   ;; Input buffer: [{input_buf} .. {input_buf + input_buf_size - 1}] ({input_buf_size} bytes).
+  ;; In browser mode, delegates to $ml_input_host (JS window.prompt).
   (func $input (param $prompt_ptr i32) (param $prompt_len i32) (result f64)
     (local $nread i32)
     (local $tail i32)
@@ -1223,7 +1239,7 @@ class WATGeneratorCoreMixin:
             _DOM_CALLER_RETURNS,
         )
         mem_end = self._WASM_PAGES * 65536
-        dom_buf = mem_end - 1024   # reuse argv_data area for dom_value result
+        dom_buf = mem_end - 1536   # dedicated DOM value buffer (below argv_data at -1024)
         dom_buf_size = 255
 
         wrappers = ["  ;; ── DOM runtime wrappers ───────────────────────────────────────────────"]

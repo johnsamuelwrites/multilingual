@@ -54,6 +54,24 @@ class WATGeneratorOOPMixin:  # pylint: disable=too-many-instance-attributes,too-
                 self._static_method_names.add(lowered)
             if _has_decorator(member, "property"):
                 self._property_getters[f"{class_name}.{method_name}"] = lowered
+            # Detect @prop.setter and @prop.deleter decorators
+            for decorator in (member.decorators or []):
+                dec_name = _name(decorator)
+                if "." in dec_name:
+                    prop_name, kind = dec_name.rsplit(".", 1)
+                    if kind == "setter":
+                        self._property_setters[f"{class_name}.{prop_name}"] = lowered
+                    elif kind == "deleter":
+                        self._property_deleters[f"{class_name}.{prop_name}"] = lowered
+            # Track special dunder methods for dispatch
+            _SPECIAL_METHODS = frozenset({
+                "__str__", "__repr__", "__hash__", "__iter__", "__next__",
+                "__add__", "__sub__", "__mul__", "__truediv__", "__floordiv__",
+                "__mod__", "__pow__", "__eq__", "__lt__", "__le__",
+                "__gt__", "__ge__", "__ne__", "__len__", "__contains__",
+            })
+            if method_name in _SPECIAL_METHODS:
+                self._class_special_methods[f"{class_name}.{method_name}"] = lowered
             if method_name == "__init__":
                 self._class_ctor_names[class_name] = lowered
         self._class_direct_fields[class_name] = self._collect_class_fields(cls)
@@ -185,7 +203,15 @@ class WATGeneratorOOPMixin:  # pylint: disable=too-many-instance-attributes,too-
                             del other[0]
                     break
             else:
+                # No valid candidate found — inconsistent MRO; take sequences[0][0]
+                # as a best-effort fallback (matches pre-existing behaviour).
                 candidate = sequences[0][0]
+                seen_in_tails = [
+                    other[0] for other in sequences
+                    if other and not any(candidate in o[1:] for o in sequences)
+                ]
+                if seen_in_tails:
+                    candidate = seen_in_tails[0]
                 result.append(candidate)
                 for sequence in sequences:
                     if sequence and sequence[0] == candidate:
