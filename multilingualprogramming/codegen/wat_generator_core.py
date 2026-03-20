@@ -1224,6 +1224,1104 @@ class WATGeneratorCoreMixin:
     end
     f64.const -1
   )
+  ;; ── String helpers ────────────────────────────────────────────────────────
+  ;; ASCII uppercase: allocates copy, a-z → A-Z.
+  ;; Params: $ptr i32, $len i32.  Returns f64 ptr; $__last_str_len = len.
+  (func $__str_upper (param $ptr i32) (param $len i32) (result f64)
+    (local $out i32) (local $i i32) (local $b i32)
+    local.get $len
+    call $ml_alloc
+    local.set $out
+    i32.const 0
+    local.set $i
+    block $done
+      loop $lp
+        local.get $i
+        local.get $len
+        i32.ge_s
+        br_if $done
+        local.get $ptr
+        local.get $i
+        i32.add
+        i32.load8_u
+        local.tee $b
+        local.get $b
+        i32.const 97
+        i32.ge_s
+        local.get $b
+        i32.const 122
+        i32.le_s
+        i32.and
+        if
+          local.get $b
+          i32.const 32
+          i32.sub
+          local.set $b
+        end
+        local.get $out
+        local.get $i
+        i32.add
+        local.get $b
+        i32.store8
+        local.get $i
+        i32.const 1
+        i32.add
+        local.set $i
+        br $lp
+      end
+    end
+    local.get $len
+    global.set $__last_str_len
+    local.get $out
+    f64.convert_i32_u
+  )
+  ;; ASCII lowercase: allocates copy, A-Z → a-z.
+  ;; Params: $ptr i32, $len i32.  Returns f64 ptr; $__last_str_len = len.
+  (func $__str_lower (param $ptr i32) (param $len i32) (result f64)
+    (local $out i32) (local $i i32) (local $b i32)
+    local.get $len
+    call $ml_alloc
+    local.set $out
+    i32.const 0
+    local.set $i
+    block $done
+      loop $lp
+        local.get $i
+        local.get $len
+        i32.ge_s
+        br_if $done
+        local.get $ptr
+        local.get $i
+        i32.add
+        i32.load8_u
+        local.tee $b
+        local.get $b
+        i32.const 65
+        i32.ge_s
+        local.get $b
+        i32.const 90
+        i32.le_s
+        i32.and
+        if
+          local.get $b
+          i32.const 32
+          i32.add
+          local.set $b
+        end
+        local.get $out
+        local.get $i
+        i32.add
+        local.get $b
+        i32.store8
+        local.get $i
+        i32.const 1
+        i32.add
+        local.set $i
+        br $lp
+      end
+    end
+    local.get $len
+    global.set $__last_str_len
+    local.get $out
+    f64.convert_i32_u
+  )
+  ;; Return 1 if haystack starts with needle, else 0.
+  (func $__str_startswith
+    (param $hptr i32) (param $hlen i32)
+    (param $nptr i32) (param $nlen i32)
+    (result i32)
+    (local $i i32)
+    local.get $hlen
+    local.get $nlen
+    i32.lt_s
+    if
+      i32.const 0
+      return
+    end
+    local.get $nlen
+    i32.eqz
+    if
+      i32.const 1
+      return
+    end
+    i32.const 0
+    local.set $i
+    block $no
+      loop $lp
+        local.get $i
+        local.get $nlen
+        i32.ge_s
+        br_if $no
+        local.get $hptr
+        local.get $i
+        i32.add
+        i32.load8_u
+        local.get $nptr
+        local.get $i
+        i32.add
+        i32.load8_u
+        i32.ne
+        if
+          i32.const 0
+          return
+        end
+        local.get $i
+        i32.const 1
+        i32.add
+        local.set $i
+        br $lp
+      end
+    end
+    i32.const 1
+  )
+  ;; Return 1 if haystack ends with needle, else 0.
+  (func $__str_endswith
+    (param $hptr i32) (param $hlen i32)
+    (param $nptr i32) (param $nlen i32)
+    (result i32)
+    (local $i i32) (local $offset i32)
+    local.get $hlen
+    local.get $nlen
+    i32.lt_s
+    if
+      i32.const 0
+      return
+    end
+    local.get $nlen
+    i32.eqz
+    if
+      i32.const 1
+      return
+    end
+    local.get $hlen
+    local.get $nlen
+    i32.sub
+    local.set $offset
+    i32.const 0
+    local.set $i
+    block $no
+      loop $lp
+        local.get $i
+        local.get $nlen
+        i32.ge_s
+        br_if $no
+        local.get $hptr
+        local.get $offset
+        i32.add
+        local.get $i
+        i32.add
+        i32.load8_u
+        local.get $nptr
+        local.get $i
+        i32.add
+        i32.load8_u
+        i32.ne
+        if
+          i32.const 0
+          return
+        end
+        local.get $i
+        i32.const 1
+        i32.add
+        local.set $i
+        br $lp
+      end
+    end
+    i32.const 1
+  )
+  ;; Count non-overlapping occurrences of needle in haystack. Returns f64.
+  (func $__str_count
+    (param $hptr i32) (param $hlen i32)
+    (param $nptr i32) (param $nlen i32)
+    (result f64)
+    (local $i i32) (local $j i32) (local $count i32) (local $match i32)
+    local.get $nlen
+    i32.eqz
+    if
+      local.get $hlen
+      i32.const 1
+      i32.add
+      f64.convert_i32_s
+      return
+    end
+    local.get $hlen
+    local.get $nlen
+    i32.lt_s
+    if
+      f64.const 0
+      return
+    end
+    i32.const 0
+    local.set $count
+    i32.const 0
+    local.set $i
+    block $done
+      loop $outer
+        local.get $i
+        local.get $hlen
+        local.get $nlen
+        i32.sub
+        i32.gt_s
+        br_if $done
+        i32.const 1
+        local.set $match
+        i32.const 0
+        local.set $j
+        block $miss
+          loop $inner
+            local.get $j
+            local.get $nlen
+            i32.ge_s
+            br_if $miss
+            local.get $hptr
+            local.get $i
+            i32.add
+            local.get $j
+            i32.add
+            i32.load8_u
+            local.get $nptr
+            local.get $j
+            i32.add
+            i32.load8_u
+            i32.ne
+            if
+              i32.const 0
+              local.set $match
+              br $miss
+            end
+            local.get $j
+            i32.const 1
+            i32.add
+            local.set $j
+            br $inner
+          end
+        end
+        local.get $match
+        if
+          local.get $count
+          i32.const 1
+          i32.add
+          local.set $count
+          local.get $i
+          local.get $nlen
+          i32.add
+          local.set $i
+        else
+          local.get $i
+          i32.const 1
+          i32.add
+          local.set $i
+        end
+        br $outer
+      end
+    end
+    local.get $count
+    f64.convert_i32_s
+  )
+  ;; Replace all occurrences of needle with replacement; allocates new string.
+  ;; Returns f64 ptr; $__last_str_len = new length.
+  (func $__str_replace
+    (param $hptr i32) (param $hlen i32)
+    (param $nptr i32) (param $nlen i32)
+    (param $rptr i32) (param $rlen i32)
+    (result f64)
+    (local $out i32) (local $newlen i32) (local $count i32)
+    (local $i i32) (local $j i32) (local $match i32) (local $wp i32)
+    local.get $nlen
+    i32.eqz
+    if
+      local.get $hlen
+      global.set $__last_str_len
+      local.get $hptr
+      f64.convert_i32_u
+      return
+    end
+    i32.const 0
+    local.set $count
+    i32.const 0
+    local.set $i
+    block $c_done
+      loop $c_lp
+        local.get $i
+        local.get $hlen
+        local.get $nlen
+        i32.sub
+        i32.gt_s
+        br_if $c_done
+        i32.const 1
+        local.set $match
+        i32.const 0
+        local.set $j
+        block $c_miss
+          loop $c_inner
+            local.get $j
+            local.get $nlen
+            i32.ge_s
+            br_if $c_miss
+            local.get $hptr
+            local.get $i
+            i32.add
+            local.get $j
+            i32.add
+            i32.load8_u
+            local.get $nptr
+            local.get $j
+            i32.add
+            i32.load8_u
+            i32.ne
+            if
+              i32.const 0
+              local.set $match
+              br $c_miss
+            end
+            local.get $j
+            i32.const 1
+            i32.add
+            local.set $j
+            br $c_inner
+          end
+        end
+        local.get $match
+        if
+          local.get $count
+          i32.const 1
+          i32.add
+          local.set $count
+          local.get $i
+          local.get $nlen
+          i32.add
+          local.set $i
+        else
+          local.get $i
+          i32.const 1
+          i32.add
+          local.set $i
+        end
+        br $c_lp
+      end
+    end
+    local.get $hlen
+    local.get $count
+    local.get $rlen
+    i32.mul
+    i32.add
+    local.get $count
+    local.get $nlen
+    i32.mul
+    i32.sub
+    local.tee $newlen
+    call $ml_alloc
+    local.set $out
+    i32.const 0
+    local.set $i
+    local.get $out
+    local.set $wp
+    block $w_done
+      loop $w_lp
+        local.get $i
+        local.get $hlen
+        i32.ge_s
+        br_if $w_done
+        i32.const 0
+        local.set $match
+        local.get $i
+        local.get $hlen
+        local.get $nlen
+        i32.sub
+        i32.le_s
+        if
+          i32.const 1
+          local.set $match
+          i32.const 0
+          local.set $j
+          block $w_miss
+            loop $w_inner
+              local.get $j
+              local.get $nlen
+              i32.ge_s
+              br_if $w_miss
+              local.get $hptr
+              local.get $i
+              i32.add
+              local.get $j
+              i32.add
+              i32.load8_u
+              local.get $nptr
+              local.get $j
+              i32.add
+              i32.load8_u
+              i32.ne
+              if
+                i32.const 0
+                local.set $match
+                br $w_miss
+              end
+              local.get $j
+              i32.const 1
+              i32.add
+              local.set $j
+              br $w_inner
+            end
+          end
+        end
+        local.get $match
+        if
+          i32.const 0
+          local.set $j
+          block $r_done
+            loop $r_lp
+              local.get $j
+              local.get $rlen
+              i32.ge_s
+              br_if $r_done
+              local.get $wp
+              local.get $j
+              i32.add
+              local.get $rptr
+              local.get $j
+              i32.add
+              i32.load8_u
+              i32.store8
+              local.get $j
+              i32.const 1
+              i32.add
+              local.set $j
+              br $r_lp
+            end
+          end
+          local.get $wp
+          local.get $rlen
+          i32.add
+          local.set $wp
+          local.get $i
+          local.get $nlen
+          i32.add
+          local.set $i
+        else
+          local.get $wp
+          local.get $hptr
+          local.get $i
+          i32.add
+          i32.load8_u
+          i32.store8
+          local.get $wp
+          i32.const 1
+          i32.add
+          local.set $wp
+          local.get $i
+          i32.const 1
+          i32.add
+          local.set $i
+        end
+        br $w_lp
+      end
+    end
+    local.get $newlen
+    global.set $__last_str_len
+    local.get $out
+    f64.convert_i32_u
+  )
+  ;; ── JSON helpers ──────────────────────────────────────────────────────────
+  ;; Encode a tracked list of f64 values as a JSON array "[n1,n2,...]".
+  ;; Param: $ptr f64 (list header pointer).
+  ;; Returns f64 ptr to heap string; $__last_str_len = byte length.
+  (func $__json_encode_list (param $ptr f64) (result f64)
+    (local $lptr i32) (local $n i32) (local $i i32) (local $ci i32)
+    (local $v f64) (local $out i32) (local $wp i32)
+    (local $int_part i64) (local $frac_scaled i64)
+    (local $sptr i32) (local $slen i32)
+    local.get $ptr
+    i32.trunc_f64_u
+    local.set $lptr
+    local.get $lptr
+    f64.load
+    i32.trunc_f64_u
+    local.set $n
+    local.get $n
+    i32.const 26
+    i32.mul
+    i32.const 3
+    i32.add
+    call $ml_alloc
+    local.set $out
+    local.get $out
+    local.set $wp
+    local.get $wp
+    i32.const 91
+    i32.store8
+    local.get $wp
+    i32.const 1
+    i32.add
+    local.set $wp
+    i32.const 0
+    local.set $i
+    block $jl_done
+      loop $jl_lp
+        local.get $i
+        local.get $n
+        i32.ge_s
+        br_if $jl_done
+        local.get $i
+        i32.const 0
+        i32.gt_s
+        if
+          local.get $wp
+          i32.const 44
+          i32.store8
+          local.get $wp
+          i32.const 1
+          i32.add
+          local.set $wp
+        end
+        local.get $lptr
+        local.get $i
+        i32.const 8
+        i32.mul
+        i32.add
+        i32.const 8
+        i32.add
+        f64.load
+        local.set $v
+        local.get $v
+        f64.const 0.0
+        f64.lt
+        if
+          local.get $wp
+          i32.const 45
+          i32.store8
+          local.get $wp
+          i32.const 1
+          i32.add
+          local.set $wp
+          local.get $v
+          f64.neg
+          local.set $v
+        end
+        local.get $v
+        f64.trunc
+        local.get $v
+        f64.eq
+        local.get $v
+        f64.const 1000000000000000.0
+        f64.lt
+        i32.and
+        if
+          local.get $v
+          i64.trunc_f64_u
+          local.set $int_part
+          local.get $int_part
+          call $__fmt_u64
+          local.set $slen
+          local.set $sptr
+          i32.const 0
+          local.set $ci
+          block $ji_done
+            loop $ji_lp
+              local.get $ci
+              local.get $slen
+              i32.ge_s
+              br_if $ji_done
+              local.get $wp
+              local.get $ci
+              i32.add
+              local.get $sptr
+              local.get $ci
+              i32.add
+              i32.load8_u
+              i32.store8
+              local.get $ci
+              i32.const 1
+              i32.add
+              local.set $ci
+              br $ji_lp
+            end
+          end
+          local.get $wp
+          local.get $slen
+          i32.add
+          local.set $wp
+        else
+          local.get $v
+          f64.trunc
+          i64.trunc_f64_u
+          local.set $int_part
+          local.get $int_part
+          call $__fmt_u64
+          local.set $slen
+          local.set $sptr
+          i32.const 0
+          local.set $ci
+          block $jfi_done
+            loop $jfi_lp
+              local.get $ci
+              local.get $slen
+              i32.ge_s
+              br_if $jfi_done
+              local.get $wp
+              local.get $ci
+              i32.add
+              local.get $sptr
+              local.get $ci
+              i32.add
+              i32.load8_u
+              i32.store8
+              local.get $ci
+              i32.const 1
+              i32.add
+              local.set $ci
+              br $jfi_lp
+            end
+          end
+          local.get $wp
+          local.get $slen
+          i32.add
+          local.set $wp
+          local.get $wp
+          i32.const 46
+          i32.store8
+          local.get $wp
+          i32.const 1
+          i32.add
+          local.set $wp
+          local.get $v
+          local.get $v
+          f64.trunc
+          f64.sub
+          f64.const 1000000.0
+          f64.mul
+          f64.nearest
+          i64.trunc_f64_u
+          local.set $frac_scaled
+          local.get $frac_scaled
+          call $__fmt_frac6
+          local.set $slen
+          local.set $sptr
+          i32.const 0
+          local.set $ci
+          block $jff_done
+            loop $jff_lp
+              local.get $ci
+              local.get $slen
+              i32.ge_s
+              br_if $jff_done
+              local.get $wp
+              local.get $ci
+              i32.add
+              local.get $sptr
+              local.get $ci
+              i32.add
+              i32.load8_u
+              i32.store8
+              local.get $ci
+              i32.const 1
+              i32.add
+              local.set $ci
+              br $jff_lp
+            end
+          end
+          local.get $wp
+          local.get $slen
+          i32.add
+          local.set $wp
+        end
+        local.get $i
+        i32.const 1
+        i32.add
+        local.set $i
+        br $jl_lp
+      end
+    end
+    local.get $wp
+    i32.const 93
+    i32.store8
+    local.get $wp
+    i32.const 1
+    i32.add
+    local.set $wp
+    local.get $wp
+    local.get $out
+    i32.sub
+    global.set $__last_str_len
+    local.get $out
+    f64.convert_i32_u
+  )
+  ;; ── Math helpers ──────────────────────────────────────────────────────────
+  ;; sin(x): 6-term Horner polynomial, accurate to ~1e-9 for |x| < π.
+  (func $math_sin (param $x f64) (result f64)
+    (local $u f64) (local $t f64)
+    local.get $x
+    local.get $x
+    f64.mul
+    local.set $u
+    f64.const -2.5052108385441720e-8
+    local.set $t
+    local.get $u
+    local.get $t
+    f64.mul
+    f64.const 2.7557319223985888e-6
+    f64.add
+    local.set $t
+    local.get $u
+    local.get $t
+    f64.mul
+    f64.const -1.9841269841269841e-4
+    f64.add
+    local.set $t
+    local.get $u
+    local.get $t
+    f64.mul
+    f64.const 8.3333333333333332e-3
+    f64.add
+    local.set $t
+    local.get $u
+    local.get $t
+    f64.mul
+    f64.const -1.6666666666666667e-1
+    f64.add
+    local.set $t
+    local.get $u
+    local.get $t
+    f64.mul
+    f64.const 1.0
+    f64.add
+    local.set $t
+    local.get $x
+    local.get $t
+    f64.mul
+  )
+  ;; cos(x): 6-term Horner polynomial, accurate to ~1e-9 for |x| < π.
+  (func $math_cos (param $x f64) (result f64)
+    (local $u f64) (local $t f64)
+    local.get $x
+    local.get $x
+    f64.mul
+    local.set $u
+    f64.const -2.7557319223985888e-7
+    local.set $t
+    local.get $u
+    local.get $t
+    f64.mul
+    f64.const 2.4801587301587302e-5
+    f64.add
+    local.set $t
+    local.get $u
+    local.get $t
+    f64.mul
+    f64.const -1.3888888888888889e-3
+    f64.add
+    local.set $t
+    local.get $u
+    local.get $t
+    f64.mul
+    f64.const 4.1666666666666664e-2
+    f64.add
+    local.set $t
+    local.get $u
+    local.get $t
+    f64.mul
+    f64.const -5.0e-1
+    f64.add
+    local.set $t
+    local.get $u
+    local.get $t
+    f64.mul
+    f64.const 1.0
+    f64.add
+  )
+  ;; tan(x) = sin(x) / cos(x).
+  (func $math_tan (param $x f64) (result f64)
+    local.get $x
+    call $math_sin
+    local.get $x
+    call $math_cos
+    f64.div
+  )
+  ;; exp(x): 10-term Horner polynomial for e^x.
+  (func $math_exp (param $x f64) (result f64)
+    (local $t f64)
+    f64.const 2.7557319223985888e-7
+    local.set $t
+    local.get $x
+    local.get $t
+    f64.mul
+    f64.const 2.7557319223985888e-6
+    f64.add
+    local.set $t
+    local.get $x
+    local.get $t
+    f64.mul
+    f64.const 2.4801587301587302e-5
+    f64.add
+    local.set $t
+    local.get $x
+    local.get $t
+    f64.mul
+    f64.const 1.9841269841269841e-4
+    f64.add
+    local.set $t
+    local.get $x
+    local.get $t
+    f64.mul
+    f64.const 1.3888888888888889e-3
+    f64.add
+    local.set $t
+    local.get $x
+    local.get $t
+    f64.mul
+    f64.const 8.3333333333333332e-3
+    f64.add
+    local.set $t
+    local.get $x
+    local.get $t
+    f64.mul
+    f64.const 4.1666666666666664e-2
+    f64.add
+    local.set $t
+    local.get $x
+    local.get $t
+    f64.mul
+    f64.const 1.6666666666666667e-1
+    f64.add
+    local.set $t
+    local.get $x
+    local.get $t
+    f64.mul
+    f64.const 5.0e-1
+    f64.add
+    local.set $t
+    local.get $x
+    local.get $t
+    f64.mul
+    f64.const 1.0
+    f64.add
+    local.set $t
+    local.get $x
+    local.get $t
+    f64.mul
+    f64.const 1.0
+    f64.add
+  )
+  ;; log(x): natural log via atanh series ln(x)=2*atanh((x-1)/(x+1)), 5 terms.
+  (func $math_log (param $x f64) (result f64)
+    (local $t f64) (local $t2 f64) (local $s f64)
+    local.get $x
+    f64.const 0.0
+    f64.le
+    if
+      f64.const nan
+      return
+    end
+    local.get $x
+    f64.const 1.0
+    f64.sub
+    local.get $x
+    f64.const 1.0
+    f64.add
+    f64.div
+    local.set $t
+    local.get $t
+    local.get $t
+    f64.mul
+    local.set $t2
+    local.get $t
+    local.set $s
+    local.get $t
+    local.get $t2
+    f64.mul
+    f64.const 0.3333333333333333
+    f64.mul
+    local.get $s
+    f64.add
+    local.set $s
+    local.get $t
+    local.get $t2
+    f64.mul
+    local.get $t2
+    f64.mul
+    f64.const 0.2
+    f64.mul
+    local.get $s
+    f64.add
+    local.set $s
+    local.get $t
+    local.get $t2
+    f64.mul
+    local.get $t2
+    f64.mul
+    local.get $t2
+    f64.mul
+    f64.const 0.14285714285714285
+    f64.mul
+    local.get $s
+    f64.add
+    local.set $s
+    local.get $t
+    local.get $t2
+    f64.mul
+    local.get $t2
+    f64.mul
+    local.get $t2
+    f64.mul
+    local.get $t2
+    f64.mul
+    f64.const 0.1111111111111111
+    f64.mul
+    local.get $s
+    f64.add
+    local.set $s
+    local.get $s
+    f64.const 2.0
+    f64.mul
+  )
+  ;; log2(x) = log(x) * (1/ln 2).
+  (func $math_log2 (param $x f64) (result f64)
+    local.get $x
+    call $math_log
+    f64.const 1.4426950408889634
+    f64.mul
+  )
+  ;; log10(x) = log(x) * (1/ln 10).
+  (func $math_log10 (param $x f64) (result f64)
+    local.get $x
+    call $math_log
+    f64.const 0.4342944819032518
+    f64.mul
+  )
+  ;; atan(x): 6-term series for |x| ≤ 1; uses atan(x)=π/2-atan(1/x) for |x|>1.
+  (func $math_atan (param $x f64) (result f64)
+    (local $t f64) (local $x2 f64) (local $neg i32) (local $r f64)
+    i32.const 0
+    local.set $neg
+    local.get $x
+    f64.const 0.0
+    f64.lt
+    if
+      i32.const 1
+      local.set $neg
+      local.get $x
+      f64.neg
+      local.set $x
+    end
+    local.get $x
+    f64.const 1.0
+    f64.gt
+    if
+      f64.const 1.5707963267948966
+      f64.const 1.0
+      local.get $x
+      f64.div
+      call $math_atan
+      f64.sub
+      local.set $r
+      local.get $neg
+      if
+        local.get $r
+        f64.neg
+        local.set $r
+      end
+      local.get $r
+      return
+    end
+    local.get $x
+    local.get $x
+    f64.mul
+    local.set $x2
+    f64.const -0.09090909090909091
+    local.set $t
+    local.get $x2
+    local.get $t
+    f64.mul
+    f64.const 0.1111111111111111
+    f64.add
+    local.set $t
+    local.get $x2
+    local.get $t
+    f64.mul
+    f64.const -0.14285714285714285
+    f64.add
+    local.set $t
+    local.get $x2
+    local.get $t
+    f64.mul
+    f64.const 0.2
+    f64.add
+    local.set $t
+    local.get $x2
+    local.get $t
+    f64.mul
+    f64.const -0.3333333333333333
+    f64.add
+    local.set $t
+    local.get $x2
+    local.get $t
+    f64.mul
+    f64.const 1.0
+    f64.add
+    local.set $t
+    local.get $x
+    local.get $t
+    f64.mul
+    local.set $r
+    local.get $neg
+    if
+      local.get $r
+      f64.neg
+      local.set $r
+    end
+    local.get $r
+  )
+  ;; atan2(y, x) with quadrant adjustment.
+  (func $math_atan2 (param $y f64) (param $x f64) (result f64)
+    local.get $x
+    f64.const 0.0
+    f64.gt
+    if
+      local.get $y
+      local.get $x
+      f64.div
+      call $math_atan
+      return
+    end
+    local.get $x
+    f64.const 0.0
+    f64.lt
+    if
+      local.get $y
+      f64.const 0.0
+      f64.ge
+      if
+        local.get $y
+        local.get $x
+        f64.div
+        call $math_atan
+        f64.const 3.141592653589793
+        f64.add
+        return
+      end
+      local.get $y
+      local.get $x
+      f64.div
+      call $math_atan
+      f64.const 3.141592653589793
+      f64.sub
+      return
+    end
+    local.get $y
+    f64.const 0.0
+    f64.gt
+    if
+      f64.const 1.5707963267948966
+      return
+    end
+    local.get $y
+    f64.const 0.0
+    f64.lt
+    if
+      f64.const -1.5707963267948966
+      return
+    end
+    f64.const 0.0
+  )
   ;; ── End WASI runtime ─────────────────────────────────────────────────────"""
         self._funcs.insert(0, runtime)
 
@@ -1254,6 +2352,7 @@ class WATGeneratorCoreMixin:
             "dom_style":  "ml_dom_style",
             "dom_remove": "ml_dom_remove",
             "dom_class":  "ml_dom_set_class",
+            "dom_on":     "ml_dom_on",
         }.items():
             caller_params = _DOM_CALLER_PARAMS.get(fname, [])
             ret = _DOM_CALLER_RETURNS.get(fname, "")
@@ -1264,6 +2363,8 @@ class WATGeneratorCoreMixin:
                 if pkind == "str":
                     params.append(f"(param $p{i}_ptr i32)")
                     params.append(f"(param $p{i}_len i32)")
+                elif pkind == "fn_idx":
+                    params.append(f"(param $p{i} f64)")  # func index arrives as f64
                 else:
                     params.append(f"(param $p{i} f64)")
             result = " (result f64)" if ret in ("f64", "ret_str") else ""
@@ -1275,6 +2376,10 @@ class WATGeneratorCoreMixin:
                 if pkind == "str":
                     fn_lines.append(f"    local.get $p{i}_ptr")
                     fn_lines.append(f"    local.get $p{i}_len")
+                elif pkind == "fn_idx":
+                    # convert f64 func index → i32 for host
+                    fn_lines.append(f"    local.get $p{i}")
+                    fn_lines.append("    i32.trunc_f64_u")
                 else:
                     fn_lines.append(f"    local.get $p{i}")
 
@@ -1291,6 +2396,15 @@ class WATGeneratorCoreMixin:
 
             fn_lines.append("  )")
             wrappers.append("\n".join(fn_lines))
+
+        # $__dom_dispatch: called from JS to invoke a zero-arg callback by table index.
+        wrappers.append(
+            "  (func $__dom_dispatch (export \"__dom_dispatch\") (param $idx i32)\n"
+            "    local.get $idx\n"
+            "    call_indirect (result f64)\n"
+            "    drop\n"
+            "  )"
+        )
 
         self._funcs.append("\n".join(wrappers))
 

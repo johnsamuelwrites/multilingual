@@ -1080,6 +1080,57 @@ class WATCodeGenerator(
             elif resolved_fname in {"math.fabs", "fabs"} and len(node.args) == 1:
                 self._gen_expr(node.args[0], indent)
                 self._emit(f"{indent}f64.abs")
+            elif resolved_fname in {"math.trunc", "trunc"} and len(node.args) == 1:
+                self._gen_expr(node.args[0], indent)
+                self._emit(f"{indent}f64.trunc")
+            elif resolved_fname in {"math.sin", "sin"} and len(node.args) == 1:
+                self._gen_expr(node.args[0], indent)
+                self._emit(f"{indent}call $math_sin")
+            elif resolved_fname in {"math.cos", "cos"} and len(node.args) == 1:
+                self._gen_expr(node.args[0], indent)
+                self._emit(f"{indent}call $math_cos")
+            elif resolved_fname in {"math.tan", "tan"} and len(node.args) == 1:
+                self._gen_expr(node.args[0], indent)
+                self._emit(f"{indent}call $math_tan")
+            elif resolved_fname in {"math.exp", "exp"} and len(node.args) == 1:
+                self._gen_expr(node.args[0], indent)
+                self._emit(f"{indent}call $math_exp")
+            elif resolved_fname in {"math.log", "log"} and len(node.args) == 1:
+                self._gen_expr(node.args[0], indent)
+                self._emit(f"{indent}call $math_log")
+            elif resolved_fname in {"math.log2", "log2"} and len(node.args) == 1:
+                self._gen_expr(node.args[0], indent)
+                self._emit(f"{indent}call $math_log2")
+            elif resolved_fname in {"math.log10", "log10"} and len(node.args) == 1:
+                self._gen_expr(node.args[0], indent)
+                self._emit(f"{indent}call $math_log10")
+            elif resolved_fname in {"math.atan", "atan"} and len(node.args) == 1:
+                self._gen_expr(node.args[0], indent)
+                self._emit(f"{indent}call $math_atan")
+            elif resolved_fname in {"math.atan2", "atan2"} and len(node.args) == 2:
+                self._gen_expr(node.args[0], indent)
+                self._gen_expr(node.args[1], indent)
+                self._emit(f"{indent}call $math_atan2")
+            elif resolved_fname in {"math.hypot", "hypot"} and len(node.args) == 2:
+                # hypot(a,b) = sqrt(a²+b²)
+                self._gen_expr(node.args[0], indent)
+                self._emit(f"{indent}f64.const 2.0")
+                self._emit(f"{indent}call $pow_f64")
+                self._gen_expr(node.args[1], indent)
+                self._emit(f"{indent}f64.const 2.0")
+                self._emit(f"{indent}call $pow_f64")
+                self._emit(f"{indent}f64.add")
+                self._emit(f"{indent}f64.sqrt")
+            elif resolved_fname in {"math.degrees"} and len(node.args) == 1:
+                # degrees(x) = x * 180/π
+                self._gen_expr(node.args[0], indent)
+                self._emit(f"{indent}f64.const 57.29577951308232")
+                self._emit(f"{indent}f64.mul")
+            elif resolved_fname in {"math.radians"} and len(node.args) == 1:
+                # radians(x) = x * π/180
+                self._gen_expr(node.args[0], indent)
+                self._emit(f"{indent}f64.const 0.017453292519943295")
+                self._emit(f"{indent}f64.mul")
             elif fname in _MIN_NAMES and len(node.args) >= 1:
                 # min(a, b, c, ...) → chained f64.min instructions
                 self._gen_expr(node.args[0], indent)
@@ -1128,6 +1179,22 @@ class WATCodeGenerator(
                 self._gen_expr(node.args[0], indent)
                 self._gen_expr(node.args[1], indent)
                 self._emit(f"{indent}call $pow_f64")
+            elif resolved_fname in {"json.dumps", "dumps"} and len(node.args) == 1:
+                arg = node.args[0]
+                if isinstance(arg, Identifier) and (
+                    arg.name in self._list_locals or arg.name in self._tuple_locals
+                ):
+                    self._emit(f"{indent};; json.dumps(list) → JSON array string")
+                    self._gen_expr(arg, indent)
+                    self._emit(f"{indent}call $__json_encode_list")
+                else:
+                    # Fallback: emit "null" for unsupported types
+                    null_ptr, null_len = self._intern("null")
+                    self._emit(f"{indent}i32.const {null_ptr}")
+                    self._emit(f"{indent}i32.const {null_len}")
+                    self._emit(f"{indent}global.set $__last_str_len")
+                    self._emit(f"{indent}i32.const {null_ptr}")
+                    self._emit(f"{indent}f64.convert_i32_u")
             elif fname in _STR_NAMES and len(node.args) == 1:
                 self._gen_expr(node.args[0], indent)
             elif fname in _LIST_NAMES and len(node.args) == 1:
@@ -1278,6 +1345,57 @@ class WATCodeGenerator(
                 self._emit(f"{indent}i32.trunc_f64_u")     # nptr
                 self._emit(f"{indent}global.get $__last_str_len")  # nlen
                 self._emit(f"{indent}call $__str_find")
+            elif (isinstance(node.func, AttributeAccess)
+                  and node.func.attr in ("upper", "lower")
+                  and not node.args):
+                # s.upper() / s.lower()
+                helper = "__str_upper" if node.func.attr == "upper" else "__str_lower"
+                self._emit(f"{indent};; .{node.func.attr}()")
+                self._gen_expr(node.func.obj, indent)
+                self._emit(f"{indent}i32.trunc_f64_u")
+                self._emit(f"{indent}global.get $__last_str_len")
+                self._emit(f"{indent}call ${helper}")
+            elif (isinstance(node.func, AttributeAccess)
+                  and node.func.attr in ("startswith", "endswith")
+                  and len(node.args) == 1):
+                # s.startswith(prefix) / s.endswith(suffix) → i32 → f64
+                helper = "__str_startswith" if node.func.attr == "startswith" else "__str_endswith"
+                self._emit(f"{indent};; .{node.func.attr}()")
+                self._gen_expr(node.func.obj, indent)
+                self._emit(f"{indent}i32.trunc_f64_u")
+                self._emit(f"{indent}global.get $__last_str_len")
+                self._gen_expr(node.args[0], indent)
+                self._emit(f"{indent}i32.trunc_f64_u")
+                self._emit(f"{indent}global.get $__last_str_len")
+                self._emit(f"{indent}call ${helper}")
+                self._emit(f"{indent}f64.convert_i32_u")
+            elif (isinstance(node.func, AttributeAccess)
+                  and node.func.attr == "count"
+                  and len(node.args) == 1):
+                # s.count(needle) → f64
+                self._emit(f"{indent};; .count(needle)")
+                self._gen_expr(node.func.obj, indent)
+                self._emit(f"{indent}i32.trunc_f64_u")
+                self._emit(f"{indent}global.get $__last_str_len")
+                self._gen_expr(node.args[0], indent)
+                self._emit(f"{indent}i32.trunc_f64_u")
+                self._emit(f"{indent}global.get $__last_str_len")
+                self._emit(f"{indent}call $__str_count")
+            elif (isinstance(node.func, AttributeAccess)
+                  and node.func.attr == "replace"
+                  and len(node.args) == 2):
+                # s.replace(old, new) → f64 ptr
+                self._emit(f"{indent};; .replace(old, new)")
+                self._gen_expr(node.func.obj, indent)
+                self._emit(f"{indent}i32.trunc_f64_u")
+                self._emit(f"{indent}global.get $__last_str_len")
+                self._gen_expr(node.args[0], indent)
+                self._emit(f"{indent}i32.trunc_f64_u")
+                self._emit(f"{indent}global.get $__last_str_len")
+                self._gen_expr(node.args[1], indent)
+                self._emit(f"{indent}i32.trunc_f64_u")
+                self._emit(f"{indent}global.get $__last_str_len")
+                self._emit(f"{indent}call $__str_replace")
             elif (isinstance(node.func, AttributeAccess)
                   and isinstance(node.func.obj, Identifier)
                   and node.func.attr in self._dispatch_func_names):
@@ -1462,6 +1580,23 @@ class WATCodeGenerator(
                     f";; unsupported expr: {type(node).__name__} "
                     f"(collections not representable as f64)"
                 )
+
+        elif (isinstance(node, AttributeAccess)
+              and isinstance(node.obj, Identifier)
+              and node.obj.name == "math"):
+            # math.pi, math.e, math.tau, math.inf constants
+            _MATH_CONSTANTS = {
+                "pi": "3.141592653589793",
+                "e": "2.718281828459045",
+                "tau": "6.283185307179586",
+                "inf": "inf",
+                "nan": "nan",
+            }
+            val = _MATH_CONSTANTS.get(node.attr)
+            if val is not None:
+                self._emit(f"{indent}f64.const {val}")
+            else:
+                self._emit(f"{indent}f64.const 0  ;; unsupported: math.{node.attr}")
 
         elif (isinstance(node, AttributeAccess)
               and isinstance(node.obj, Identifier)):

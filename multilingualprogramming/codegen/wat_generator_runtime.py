@@ -78,6 +78,17 @@ class WATGeneratorRuntimeMixin:
                     self._gen_expr(arg, indent)
                     self._emit(f"{indent}i32.trunc_f64_u")
                     self._emit(f"{indent}global.get $__last_str_len")
+            elif pkind == "fn_idx":
+                # Callback: register in lambda table, push table index as f64.
+                if arg is None:
+                    self._emit(f"{indent}f64.const 0")
+                else:
+                    from multilingualprogramming.codegen.wat_generator_support import _name  # pylint: disable=import-outside-toplevel
+                    cb_name = _name(arg) if hasattr(arg, "name") or hasattr(arg, "attr") else None
+                    if cb_name and cb_name not in self._lambda_table:
+                        self._lambda_table.append(cb_name)
+                    idx = self._lambda_table.index(cb_name) if cb_name and cb_name in self._lambda_table else 0
+                    self._emit(f"{indent}f64.const {float(idx)}  ;; callback table index")
             else:  # "f64" handle
                 if arg is None:
                     self._emit(f"{indent}f64.const 0")

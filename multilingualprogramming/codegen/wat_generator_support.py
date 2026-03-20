@@ -63,6 +63,7 @@ _DOM_BUILTINS: dict[str, str] = {
     "dom_style":   "ml_dom_style",    # (handle, prop_ptr, prop_len, val_ptr, val_len)
     "dom_remove":  "ml_dom_remove",   # (handle)
     "dom_class":   "ml_dom_set_class",# (handle, cls_ptr, cls_len)
+    "dom_on":      "ml_dom_on",       # (handle, event_ptr, event_len, func_idx_i32)
 }
 
 # WAT signatures for each DOM host import (param types, return type)
@@ -77,6 +78,7 @@ _DOM_HOST_SIGNATURES: dict[str, tuple[list[str], str]] = {
     "ml_dom_style":     (["f64", "i32", "i32", "i32", "i32"], ""),
     "ml_dom_remove":    (["f64"],                           ""),
     "ml_dom_set_class": (["f64", "i32", "i32"],             ""),
+    "ml_dom_on":        (["f64", "i32", "i32", "i32"],      ""),
 }
 
 _DOM_CANONICAL_NAMES: frozenset = frozenset(_DOM_BUILTINS.keys())
@@ -94,6 +96,7 @@ _DOM_CALLER_PARAMS: dict[str, list[str]] = {
     "dom_style":  ["f64", "str", "str"],
     "dom_remove": ["f64"],
     "dom_class":  ["f64", "str"],
+    "dom_on":     ["f64", "str", "fn_idx"],  # fn_idx = f64 → i32 trunc
 }
 _DOM_CALLER_RETURNS: dict[str, str] = {
     "dom_get":    "f64",
@@ -106,6 +109,7 @@ _DOM_CALLER_RETURNS: dict[str, str] = {
     "dom_style":  "",
     "dom_remove": "",
     "dom_class":  "",
+    "dom_on":     "",
 }
 
 
