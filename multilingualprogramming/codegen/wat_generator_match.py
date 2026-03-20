@@ -299,10 +299,6 @@ class WATGeneratorMatchMixin:
         pattern = case.pattern
         if not isinstance(pattern, DictLiteral):
             return False
-        subj_var = None
-        for attr in ("subject",):
-            if hasattr(self, "_current_match_subj"):
-                subj_var = self._current_match_subj
         # Look up which variable holds the subject dict.
         dict_keys = self._dict_key_maps.get(subj_local)
         self._emit(f"{indent}  ;; case {{...}}: mapping pattern")

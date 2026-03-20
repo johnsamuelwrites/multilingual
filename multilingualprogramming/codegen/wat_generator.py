@@ -5,7 +5,7 @@
 #
 
 """Generate executable WAT modules from multilingual AST programs."""
-# pylint: disable=mixed-line-endings
+# pylint: disable=mixed-line-endings,too-many-lines
 
 from types import MappingProxyType
 
@@ -108,7 +108,7 @@ class WATCodeGenerator(
 ):  # pylint: disable=too-many-instance-attributes
     """Visitor-based WAT source code generator."""
 
-    def __init__(self):
+    def __init__(self):  # pylint: disable=too-many-statements
         self._instrs: list[str] = []
         self._locals: set[str] = set()
         self._label_count: int = 0
@@ -886,8 +886,12 @@ class WATCodeGenerator(
                 # Try to call __enter__ if the expr is a known class constructor.
                 cls_name = None
                 enter_fn = None
+                exit_fn = None
                 if isinstance(expr, CallExpr):
-                    cls_name = _name(expr.func) if _name(expr.func) in self._class_ctor_names else None
+                    func_name = _name(expr.func)
+                    cls_name = (
+                        func_name if func_name in self._class_ctor_names else None
+                    )
                 if cls_name:
                     enter_key = f"{cls_name}.__enter__"
                     exit_key = f"{cls_name}.__exit__"
@@ -921,17 +925,16 @@ class WATCodeGenerator(
                         self._emit(f"{indent}drop")
                     self._open_aliases = saved_aliases
                     return
-                else:
-                    # Fallback: run body without __enter__/__exit__.
+                # Fallback: run body without __enter__/__exit__.
+                self._emit(
+                    f"{indent};; with (context-manager hooks not lowerable in WAT)"
+                )
+                if alias:
+                    self._locals.add(alias)
                     self._emit(
-                        f"{indent};; with (context-manager hooks not lowerable in WAT)"
+                        f"{indent}f64.const 0  ;; placeholder for 'as {alias}'"
                     )
-                    if alias:
-                        self._locals.add(alias)
-                        self._emit(
-                            f"{indent}f64.const 0  ;; placeholder for 'as {alias}'"
-                        )
-                        self._emit(f"{indent}local.set ${self._wat_symbol(alias)}")
+                    self._emit(f"{indent}local.set ${self._wat_symbol(alias)}")
             self._gen_stmts(stmt.body, indent)
             self._open_aliases = saved_aliases
 

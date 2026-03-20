@@ -64,13 +64,13 @@ class WATGeneratorOOPMixin:  # pylint: disable=too-many-instance-attributes,too-
                     elif kind == "deleter":
                         self._property_deleters[f"{class_name}.{prop_name}"] = lowered
             # Track special dunder methods for dispatch
-            _SPECIAL_METHODS = frozenset({
+            special_methods = frozenset({
                 "__str__", "__repr__", "__hash__", "__iter__", "__next__",
                 "__add__", "__sub__", "__mul__", "__truediv__", "__floordiv__",
                 "__mod__", "__pow__", "__eq__", "__lt__", "__le__",
                 "__gt__", "__ge__", "__ne__", "__len__", "__contains__",
             })
-            if method_name in _SPECIAL_METHODS:
+            if method_name in special_methods:
                 self._class_special_methods[f"{class_name}.{method_name}"] = lowered
             if method_name == "__init__":
                 self._class_ctor_names[class_name] = lowered

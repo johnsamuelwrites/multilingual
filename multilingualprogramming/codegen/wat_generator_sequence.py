@@ -379,7 +379,7 @@ class WATGeneratorSequenceMixin(WATGeneratorRuntimeMixin, WATGeneratorPrintMixin
                                     inner.value or stmt.target)
         return None
 
-    def _emit_simple_generator_function(
+    def _emit_simple_generator_function(  # pylint: disable=too-many-locals,too-many-statements
         self, func_def: FunctionDef, emitted_name: str | None = None
     ) -> bool:
         spec = self._simple_generator_spec(func_def)

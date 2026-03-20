@@ -566,7 +566,7 @@ class WATGeneratorRuntimeMixin:
             return int(m.group(1))
         return None
 
-    def _ensure_fixedN_format_helper(self, n: int) -> str:
+    def _ensure_fixedN_format_helper(self, n: int) -> str:  # pylint: disable=too-many-statements
         """Emit (once) a ``$__fmt_fixedN_tmpstr`` helper for N decimal places."""
         attr = f"_string_format_fixed{n}_emitted"
         if getattr(self, attr, False):
@@ -583,7 +583,7 @@ class WATGeneratorRuntimeMixin:
         lines = [
             f"  (func $__fmt_fixed{n}_tmpstr (param $v f64) (result f64 f64)",
             "    (local $int_part i64)",
-            f"    (local $frac_digits i64)",
+            "    (local $frac_digits i64)",
             "    (local $ptr i32)",
             "    (local $len i32)",
             "    (local $neg i32)",
@@ -669,9 +669,8 @@ class WATGeneratorRuntimeMixin:
         # Simpler: emit digits in reverse then write in order.
         # Use a digit-by-digit approach with repeated mod 10.
         # Store all N digits by computing them from high to low.
-        digit_positions = []
         denom = multiplier
-        for i in range(n):
+        for _ in range(n):
             denom //= 10
             if denom == 0:
                 lines += [
@@ -694,7 +693,7 @@ class WATGeneratorRuntimeMixin:
                 "    local.get $frac_digits",
                 f"    i64.const {denom * 10}",
                 "    i64.div_u",
-                f"    i64.const 10",
+                "    i64.const 10",
                 "    i64.rem_u",
                 "    i32.wrap_i64",
                 "    i32.const 48",
@@ -719,7 +718,9 @@ class WATGeneratorRuntimeMixin:
         self._funcs.append("\n".join(lines))
         return f"$__fmt_fixed{n}_tmpstr"
 
-    def _emit_fstring_part_ptr_len(self, part, indent: str) -> bool:
+    def _emit_fstring_part_ptr_len(  # pylint: disable=too-many-statements
+        self, part, indent: str
+    ) -> bool:
         """Emit ptr/len f64 pairs for a supported f-string part."""
         if isinstance(part, str):
             offset, length = self._intern(part)
