@@ -607,7 +607,7 @@ CI gates before merge: `pythonpackage`, `pylint`, `package-artifacts`, `compatib
 - **Location**: `tests/`
 - **Files**: 67 test files, ~22,284 lines of test code
 - **Discovery**: `test_*.py` and `*_test.py`
-- **Total tests**: ~1,995 (2 skipped — require `rustc wasm32` target)
+- **Total tests**: ~2,022 (2 skipped — require `rustc wasm32` target)
 
 ### Running Tests
 

@@ -227,6 +227,16 @@ multilingual hello.ml --lang fr
 multilingual run hello.ml --lang fr
 ```
 
+Optional (show which execution backend was used):
+
+```bash
+multilingual hello.ml --show-backend
+multilingual run hello.ml --show-backend
+```
+
+This writes a short backend report to stderr, for example
+`[backend] python (python-codegen-exec)`.
+
 ### 6. Cross-Language Module Imports
 
 You can import `.ml` modules across languages in one program. Example:
@@ -265,7 +275,7 @@ multilingual run main_en.ml --lang en
 - Date/time: `MPDate`, `MPTime`, `MPDatetime`
 - Frontend: `Lexer`, `Parser`, AST nodes, `SemanticAnalyzer`
 - Runtime: `PythonCodeGenerator`, `RuntimeBuiltins`, `ProgramExecutor`, `REPL`
-- WAT/WASM backend: `WATCodeGenerator` — compiles multilingual AST to executable WebAssembly (core language + OOP with stateful class instances; real `try/except/finally` with numeric exception codes; `input()` / `argc()` / `argv()` WASI builtins; DOM bridge via `"env"` host imports)
+- WAT/WASM backend: `WATCodeGenerator` — compiles multilingual AST to executable WebAssembly (core language + OOP with dynamic dispatch/type tags, `super()`, `@property`, and classmethod/staticmethod lowering; real `try/except/finally` with numeric exception codes; `input()` / `argc()` / `argv()` WASI builtins; DOM bridge via `"env"` host imports)
 
 Additional syntax now supported:
 

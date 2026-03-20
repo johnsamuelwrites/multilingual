@@ -225,8 +225,9 @@ call $print_newline
 ## Inheritance
 
 `WATCodeGenerator` implements **static compile-time inheritance** for single-level and
-simple multi-level class hierarchies.  Because WAT has no dynamic dispatch, all method
-resolution happens at codegen time using a copy-up approach.
+simple multi-level class hierarchies, and now also emits **runtime dynamic dispatch**
+helpers for overridden methods on tagged object instances. Static method resolution still
+happens at codegen time using a copy-up approach when the receiver type is known.
 
 ### How It Works
 

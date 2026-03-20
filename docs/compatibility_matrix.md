@@ -4,7 +4,7 @@ This matrix defines the current compatibility baseline for `multilingual`.
 
 Baseline source of truth:
 - `examples/complete_features_en.ml`
-- `tests/` (1995 tests across 130+ test suites, 2 skipped)
+- `tests/` (2022 tests across 130+ test suites, 2 skipped)
 
 Target runtime:
 - CPython `3.12.x`
@@ -191,6 +191,8 @@ WebAssembly Text (WAT), which is then compiled and executed via Wasmtime.
 | `@staticmethod` / `@classmethod` | Supported | Detected via decorator; no `self` pushed at call site |
 | `@property` | Supported | Getter call emitted on `obj.attr` access; works with stateful and stateless classes |
 | `print` with `sep=` / `end=` | Supported | Custom separator/terminator interned in data section, printed via `$print_str` |
+| `divmod()` tuple materialization | Supported | Lowered to a tracked 2-tuple and printed as Python-style tuple output |
+| `list(zip(...))` on static tracked sequences | Supported | Materializes a list of tuple pointers and prints as Python-style nested sequence output |
 | `try` / `except` / `finally` | Supported | Numeric exception-code model: `raise` stores a non-zero f64 code; named `except ExcType:` matches that code; catch-all `except:` and `except Exception:` match any non-zero code; `finally` runs unconditionally on both handled and unhandled paths; `as e` binds the actual exception code |
 | `input()` | Supported | Reads a line from WASI stdin (fd 0), strips trailing CR/LF |
 | `argc()` | Supported | Returns WASI argument count as f64 |
@@ -202,7 +204,7 @@ See [docs/wat_oop_model.md](wat_oop_model.md) for the full object model referenc
 
 ## Test Coverage
 
-1995 tests (2 skipped) across 130+ test suites covering:
+2022 tests (2 skipped) across 130+ test suites covering:
 
 | Test area | Suite count | Description |
 |---|---|---|
