@@ -6,6 +6,7 @@
 # pylint: disable=duplicate-code
 
 """Tests for the program executor (full pipeline)."""
+# pylint: disable=mixed-line-endings
 
 import unittest
 
@@ -21,6 +22,20 @@ class ExecutorBasicTestSuite(unittest.TestCase):
         result = executor.execute(source)
         self.assertTrue(result.success, result.errors)
         self.assertEqual(result.output.strip(), "Hello, World!")
+        self.assertEqual(result.backend_name, "python")
+        self.assertEqual(result.backend_reason, "python-codegen-exec")
+
+    def test_execution_result_includes_backend_report(self):
+        source = 'print("status")\n'
+        executor = ProgramExecutor(language="en")
+        result = executor.execute(source)
+        self.assertEqual(
+            result.backend_report(),
+            {
+                "name": "python",
+                "reason": "python-codegen-exec",
+            },
+        )
 
     def test_variable_declaration_and_print(self):
         source = """\

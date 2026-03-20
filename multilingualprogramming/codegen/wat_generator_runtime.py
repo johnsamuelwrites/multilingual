@@ -83,11 +83,18 @@ class WATGeneratorRuntimeMixin:
                 if arg is None:
                     self._emit(f"{indent}f64.const 0")
                 else:
-                    from multilingualprogramming.codegen.wat_generator_support import _name  # pylint: disable=import-outside-toplevel
-                    cb_name = _name(arg) if hasattr(arg, "name") or hasattr(arg, "attr") else None
+                    cb_name = (
+                        _name(arg)
+                        if hasattr(arg, "name") or hasattr(arg, "attr")
+                        else None
+                    )
                     if cb_name and cb_name not in self._lambda_table:
                         self._lambda_table.append(cb_name)
-                    idx = self._lambda_table.index(cb_name) if cb_name and cb_name in self._lambda_table else 0
+                    idx = (
+                        self._lambda_table.index(cb_name)
+                        if cb_name and cb_name in self._lambda_table
+                        else 0
+                    )
                     self._emit(f"{indent}f64.const {float(idx)}  ;; callback table index")
             else:  # "f64" handle
                 if arg is None:
@@ -702,7 +709,7 @@ class WATGeneratorRuntimeMixin:
             lines += [
                 "    local.get $copy_i",
                 "    local.get $frac_digits",
-                f"    i64.const {denom * 10}",
+                f"    i64.const {denom}",
                 "    i64.div_u",
                 "    i64.const 10",
                 "    i64.rem_u",

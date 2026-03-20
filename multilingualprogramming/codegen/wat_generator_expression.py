@@ -7,10 +7,15 @@
 """Expression lowering helpers for the WAT generator."""
 
 from multilingualprogramming.parser.ast_nodes import (
+    AttributeAccess,
     BinaryOp,
+    CallExpr,
+    FStringLiteral,
     Identifier,
+    IndexAccess,
     StringLiteral,
 )
+from multilingualprogramming.codegen.wat_generator_support import _name
 
 class WATGeneratorExpressionMixin:
     """Helpers for lowering complex expressions."""
@@ -86,8 +91,39 @@ class WATGeneratorExpressionMixin:
         return self._is_string_value(node.left) and self._is_string_value(node.right)
 
     def _is_string_value(self, expr) -> bool:
-        return isinstance(expr, StringLiteral) or (
-            isinstance(expr, Identifier) and expr.name in self._string_len_locals
+        return (
+            isinstance(expr, (StringLiteral, FStringLiteral))
+            or (
+                isinstance(expr, Identifier)
+                and expr.name in self._string_len_locals
+            )
+            or (
+                isinstance(expr, BinaryOp)
+                and expr.op == "+"
+                and self._is_string_binop(expr)
+            )
+            or (
+                isinstance(expr, IndexAccess)
+                and isinstance(expr.obj, Identifier)
+                and expr.obj.name in self._string_len_locals
+            )
+            or (
+                isinstance(expr, CallExpr)
+                and (
+                    _name(expr.func) in self._string_return_funcs
+                    or (
+                        isinstance(expr.func, AttributeAccess)
+                        and expr.func.attr in (
+                            "strip",
+                            "lstrip",
+                            "rstrip",
+                            "upper",
+                            "lower",
+                            "replace",
+                        )
+                    )
+                )
+            )
         )
 
     def _emit_string_concat_binop(self, node: BinaryOp, indent: str):
@@ -108,8 +144,13 @@ class WATGeneratorExpressionMixin:
             _, byte_len = self._intern(expr.value)
             self._emit(f"{indent}f64.const {float(byte_len)}")
             return
-        len_local = self._string_len_locals[expr.name]
-        self._emit(f"{indent}local.get ${self._wat_symbol(len_local)}")
+        if isinstance(expr, Identifier):
+            len_local = self._string_len_locals[expr.name]
+            self._emit(f"{indent}local.get ${self._wat_symbol(len_local)}")
+            return
+        if self._gen_string_len_expr(expr, indent):
+            return
+        raise ValueError(f"Unsupported string expression for WAT concat: {type(expr).__name__}")
 
     def _emit_numeric_binop(self, node: BinaryOp, indent: str):
         arith = {"+": "f64.add", "-": "f64.sub", "*": "f64.mul", "/": "f64.div"}

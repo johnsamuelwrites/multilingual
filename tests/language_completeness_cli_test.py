@@ -5,11 +5,15 @@
 #
 
 """Tests for language completeness and CLI behavior."""
+# pylint: disable=mixed-line-endings
 
 # pylint: disable=duplicate-code
 
 import unittest
 import sys
+import io
+import tempfile
+from pathlib import Path
 from argparse import Namespace
 from unittest.mock import patch
 
@@ -370,6 +374,38 @@ class CLITestSuite(unittest.TestCase):
         args = run_mock.call_args.args[0]
         self.assertEqual(args.file, "examples/arithmetics_fr.ml")
         self.assertEqual(args.lang, "fr")
+
+    def test_main_direct_ml_file_supports_show_backend_option(self):
+        with patch.object(main_module, "cmd_run") as run_mock:
+            with patch.object(sys, "argv", [
+                "multilingual",
+                "examples/arithmetics_en.ml",
+                "--show-backend",
+            ]):
+                main_module.main()
+
+        run_mock.assert_called_once()
+        args = run_mock.call_args.args[0]
+        self.assertTrue(args.show_backend)
+
+    def test_cmd_run_show_backend_writes_report_to_stderr(self):
+        with tempfile.NamedTemporaryFile(
+            "w", suffix=".ml", delete=False, encoding="utf-8"
+        ) as tmp:
+            tmp.write('print("hello")\n')
+            tmp_path = tmp.name
+
+        args = Namespace(file=tmp_path, lang="en", show_backend=True)
+        stdout = io.StringIO()
+        stderr = io.StringIO()
+        try:
+            with patch("sys.stdout", stdout), patch("sys.stderr", stderr):
+                cmd_run(args)
+        finally:
+            Path(tmp_path).unlink(missing_ok=True)
+
+        self.assertEqual(stdout.getvalue(), "hello\n")
+        self.assertIn("[backend] python (python-codegen-exec)", stderr.getvalue())
 
 
 # ---------------------------------------------------------------

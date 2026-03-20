@@ -59,15 +59,14 @@ class WATStringOpsTestSuite(unittest.TestCase):
         self.assertIn("call $__str_concat", wat)
         self.assertIn("str concat (runtime)", wat)
 
-    def test_string_index_emits_byte_load(self):
+    def test_string_index_calls_slice_helper(self):
         stmts = [
             VariableDeclaration(Identifier("s"), StringLiteral("hello")),
             ExpressionStatement(IndexAccess(Identifier("s"), NumeralLiteral("0"))),
         ]
         wat = _gen(*stmts)
-        self.assertIn("i32.load8_u", wat)
-        self.assertIn("f64.convert_i32_u", wat)
-        self.assertIn("string byte access", wat)
+        self.assertIn("call $__str_slice", wat)
+        self.assertIn("single-character string", wat)
 
     def test_string_slice_calls_helper(self):
         stmts = [

@@ -84,6 +84,9 @@ class WATGeneratorPrintMixin:
         if isinstance(arg, CallExpr) and _name(arg.func) in self._string_return_funcs:
             self._emit_print_string_call(arg, indent)
             return
+        if self._is_string_value(arg):
+            self._emit_print_string_expr(arg, indent)
+            return
         # If the argument is a tracked class instance and has __str__, call it.
         if isinstance(arg, Identifier):
             cls_name = self._var_class_types.get(arg.name)
@@ -97,9 +100,11 @@ class WATGeneratorPrintMixin:
                     self._emit(f"{indent}local.get ${self._wat_symbol(arg.name)}")
                     self._emit(f"{indent}call ${self._wat_symbol(str_fn)}")
                     self._emit(f"{indent}global.get $__last_str_len")
+                    self._emit(f"{indent}f64.convert_i32_u")
                     self._emit(f"{indent}local.set ${self._wat_symbol(tmp_len)}")
                     self._emit(f"{indent}i32.trunc_f64_u")
                     self._emit(f"{indent}local.get ${self._wat_symbol(tmp_len)}")
+                    self._emit(f"{indent}i32.trunc_f64_u")
                     self._emit(f"{indent}call $print_str")
                     return
         if isinstance(arg, NumeralLiteral) and "." in arg.value:
@@ -146,9 +151,11 @@ class WATGeneratorPrintMixin:
             tmp_len = f"__print_fstr_len_{self._new_label()}"
             self._locals.add(tmp_len)
             self._emit(f"{indent}global.get $__last_str_len")
+            self._emit(f"{indent}f64.convert_i32_u")
             self._emit(f"{indent}local.set ${self._wat_symbol(tmp_len)}")
             self._emit(f"{indent}i32.trunc_f64_u")
             self._emit(f"{indent}local.get ${self._wat_symbol(tmp_len)}")
+            self._emit(f"{indent}i32.trunc_f64_u")
             self._emit(f"{indent}call $print_str")
             return
         self._emit(f"{indent}f64.const 0")
@@ -169,9 +176,24 @@ class WATGeneratorPrintMixin:
         self._locals.add(tmp_len)
         self._gen_expr(arg, indent)
         self._emit(f"{indent}global.get $__last_str_len")
+        self._emit(f"{indent}f64.convert_i32_u")
         self._emit(f"{indent}local.set ${self._wat_symbol(tmp_len)}")
         self._emit(f"{indent}i32.trunc_f64_u")
         self._emit(f"{indent}local.get ${self._wat_symbol(tmp_len)}")
+        self._emit(f"{indent}i32.trunc_f64_u")
+        self._emit(f"{indent}call $print_str")
+
+    def _emit_print_string_expr(self, arg, indent: str) -> None:
+        """Print a string-valued expression using $__last_str_len metadata."""
+        tmp_len = f"__print_expr_len_{self._new_label()}"
+        self._locals.add(tmp_len)
+        self._gen_expr(arg, indent)
+        self._emit(f"{indent}global.get $__last_str_len")
+        self._emit(f"{indent}f64.convert_i32_u")
+        self._emit(f"{indent}local.set ${self._wat_symbol(tmp_len)}")
+        self._emit(f"{indent}i32.trunc_f64_u")
+        self._emit(f"{indent}local.get ${self._wat_symbol(tmp_len)}")
+        self._emit(f"{indent}i32.trunc_f64_u")
         self._emit(f"{indent}call $print_str")
 
     def _emit_print_separator(self, sep_val: str, indent: str):

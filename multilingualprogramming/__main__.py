@@ -42,6 +42,18 @@ from multilingualprogramming.parser.parser import Parser
 from multilingualprogramming.version import __version__
 
 
+def _emit_backend_report(result):
+    """Write backend selection details to stderr."""
+    report = result.backend_report()
+    details = report.get("details", {})
+    detail_pairs = [f"{key}={value}" for key, value in sorted(details.items())]
+    detail_suffix = f" [{', '.join(detail_pairs)}]" if detail_pairs else ""
+    print(
+        f"[backend] {report['name']} ({report['reason']}){detail_suffix}",
+        file=sys.stderr,
+    )
+
+
 def _read_source_file(path: str) -> str:
     try:
         with open(path, encoding="utf-8") as f:
@@ -94,6 +106,9 @@ def cmd_run(args):
 
     if result.output:
         sys.stdout.write(result.output)
+
+    if getattr(args, "show_backend", False):
+        _emit_backend_report(result)
 
     if not result.success:
         for err in result.errors:
@@ -245,6 +260,10 @@ def _maybe_dispatch_direct_file_run(argv):
         "--lang", default=None,
         help="Source language code (e.g., en, fr, hi). Auto-detect if omitted.",
     )
+    arg_parser.add_argument(
+        "--show-backend", action="store_true",
+        help="Report the selected execution backend to stderr",
+    )
     args = arg_parser.parse_args(argv)
     cmd_run(args)
     return True
@@ -277,6 +296,10 @@ def main():  # pylint: disable=too-many-statements
     run_parser.add_argument(
         "--lang", default=None,
         help="Source language code (e.g., en, fr, hi). Auto-detect if omitted.",
+    )
+    run_parser.add_argument(
+        "--show-backend", action="store_true",
+        help="Report the selected execution backend to stderr",
     )
 
     # repl subcommand

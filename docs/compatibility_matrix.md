@@ -229,7 +229,7 @@ The following are not claimed as universally compatible at this stage:
 - Complete localization aliases for every CPython built-in function/type (41 of 70+ have aliases)
 - WAT `@property` setter/deleter protocol (getter fully supported; setter/deleter not yet lowered)
 - WAT `print` `file=` kwarg (stdout is the only target in WAT)
-- WAT DOM bridge `dom_value` (element value read) uses the argv static buffer area and may conflict if argc/argv and DOM value reads overlap in the same program
+- WAT DOM bridge `dom_value` now uses a dedicated scratch buffer separate from argv/input storage
 - WAT exception model uses numeric codes, not Python exception objects; `raise` with a non-`RaiseStatement` AST form may not match the expected catch code
 
 ## Recommendation

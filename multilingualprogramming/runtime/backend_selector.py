@@ -37,7 +37,7 @@ class Backend(Enum):
     AUTO = "auto"
 
 
-class BackendSelector:
+class BackendSelector:  # pylint: disable=too-many-instance-attributes
     """
     Intelligently selects between Python and WASM execution.
 
@@ -61,6 +61,8 @@ class BackendSelector:
         self._wasm_module = None
         self._performance_stats: Dict[str, Dict[str, float]] = {}
         self._tuple_lowering_mode = TupleLoweringMode.OUT_PARAMS
+        self._status_reason = "not-initialized"
+        self._last_call_report: Dict[str, Any] = {}
         self._use_wasm = self._determine_backend()
 
         # Set up default Python fallback using FALLBACK_REGISTRY
@@ -78,25 +80,33 @@ class BackendSelector:
             True if WASM should be used, False for Python
         """
         if self._backend == Backend.PYTHON:
+            self._status_reason = "forced-python"
             return False
         if self._backend == Backend.WASM:
             if not self._wasm_available:
+                self._status_reason = "wasmtime-not-installed"
                 print("Warning: WASM requested but not available. Using Python.",
                       file=sys.stderr)
+            else:
+                self._status_reason = "forced-wasm"
             return self._wasm_available
         # AUTO
         # Use WASM if available and on supported platform
         if not self._wasm_available:
+            self._status_reason = "wasmtime-not-installed"
             return False
 
         # Check platform support
         if sys.platform not in ["win32", "linux", "darwin"]:
+            self._status_reason = f"unsupported-platform:{sys.platform}"
             return False
 
         # Check Python version
         if sys.version_info < (3, 7):
+            self._status_reason = "unsupported-python-version"
             return False
 
+        self._status_reason = "auto-wasm-available"
         return True
 
     def set_backend(self, backend: Backend) -> None:
@@ -116,6 +126,24 @@ class BackendSelector:
     def is_wasm_available(self) -> bool:
         """Check if WASM is available and being used."""
         return self._use_wasm
+
+    def current_backend_name(self) -> str:
+        """Return the currently selected backend name."""
+        return "wasm" if self._use_wasm else "python"
+
+    def get_status(self) -> Dict[str, Any]:
+        """Return structured backend selection status."""
+        return {
+            "backend": self.current_backend_name(),
+            "reason": self._status_reason,
+            "requested": self._backend.value,
+            "wasm_runtime_available": self._wasm_available,
+            "module_loaded": self._wasm_module is not None,
+        }
+
+    def get_last_call_report(self) -> Dict[str, Any]:
+        """Return the latest function-call backend report."""
+        return dict(self._last_call_report)
 
     def set_python_fallback(self, func: Callable) -> None:
         """
@@ -162,13 +190,21 @@ class BackendSelector:
             True if WASM module loaded successfully
         """
         if not self._use_wasm:
+            self._status_reason = f"module-load-skipped:{self.current_backend_name()}"
             return False
 
         try:
             self._wasm_module = WasmModule.load(wasm_path)
-            return self._wasm_module.instantiate()
-        except Exception as e:
-            print(f"Failed to load WASM module: {e}", file=sys.stderr)
+            instantiated = self._wasm_module.instantiate()
+            if instantiated:
+                self._status_reason = "wasm-module-loaded"
+            else:
+                self._status_reason = "wasm-module-instantiation-failed"
+                self._use_wasm = False
+            return instantiated
+        except Exception as exc:
+            print(f"Failed to load WASM module: {exc}", file=sys.stderr)
+            self._status_reason = f"wasm-module-load-failed:{type(exc).__name__}"
             self._use_wasm = False
             return False
 
@@ -190,15 +226,35 @@ class BackendSelector:
                 wasm_args = self._convert_to_wasm(*args)
                 result = self._wasm_module.call(function_name, *wasm_args)
                 # Convert result back to Python
+                self._last_call_report = {
+                    "function": function_name,
+                    "backend": "wasm",
+                    "reason": "wasm-call-succeeded",
+                    "fallback": False,
+                }
                 return self._convert_from_wasm(result)
-            except Exception as e:
-                print(f"WASM execution failed: {e}. Falling back to Python.",
+            except Exception as exc:
+                print(f"WASM execution failed: {exc}. Falling back to Python.",
                       file=sys.stderr)
                 # Fall through to Python fallback
+                self._status_reason = f"wasm-call-failed:{type(exc).__name__}"
+                self._last_call_report = {
+                    "function": function_name,
+                    "backend": "python",
+                    "reason": f"wasm-call-failed:{type(exc).__name__}",
+                    "fallback": True,
+                }
                 self._use_wasm = False
 
         # Use Python fallback
         if self._python_fallback:
+            if not self._last_call_report:
+                self._last_call_report = {
+                    "function": function_name,
+                    "backend": "python",
+                    "reason": self._status_reason,
+                    "fallback": self._backend != Backend.PYTHON,
+                }
             return self._python_fallback(function_name, *args, **kwargs)
         raise RuntimeError(f"No implementation for {function_name}")
 
@@ -342,4 +398,4 @@ def is_wasm_available() -> bool:
 
 def get_current_backend() -> str:
     """Get name of current backend."""
-    return "WASM" if _global_selector.is_wasm_available() else "Python"
+    return _global_selector.current_backend_name().upper()

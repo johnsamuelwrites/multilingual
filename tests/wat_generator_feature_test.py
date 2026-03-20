@@ -793,6 +793,21 @@ class WATDOMBridgeTestSuite(unittest.TestCase):
         )
         self.assertIn("(func $dom_get", wat)
 
+    def test_dom_value_uses_dedicated_buffer_not_argv_storage(self):
+        wat = self._gen(
+            VariableDeclaration("el", CallExpr(Identifier("dom_get"), [StringLiteral("x")])),
+            VariableDeclaration("value", CallExpr(Identifier("dom_value"), [Identifier("el")])),
+            ExpressionStatement(
+                CallExpr(
+                    Identifier("print"),
+                    [CallExpr(Identifier("argv"), [NumeralLiteral("0")])],
+                )
+            ),
+        )
+        self.assertIn("(func $dom_value", wat)
+        self.assertIn("i32.const 260608", wat)
+        self.assertNotIn("The dom_value wrapper uses argv_data as its internal string buffer.", wat)
+
     def test_no_dom_imports_when_unused(self):
         wat = self._gen(
             ExpressionStatement(CallExpr(Identifier("print"), [NumeralLiteral("1")])),

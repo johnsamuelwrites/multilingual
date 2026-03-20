@@ -1585,14 +1585,14 @@ class WATCodeGenerator(
               and isinstance(node.obj, Identifier)
               and node.obj.name == "math"):
             # math.pi, math.e, math.tau, math.inf constants
-            _MATH_CONSTANTS = {
+            math_constants = {
                 "pi": "3.141592653589793",
                 "e": "2.718281828459045",
                 "tau": "6.283185307179586",
                 "inf": "inf",
                 "nan": "nan",
             }
-            val = _MATH_CONSTANTS.get(node.attr)
+            val = math_constants.get(node.attr)
             if val is not None:
                 self._emit(f"{indent}f64.const {val}")
             else:
@@ -1670,15 +1670,15 @@ class WATCodeGenerator(
                         self._emit(f"{indent}local.get ${self._wat_symbol(len_local)}")
                     self._emit(f"{indent}call $__str_slice")
                 else:
-                    # s[i] — return byte value at offset i as f64.
-                    self._emit(f"{indent};; {sname}[i] — string byte access")
+                    # s[i] — return a one-character string slice like Python.
+                    self._ensure_str_slice_helper()
+                    self._emit(f"{indent};; {sname}[i] — single-character string")
                     self._emit(f"{indent}local.get ${self._wat_symbol(sname)}")
-                    self._emit(f"{indent}i32.trunc_f64_u")
                     self._gen_expr(node.index, indent)
-                    self._emit(f"{indent}i32.trunc_f64_u")
-                    self._emit(f"{indent}i32.add")
-                    self._emit(f"{indent}i32.load8_u")
-                    self._emit(f"{indent}f64.convert_i32_u  ;; char code as f64")
+                    self._gen_expr(node.index, indent)
+                    self._emit(f"{indent}f64.const 1")
+                    self._emit(f"{indent}f64.add")
+                    self._emit(f"{indent}call $__str_slice")
             elif isinstance(obj, Identifier) and obj.name in self._dict_key_maps \
                     and isinstance(node.index, StringLiteral):
                 key_map = self._dict_key_maps[obj.name]
@@ -2056,6 +2056,12 @@ class WATCodeGenerator(
             "    i32.and",
             "    i32.add",
             "    global.set $__heap_ptr",
+            "    local.get $ss_e",
+            "    i32.trunc_f64_u",
+            "    local.get $ss_s",
+            "    i32.trunc_f64_u",
+            "    i32.sub",
+            "    global.set $__last_str_len",
             "    local.get $ss_dst",
             "  )",
         ]

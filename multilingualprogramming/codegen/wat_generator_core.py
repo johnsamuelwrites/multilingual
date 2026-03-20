@@ -5,6 +5,7 @@
 #
 
 """Core shared methods for the WAT generator."""
+# pylint: disable=too-many-lines
 
 import re
 
@@ -2330,7 +2331,8 @@ class WATGeneratorCoreMixin:
 
         These wrappers present the caller-facing interface (string args as
         ptr+len, handles as f64) and forward to the env.* host imports.
-        The dom_value wrapper uses argv_data as its internal string buffer.
+        The dom_value wrapper uses a dedicated DOM scratch buffer so it
+        does not overlap with argv/input runtime storage.
         """
         from multilingualprogramming.codegen.wat_generator_support import (  # pylint: disable=import-outside-toplevel
             _DOM_CALLER_PARAMS,

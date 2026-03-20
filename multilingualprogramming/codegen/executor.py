@@ -10,6 +10,7 @@ Program executor: full pipeline from multilingual source to execution.
     source (any language) -> Lexer -> Parser -> SemanticAnalyzer
         -> PythonCodeGenerator -> compile + exec
 """
+# pylint: disable=mixed-line-endings
 
 import io
 import sys
@@ -27,16 +28,38 @@ from multilingualprogramming.exceptions import (
 )
 
 
-class ExecutionResult:
+class ExecutionResult:  # pylint: disable=too-many-instance-attributes
     """Result of executing a multilingual program."""
 
-    def __init__(self, output="", return_value=None, python_source="",
-                 errors=None, success=True):
+    def __init__(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+        self, output="", return_value=None, python_source="",
+        errors=None, success=True, backend_name="python",
+        backend_reason="python-codegen-exec",
+        backend_details=None
+    ):
         self.output = output
         self.return_value = return_value
         self.python_source = python_source
         self.errors = errors or []
         self.success = success
+        self.backend_name = backend_name
+        self.backend_reason = backend_reason
+        self.backend_details = dict(backend_details or {})
+
+    @property
+    def backend_summary(self):
+        """Return a short human-readable backend summary."""
+        return f"{self.backend_name} ({self.backend_reason})"
+
+    def backend_report(self):
+        """Return structured backend metadata for CLI/reporting use."""
+        report = {
+            "name": self.backend_name,
+            "reason": self.backend_reason,
+        }
+        if self.backend_details:
+            report["details"] = dict(self.backend_details)
+        return report
 
     def __repr__(self):
         status = "OK" if self.success else "FAILED"
@@ -108,6 +131,7 @@ class ProgramExecutor:
                     return ExecutionResult(
                         errors=[str(e) for e in semantic_errors],
                         success=False,
+                        backend_details={"stage": "semantic-analysis"},
                     )
 
             # Step 5: Lowered core to Python
@@ -124,11 +148,13 @@ class ProgramExecutor:
             return ExecutionResult(
                 errors=[str(exc)],
                 success=False,
+                backend_details={"stage": "execution"},
             )
         except Exception as exc:
             return ExecutionResult(
                 errors=[f"{type(exc).__name__}: {exc}"],
                 success=False,
+                backend_details={"stage": "execution"},
             )
 
     def transpile(self, source):
@@ -187,6 +213,8 @@ class ProgramExecutor:
                 python_source=python_source,
                 errors=[f"Generated Python has syntax error: {exc}"],
                 success=False,
+                backend_reason="generated-python-invalid",
+                backend_details={"stage": "compile"},
             )
 
         # Execute with optional output capture
@@ -205,6 +233,7 @@ class ProgramExecutor:
                     python_source=python_source,
                     errors=[f"{type(exc).__name__}: {exc}"],
                     success=False,
+                    backend_details={"stage": "exec"},
                 )
             finally:
                 sys.stdout = old_stdout
@@ -216,6 +245,7 @@ class ProgramExecutor:
                     python_source=python_source,
                     errors=[f"{type(exc).__name__}: {exc}"],
                     success=False,
+                    backend_details={"stage": "exec"},
                 )
 
         return ExecutionResult(
