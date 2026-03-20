@@ -1200,7 +1200,7 @@ class WATFunctionTestSuite(unittest.TestCase):
             ),
             ExpressionStatement(CallExpr(Identifier("print"), [Identifier("formatted")])),
         )
-        self.assertIn("$__fmt_default_tmpstr", wat)
+        self.assertIn("$__str_from_f64", wat)
         self.assertIn("$__str_concat", wat)
         self.assertIn("formatted_strlen", wat)
         self.assertNotIn("unsupported expr: FStringLiteral", wat)

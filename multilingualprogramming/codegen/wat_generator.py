@@ -80,9 +80,11 @@ from multilingualprogramming.codegen.wat_generator_support import (
     _DOM_BUILTINS,
     _DOM_CANONICAL_NAMES,
     _DOM_HOST_SIGNATURES,
+    _FILTER_NAMES,
     _INPUT_NAMES,
     _INT_NAMES,
     _LEN_NAMES,
+    _MAP_NAMES,
     _MAX_NAMES,
     _MIN_NAMES,
     _POW_NAMES,
@@ -313,6 +315,17 @@ class WATCodeGenerator(
             return False
         self._gen_list_alloc(ListLiteral(list(mapping.values())), indent)
         return True
+
+    def _is_static_dict_get_call(self, node) -> bool:
+        """Return True for ``dict.get("key"[, default])`` on tracked static dicts."""
+        return (
+            isinstance(node.func, AttributeAccess)
+            and node.func.attr == "get"
+            and isinstance(node.func.obj, Identifier)
+            and node.func.obj.name in self._dict_key_maps
+            and len(node.args) >= 1
+            and isinstance(node.args[0], StringLiteral)
+        )
 
     def _gen_divmod_alloc(self, left, right, indent: str) -> None:
         """Allocate a 2-tuple containing quotient and remainder."""
@@ -669,6 +682,41 @@ class WATCodeGenerator(
                     self._emit(f"{indent}global.get $__last_str_len")
                     self._emit(f"{indent}call $__str_find")
                     self._emit(f"{indent}drop")
+                elif (isinstance(expr.func, AttributeAccess)
+                      and expr.func.attr == "append"
+                      and isinstance(expr.func.obj, Identifier)
+                      and expr.func.obj.name in self._list_locals
+                      and len(expr.args) == 1):
+                    # lst.append(x) → allocate new list, update local
+                    obj_name = expr.func.obj.name
+                    self._emit(f"{indent};; {obj_name}.append(x)")
+                    self._gen_expr(expr.func.obj, indent)
+                    self._gen_expr(expr.args[0], indent)
+                    self._emit(f"{indent}call $__list_append")
+                    self._emit(f"{indent}local.set ${self._wat_symbol(obj_name)}")
+                elif (isinstance(expr.func, AttributeAccess)
+                      and expr.func.attr == "pop"
+                      and isinstance(expr.func.obj, Identifier)
+                      and expr.func.obj.name in self._list_locals
+                      and not expr.args):
+                    # lst.pop() statement — result discarded
+                    obj_name = expr.func.obj.name
+                    self._emit(f"{indent};; {obj_name}.pop() (result discarded)")
+                    self._gen_expr(expr.func.obj, indent)
+                    self._emit(f"{indent}call $__list_pop")
+                    self._emit(f"{indent}drop")
+                elif (isinstance(expr.func, AttributeAccess)
+                      and expr.func.attr == "extend"
+                      and isinstance(expr.func.obj, Identifier)
+                      and expr.func.obj.name in self._list_locals
+                      and len(expr.args) == 1):
+                    # lst.extend(other) → allocate new list, update local
+                    obj_name = expr.func.obj.name
+                    self._emit(f"{indent};; {obj_name}.extend(other)")
+                    self._gen_expr(expr.func.obj, indent)
+                    self._gen_expr(expr.args[0], indent)
+                    self._emit(f"{indent}call $__list_extend")
+                    self._emit(f"{indent}local.set ${self._wat_symbol(obj_name)}")
                 else:
                     # Closure, constructor, builtin, or other non-WAT callable
                     self._emit(f"{indent};; unsupported call: {fname}(...) — not a WAT function")
@@ -1193,6 +1241,21 @@ class WATCodeGenerator(
                 self._gen_expr(node.args[0], indent)
                 self._gen_expr(node.args[1], indent)
                 self._emit(f"{indent}call $pow_f64")
+            elif fname == "isinstance" and len(node.args) == 2:
+                obj_expr, cls_expr = node.args[0], node.args[1]
+                if isinstance(cls_expr, Identifier) and cls_expr.name in self._class_ids:
+                    cls_id = self._class_ids[cls_expr.name]
+                    self._emit(f"{indent};; isinstance({_name(obj_expr)}, {cls_expr.name})")
+                    self._gen_expr(obj_expr, indent)
+                    self._emit(f"{indent}i32.trunc_f64_u")
+                    self._emit(f"{indent}i32.const 8")
+                    self._emit(f"{indent}i32.sub")
+                    self._emit(f"{indent}i32.load")
+                    self._emit(f"{indent}i32.const {cls_id}")
+                    self._emit(f"{indent}i32.eq")
+                    self._emit(f"{indent}f64.convert_i32_u")
+                else:
+                    self._emit(f"{indent}f64.const 0  ;; isinstance: unknown class")
             elif resolved_fname in {"json.dumps", "dumps"} and len(node.args) == 1:
                 arg = node.args[0]
                 if isinstance(arg, Identifier) and (
@@ -1210,7 +1273,14 @@ class WATCodeGenerator(
                     self._emit(f"{indent}i32.const {null_ptr}")
                     self._emit(f"{indent}f64.convert_i32_u")
             elif fname in _STR_NAMES and len(node.args) == 1:
-                self._gen_expr(node.args[0], indent)
+                arg = node.args[0]
+                if isinstance(arg, StringLiteral) or (
+                    isinstance(arg, Identifier) and arg.name in self._string_len_locals
+                ):
+                    self._gen_expr(arg, indent)
+                else:
+                    self._gen_expr(arg, indent)
+                    self._emit(f"{indent}call $__str_from_f64")
             elif fname in _LIST_NAMES and len(node.args) == 1:
                 arg = node.args[0]
                 if isinstance(arg, (ListComprehension, GeneratorExpr)) and \
@@ -1223,6 +1293,34 @@ class WATCodeGenerator(
                     pass
                 elif isinstance(arg, (ListLiteral, TupleLiteral, DictLiteral)):
                     self._gen_expr(arg, indent)
+                elif (isinstance(arg, CallExpr)
+                      and _name(arg.func) in _MAP_NAMES
+                      and len(arg.args) == 2):
+                    fn_arg, lst_arg = arg.args[0], arg.args[1]
+                    fn_name = _name(fn_arg)
+                    lst_name = _name(lst_arg) if isinstance(lst_arg, Identifier) else None
+                    if (isinstance(fn_arg, Identifier)
+                            and fn_name in self._defined_func_names
+                            and lst_name and lst_name in self._list_locals):
+                        self._gen_map_list(fn_name, lst_name, indent)
+                    else:
+                        self._emit(f"{indent}f64.const 0  ;; unsupported: map(...)")
+                elif (isinstance(arg, CallExpr)
+                      and _name(arg.func) in _FILTER_NAMES
+                      and len(arg.args) == 2):
+                    fn_arg, lst_arg = arg.args[0], arg.args[1]
+                    fn_name = _name(fn_arg)
+                    lst_name = _name(lst_arg) if isinstance(lst_arg, Identifier) else None
+                    if (isinstance(fn_arg, Identifier)
+                            and fn_name in self._defined_func_names
+                            and lst_name and lst_name in self._list_locals):
+                        self._gen_filter_list(fn_name, lst_name, indent)
+                    else:
+                        self._emit(f"{indent}f64.const 0  ;; unsupported: filter(...)")
+                elif (isinstance(arg, Identifier)
+                      and arg.name in self._list_locals):
+                    # list(existing_list) → shallow copy
+                    self._gen_list_copy(arg.name, indent)
                 else:
                     self._emit(f"{indent}f64.const 0  ;; unsupported call: {fname}(...)")
             elif fname in _TUPLE_NAMES and len(node.args) == 1:
@@ -1415,6 +1513,39 @@ class WATCodeGenerator(
                 self._emit(f"{indent}i32.trunc_f64_u")
                 self._emit(f"{indent}global.get $__last_str_len")
                 self._emit(f"{indent}call $__str_replace")
+            elif (isinstance(node.func, AttributeAccess)
+                  and node.func.attr == "pop"
+                  and isinstance(node.func.obj, Identifier)
+                  and node.func.obj.name in self._list_locals
+                  and not node.args):
+                # lst.pop() → last element (modifies count in-place)
+                obj_name = node.func.obj.name
+                self._emit(f"{indent};; {obj_name}.pop()")
+                self._gen_expr(node.func.obj, indent)
+                self._emit(f"{indent}call $__list_pop")
+            elif self._is_static_dict_get_call(node):
+                # d.get(key) / d.get(key, default)
+                key_map = self._dict_key_maps[node.func.obj.name]
+                key = node.args[0].value
+                obj_sym = self._wat_symbol(node.func.obj.name)
+                if key in key_map:
+                    element_index = key_map[key]
+                    self._emit(f"{indent};; {node.func.obj.name}.get({key!r})")
+                    self._emit(f"{indent}local.get ${obj_sym}")
+                    self._emit(f"{indent}i32.trunc_f64_u")
+                    self._emit(f"{indent}i32.const {(element_index + 1) * 8}")
+                    self._emit(f"{indent}i32.add")
+                    self._emit(f"{indent}f64.load")
+                elif len(node.args) >= 2:
+                    self._gen_expr(node.args[1], indent)
+                else:
+                    self._emit(f"{indent}f64.const 0  ;; dict.get: key not found")
+            elif (isinstance(node.func, AttributeAccess)
+                  and node.func.attr in ("values", "keys", "items")
+                  and isinstance(node.func.obj, Identifier)
+                  and node.func.obj.name in self._dict_key_maps
+                  and not node.args):
+                self._gen_dict_method(node.func.attr, node.func.obj.name, indent)
             elif (isinstance(node.func, AttributeAccess)
                   and isinstance(node.func.obj, Identifier)
                   and node.func.attr in self._dispatch_func_names):
@@ -2136,6 +2267,283 @@ class WATCodeGenerator(
             return str(float(raw))
         except (ValueError, TypeError):
             return "0.0"
+
+
+    # -----------------------------------------------------------------------
+    # dict / list / map / filter helpers
+    # -----------------------------------------------------------------------
+
+    def _gen_dict_method(self, method: str, dict_name: str, indent: str) -> None:  # pylint: disable=too-many-statements
+        """Emit dict.values(), dict.keys(), or dict.items()."""
+        key_map = self._dict_key_maps[dict_name]
+        keys = sorted(key_map.keys(), key=lambda k: key_map[k])
+        n = len(keys)
+        dict_sym = self._wat_symbol(dict_name)
+
+        if method == "values":
+            # The dict IS a list of values — just return the pointer.
+            self._emit(f"{indent};; {dict_name}.values()")
+            self._emit(f"{indent}local.get ${dict_sym}")
+
+        elif method == "keys":
+            # Allocate a list of interned string pointers for each key.
+            lbl = self._new_label()
+            ptr_local = f"__dkeys_{lbl}"
+            self._locals.add(ptr_local)
+            self._emit(f"{indent};; {dict_name}.keys()")
+            self._emit_alloc((n + 1) * 8, ptr_local, indent)
+            self._emit(f"{indent}local.get ${self._wat_symbol(ptr_local)}")
+            self._emit(f"{indent}i32.trunc_f64_u")
+            self._emit(f"{indent}f64.const {float(n)}")
+            self._emit(f"{indent}f64.store")
+            for i, key in enumerate(keys):
+                offset, _ = self._intern(key)
+                self._emit(f"{indent}local.get ${self._wat_symbol(ptr_local)}")
+                self._emit(f"{indent}i32.trunc_f64_u")
+                self._emit(f"{indent}i32.const {(i + 1) * 8}")
+                self._emit(f"{indent}i32.add")
+                self._emit(f"{indent}f64.const {float(offset)}")
+                self._emit(f"{indent}f64.store")
+            self._emit(f"{indent}local.get ${self._wat_symbol(ptr_local)}")
+            self._list_locals.add(ptr_local)
+
+        elif method == "items":
+            # Allocate outer list + one 2-element tuple per item.
+            lbl = self._new_label()
+            outer_ptr = f"__ditems_{lbl}"
+            self._locals.add(outer_ptr)
+            self._emit(f"{indent};; {dict_name}.items()")
+            self._emit_alloc((n + 1) * 8, outer_ptr, indent)
+            self._emit(f"{indent}local.get ${self._wat_symbol(outer_ptr)}")
+            self._emit(f"{indent}i32.trunc_f64_u")
+            self._emit(f"{indent}f64.const {float(n)}")
+            self._emit(f"{indent}f64.store")
+            for i, key in enumerate(keys):
+                key_offset, _ = self._intern(key)
+                val_idx = key_map[key]
+                pair_lbl = self._new_label()
+                pair_ptr = f"__dpair_{pair_lbl}"
+                self._locals.add(pair_ptr)
+                self._emit_alloc(3 * 8, pair_ptr, indent)
+                # count = 2
+                self._emit(f"{indent}local.get ${self._wat_symbol(pair_ptr)}")
+                self._emit(f"{indent}i32.trunc_f64_u")
+                self._emit(f"{indent}f64.const 2.0")
+                self._emit(f"{indent}f64.store")
+                # key ptr
+                self._emit(f"{indent}local.get ${self._wat_symbol(pair_ptr)}")
+                self._emit(f"{indent}i32.trunc_f64_u")
+                self._emit(f"{indent}i32.const 8")
+                self._emit(f"{indent}i32.add")
+                self._emit(f"{indent}f64.const {float(key_offset)}")
+                self._emit(f"{indent}f64.store")
+                # value
+                self._emit(f"{indent}local.get ${self._wat_symbol(pair_ptr)}")
+                self._emit(f"{indent}i32.trunc_f64_u")
+                self._emit(f"{indent}i32.const 16")
+                self._emit(f"{indent}i32.add")
+                self._emit(f"{indent}local.get ${dict_sym}")
+                self._emit(f"{indent}i32.trunc_f64_u")
+                self._emit(f"{indent}i32.const {(val_idx + 1) * 8}")
+                self._emit(f"{indent}i32.add")
+                self._emit(f"{indent}f64.load")
+                self._emit(f"{indent}f64.store")
+                # store pair in outer list
+                self._emit(f"{indent}local.get ${self._wat_symbol(outer_ptr)}")
+                self._emit(f"{indent}i32.trunc_f64_u")
+                self._emit(f"{indent}i32.const {(i + 1) * 8}")
+                self._emit(f"{indent}i32.add")
+                self._emit(f"{indent}local.get ${self._wat_symbol(pair_ptr)}")
+                self._emit(f"{indent}f64.store")
+            self._emit(f"{indent}local.get ${self._wat_symbol(outer_ptr)}")
+            self._list_locals.add(outer_ptr)
+
+    def _gen_map_list(self, fn_name: str, src_list: str, indent: str) -> None:  # pylint: disable=too-many-statements
+        """Emit list(map(fn_name, src_list)) — applies fn to each element."""
+        n = self._new_label()
+        src_sym = self._wat_symbol(src_list)
+        base_local = f"__map_base_{n}"
+        len_local  = f"__map_len_{n}"
+        idx_local  = f"__map_idx_{n}"
+        out_ptr    = f"__map_out_{n}"
+        for loc in (base_local, len_local, idx_local, out_ptr):
+            self._locals.add(loc)
+        self._emit(f"{indent};; list(map({fn_name}, {src_list}))")
+        self._emit(f"{indent}local.get ${src_sym}")
+        self._emit(f"{indent}local.set ${self._wat_symbol(base_local)}")
+        self._emit_sequence_len_setup(base_local, len_local, idx_local, indent)
+        # Allocate output: (count+1)*8 bytes
+        self._emit(f"{indent}local.get ${self._wat_symbol(len_local)}")
+        self._emit(f"{indent}i32.trunc_f64_u")
+        self._emit(f"{indent}i32.const 1")
+        self._emit(f"{indent}i32.add")
+        self._emit(f"{indent}i32.const 8")
+        self._emit(f"{indent}i32.mul")
+        self._emit(f"{indent}call $ml_alloc")
+        self._emit(f"{indent}f64.convert_i32_u")
+        self._emit(f"{indent}local.set ${self._wat_symbol(out_ptr)}")
+        self._emit(f"{indent}local.get ${self._wat_symbol(out_ptr)}")
+        self._emit(f"{indent}i32.trunc_f64_u")
+        self._emit(f"{indent}local.get ${self._wat_symbol(len_local)}")
+        self._emit(f"{indent}f64.store")
+        lp = f"map_lp_{n}"
+        blk = f"map_blk_{n}"
+        self._emit(f"{indent}block ${blk}")
+        self._emit(f"{indent}  loop ${lp}")
+        self._emit(f"{indent}    local.get ${self._wat_symbol(idx_local)}")
+        self._emit(f"{indent}    local.get ${self._wat_symbol(len_local)}")
+        self._emit(f"{indent}    f64.ge")
+        self._emit(f"{indent}    br_if ${blk}")
+        # out[(idx+1)] = fn(src[idx])
+        self._emit(f"{indent}    local.get ${self._wat_symbol(out_ptr)}")
+        self._emit(f"{indent}    i32.trunc_f64_u")
+        self._emit(f"{indent}    local.get ${self._wat_symbol(idx_local)}")
+        self._emit(f"{indent}    i32.trunc_f64_u")
+        self._emit(f"{indent}    i32.const 1")
+        self._emit(f"{indent}    i32.add")
+        self._emit(f"{indent}    i32.const 8")
+        self._emit(f"{indent}    i32.mul")
+        self._emit(f"{indent}    i32.add")
+        self._emit_sequence_value_load(base_local, idx_local, indent + "    ")
+        self._emit(f"{indent}    call ${self._wat_symbol(fn_name)}")
+        self._emit(f"{indent}    f64.store")
+        self._emit(f"{indent}    local.get ${self._wat_symbol(idx_local)}")
+        self._emit(f"{indent}    f64.const 1")
+        self._emit(f"{indent}    f64.add")
+        self._emit(f"{indent}    local.set ${self._wat_symbol(idx_local)}")
+        self._emit(f"{indent}    br ${lp}")
+        self._emit(f"{indent}  end")
+        self._emit(f"{indent}end")
+        self._emit(f"{indent}local.get ${self._wat_symbol(out_ptr)}")
+        self._list_locals.add(out_ptr)
+
+    def _gen_filter_list(self, fn_name: str, src_list: str, indent: str) -> None:  # pylint: disable=too-many-statements
+        """Emit list(filter(fn_name, src_list)) — keeps elements where fn returns truthy."""
+        n = self._new_label()
+        src_sym = self._wat_symbol(src_list)
+        base_local = f"__flt_base_{n}"
+        len_local  = f"__flt_len_{n}"
+        idx_local  = f"__flt_idx_{n}"
+        out_ptr    = f"__flt_out_{n}"
+        out_idx    = f"__flt_oidx_{n}"
+        for loc in (base_local, len_local, idx_local, out_ptr, out_idx):
+            self._locals.add(loc)
+        self._emit(f"{indent};; list(filter({fn_name}, {src_list}))")
+        self._emit(f"{indent}local.get ${src_sym}")
+        self._emit(f"{indent}local.set ${self._wat_symbol(base_local)}")
+        self._emit_sequence_len_setup(base_local, len_local, idx_local, indent)
+        # Allocate output with max size (same as input)
+        self._emit(f"{indent}local.get ${self._wat_symbol(len_local)}")
+        self._emit(f"{indent}i32.trunc_f64_u")
+        self._emit(f"{indent}i32.const 1")
+        self._emit(f"{indent}i32.add")
+        self._emit(f"{indent}i32.const 8")
+        self._emit(f"{indent}i32.mul")
+        self._emit(f"{indent}call $ml_alloc")
+        self._emit(f"{indent}f64.convert_i32_u")
+        self._emit(f"{indent}local.set ${self._wat_symbol(out_ptr)}")
+        self._emit(f"{indent}f64.const 0")
+        self._emit(f"{indent}local.set ${self._wat_symbol(out_idx)}")
+        lp = f"flt_lp_{n}"
+        blk = f"flt_blk_{n}"
+        self._emit(f"{indent}block ${blk}")
+        self._emit(f"{indent}  loop ${lp}")
+        self._emit(f"{indent}    local.get ${self._wat_symbol(idx_local)}")
+        self._emit(f"{indent}    local.get ${self._wat_symbol(len_local)}")
+        self._emit(f"{indent}    f64.ge")
+        self._emit(f"{indent}    br_if ${blk}")
+        self._emit_sequence_value_load(base_local, idx_local, indent + "    ")
+        self._emit(f"{indent}    call ${self._wat_symbol(fn_name)}")
+        self._emit(f"{indent}    f64.const 0")
+        self._emit(f"{indent}    f64.ne")
+        self._emit(f"{indent}    if")
+        # store src[idx] at out[out_idx+1]
+        self._emit(f"{indent}      local.get ${self._wat_symbol(out_ptr)}")
+        self._emit(f"{indent}      i32.trunc_f64_u")
+        self._emit(f"{indent}      local.get ${self._wat_symbol(out_idx)}")
+        self._emit(f"{indent}      i32.trunc_f64_u")
+        self._emit(f"{indent}      i32.const 1")
+        self._emit(f"{indent}      i32.add")
+        self._emit(f"{indent}      i32.const 8")
+        self._emit(f"{indent}      i32.mul")
+        self._emit(f"{indent}      i32.add")
+        self._emit_sequence_value_load(base_local, idx_local, indent + "      ")
+        self._emit(f"{indent}      f64.store")
+        self._emit(f"{indent}      local.get ${self._wat_symbol(out_idx)}")
+        self._emit(f"{indent}      f64.const 1")
+        self._emit(f"{indent}      f64.add")
+        self._emit(f"{indent}      local.set ${self._wat_symbol(out_idx)}")
+        self._emit(f"{indent}    end")
+        self._emit(f"{indent}    local.get ${self._wat_symbol(idx_local)}")
+        self._emit(f"{indent}    f64.const 1")
+        self._emit(f"{indent}    f64.add")
+        self._emit(f"{indent}    local.set ${self._wat_symbol(idx_local)}")
+        self._emit(f"{indent}    br ${lp}")
+        self._emit(f"{indent}  end")
+        self._emit(f"{indent}end")
+        # update count at out[0]
+        self._emit(f"{indent}local.get ${self._wat_symbol(out_ptr)}")
+        self._emit(f"{indent}i32.trunc_f64_u")
+        self._emit(f"{indent}local.get ${self._wat_symbol(out_idx)}")
+        self._emit(f"{indent}f64.store")
+        self._emit(f"{indent}local.get ${self._wat_symbol(out_ptr)}")
+        self._list_locals.add(out_ptr)
+
+    def _gen_list_copy(self, src_list: str, indent: str) -> None:  # pylint: disable=too-many-statements
+        """Emit a shallow copy of src_list as a new heap-allocated list."""
+        n = self._new_label()
+        src_sym = self._wat_symbol(src_list)
+        base_local = f"__cp_base_{n}"
+        len_local  = f"__cp_len_{n}"
+        idx_local  = f"__cp_idx_{n}"
+        out_ptr    = f"__cp_out_{n}"
+        for loc in (base_local, len_local, idx_local, out_ptr):
+            self._locals.add(loc)
+        self._emit(f"{indent};; list({src_list}) — shallow copy")
+        self._emit(f"{indent}local.get ${src_sym}")
+        self._emit(f"{indent}local.set ${self._wat_symbol(base_local)}")
+        self._emit_sequence_len_setup(base_local, len_local, idx_local, indent)
+        self._emit(f"{indent}local.get ${self._wat_symbol(len_local)}")
+        self._emit(f"{indent}i32.trunc_f64_u")
+        self._emit(f"{indent}i32.const 1")
+        self._emit(f"{indent}i32.add")
+        self._emit(f"{indent}i32.const 8")
+        self._emit(f"{indent}i32.mul")
+        self._emit(f"{indent}call $ml_alloc")
+        self._emit(f"{indent}f64.convert_i32_u")
+        self._emit(f"{indent}local.set ${self._wat_symbol(out_ptr)}")
+        self._emit(f"{indent}local.get ${self._wat_symbol(out_ptr)}")
+        self._emit(f"{indent}i32.trunc_f64_u")
+        self._emit(f"{indent}local.get ${self._wat_symbol(len_local)}")
+        self._emit(f"{indent}f64.store")
+        lp = f"cp_lp_{n}"
+        blk = f"cp_blk_{n}"
+        self._emit(f"{indent}block ${blk}")
+        self._emit(f"{indent}  loop ${lp}")
+        self._emit(f"{indent}    local.get ${self._wat_symbol(idx_local)}")
+        self._emit(f"{indent}    local.get ${self._wat_symbol(len_local)}")
+        self._emit(f"{indent}    f64.ge")
+        self._emit(f"{indent}    br_if ${blk}")
+        self._emit(f"{indent}    local.get ${self._wat_symbol(out_ptr)}")
+        self._emit(f"{indent}    i32.trunc_f64_u")
+        self._emit(f"{indent}    local.get ${self._wat_symbol(idx_local)}")
+        self._emit(f"{indent}    i32.trunc_f64_u")
+        self._emit(f"{indent}    i32.const 1")
+        self._emit(f"{indent}    i32.add")
+        self._emit(f"{indent}    i32.const 8")
+        self._emit(f"{indent}    i32.mul")
+        self._emit(f"{indent}    i32.add")
+        self._emit_sequence_value_load(base_local, idx_local, indent + "    ")
+        self._emit(f"{indent}    f64.store")
+        self._emit(f"{indent}    local.get ${self._wat_symbol(idx_local)}")
+        self._emit(f"{indent}    f64.const 1")
+        self._emit(f"{indent}    f64.add")
+        self._emit(f"{indent}    local.set ${self._wat_symbol(idx_local)}")
+        self._emit(f"{indent}    br ${lp}")
+        self._emit(f"{indent}  end")
+        self._emit(f"{indent}end")
+        self._emit(f"{indent}local.get ${self._wat_symbol(out_ptr)}")
+        self._list_locals.add(out_ptr)
 
 
 _STUB_MARKER = ";; unsupported call:"

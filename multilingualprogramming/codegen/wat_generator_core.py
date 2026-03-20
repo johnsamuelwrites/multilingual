@@ -2327,6 +2327,429 @@ class WATGeneratorCoreMixin:
     end
     f64.const 0.0
   )
+  ;; ── Number-to-string conversion ────────────────────────────────────────────
+  ;; Convert f64 to heap-allocated UTF-8 decimal string.
+  ;; Returns f64 ptr; sets $__last_str_len.
+  (func $__str_from_f64 (param $v f64) (result f64)
+    (local $neg i32) (local $is_int i32) (local $int i64)
+    (local $buf i32) (local $pos i32) (local $b i32) (local $e i32) (local $ch i32)
+    (local $frac f64) (local $d i32) (local $nd i32)
+    i32.const 64
+    call $ml_alloc
+    local.set $buf
+    i32.const 0
+    local.set $pos
+    local.get $v
+    f64.const 0.0
+    f64.lt
+    if
+      i32.const 1
+      local.set $neg
+      local.get $v
+      f64.neg
+      local.set $v
+    end
+    local.get $v
+    f64.floor
+    local.get $v
+    f64.eq
+    local.set $is_int
+    local.get $v
+    f64.floor
+    i64.trunc_f64_u
+    local.set $int
+    local.get $int
+    i64.const 0
+    i64.eq
+    if
+      local.get $buf
+      i32.const 48
+      i32.store8
+      i32.const 1
+      local.set $pos
+    else
+      block $ib
+        loop $il
+          local.get $int
+          i64.const 0
+          i64.eq
+          br_if $ib
+          local.get $buf
+          local.get $pos
+          i32.add
+          local.get $int
+          i64.const 10
+          i64.rem_u
+          i32.wrap_i64
+          i32.const 48
+          i32.add
+          i32.store8
+          local.get $pos
+          i32.const 1
+          i32.add
+          local.set $pos
+          local.get $int
+          i64.const 10
+          i64.div_u
+          local.set $int
+          br $il
+        end
+      end
+    end
+    i32.const 0
+    local.set $b
+    local.get $pos
+    i32.const 1
+    i32.sub
+    local.set $e
+    block $rb
+      loop $rl
+        local.get $b
+        local.get $e
+        i32.ge_u
+        br_if $rb
+        local.get $buf
+        local.get $b
+        i32.add
+        i32.load8_u
+        local.set $ch
+        local.get $buf
+        local.get $b
+        i32.add
+        local.get $buf
+        local.get $e
+        i32.add
+        i32.load8_u
+        i32.store8
+        local.get $buf
+        local.get $e
+        i32.add
+        local.get $ch
+        i32.store8
+        local.get $b
+        i32.const 1
+        i32.add
+        local.set $b
+        local.get $e
+        i32.const 1
+        i32.sub
+        local.set $e
+        br $rl
+      end
+    end
+    local.get $is_int
+    i32.eqz
+    if
+      local.get $buf
+      local.get $pos
+      i32.add
+      i32.const 46
+      i32.store8
+      local.get $pos
+      i32.const 1
+      i32.add
+      local.set $pos
+      local.get $v
+      local.get $v
+      f64.floor
+      f64.sub
+      local.set $frac
+      i32.const 6
+      local.set $nd
+      block $fb
+        loop $fl
+          local.get $nd
+          i32.const 0
+          i32.le_s
+          br_if $fb
+          local.get $frac
+          f64.const 10.0
+          f64.mul
+          local.tee $frac
+          f64.floor
+          i32.trunc_f64_u
+          local.set $d
+          local.get $buf
+          local.get $pos
+          i32.add
+          local.get $d
+          i32.const 48
+          i32.add
+          i32.store8
+          local.get $pos
+          i32.const 1
+          i32.add
+          local.set $pos
+          local.get $frac
+          local.get $frac
+          f64.floor
+          f64.sub
+          local.set $frac
+          local.get $nd
+          i32.const 1
+          i32.sub
+          local.set $nd
+          br $fl
+        end
+      end
+      block $tb
+        loop $tl
+          local.get $pos
+          i32.const 2
+          i32.le_s
+          br_if $tb
+          local.get $buf
+          local.get $pos
+          i32.const 1
+          i32.sub
+          i32.add
+          i32.load8_u
+          i32.const 48
+          i32.ne
+          br_if $tb
+          local.get $pos
+          i32.const 1
+          i32.sub
+          local.set $pos
+          br $tl
+        end
+      end
+    end
+    local.get $neg
+    if
+      local.get $pos
+      i32.const 1
+      i32.sub
+      local.set $b
+      block $sb
+        loop $sl
+          local.get $b
+          i32.const 0
+          i32.lt_s
+          br_if $sb
+          local.get $buf
+          local.get $b
+          i32.const 1
+          i32.add
+          i32.add
+          local.get $buf
+          local.get $b
+          i32.add
+          i32.load8_u
+          i32.store8
+          local.get $b
+          i32.const 1
+          i32.sub
+          local.set $b
+          br $sl
+        end
+      end
+      local.get $buf
+      i32.const 45
+      i32.store8
+      local.get $pos
+      i32.const 1
+      i32.add
+      local.set $pos
+    end
+    local.get $pos
+    global.set $__last_str_len
+    local.get $buf
+    f64.convert_i32_u
+  )
+  ;; ── List mutation helpers ───────────────────────────────────────────────────
+  ;; $__list_append(list_ptr f64, elem f64) -> f64 new list_ptr
+  ;; Layout: [offset 0: count_f64, offset 8: elem0, ...]
+  (func $__list_append (param $lp f64) (param $elem f64) (result f64)
+    (local $lpi i32) (local $cnt_i i32) (local $new_size i32)
+    (local $np i32) (local $i i32)
+    local.get $lp
+    i32.trunc_f64_u
+    local.set $lpi
+    local.get $lpi
+    f64.load
+    i32.trunc_f64_u
+    local.set $cnt_i
+    local.get $cnt_i
+    i32.const 2
+    i32.add
+    i32.const 8
+    i32.mul
+    local.set $new_size
+    local.get $new_size
+    call $ml_alloc
+    local.set $np
+    i32.const 0
+    local.set $i
+    block $cb
+      loop $cl
+        local.get $i
+        local.get $cnt_i
+        i32.const 1
+        i32.add
+        i32.ge_u
+        br_if $cb
+        local.get $np
+        local.get $i
+        i32.const 8
+        i32.mul
+        i32.add
+        local.get $lpi
+        local.get $i
+        i32.const 8
+        i32.mul
+        i32.add
+        f64.load
+        f64.store
+        local.get $i
+        i32.const 1
+        i32.add
+        local.set $i
+        br $cl
+      end
+    end
+    local.get $np
+    local.get $cnt_i
+    f64.convert_i32_u
+    f64.const 1.0
+    f64.add
+    f64.store
+    local.get $np
+    local.get $cnt_i
+    i32.const 1
+    i32.add
+    i32.const 8
+    i32.mul
+    i32.add
+    local.get $elem
+    f64.store
+    local.get $np
+    f64.convert_i32_u
+  )
+  ;; $__list_pop(list_ptr f64) -> f64 last element (decrements count in-place)
+  (func $__list_pop (param $lp f64) (result f64)
+    (local $lpi i32) (local $cnt_i i32) (local $last f64)
+    local.get $lp
+    i32.trunc_f64_u
+    local.set $lpi
+    local.get $lpi
+    f64.load
+    i32.trunc_f64_u
+    local.set $cnt_i
+    local.get $lpi
+    local.get $cnt_i
+    i32.const 8
+    i32.mul
+    i32.add
+    f64.load
+    local.set $last
+    local.get $lpi
+    local.get $cnt_i
+    i32.const 1
+    i32.sub
+    f64.convert_i32_u
+    f64.store
+    local.get $last
+  )
+  ;; $__list_extend(list_a f64, list_b f64) -> f64 new list_ptr
+  (func $__list_extend (param $la f64) (param $lb f64) (result f64)
+    (local $lai i32) (local $lbi i32) (local $ca i32) (local $cb i32)
+    (local $nc i32) (local $np i32) (local $i i32)
+    local.get $la
+    i32.trunc_f64_u
+    local.set $lai
+    local.get $lb
+    i32.trunc_f64_u
+    local.set $lbi
+    local.get $lai
+    f64.load
+    i32.trunc_f64_u
+    local.set $ca
+    local.get $lbi
+    f64.load
+    i32.trunc_f64_u
+    local.set $cb
+    local.get $ca
+    local.get $cb
+    i32.add
+    local.tee $nc
+    i32.const 1
+    i32.add
+    i32.const 8
+    i32.mul
+    call $ml_alloc
+    local.set $np
+    local.get $np
+    local.get $nc
+    f64.convert_i32_u
+    f64.store
+    i32.const 0
+    local.set $i
+    block $ab
+      loop $al
+        local.get $i
+        local.get $ca
+        i32.ge_u
+        br_if $ab
+        local.get $np
+        local.get $i
+        i32.const 1
+        i32.add
+        i32.const 8
+        i32.mul
+        i32.add
+        local.get $lai
+        local.get $i
+        i32.const 1
+        i32.add
+        i32.const 8
+        i32.mul
+        i32.add
+        f64.load
+        f64.store
+        local.get $i
+        i32.const 1
+        i32.add
+        local.set $i
+        br $al
+      end
+    end
+    i32.const 0
+    local.set $i
+    block $bb
+      loop $bl
+        local.get $i
+        local.get $cb
+        i32.ge_u
+        br_if $bb
+        local.get $np
+        local.get $ca
+        local.get $i
+        i32.add
+        i32.const 1
+        i32.add
+        i32.const 8
+        i32.mul
+        i32.add
+        local.get $lbi
+        local.get $i
+        i32.const 1
+        i32.add
+        i32.const 8
+        i32.mul
+        i32.add
+        f64.load
+        f64.store
+        local.get $i
+        i32.const 1
+        i32.add
+        local.set $i
+        br $bl
+      end
+    end
+    local.get $np
+    f64.convert_i32_u
+  )
   ;; ── End WASI runtime ─────────────────────────────────────────────────────"""
         self._funcs.insert(0, runtime)
 

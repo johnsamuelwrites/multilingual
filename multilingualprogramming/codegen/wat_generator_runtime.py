@@ -850,15 +850,16 @@ class WATGeneratorRuntimeMixin:
             return True
         if format_spec not in ("",):
             return False
-        self._ensure_string_format_helpers()
         label = self._new_label()
         ptr_local = f"__fmt_ptr_{label}"
         len_local = f"__fmt_len_{label}"
         self._locals.update({ptr_local, len_local})
         self._gen_expr(part, indent)
-        self._emit(f"{indent}call $__fmt_default_tmpstr")
-        self._emit(f"{indent}local.set ${self._wat_symbol(len_local)}")
+        self._emit(f"{indent}call $__str_from_f64")
         self._emit(f"{indent}local.set ${self._wat_symbol(ptr_local)}")
+        self._emit(f"{indent}global.get $__last_str_len")
+        self._emit(f"{indent}f64.convert_i32_u")
+        self._emit(f"{indent}local.set ${self._wat_symbol(len_local)}")
         self._emit(f"{indent}local.get ${self._wat_symbol(ptr_local)}")
         self._emit(f"{indent}local.get ${self._wat_symbol(len_local)}")
         return True

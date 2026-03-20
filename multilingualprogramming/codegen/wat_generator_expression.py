@@ -15,7 +15,7 @@ from multilingualprogramming.parser.ast_nodes import (
     IndexAccess,
     StringLiteral,
 )
-from multilingualprogramming.codegen.wat_generator_support import _name
+from multilingualprogramming.codegen.wat_generator_support import _STR_NAMES, _name
 
 class WATGeneratorExpressionMixin:
     """Helpers for lowering complex expressions."""
@@ -111,6 +111,7 @@ class WATGeneratorExpressionMixin:
                 isinstance(expr, CallExpr)
                 and (
                     _name(expr.func) in self._string_return_funcs
+                    or _name(expr.func) in _STR_NAMES
                     or (
                         isinstance(expr.func, AttributeAccess)
                         and expr.func.attr in (
@@ -120,6 +121,7 @@ class WATGeneratorExpressionMixin:
                             "upper",
                             "lower",
                             "replace",
+                            "join",
                         )
                     )
                 )
