@@ -191,7 +191,10 @@ class WATGeneratorManifestMixin:
             "// Minimal DOM bridge for the WAT env.ml_dom_* host imports used by",
             "// the browser demo. Element references are stored in a JS-side handle",
             "// table; WAT receives opaque numeric handles as f64 values.",
-            "export function createDomImports(memoryRef = { current: null }, exportsRef = { current: null }) {",
+            (
+                "export function createDomImports("
+                "memoryRef = { current: null }, exportsRef = { current: null }) {"
+            ),
             "  const textDecoder = new TextDecoder('utf-8');",
             "  const textEncoder = new TextEncoder();",
             "  const handles = new Map();",

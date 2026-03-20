@@ -190,6 +190,15 @@ class WATGeneratorRuntimeMixin:
             self._list_locals.remove(name)
         elif name in self._tuple_locals:
             self._tuple_locals.remove(name)
+        elements = self._resolve_static_sequence_elements(value)
+        if elements is not None and (name in self._list_locals or name in self._tuple_locals):
+            self._static_sequence_elements[name] = elements
+        elif name in self._static_sequence_elements:
+            del self._static_sequence_elements[name]
+        if self._materialized_zip_elements_from_list_call(value) is not None:
+            self._zip_pair_locals.add(name)
+        elif name in self._zip_pair_locals:
+            self._zip_pair_locals.remove(name)
 
     def _value_tracks_as_tuple(self, value) -> bool:
         """Return True when *value* should be treated as a tracked tuple."""
@@ -255,6 +264,53 @@ class WATGeneratorRuntimeMixin:
                 or _name(value.args[0].func) in self._sequence_func_names
             )
         )
+
+    def _resolve_static_sequence_elements(self, value):
+        """Return compile-time-known elements for list/tuple-like values."""
+        if isinstance(value, (ListLiteral, TupleLiteral, SetLiteral)):
+            return list(value.elements)
+        if isinstance(value, Identifier):
+            return self._static_sequence_elements.get(value.name)
+        if not isinstance(value, CallExpr):
+            return None
+        fname = _name(value.func)
+        if fname in _LIST_NAMES and len(value.args) == 1:
+            arg = value.args[0]
+            zip_elements = self._materialized_zip_elements(arg)
+            if zip_elements is not None:
+                return zip_elements
+            return self._resolve_static_sequence_elements(arg)
+        if fname in (_TUPLE_NAMES | _SET_NAMES) and len(value.args) == 1:
+            return self._resolve_static_sequence_elements(value.args[0])
+        return None
+
+    def _materialized_zip_elements(self, value):
+        """Return static tuple elements for a zip(...) call, or None."""
+        if not isinstance(value, CallExpr) or _name(value.func) not in _ZIP_NAMES:
+            return None
+        if len(value.args) < 2:
+            return None
+        resolved_args = [
+            self._resolve_static_sequence_elements(arg)
+            for arg in value.args
+        ]
+        if any(elements is None for elements in resolved_args):
+            return None
+        zipped_len = min(len(elements) for elements in resolved_args)
+        return [
+            TupleLiteral([elements[index] for elements in resolved_args])
+            for index in range(zipped_len)
+        ]
+
+    def _materialized_zip_elements_from_list_call(self, value):
+        """Return static tuple elements for list(zip(...)), or None."""
+        if (
+                isinstance(value, CallExpr)
+                and _name(value.func) in _LIST_NAMES
+                and len(value.args) == 1
+        ):
+            return self._materialized_zip_elements(value.args[0])
+        return None
 
     def _flatten_static_dict_entries(self, node):
         """Return an ordered mapping for a compile-time-resolvable DictLiteral."""
@@ -347,6 +403,10 @@ class WATGeneratorRuntimeMixin:
             self._tuple_locals.remove(name)
         if name in self._dict_key_maps:
             del self._dict_key_maps[name]
+        if name in self._static_sequence_elements:
+            del self._static_sequence_elements[name]
+        if name in self._zip_pair_locals:
+            self._zip_pair_locals.remove(name)
         if name in self._lambda_locals:
             del self._lambda_locals[name]
         if name in self._closure_locals:

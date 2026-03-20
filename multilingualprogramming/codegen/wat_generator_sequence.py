@@ -240,6 +240,8 @@ class WATGeneratorSequenceMixin(WATGeneratorRuntimeMixin, WATGeneratorPrintMixin
             mapping = self._flatten_static_dict_entries(node)
             return None if mapping is None else len(mapping)
         if isinstance(node, Identifier):
+            if node.name in self._static_sequence_elements:
+                return len(self._static_sequence_elements[node.name])
             if node.name in self._dict_key_maps:
                 return len(self._dict_key_maps[node.name])
             if node.name in self._list_locals or node.name in self._tuple_locals:
@@ -247,16 +249,10 @@ class WATGeneratorSequenceMixin(WATGeneratorRuntimeMixin, WATGeneratorPrintMixin
         return None
 
     def _gen_static_zip_list(self, zip_call: CallExpr, indent: str) -> bool:
-        if len(zip_call.args) < 2:
+        zipped = self._materialized_zip_elements(zip_call)
+        if zipped is None:
             return False
-        lengths = [self._static_length(arg) for arg in zip_call.args]
-        if any(length is None for length in lengths):
-            return False
-        zipped_len = min(lengths)
-        self._gen_list_alloc(
-            ListLiteral([NumeralLiteral("0") for _ in range(zipped_len)]),
-            indent,
-        )
+        self._gen_list_alloc(ListLiteral(zipped), indent)
         return True
 
     def _parse_range_bounds(self, iterable):

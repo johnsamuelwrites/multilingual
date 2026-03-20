@@ -122,6 +122,8 @@ def _reset_generator_state(generator) -> None:
         "_string_len_locals": {},
         "_list_locals": set(),
         "_tuple_locals": set(),
+        "_static_sequence_elements": {},
+        "_zip_pair_locals": set(),
         "_dict_key_maps": {},
         "_imported_call_aliases": {},
         "_module_aliases": {},

@@ -79,7 +79,19 @@ class WATGeneratorPrintMixin:
             self._emit_print_sequence(arg.name, "(", ")", indent)
             return
         if isinstance(arg, Identifier) and arg.name in self._list_locals:
+            if arg.name in self._zip_pair_locals:
+                self._emit_print_zip_pair_sequence(arg.name, indent)
+                return
             self._emit_print_sequence(arg.name, "[", "]", indent)
+            return
+        if self._is_zip_pair_list_expr(arg):
+            self._emit_print_zip_pair_sequence_expr(arg, indent)
+            return
+        if self._value_tracks_as_tuple(arg):
+            self._emit_print_sequence_expr(arg, "(", ")", indent)
+            return
+        if self._value_tracks_as_list(arg):
+            self._emit_print_sequence_expr(arg, "[", "]", indent)
             return
         if isinstance(arg, CallExpr) and _name(arg.func) in self._string_return_funcs:
             self._emit_print_string_call(arg, indent)
@@ -229,6 +241,114 @@ class WATGeneratorPrintMixin:
         self._emit_sequence_len_setup(name, len_local, idx_local, indent)
         self._emit_print_sequence_loop(
             name, idx_local, len_local, comma_ptr, comma_len, indent, lbl
+        )
+        self._emit(f"{indent}i32.const {close_ptr}")
+        self._emit(f"{indent}i32.const {close_len}")
+        self._emit(f"{indent}call $print_str")
+
+    def _emit_print_sequence_expr(
+        self, expr, opening: str, closing: str, indent: str
+    ) -> None:
+        """Print a list/tuple-producing expression by first storing its pointer."""
+        lbl = self._new_label()
+        ptr_local = f"__print_ptr_{lbl}"
+        idx_local = f"__print_idx_{lbl}"
+        len_local = f"__print_len_{lbl}"
+        self._locals.update({ptr_local, idx_local, len_local})
+        self._gen_expr(expr, indent)
+        self._emit(f"{indent}local.set ${self._wat_symbol(ptr_local)}")
+        open_ptr, open_len = self._intern(opening)
+        close_ptr, close_len = self._intern(closing)
+        comma_ptr, comma_len = self._intern(", ")
+        self._emit(f"{indent}i32.const {open_ptr}")
+        self._emit(f"{indent}i32.const {open_len}")
+        self._emit(f"{indent}call $print_str")
+        self._emit_sequence_len_setup(ptr_local, len_local, idx_local, indent)
+        self._emit_print_sequence_loop(
+            ptr_local, idx_local, len_local, comma_ptr, comma_len, indent, lbl
+        )
+        self._emit(f"{indent}i32.const {close_ptr}")
+        self._emit(f"{indent}i32.const {close_len}")
+        self._emit(f"{indent}call $print_str")
+
+    def _is_zip_pair_list_expr(self, expr) -> bool:
+        """Return True for list(zip(...)) expressions with static tuple pairs."""
+        return self._materialized_zip_elements_from_list_call(expr) is not None
+
+    def _emit_print_zip_pair_sequence(self, name: str, indent: str) -> None:
+        """Print a tracked list whose elements are tuple pointers from zip(...)."""
+        self._emit_print_zip_pair_pointer(name, indent)
+
+    def _emit_print_zip_pair_sequence_expr(self, expr, indent: str) -> None:
+        """Print a list(zip(...)) expression whose elements are tuple pointers."""
+        lbl = self._new_label()
+        ptr_local = f"__print_zip_ptr_{lbl}"
+        self._locals.add(ptr_local)
+        self._gen_expr(expr, indent)
+        self._emit(f"{indent}local.set ${self._wat_symbol(ptr_local)}")
+        self._emit_print_zip_pair_pointer(ptr_local, indent)
+
+    def _emit_print_zip_pair_pointer(self, ptr_local: str, indent: str) -> None:
+        """Print an outer list whose items are tuple pointers."""
+        lbl = self._new_label()
+        idx_local = f"__print_zip_idx_{lbl}"
+        len_local = f"__print_zip_len_{lbl}"
+        elem_ptr_local = f"__print_zip_elem_{lbl}"
+        self._locals.update({idx_local, len_local, elem_ptr_local})
+        open_ptr, open_len = self._intern("[")
+        close_ptr, close_len = self._intern("]")
+        comma_ptr, comma_len = self._intern(", ")
+        self._emit(f"{indent}i32.const {open_ptr}")
+        self._emit(f"{indent}i32.const {open_len}")
+        self._emit(f"{indent}call $print_str")
+        self._emit_sequence_len_setup(ptr_local, len_local, idx_local, indent)
+        blk = f"print_zip_blk_{lbl}"
+        loop = f"print_zip_lp_{lbl}"
+        self._emit(f"{indent}block ${blk}")
+        self._emit(f"{indent}  loop ${loop}")
+        self._emit(f"{indent}    local.get ${self._wat_symbol(idx_local)}")
+        self._emit(f"{indent}    local.get ${self._wat_symbol(len_local)}")
+        self._emit(f"{indent}    f64.ge")
+        self._emit(f"{indent}    br_if ${blk}")
+        self._emit(f"{indent}    local.get ${self._wat_symbol(idx_local)}")
+        self._emit(f"{indent}    f64.const 0")
+        self._emit(f"{indent}    f64.gt")
+        self._emit(f"{indent}    if")
+        self._emit(f"{indent}      i32.const {comma_ptr}")
+        self._emit(f"{indent}      i32.const {comma_len}")
+        self._emit(f"{indent}      call $print_str")
+        self._emit(f"{indent}    end")
+        self._emit_sequence_value_load(ptr_local, idx_local, indent + "    ")
+        self._emit(f"{indent}    local.set ${self._wat_symbol(elem_ptr_local)}")
+        self._emit_print_sequence_pointer(elem_ptr_local, "(", ")", indent + "    ")
+        self._emit(f"{indent}    local.get ${self._wat_symbol(idx_local)}")
+        self._emit(f"{indent}    f64.const 1")
+        self._emit(f"{indent}    f64.add")
+        self._emit(f"{indent}    local.set ${self._wat_symbol(idx_local)}")
+        self._emit(f"{indent}    br ${loop}")
+        self._emit(f"{indent}  end")
+        self._emit(f"{indent}end")
+        self._emit(f"{indent}i32.const {close_ptr}")
+        self._emit(f"{indent}i32.const {close_len}")
+        self._emit(f"{indent}call $print_str")
+
+    def _emit_print_sequence_pointer(
+        self, ptr_local: str, opening: str, closing: str, indent: str
+    ) -> None:
+        """Print a list/tuple pointed to by a local f64 pointer."""
+        lbl = self._new_label()
+        idx_local = f"__print_ptr_idx_{lbl}"
+        len_local = f"__print_ptr_len_{lbl}"
+        self._locals.update({idx_local, len_local})
+        open_ptr, open_len = self._intern(opening)
+        close_ptr, close_len = self._intern(closing)
+        comma_ptr, comma_len = self._intern(", ")
+        self._emit(f"{indent}i32.const {open_ptr}")
+        self._emit(f"{indent}i32.const {open_len}")
+        self._emit(f"{indent}call $print_str")
+        self._emit_sequence_len_setup(ptr_local, len_local, idx_local, indent)
+        self._emit_print_sequence_loop(
+            ptr_local, idx_local, len_local, comma_ptr, comma_len, indent, lbl
         )
         self._emit(f"{indent}i32.const {close_ptr}")
         self._emit(f"{indent}i32.const {close_len}")

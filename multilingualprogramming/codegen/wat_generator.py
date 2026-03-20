@@ -543,14 +543,23 @@ class WATCodeGenerator(
                     self._emit(f"{indent}drop")
                 elif fname in self._class_ctor_names:
                     ctor = self._class_ctor_names[fname]
-                    if self._is_stateful_class(fname):
+                    if self._needs_runtime_object(fname):
                         self._emit(f"{indent};; ctor {fname}(...) [stateful]")
-                        self._emit_stateful_ctor(fname, ctor, expr, indent, keep_ref=False)
+                        self._emit_runtime_object_ctor(fname, ctor, expr, indent, keep_ref=False)
                     else:
                         self._emit(f"{indent};; ctor {fname}(...) -> {ctor}(...)")
                         self._emit(f"{indent}f64.const 0  ;; implicit self")
                         self._gen_call_args(expr, indent, ctor, skip_params=1)
                         self._emit(f"{indent}call ${self._wat_symbol(ctor)}")
+                        self._emit(f"{indent}drop")
+                elif fname in self._class_bases:
+                    if self._needs_runtime_object(fname):
+                        self._emit(f"{indent};; default ctor {fname}() [runtime object]")
+                        self._emit_runtime_object_ctor(
+                            fname, None, expr, indent, keep_ref=False,
+                        )
+                    else:
+                        self._emit(f"{indent}f64.const 0  ;; implicit self")
                         self._emit(f"{indent}drop")
                 elif fname in self._class_attr_call_names:
                     lowered = self._class_attr_call_names[fname]
@@ -576,7 +585,7 @@ class WATCodeGenerator(
                             self._gen_call_args(expr, indent, lowered, skip_params=1)
                         else:
                             self._gen_call_args(expr, indent, lowered)
-                    elif cls and self._is_stateful_class(cls):
+                    elif cls and self._needs_runtime_object(cls):
                         self._gen_expr(obj_expr, indent)   # push actual f64 pointer
                         self._gen_call_args(expr, indent, lowered, skip_params=1)
                     else:
@@ -890,7 +899,7 @@ class WATCodeGenerator(
                 if isinstance(expr, CallExpr):
                     func_name = _name(expr.func)
                     cls_name = (
-                        func_name if func_name in self._class_ctor_names else None
+                        func_name if func_name in self._class_bases else None
                     )
                 if cls_name:
                     enter_key = f"{cls_name}.__enter__"
@@ -900,8 +909,13 @@ class WATCodeGenerator(
                 if enter_fn:
                     self._emit(f"{indent};; with {cls_name}() as {alias}: __enter__/__exit__")
                     # Allocate instance.
-                    ctor = self._class_ctor_names[cls_name]
-                    self._emit_stateful_ctor(cls_name, ctor, expr, indent, keep_ref=True)
+                    ctor = self._class_ctor_names.get(cls_name)
+                    if self._needs_runtime_object(cls_name):
+                        self._emit_runtime_object_ctor(
+                            cls_name, ctor, expr, indent, keep_ref=True,
+                        )
+                    else:
+                        self._emit(f"{indent}f64.const 0  ;; implicit self")
                     obj_local = f"__with_obj_{self._new_label()}"
                     self._locals.add(obj_local)
                     self._emit(f"{indent}local.set ${self._wat_symbol(obj_local)}")
@@ -1245,12 +1259,17 @@ class WATCodeGenerator(
                     self._emit(f"{indent}drop")
             elif fname in self._class_ctor_names:
                 ctor = self._class_ctor_names[fname]
-                if self._is_stateful_class(fname):
-                    self._emit_stateful_ctor(fname, ctor, node, indent, keep_ref=True)
+                if self._needs_runtime_object(fname):
+                    self._emit_runtime_object_ctor(fname, ctor, node, indent, keep_ref=True)
                 else:
                     self._emit(f"{indent}f64.const 0  ;; implicit self")
                     self._gen_call_args(node, indent, ctor, skip_params=1)
                     self._emit(f"{indent}call ${self._wat_symbol(ctor)}")
+            elif fname in self._class_bases:
+                if self._needs_runtime_object(fname):
+                    self._emit_runtime_object_ctor(fname, None, node, indent, keep_ref=True)
+                else:
+                    self._emit(f"{indent}f64.const 0  ;; implicit self")
             elif fname in self._class_attr_call_names:
                 lowered = self._class_attr_call_names[fname]
                 real_params = self._func_real_params.get(lowered, [])
@@ -1266,8 +1285,8 @@ class WATCodeGenerator(
                 self._emit(f"{indent}call ${self._wat_symbol(helper)}")
             elif fname == "cls" and self._current_class in self._class_ctor_names:
                 ctor = self._class_ctor_names[self._current_class]
-                if self._is_stateful_class(self._current_class):
-                    self._emit_stateful_ctor(
+                if self._needs_runtime_object(self._current_class):
+                    self._emit_runtime_object_ctor(
                         self._current_class, ctor, node, indent, keep_ref=True
                     )
                 else:
@@ -1286,7 +1305,7 @@ class WATCodeGenerator(
                         self._gen_call_args(node, indent, lowered, skip_params=1)
                     else:
                         self._gen_call_args(node, indent, lowered)
-                elif cls and self._is_stateful_class(cls):
+                elif cls and self._needs_runtime_object(cls):
                     self._gen_expr(obj_expr, indent)   # push actual f64 pointer
                     self._gen_call_args(node, indent, lowered, skip_params=1)
                 else:
@@ -1611,7 +1630,7 @@ class WATCodeGenerator(
             prop_fn = self._property_getters.get(prop_key) if prop_key else None
             if prop_fn is not None:
                 self._emit(f"{indent};; @property {obj_name}.{node.attr}()")
-                if cls and self._is_stateful_class(cls):
+                if cls and self._needs_runtime_object(cls):
                     self._emit(f"{indent}local.get ${self._wat_symbol(obj_name)}")
                 else:
                     self._emit(f"{indent}f64.const 0  ;; implicit self")

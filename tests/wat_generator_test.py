@@ -168,7 +168,7 @@ class WATExpressionTestSuite(unittest.TestCase):
         self.assertIn("sort_outer_blk_", wat)
         self.assertIn("f64.gt", wat)
 
-    def test_list_zip_with_static_literals_materializes_placeholder_sequence(self):
+    def test_list_zip_with_static_literals_materializes_tuple_sequence(self):
         wat = self.gen.generate(_prog(
             VariableDeclaration(
                 "pairs",
@@ -189,6 +189,7 @@ class WATExpressionTestSuite(unittest.TestCase):
             )
         ))
         self.assertIn(";; list/tuple literal [3 elements]", wat)
+        self.assertGreaterEqual(wat.count(";; list/tuple literal [2 elements]"), 3)
 
     def test_math_import_alias_sqrt_lowers_to_f64_sqrt(self):
         wat = self.gen.generate(_prog(

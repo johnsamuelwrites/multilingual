@@ -1,6 +1,9 @@
 [MASTER]
 ignore=.git,.pytest_cache
 
+[MESSAGES CONTROL]
+disable=duplicate-code
+
 [BASIC]
 no-docstring-rgx=^(_|test_|setUp|tearDown|setUpClass|tearDownClass|visit_).*
 method-naming-style=any

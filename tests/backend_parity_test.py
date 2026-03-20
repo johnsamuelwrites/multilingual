@@ -98,6 +98,22 @@ print(nums[2])
 """
         self._assert_backend_parity(source)
 
+    def test_list_and_tuple_print_parity(self):
+        source = """\
+let numbers = [1, 2, 3]
+let pair = (4, 5)
+print(numbers)
+print(pair)
+"""
+        self._assert_backend_parity(source)
+
+    def test_static_dict_access_parity(self):
+        source = """\
+let mapping = {"x": 1, "y": 2}
+print(mapping["y"])
+"""
+        self._assert_backend_parity(source)
+
     def test_string_index_and_slice_parity(self):
         source = """\
 let s = "hello"
@@ -146,6 +162,93 @@ class Counter:
 let counter = Counter()
 print(counter.bump())
 print(counter.value)
+"""
+        self._assert_backend_parity(source)
+
+    def test_inheritance_method_parity(self):
+        source = """\
+class Animal:
+    def __init__(self):
+        self.legs = 4
+
+    def get_legs(self):
+        return self.legs
+
+class Dog(Animal):
+    pass
+
+let d = Dog()
+print(d.get_legs())
+"""
+        self._assert_backend_parity(source)
+
+    def test_super_init_parity(self):
+        source = """\
+class Animal:
+    def __init__(self):
+        self.legs = 4
+
+class Dog(Animal):
+    def __init__(self):
+        super().__init__()
+
+    def get_legs(self):
+        return self.legs
+
+let d = Dog()
+print(d.get_legs())
+"""
+        self._assert_backend_parity(source)
+
+    def test_dynamic_dispatch_parity(self):
+        source = """\
+class Animal:
+    def speak(self):
+        print(1)
+
+class Dog(Animal):
+    def speak(self):
+        print(2)
+
+def call_speak(obj):
+    obj.speak()
+
+let pet = Dog()
+call_speak(pet)
+"""
+        self._assert_backend_parity(source)
+
+    def test_property_and_classmethod_parity(self):
+        source = """\
+class Base:
+    def __init__(self, value):
+        self.value = value
+
+class Combined(Base):
+    @classmethod
+    def build(cls, value):
+        return cls(value)
+
+    @property
+    def doubled(self):
+        return self.value * 2
+
+let obj = Combined.build(3)
+print(obj.doubled)
+"""
+        self._assert_backend_parity(source)
+
+    def test_list_zip_materialization_parity(self):
+        source = """\
+let left = [1, 2, 3]
+let right = [4, 5, 6]
+print(list(zip(left, right)))
+"""
+        self._assert_backend_parity(source)
+
+    def test_divmod_tuple_parity(self):
+        source = """\
+print(divmod(17, 5))
 """
         self._assert_backend_parity(source)
 

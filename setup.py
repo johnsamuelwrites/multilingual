@@ -3,13 +3,14 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
+# pylint: skip-file
 
 """Compatibility shim for legacy setuptools workflows.
 
 Project metadata is defined in ``pyproject.toml`` (PEP 621).
 """
 
-from setuptools import setup  # pylint: disable=import-error
+from setuptools import setup
 
 
 if __name__ == "__main__":

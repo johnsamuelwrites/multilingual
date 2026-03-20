@@ -293,6 +293,25 @@ class Pair:
 """)
         self.assertEqual(gen.class_obj_sizes.get("Pair"), 16)
 
+    def test_stateless_polymorphic_classes_still_dispatch(self):
+        """Overridden stateless methods still get tagged runtime dispatch."""
+        src = """
+class Animal:
+    def speak(self):
+        return 1
+class Dog(Animal):
+    def speak(self):
+        return 2
+def make_noise(obj):
+    obj.speak()
+pet = Dog()
+make_noise(pet)
+"""
+        wat = _wat(src)
+        self.assertIn("__dispatch_speak", wat)
+        self.assertIn("alloc Dog (type_tag=8 + fields=0 bytes)", wat)
+        self.assertNotIn("unsupported call: Dog(...)", wat)
+
 
 if __name__ == "__main__":
     unittest.main()

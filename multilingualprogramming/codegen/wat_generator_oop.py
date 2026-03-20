@@ -102,15 +102,42 @@ class WATGeneratorOOPMixin:  # pylint: disable=too-many-instance-attributes,too-
             if own_key not in self._class_attr_call_names:
                 self._class_attr_call_names[own_key] = value
 
-    def _assign_stateful_class_ids(self, classes: list[ClassDef]) -> None:
-        """Assign integer runtime IDs to stateful classes."""
+    def _polymorphic_class_methods(self) -> dict[str, list[str]]:
+        """Return directly-defined non-ctor methods grouped by owning class."""
+        method_classes: dict[str, list[str]] = {}
+        for key in self._class_attr_call_names:
+            cls_name, method_name = key.split(".", 1)
+            if method_name == "__init__":
+                continue
+            own_lowered = self._mangle_class_method_name(cls_name, method_name)
+            if own_lowered in self._defined_func_names:
+                method_classes.setdefault(method_name, []).append(cls_name)
+        return {
+            method_name: class_names
+            for method_name, class_names in method_classes.items()
+            if len(class_names) > 1
+        }
+
+    def _assign_runtime_class_ids(self, classes: list[ClassDef]) -> None:
+        """Assign integer runtime IDs to classes that need runtime object identity."""
+        polymorphic_classes = {
+            class_name
+            for class_names in self._polymorphic_class_methods().values()
+            for class_name in class_names
+        }
         for cls in classes:
             class_name = _name(cls.name)
-            if self._is_stateful_class(class_name) and class_name not in self._class_ids:
+            if (
+                    class_name not in self._class_ids
+                    and (
+                        self._is_stateful_class(class_name)
+                        or class_name in polymorphic_classes
+                    )
+            ):
                 self._class_ids[class_name] = len(self._class_ids)
 
     def _collect_polymorphic_methods(self) -> dict[str, list[str]]:
-        """Return methods directly defined on more than one stateful class."""
+        """Return methods directly defined on more than one runtime-tagged class."""
         method_classes: dict[str, list[str]] = {}
         for key in self._class_attr_call_names:
             cls_name, method_name = key.split(".", 1)
@@ -124,8 +151,7 @@ class WATGeneratorOOPMixin:  # pylint: disable=too-many-instance-attributes,too-
     def _is_dispatch_candidate(self, class_name: str, method_name: str) -> bool:
         """Return True if a method can participate in dynamic dispatch."""
         return (
-            self._is_stateful_class(class_name)
-            and method_name != "__init__"
+            method_name != "__init__"
             and class_name in self._class_ids
         )
 
@@ -142,7 +168,7 @@ class WATGeneratorOOPMixin:  # pylint: disable=too-many-instance-attributes,too-
             self._register_class_members(cls)
         self._apply_inherited_field_layouts()
         self._inherit_class_methods_and_ctors()
-        self._assign_stateful_class_ids(classes)
+        self._assign_runtime_class_ids(classes)
         self._register_dispatch_functions()
 
     def _collect_class_fields(self, class_def: ClassDef) -> dict[str, int]:
@@ -263,6 +289,10 @@ class WATGeneratorOOPMixin:  # pylint: disable=too-many-instance-attributes,too-
         """Return True if the class has at least one ``self.attr`` field."""
         return bool(self._class_obj_sizes.get(class_name, 0))
 
+    def _needs_runtime_object(self, class_name: str) -> bool:
+        """Return True if instances of ``class_name`` need tagged runtime identity."""
+        return class_name in self._class_ids
+
     def _restore_func_state(self, saved) -> None:
         """Restore function-local generation state after emitting a nested function."""
         self._restore_captured_func_state(saved)
@@ -271,12 +301,12 @@ class WATGeneratorOOPMixin:  # pylint: disable=too-many-instance-attributes,too-
         """Infer a tracked class name from a simple expression."""
         if isinstance(expr, CallExpr):
             called_name = _name(expr.func)
-            if called_name in self._class_ctor_names:
+            if called_name in self._class_bases:
                 return called_name
             if "." in called_name:
                 owner_name, _method_name = called_name.split(".", 1)
                 lowered = self._class_attr_call_names.get(called_name)
-                if owner_name in self._class_ctor_names and lowered in self._static_method_names:
+                if owner_name in self._class_bases and lowered in self._static_method_names:
                     return owner_name
         if isinstance(expr, Identifier):
             return self._var_class_types.get(expr.name)
@@ -381,9 +411,10 @@ class WATGeneratorOOPMixin:  # pylint: disable=too-many-instance-attributes,too-
             lines.append("  )")
             self._funcs.append("\n".join(lines))
 
-    def _emit_stateful_ctor(
-            self, class_name: str, ctor: str, call_expr, indent: str, keep_ref: bool) -> None:
-        """Emit WAT for allocating a stateful object instance and calling ``__init__``."""
+    def _emit_runtime_object_ctor(
+            self, class_name: str, ctor: str | None, call_expr, indent: str,
+            keep_ref: bool) -> None:
+        """Emit WAT for allocating a tagged object instance and optionally calling ``__init__``."""
         obj_size = self._class_obj_sizes[class_name]
         alloc_size = obj_size + 8
         class_id = self._class_ids.get(class_name, 0)
@@ -399,9 +430,12 @@ class WATGeneratorOOPMixin:  # pylint: disable=too-many-instance-attributes,too-
         self._emit(f"{indent}i32.const {obj_size}")
         self._emit(f"{indent}i32.sub")
         self._emit(f"{indent}f64.convert_i32_u  ;; self ptr as f64 (past type-tag)")
-        self._gen_call_args(call_expr, indent, ctor, skip_params=1)
-        self._emit(f"{indent}call ${self._wat_symbol(ctor)}")
-        self._emit(f"{indent}drop  ;; discard __init__ return value")
+        if ctor is not None:
+            self._gen_call_args(call_expr, indent, ctor, skip_params=1)
+            self._emit(f"{indent}call ${self._wat_symbol(ctor)}")
+            self._emit(f"{indent}drop  ;; discard __init__ return value")
+        else:
+            self._emit(f"{indent}drop  ;; default constructor")
         if keep_ref:
             self._emit(f"{indent}global.get $__heap_ptr")
             self._emit(f"{indent}i32.const {obj_size}")
