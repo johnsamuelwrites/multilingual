@@ -398,4 +398,5 @@ def is_wasm_available() -> bool:
 
 def get_current_backend() -> str:
     """Get name of current backend."""
-    return _global_selector.current_backend_name().upper()
+    current = _global_selector.current_backend_name()
+    return "WASM" if current == "wasm" else "Python"
