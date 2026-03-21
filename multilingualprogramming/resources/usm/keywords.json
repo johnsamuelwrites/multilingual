@@ -393,6 +393,25 @@
         "da": "type",
         "fi": "tyyppi"
       },
+      "USES": {
+        "en": "uses",
+        "fr": "utilise",
+        "es": "usa",
+        "de": "verwendet",
+        "hi": "उपयोग",
+        "ar": "يستخدم",
+        "bn": "ব্যবহার",
+        "ta": "பயன்படுத்து",
+        "zh": "使用",
+        "ja": "使う",
+        "it": "utilizza",
+        "pt": "usa",
+        "pl": "uzywa",
+        "nl": "gebruikt",
+        "sv": "anvander",
+        "da": "bruger",
+        "fi": "kayttaa"
+      },
       "CLASS_DEF": {
         "en": "class",
         "fr": "classe",

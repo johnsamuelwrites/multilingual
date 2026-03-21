@@ -40,7 +40,8 @@ Node families
   Patterns        — IRLiteralPattern, IRCapturePattern, IRWildcardPattern,
                     IROrPattern, IRRecordPattern, IRGuardedPattern,
                     IRAsPattern, IRSemanticPattern
-  Reactive        — IRObserveBinding, IROnChange
+  Reactive        — IRObserveBinding, IROnChange,
+                    IRCanvasBlock, IRRenderExpr, IRViewBinding
 """
 
 from __future__ import annotations
@@ -859,6 +860,28 @@ class IROnChange(IRNode):
 
     signal: IRNode | None = None
     body: list[IRNode] = field(default_factory=list)
+
+
+@dataclass
+class IRCanvasBlock(IRNode):
+    """Declarative view composition block: canvas { ... }."""
+
+    children: list[IRNode] = field(default_factory=list)
+    name: str = ""  # optional named canvas
+
+@dataclass
+class IRRenderExpr(IRNode):
+    """Render expression: render target with value."""
+
+    target: IRNode | None = None   # the view target (identifier or canvas)
+    value: IRNode | None = None    # the value to render
+
+@dataclass
+class IRViewBinding(IRNode):
+    """Bind a stream or signal to a view: bind signal -> view."""
+
+    signal: IRNode | None = None   # the source signal/stream
+    target: IRNode | None = None   # the view target
 
 
 # ---------------------------------------------------------------------------

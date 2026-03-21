@@ -905,6 +905,14 @@ class Parser:
         if self._match_operator("->"):
             self._advance()
             return_annotation = self._parse_annotation_expression()
+        uses = []
+        if self._match_concept("USES"):
+            self._advance()  # consume USES
+            uses.append(self._expect_identifier().value)
+            while self._match_delimiter(","):
+                self._advance()
+                if self._match_type(TokenType.IDENTIFIER):
+                    uses.append(self._advance().value)
         body = self._parse_block()
         line = async_tok.line if async_tok else tok.line
         column = async_tok.column if async_tok else tok.column
@@ -913,6 +921,7 @@ class Parser:
             return_annotation=return_annotation,
             is_async=is_async,
             syntax_keyword=tok.value,
+            uses=uses,
             line=line, column=column
         )
 

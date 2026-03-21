@@ -268,7 +268,7 @@ class FunctionDef(ASTNode):
     """Function definition: def name(params): body."""
     def __init__(self, name, params, body, decorators=None,
                  return_annotation=None, is_async=False, syntax_keyword="def",
-                 **kwargs):
+                 uses=None, **kwargs):
         line = kwargs.get("line", 0)
         column = kwargs.get("column", 0)
         super().__init__(line, column)
@@ -279,6 +279,7 @@ class FunctionDef(ASTNode):
         self.return_annotation = return_annotation
         self.is_async = is_async
         self.syntax_keyword = syntax_keyword
+        self.uses = uses or []
 class ClassDef(ASTNode):
     """Class definition: class Name(bases): body."""
     def __init__(self, name, bases, body, decorators=None,

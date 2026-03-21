@@ -320,3 +320,28 @@ class TestValidator:
         program = IRProgram(body=[fn], source_language="en")
         diags = validate_all(program)
         assert any("unknown capability" in d for d in diags)
+
+
+# ===========================================================================
+# uses capability syntax
+# ===========================================================================
+
+class TestUsesSyntax:
+    def test_uses_sets_effects_on_function(self):
+        src = "fn fetch(url) -> str uses net:\n    pass\n"
+        program = parse(src)
+        fn = program.body[0]
+        assert isinstance(fn, FunctionDef)
+        assert "net" in fn.uses
+
+    def test_multiple_uses_capabilities(self):
+        src = "fn ai_fn(x) uses ai, net:\n    pass\n"
+        program = parse(src)
+        fn = program.body[0]
+        assert set(fn.uses) == {"ai", "net"}
+
+    def test_uses_flows_into_ir_effects(self):
+        ir = lower("fn f() uses ai:\n    pass\n")
+        fn = ir.body[0]
+        assert isinstance(fn, IRFunction)
+        assert "ai" in fn.effects.names()
