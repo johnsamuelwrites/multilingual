@@ -19,6 +19,7 @@ _EXPERIMENTAL_CONCEPT_IDS = frozenset({
     "ENUM",
     "TYPE_DECL",
     "OBSERVE",
+    "USES",
     "PROMPT",
     "THINK",
     "GENERATE",

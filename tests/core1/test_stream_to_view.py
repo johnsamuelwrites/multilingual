@@ -25,6 +25,7 @@ from multilingualprogramming.runtime.ai_types import ModelRef, StreamChunk
 
 @pytest.fixture(autouse=True)
 def reset_runtime():
+    """Reset the shared AI runtime around each test."""
     AIRuntime.reset()
     yield
     AIRuntime.reset()

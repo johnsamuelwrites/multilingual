@@ -22,7 +22,6 @@ orchestrator writes it to disk.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any
 
 from multilingualprogramming.core.ir_nodes import (
     IRCanvasBlock,

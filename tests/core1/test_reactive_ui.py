@@ -24,7 +24,7 @@ from multilingualprogramming.core.ir_nodes import (
     IRRenderExpr,
     IRViewBinding,
 )
-from multilingualprogramming.codegen.ui_lowering import UILoweringPass, lower_to_ui
+from multilingualprogramming.codegen.ui_lowering import lower_to_ui
 from multilingualprogramming.core.types import INT_TYPE, STRING_TYPE
 
 
@@ -40,7 +40,7 @@ class TestIRCanvasBlock:
     def test_canvas_block_instantiates(self):
         canvas = IRCanvasBlock(name="main")
         assert canvas.name == "main"
-        assert canvas.children == []
+        assert not canvas.children
 
     def test_canvas_block_with_children(self):
         child = IRLiteral(value="hello", kind="string")
@@ -180,4 +180,4 @@ class TestUILoweringResult:
 
     def test_empty_program_no_diagnostics(self):
         result = lower_to_ui(_prog())
-        assert result.diagnostics == []
+        assert not result.diagnostics

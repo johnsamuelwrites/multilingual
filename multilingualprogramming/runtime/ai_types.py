@@ -13,7 +13,6 @@ same types regardless of which LLM API it uses.
 
 from __future__ import annotations
 from dataclasses import dataclass, field
-from typing import AsyncIterator, Iterator
 
 
 @dataclass
@@ -63,6 +62,7 @@ class EmbeddingVector:
     dimensions: int = 0
 
     def __post_init__(self):
+        """Infer vector dimensionality from the supplied values when omitted."""
         if self.dimensions == 0 and self.values:
             self.dimensions = len(self.values)
 
@@ -99,4 +99,5 @@ class ToolResult:
 
     @property
     def success(self) -> bool:
+        """Return True when the tool invocation completed without error."""
         return self.error is None

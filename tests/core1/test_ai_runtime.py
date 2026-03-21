@@ -5,15 +5,16 @@
 #
 
 """Tests for Core 1.0 AI runtime: types, provider, dispatcher, tools, semantic match."""
+# pylint: disable=missing-class-docstring
 
 import pytest
 
 from multilingualprogramming.runtime.ai_types import (
-    EmbeddingVector, ModelRef, PromptResult, Reasoning, StreamChunk, ToolCall, ToolResult,
+    EmbeddingVector, ModelRef, Reasoning, ToolCall,
 )
 from multilingualprogramming.runtime.ai_runtime import AIRuntime, MockProvider
 from multilingualprogramming.runtime.tool_runtime import (
-    AgentLoop, ToolRegistry, tool, get_registry,
+    AgentLoop, ToolRegistry, tool,
 )
 from multilingualprogramming.runtime.semantic_match import (
     SemanticMatcher, semantic_match, clear_cache,
@@ -253,7 +254,9 @@ class TestAgentLoop:
         AIRuntime.register(p)
 
         reg = ToolRegistry()
-        reg.register(lambda expr: eval(expr), description="calc", name="calc")  # noqa: S307
+        def calc(expr):
+            return {"6*7": 42}[expr]
+        reg.register(calc, description="calc", name="calc")
 
         loop = AgentLoop(model=ModelRef("m"), registry=reg)
         answer = loop.run("What is 6*7?")

@@ -14,12 +14,12 @@ from __future__ import annotations
 
 import functools
 import inspect
+import json
 from typing import Callable
 
 from multilingualprogramming.runtime.ai_runtime import AIRuntime
 from multilingualprogramming.runtime.ai_types import (
     ModelRef,
-    PromptResult,
     ToolCall,
     ToolResult,
 )
@@ -85,6 +85,7 @@ class ToolRegistry:
             )
 
     def names(self) -> list[str]:
+        """Return the names of all registered tools."""
         return list(self._tools.keys())
 
     def descriptions(self) -> str:
@@ -204,9 +205,9 @@ class AgentLoop:
         at each position, handling nested objects.
         Override to support provider-specific formats.
         """
-        import json
-        for start in range(len(response)):
-            if response[start] != "{":
+        # pylint: disable=too-many-nested-blocks
+        for start, start_char in enumerate(response):
+            if start_char != "{":
                 continue
             # Walk forward to find the matching closing brace
             depth = 0
@@ -250,6 +251,7 @@ class AgentLoop:
         model_response: str,
         result: ToolResult,
     ) -> str:
+        """Append a tool observation to the running agent prompt."""
         if result.success:
             observation = f"Tool '{result.name}' returned: {result.output}"
         else:

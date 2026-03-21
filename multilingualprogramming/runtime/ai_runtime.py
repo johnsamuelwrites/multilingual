@@ -31,6 +31,7 @@ Register a provider before running any AI-native code::
 from __future__ import annotations
 
 import abc
+import json
 from typing import AsyncIterator, Iterator
 
 from multilingualprogramming.runtime.ai_types import (
@@ -39,8 +40,6 @@ from multilingualprogramming.runtime.ai_types import (
     PromptResult,
     Reasoning,
     StreamChunk,
-    ToolCall,
-    ToolResult,
 )
 
 
@@ -64,7 +63,13 @@ class AIProvider(abc.ABC):
     def embed(self, model: ModelRef, text: str, **kwargs) -> EmbeddingVector:
         """Return a dense embedding vector for the input text."""
 
-    def generate(self, model: ModelRef, template: str, target_type: type | None = None, **kwargs) -> object:
+    def generate(
+        self,
+        model: ModelRef,
+        template: str,
+        target_type: type | None = None,
+        **kwargs,
+    ) -> object:
         """Generate a structured value by constraining model output.
 
         Default: call prompt and return the string.  Override to add JSON-mode
@@ -74,7 +79,6 @@ class AIProvider(abc.ABC):
         if target_type is str or target_type is None:
             return result.content
         try:
-            import json
             return json.loads(result.content)
         except Exception:
             return result.content
@@ -117,7 +121,12 @@ class AIProvider(abc.ABC):
         """Async version of prompt.  Default: run sync version."""
         return self.prompt(model, template, **kwargs)
 
-    async def stream_async(self, model: ModelRef, template: str, **kwargs) -> AsyncIterator[StreamChunk]:
+    async def stream_async(
+        self,
+        model: ModelRef,
+        template: str,
+        **kwargs,
+    ) -> AsyncIterator[StreamChunk]:
         """Async streaming.  Default: yield sync result."""
         result = self.prompt(model, template, **kwargs)
         yield StreamChunk(content=result.content, is_final=True)
@@ -145,19 +154,29 @@ class MockProvider(AIProvider):
         return self
 
     def set_embed_dim(self, dim: int) -> "MockProvider":
+        """Set the deterministic embedding vector width used by the mock."""
         self._embed_dim = dim
         return self
 
     @property
     def call_log(self) -> list[dict]:
+        """Return a copy of the recorded provider call history."""
         return list(self._call_log)
 
     def prompt(self, model: ModelRef, template: str, **kwargs) -> PromptResult:
-        self._call_log.append({"op": "prompt", "model": model.name, "template": template})
-        text = self._responses.pop(0) if self._responses else f"mock response to: {template[:40]}"
+        """Return the next queued response, or a deterministic fallback."""
+        self._call_log.append(
+            {"op": "prompt", "model": model.name, "template": template}
+        )
+        text = (
+            self._responses.pop(0)
+            if self._responses
+            else f"mock response to: {template[:40]}"
+        )
         return PromptResult(content=text, model=model.name)
 
     def embed(self, model: ModelRef, text: str, **kwargs) -> EmbeddingVector:
+        """Return a deterministic normalized embedding vector for *text*."""
         self._call_log.append({"op": "embed", "model": model.name, "text": text})
         # Deterministic fake embedding based on hash
         seed = hash(text) & 0xFFFFFFFF
@@ -195,6 +214,7 @@ class AIRuntime:
 
     @classmethod
     def get_provider(cls) -> AIProvider:
+        """Return the currently registered provider."""
         if cls._provider is None:
             raise RuntimeError(
                 "No AIProvider registered.  Call AIRuntime.register(provider) "
@@ -204,22 +224,33 @@ class AIRuntime:
 
     @classmethod
     def prompt(cls, model: ModelRef, template: str, **kwargs) -> PromptResult:
+        """Dispatch a prompt request to the active provider."""
         return cls.get_provider().prompt(model, template, **kwargs)
 
     @classmethod
-    def generate(cls, model: ModelRef, template: str, target_type=None, **kwargs) -> object:
+    def generate(
+        cls,
+        model: ModelRef,
+        template: str,
+        target_type=None,
+        **kwargs,
+    ) -> object:
+        """Dispatch a structured generation request to the active provider."""
         return cls.get_provider().generate(model, template, target_type, **kwargs)
 
     @classmethod
     def think(cls, model: ModelRef, template: str, **kwargs) -> Reasoning:
+        """Dispatch a reasoning request to the active provider."""
         return cls.get_provider().think(model, template, **kwargs)
 
     @classmethod
     def stream(cls, model: ModelRef, template: str, **kwargs) -> Iterator[StreamChunk]:
+        """Dispatch a streaming request to the active provider."""
         return cls.get_provider().stream(model, template, **kwargs)
 
     @classmethod
     def embed(cls, model: ModelRef, text: str, **kwargs) -> EmbeddingVector:
+        """Dispatch an embedding request to the active provider."""
         return cls.get_provider().embed(model, text, **kwargs)
 
     @classmethod

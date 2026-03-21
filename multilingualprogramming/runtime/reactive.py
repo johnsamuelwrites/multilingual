@@ -65,6 +65,7 @@ class Signal(Generic[T]):
 
     @property
     def name(self) -> str:
+        """Return the declared signal name."""
         return self._name
 
     def get(self) -> T:

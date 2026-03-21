@@ -264,8 +264,10 @@ class ForLoop(ASTNode):
         self.body = body
         self.is_async = is_async
         self.else_body = else_body
+# pylint: disable=too-many-instance-attributes
 class FunctionDef(ASTNode):
     """Function definition: def name(params): body."""
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(self, name, params, body, decorators=None,
                  return_annotation=None, is_async=False, syntax_keyword="def",
                  uses=None, **kwargs):
