@@ -327,7 +327,10 @@
     },
     "definitions": {
       "FUNC_DEF": {
-        "en": "def",
+        "en": [
+          "def",
+          "fn"
+        ],
         "fr": [
           "déf",
           "def",
@@ -840,7 +843,10 @@
         "fi": "vakio"
       },
       "LET": {
-        "en": "let",
+        "en": [
+          "let",
+          "var"
+        ],
         "fr": "soit",
         "es": "sea",
         "de": "sei",

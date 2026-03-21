@@ -49,6 +49,7 @@ class IRFunction(IRNode):
     return_type: CoreType | None = None
     effects: EffectSet = field(default_factory=EffectSet)
     is_async: bool = False
+    syntax_keyword: str = "fn"
 
 
 @dataclass

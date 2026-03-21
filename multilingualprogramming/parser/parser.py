@@ -475,7 +475,8 @@ class Parser:
         if isinstance(target, Identifier):
             return VariableDeclaration(
                 target.name, value, is_const=False,
-                line=tok.line, column=tok.column
+                line=tok.line, column=tok.column,
+                declaration_kind="var" if tok.value == "var" else "let",
             )
         return Assignment(target, value, op="=",
                           line=tok.line, column=tok.column)
@@ -488,7 +489,8 @@ class Parser:
         value = self._parse_expression()
         return VariableDeclaration(
             name_tok.value, value, is_const=True,
-            line=tok.line, column=tok.column
+            line=tok.line, column=tok.column,
+            declaration_kind="const",
         )
 
     def _parse_assignment_or_expression(self):
@@ -772,6 +774,7 @@ class Parser:
             name_tok.value, params, body,
             return_annotation=return_annotation,
             is_async=is_async,
+            syntax_keyword=tok.value,
             line=line, column=column
         )
 

@@ -166,11 +166,18 @@ class ConditionalExpr(ASTNode):
 # ---------------------------------------------------------------------------
 class VariableDeclaration(ASTNode):
     """Variable declaration: let x = expr / const PI = 3.14."""
-    def __init__(self, name, value, is_const=False, line=0, column=0):
+    def __init__(self, name, value, is_const=False, line=0, column=0,
+                 declaration_kind=None):
         super().__init__(line, column)
         self.name = name
         self.value = value
         self.is_const = is_const
+        self.declaration_kind = declaration_kind or ("const" if is_const else "let")
+
+    @property
+    def is_mutable(self):
+        """Whether this declaration uses Core 1.0 mutable binding semantics."""
+        return self.declaration_kind == "var"
 class Assignment(ASTNode):
     """Assignment: target = value (also +=, -=, *=, /=)."""
     def __init__(self, target, value, op="=", line=0, column=0):
@@ -260,7 +267,8 @@ class ForLoop(ASTNode):
 class FunctionDef(ASTNode):
     """Function definition: def name(params): body."""
     def __init__(self, name, params, body, decorators=None,
-                 return_annotation=None, is_async=False, **kwargs):
+                 return_annotation=None, is_async=False, syntax_keyword="def",
+                 **kwargs):
         line = kwargs.get("line", 0)
         column = kwargs.get("column", 0)
         super().__init__(line, column)
@@ -270,6 +278,7 @@ class FunctionDef(ASTNode):
         self.decorators = decorators or []
         self.return_annotation = return_annotation
         self.is_async = is_async
+        self.syntax_keyword = syntax_keyword
 class ClassDef(ASTNode):
     """Class definition: class Name(bases): body."""
     def __init__(self, name, bases, body, decorators=None,
