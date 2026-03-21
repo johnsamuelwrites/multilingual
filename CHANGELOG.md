@@ -6,6 +6,81 @@ The format is inspired by Keep a Changelog, and this project follows SemVer.
 
 ## [Unreleased]
 
+### Added
+
+#### WAT/WASM backend — string operations
+- **`str(x)` number-to-string conversion**: `str(42)` → `"42"`, `str(3.14)` → `"3.14"` via new
+  `$__str_from_f64` WAT helper. Correctly formats integers without a decimal point and floats with
+  up to 6 significant decimal digits (trailing zeros trimmed). String and string-variable arguments
+  pass through unchanged.
+- **F-string numeric interpolation**: `f"{x}"` where `x` is a numeric `f64` variable now calls
+  `$__str_from_f64`, producing correct float output (`f"{3.14}"` → `"3.14"` rather than `"3"`).
+- **String method `.upper()` / `.lower()`**: ASCII case conversion, returns heap-allocated copy.
+- **String method `.startswith(prefix)` / `.endswith(suffix)`**: Returns `0.0` / `1.0`.
+- **String method `.count(needle)`**: Counts non-overlapping occurrences; returns f64.
+- **String method `.replace(old, new)`**: Replaces all occurrences; returns heap-allocated copy.
+- **`str()` recognized as string-valued**: `_is_string_value` updated so `str(x)` composes
+  correctly inside f-strings and string concatenation.
+
+#### WAT/WASM backend — math
+- **`math.sin` / `math.cos` / `math.tan`**: Horner-polynomial approximations (6-term).
+- **`math.exp`**: 10-term Horner polynomial for e^x.
+- **`math.log` / `math.log2` / `math.log10`**: atanh-series natural log; scaled for base 2/10.
+- **`math.atan` / `math.atan2`**: 6-term series with |x|>1 identity; quadrant-adjusted atan2.
+- **`math.trunc` / `math.hypot` / `math.degrees` / `math.radians`**: Inline WAT lowering.
+- **`math.pi` / `math.e` / `math.tau` / `math.inf` / `math.nan`**: Emitted as `f64.const` literals.
+
+#### WAT/WASM backend — list mutation
+- **`list.append(x)`**: `$__list_append` allocates a new block with `count+1` slots, copies
+  existing data, appends the element, and updates the local variable.
+- **`list.pop()`**: `$__list_pop` decrements the count in-place and returns the last element;
+  works in both statement and expression contexts.
+- **`list.extend(other)`**: `$__list_extend` merges two lists into a new heap block.
+- **`list(existing_list)`**: Produces a shallow copy when called with an existing list local.
+
+#### WAT/WASM backend — iteration
+- **`enumerate(lst)` in `for` loops**: `for i, x in enumerate(lst)` lowers to a counted list
+  loop that unpacks the two-element tuple target `(i, x)` via `_emit_sequence_len_setup` /
+  `_emit_sequence_value_load`.
+- **`list(map(fn, lst))`**: Applies a known WAT function to every element of a list local;
+  produces a new list of the same length.
+- **`list(filter(fn, lst))`**: Keeps elements where `fn` returns a truthy value; count updated
+  after the loop.
+
+#### WAT/WASM backend — dict methods
+- **`dict.values()`**: Returns the dict pointer itself (dicts are stored as f64 value lists).
+- **`dict.keys()`**: Allocates a new list of interned string pointers for each compile-time key.
+- **`dict.items()`**: Allocates an outer list of 2-element `[key_ptr, val]` tuple pairs.
+- **`dict.get(key)` / `dict.get(key, default)`**: Compile-time string-literal key lookup;
+  returns the element f64, the default expression, or `0.0` if the key is absent.
+
+#### WAT/WASM backend — OOP / type checking
+- **`isinstance(obj, ClassName)`**: Emits a type-tag check at `obj_ptr - 8` against the
+  compile-time class ID from `_class_ids`. Returns `1.0` (true) or `0.0` (false) as f64.
+- **OOP state reset fix**: `_static_method_names`, `_property_getters`, `_class_ids`, and
+  `_dispatch_func_names` are now reset between `generate()` calls, eliminating stale OOP
+  state that could corrupt subsequent compilations in the same generator instance.
+
+#### WAT/WASM backend — DOM
+- **`dom_on(handle, event, callback)`**: Registers a WAT function-table callback for a DOM
+  event. The generated module exports `__dom_dispatch(idx)` which JS calls on the event;
+  `ml_dom_on` host import added to the DOM bridge.
+
+#### WAT/WASM backend — JSON
+- **`json.dumps(list)`**: Encodes a tracked f64 list as a JSON array string
+  (`[n1,n2,...]`) using a new `$__json_encode_list` WAT helper.
+
+#### WAT/WASM backend — generators
+- **`yield from range(n)`**: Now materializes correctly via Shape 1b in `_simple_generator_spec`.
+
+### Fixed
+- **F-string float formatting**: Default `{x}` interpolation previously truncated floats to
+  their integer part; now delegates to `$__str_from_f64` for correct output.
+- **`math.atan` WAT stack error**: The conditional negation inside `if` without a declared
+  result type caused a WASM validation failure; fixed by saving the result to `(local $r f64)`.
+- **`$__json_encode_list` copy-index clobbering**: Inner copy loop used `$i` (element index)
+  as its write pointer, corrupting output after the first element; fixed with a separate `$ci`.
+
 ## [0.6.0] - 2026-03-09
 
 ### Added

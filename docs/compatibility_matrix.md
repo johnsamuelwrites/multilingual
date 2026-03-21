@@ -197,8 +197,32 @@ WebAssembly Text (WAT), which is then compiled and executed via Wasmtime.
 | `input()` | Supported | Reads a line from WASI stdin (fd 0), strips trailing CR/LF |
 | `argc()` | Supported | Returns WASI argument count as f64 |
 | `argv(i)` | Supported | Returns i-th WASI argument string as f64 pointer |
-| DOM bridge | Supported | `dom_get`, `dom_text`, `dom_html`, `dom_value`, `dom_attr`, `dom_create`, `dom_append`, `dom_style`, `dom_remove`, `dom_class`; requires `"env"` host imports provided by the JS embedding |
+| DOM bridge | Supported | `dom_get`, `dom_text`, `dom_html`, `dom_value`, `dom_attr`, `dom_create`, `dom_append`, `dom_style`, `dom_remove`, `dom_class`, `dom_on` (event callbacks via WAT function table); requires `"env"` host imports provided by the JS embedding |
 | Source location comments | Supported | `;;  @line:col` WAT comment emitted at the top of each compiled statement |
+| `str(x)` number conversion | Supported | Converts f64 to decimal string via `$__str_from_f64`; integers without decimal point, floats with up to 6 significant digits |
+| F-string numeric interpolation | Supported | `f"{x}"` where `x` is a numeric variable; delegates to `$__str_from_f64` for correct float output |
+| String `.upper()` / `.lower()` | Supported | ASCII case conversion; heap-allocated copy |
+| String `.startswith()` / `.endswith()` | Supported | Returns `0.0` / `1.0` as f64 |
+| String `.count(needle)` | Supported | Count of non-overlapping occurrences |
+| String `.replace(old, new)` | Supported | Replace all occurrences; heap-allocated copy |
+| `math.sin` / `cos` / `tan` | Supported | Horner-polynomial WAT approximations |
+| `math.exp` / `log` / `log2` / `log10` | Supported | Polynomial / atanh-series WAT helpers |
+| `math.atan` / `atan2` | Supported | Series with |x|>1 identity; quadrant-adjusted atan2 |
+| `math.trunc` / `hypot` / `degrees` / `radians` | Supported | Inline WAT lowering |
+| `math.pi` / `e` / `tau` / `inf` / `nan` | Supported | Emitted as `f64.const` literals |
+| `list.append(x)` | Supported | Allocates new block with count+1; updates local variable |
+| `list.pop()` | Supported | Decrements count in-place; returns last element |
+| `list.extend(other)` | Supported | Merges two lists into a new heap block |
+| `list(existing_list)` | Supported | Shallow copy via dynamic loop |
+| `enumerate(lst)` in `for` | Supported | `for i, x in enumerate(lst)` unpacks two-element tuple target |
+| `list(map(fn, lst))` | Supported | Applies known WAT function to each list element |
+| `list(filter(fn, lst))` | Supported | Keeps elements where fn returns truthy |
+| `dict.values()` | Supported | Returns the dict pointer (dicts stored as f64 value lists) |
+| `dict.keys()` | Supported | Allocates list of interned string pointers for compile-time keys |
+| `dict.items()` | Supported | Allocates list of 2-element `[key_ptr, val]` tuple pairs |
+| `dict.get(key)` / `dict.get(key, default)` | Supported | Compile-time key lookup; returns element, default, or `0.0` |
+| `isinstance(obj, ClassName)` | Supported | Type-tag check at `obj_ptr - 8` vs compile-time class ID |
+| `json.dumps(list)` | Supported | Encodes tracked f64 list as `[n1,n2,...]` JSON string |
 
 See [docs/wat_oop_model.md](wat_oop_model.md) for the full object model reference.
 
@@ -231,8 +255,9 @@ The following are not claimed as universally compatible at this stage:
 - Complete localization aliases for every CPython built-in function/type (41 of 70+ have aliases)
 - WAT `@property` setter/deleter protocol (getter fully supported; setter/deleter not yet lowered)
 - WAT `print` `file=` kwarg (stdout is the only target in WAT)
-- WAT DOM bridge `dom_value` now uses a dedicated scratch buffer separate from argv/input storage
 - WAT exception model uses numeric codes, not Python exception objects; `raise` with a non-`RaiseStatement` AST form may not match the expected catch code
+- WAT `str.split(sep)` / `str.join(iterable)` — not yet lowered (requires fat-string-pointer ABI extension)
+- WAT `list.append` / `pop` / `extend`: list variable must be statically tracked in `_list_locals`; dynamic list reassignment through non-local aliases is not reflected
 
 ## Recommendation
 
