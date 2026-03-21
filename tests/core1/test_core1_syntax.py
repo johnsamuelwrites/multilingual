@@ -10,9 +10,9 @@ Covers: fn, var, let, |>, ?, ~=, enum, type (record), observe var.
 Each test parses a source snippet and checks that the correct AST node
 or IR node is produced.
 """
+# pylint: disable=missing-class-docstring
 
-import pytest
-
+from multilingualprogramming.core.effects import Effect, EffectSet
 from multilingualprogramming.lexer.lexer import Lexer
 from multilingualprogramming.parser.parser import Parser
 from multilingualprogramming.parser.ast_nodes import (
@@ -36,6 +36,7 @@ from multilingualprogramming.core.ir_nodes import (
     IRSemanticMatchOp,
     IRTypeDecl,
 )
+from multilingualprogramming.core.types import INT_TYPE
 from multilingualprogramming.core.validators import validate_all, validate_semantic_ir
 
 
@@ -44,11 +45,13 @@ from multilingualprogramming.core.validators import validate_all, validate_seman
 # ---------------------------------------------------------------------------
 
 def parse(source: str, language: str = "en"):
+    """Parse source into the surface AST."""
     tokens = Lexer(source, language=language).tokenize()
     return Parser(tokens, source_language=language).parse()
 
 
 def lower(source: str, language: str = "en"):
+    """Lower source into semantic IR."""
     tree = parse(source, language)
     return lower_to_semantic_ir(tree, language)
 
@@ -286,14 +289,13 @@ class TestValidator:
     def test_valid_program_has_no_diagnostics(self):
         ir = lower("let x = 1\nfn f(a):\n    return a\n")
         diags = validate_all(ir)
-        assert diags == []
+        assert not diags
 
     def test_validate_semantic_ir_accepts_valid(self):
         ir = lower("let x = 42\n")
         validate_semantic_ir(ir)  # must not raise
 
     def test_empty_binding_name_reported(self):
-        from multilingualprogramming.core.types import INT_TYPE
         program = IRProgram(
             body=[IRBinding(name="", value=IRLiteral(value=1, kind="int",
                                                      inferred_type=INT_TYPE))],
@@ -311,7 +313,6 @@ class TestValidator:
         assert any("no initial value" in d for d in diags)
 
     def test_unknown_effect_reported(self):
-        from multilingualprogramming.core.effects import Effect, EffectSet
         fn = IRFunction(
             name="f",
             effects=EffectSet(effects=(Effect("unknown_capability"),)),

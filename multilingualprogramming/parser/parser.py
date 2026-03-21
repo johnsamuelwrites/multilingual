@@ -5,6 +5,7 @@
 #
 
 """Recursive-descent parser for the multilingual programming language."""
+# pylint: disable=too-many-lines
 
 from typing import NoReturn
 
@@ -62,6 +63,22 @@ _TYPE_CONCEPTS = {
     "TYPE_INT", "TYPE_FLOAT", "TYPE_STR",
     "TYPE_BOOL", "TYPE_LIST", "TYPE_DICT",
 }
+_IDENTIFIER_LIKE_CONCEPTS = (
+    _CALLABLE_CONCEPTS
+    | _TYPE_CONCEPTS
+    | {
+        "TYPE_DECL",
+        "ENUM",
+        "OBSERVE",
+        "PROMPT",
+        "THINK",
+        "GENERATE",
+        "STREAM_KW",
+        "EMBED",
+        "EXTRACT",
+        "CLASSIFY",
+    }
+)
 _TYPE_CONCEPT_TO_PYTHON = {
     "TYPE_INT": "int",
     "TYPE_FLOAT": "float",
@@ -214,9 +231,7 @@ class Parser:
             return self._advance()
         # Allow keyword tokens that are also valid callable/type names
         # to be used in identifier positions (e.g. French: "liste").
-        if tok.type == TokenType.KEYWORD and tok.concept in (
-            _CALLABLE_CONCEPTS | _TYPE_CONCEPTS
-        ):
+        if tok.type == TokenType.KEYWORD and tok.concept in _IDENTIFIER_LIKE_CONCEPTS:
             return self._advance()
         self._error("EXPECTED_IDENTIFIER", tok, token=tok.value)
 
@@ -1632,7 +1647,7 @@ class Parser:
         if concept == "NONE":
             self._advance()
             return NoneLiteral(line=tok.line, column=tok.column)
-        if concept in _CALLABLE_CONCEPTS or concept in _TYPE_CONCEPTS:
+        if concept in _IDENTIFIER_LIKE_CONCEPTS:
             self._advance()
             return Identifier(tok.value, line=tok.line, column=tok.column)
         if concept == "LAMBDA":

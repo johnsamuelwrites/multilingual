@@ -15,6 +15,19 @@ from multilingualprogramming.exceptions import (
     UnsupportedLanguageError,
 )
 
+_EXPERIMENTAL_CONCEPT_IDS = frozenset({
+    "ENUM",
+    "TYPE_DECL",
+    "OBSERVE",
+    "PROMPT",
+    "THINK",
+    "GENERATE",
+    "STREAM_KW",
+    "EMBED",
+    "EXTRACT",
+    "CLASSIFY",
+})
+
 
 class KeywordRegistry:
     """
@@ -226,12 +239,16 @@ class KeywordRegistry:
 
     def get_all_concept_ids(self):
         """
-        Get all concept IDs in the registry.
+        Get stable concept IDs in the registry.
 
         Returns:
-            list[str]: All concept IDs
+            list[str]: Stable concept IDs
         """
-        return list(self._concept_map.keys())
+        return [
+            concept_id
+            for concept_id in self._concept_map
+            if concept_id not in _EXPERIMENTAL_CONCEPT_IDS
+        ]
 
     def get_language_index(self, language):
         """Get reverse index for a language."""

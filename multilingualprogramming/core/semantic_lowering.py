@@ -36,6 +36,10 @@ from multilingualprogramming.core.ir_nodes import (
     IREnumDecl,
     IRTypeDecl,
     IRAgentDecl,
+    IRCapturePattern,
+    IRGuardedPattern,
+    IRLiteralPattern,
+    IROrPattern,
     IRAssertStatement,
     IRAssignment,
     IRAttributeAccess,
@@ -100,6 +104,7 @@ from multilingualprogramming.core.ir_nodes import (
     IRTupleLiteral,
     IRUnaryOp,
     IRWithStatement,
+    IRWildcardPattern,
     IRWhileLoop,
     IRYieldExpr,
     IRYieldStatement,
@@ -117,6 +122,10 @@ from multilingualprogramming.core.types import (
     CoreType,
     GenericType,
     NamedType,
+    RecordField,
+    RecordType,
+    UnionType,
+    UnionVariant,
 )
 from multilingualprogramming.parser import ast_nodes as ast
 
@@ -168,12 +177,15 @@ class _LoweringContext:
     # -- Effect tracking ------------------------------------------------
 
     def require_effect(self, name: str) -> None:
+        """Record that lowering needs a named capability."""
         self._effects.add(name)
 
     def accumulated_effects(self) -> EffectSet:
+        """Return all effects required by the lowered program."""
         return EffectSet(effects=tuple(Effect(n) for n in sorted(self._effects)))
 
     def effects_from_names(self, names: list[str]) -> EffectSet:
+        """Build an EffectSet from explicit effect names."""
         return EffectSet(effects=tuple(Effect(n) for n in names))
 
     # -- Main dispatch --------------------------------------------------
@@ -186,18 +198,25 @@ class _LoweringContext:
         return method(node)
 
     def lower_list(self, nodes: list) -> list:
+        """Lower a list of nodes while preserving order."""
         return [self.lower(n) for n in (nodes or [])]
 
     # -- Fallback -------------------------------------------------------
 
     def _lower_unknown(self, node) -> IRExpression:
         name = type(node).__name__
-        self._warnings.append(f"No IR lowering for AST node {name!r} — using IRExpression placeholder")
+        self._warnings.append(
+            f"No IR lowering for AST node {name!r} — using "
+            "IRExpression placeholder"
+        )
         warnings.warn(
             f"semantic_lowering: no handler for {name!r}, emitting IRExpression placeholder",
             stacklevel=4,
         )
-        return IRExpression(line=getattr(node, "line", 0), column=getattr(node, "column", 0))
+        return IRExpression(
+            line=getattr(node, "line", 0),
+            column=getattr(node, "column", 0),
+        )
 
     # ==================================================================
     # Literals
@@ -460,7 +479,10 @@ class _LoweringContext:
     # Declarations
     # ==================================================================
 
-    def _lower_VariableDeclaration(self, node: ast.VariableDeclaration) -> IRBinding | IRObserveBinding:
+    def _lower_VariableDeclaration(
+        self,
+        node: ast.VariableDeclaration,
+    ) -> IRBinding | IRObserveBinding:
         annotation = _lower_annotation(node.annotation) if hasattr(node, "annotation") else None
         value = self.lower(node.value)
         kind = getattr(node, "declaration_kind", "let")
@@ -473,12 +495,14 @@ class _LoweringContext:
                          line=node.line, column=node.column)
 
     def _lower_EnumDecl(self, node: ast.EnumDecl) -> IREnumDecl:
-        from multilingualprogramming.core.types import RecordField, RecordType, UnionType, UnionVariant
         variants = []
         for v in node.variants:
             if v.fields:
                 fields = tuple(
-                    RecordField(name=fname, field_type=_lower_annotation(ann) or NamedType("unknown"))
+                    RecordField(
+                        name=fname,
+                        field_type=_lower_annotation(ann) or NamedType("unknown"),
+                    )
                     for fname, ann in v.fields
                 )
                 payload = RecordType(name=v.name, fields=fields)
@@ -490,9 +514,11 @@ class _LoweringContext:
                           line=node.line, column=node.column)
 
     def _lower_RecordDecl(self, node: ast.RecordDecl) -> IRTypeDecl:
-        from multilingualprogramming.core.types import RecordField, RecordType
         fields = tuple(
-            RecordField(name=f.name, field_type=_lower_annotation(f.annotation) or NamedType("unknown"))
+            RecordField(
+                name=f.name,
+                field_type=_lower_annotation(f.annotation) or NamedType("unknown"),
+            )
             for f in node.fields
         )
         record_type = RecordType(name=node.name, fields=fields)
@@ -756,10 +782,12 @@ class _LoweringContext:
             return None
         node = _lower_pattern_node(self, pattern)
         if guard is not None:
-            from multilingualprogramming.core.ir_nodes import IRGuardedPattern
-            node = IRGuardedPattern(pattern=node, guard=self.lower(guard),
-                                    line=getattr(pattern, "line", 0),
-                                    column=getattr(pattern, "column", 0))
+            node = IRGuardedPattern(
+                pattern=node,
+                guard=self.lower(guard),
+                line=getattr(pattern, "line", 0),
+                column=getattr(pattern, "column", 0),
+            )
         return node
 
 
@@ -808,7 +836,11 @@ def _detect_agent_decorator(decorators: list) -> str | None:
         if isinstance(dec, ast.CallExpr):
             if _call_name(dec.func) == _AGENT_DECORATOR:
                 for kw in (dec.keywords or []):
-                    key, val = (kw if isinstance(kw, tuple) else (getattr(kw, "arg", ""), getattr(kw, "value", None)))
+                    key, val = (
+                        kw
+                        if isinstance(kw, tuple)
+                        else (getattr(kw, "arg", ""), getattr(kw, "value", None))
+                    )
                     if key == "model" and isinstance(val, ast.Identifier):
                         return val.name
                 if dec.args and isinstance(dec.args[0], ast.Identifier):
@@ -824,7 +856,11 @@ def _detect_tool_decorator(decorators: list) -> str | None:
         if isinstance(dec, ast.CallExpr):
             if _call_name(dec.func) == _TOOL_DECORATOR:
                 for kw in (dec.keywords or []):
-                    key, val = (kw if isinstance(kw, tuple) else (getattr(kw, "arg", ""), getattr(kw, "value", None)))
+                    key, val = (
+                        kw
+                        if isinstance(kw, tuple)
+                        else (getattr(kw, "arg", ""), getattr(kw, "value", None))
+                    )
                     if key == "description" and isinstance(val, ast.StringLiteral):
                         return val.value
                 if dec.args and isinstance(dec.args[0], ast.StringLiteral):
@@ -851,16 +887,6 @@ def _parse_effects_annotation(node: ast.FunctionDef) -> EffectSet:
 
 def _lower_pattern_node(ctx: _LoweringContext, pattern) -> object:
     """Lower a parser pattern node to an IR pattern node."""
-    from multilingualprogramming.core.ir_nodes import (
-        IRAsPattern,
-        IRCapturePattern,
-        IRGuardedPattern,
-        IRLiteralPattern,
-        IROrPattern,
-        IRRecordPattern,
-        IRSemanticPattern,
-        IRWildcardPattern,
-    )
     if pattern is None:
         return IRWildcardPattern()
     # Wildcard: _

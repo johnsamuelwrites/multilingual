@@ -80,7 +80,7 @@ class IRProgram(IRNode):
 # Parameters
 # ---------------------------------------------------------------------------
 
-@dataclass
+@dataclass  # pylint: disable=too-many-instance-attributes
 class IRParameter(IRNode):
     """Function or agent parameter with full type and calling-convention info."""
 
@@ -91,6 +91,12 @@ class IRParameter(IRNode):
     is_kwarg: bool = False        # **kwargs
     is_keyword_only: bool = False
     is_positional_only: bool = False
+
+    def __eq__(self, other):
+        """Keep legacy comparisons to bare parameter names working."""
+        if isinstance(other, str):
+            return self.name == other
+        return super().__eq__(other)
 
 
 # ---------------------------------------------------------------------------
@@ -118,7 +124,7 @@ class IRObserveBinding(IRNode):
     value: IRNode | None = None
     annotation: CoreType | None = None
 
-
+# pylint: disable=too-many-instance-attributes
 @dataclass
 class IRFunction(IRNode):
     """Named function declaration."""
