@@ -1,66 +1,88 @@
 # multilingual
 Not yet another programming language. A multilingual one.
 
-> **One programming model. Many human languages.**  
-> Write code in your language through multilingual frontends targeting one formal core.
+> **One semantic core. Many human languages.**
+>  
+> Build software through human-language-first syntax with native support for AI,
+> multimodal workflows, reactive interfaces, and portable execution.
 
-## Motivation
+## Vision
 
-- Problem: programming is still heavily bound to English-centric syntax and keywords.
-- Idea: build multiple language frontends that compile into one typed core representation.
-- Today: this is a small but working prototype; you can already write and run programs in English, French, Spanish, and other supported languages.
+`multilingual` is becoming a programming language for the age of human
+language, AI, multimodal computing, and living interfaces.
 
-## Project Positioning
+Its purpose is bigger than keyword translation. The goal is to make it possible
+to express the same precise program semantics across human languages while also
+making modern software primitives feel native:
 
-- This is not a beginner-only teaching DSL.
-- This project targets a broad Python-like subset with localized language frontends.
-- Goal: language-inclusive authoring without fragmenting runtime behavior.
+- structured data and pattern matching
+- AI generation, extraction, planning, and tool use
+- multimodal input and output
+- reactive state and interfaces
+- portable execution across environments
 
-## Who Is This For?
+Read the language direction here:
 
-`multilingual` is for teachers, language enthusiasts, programming-language hobbyists, and people exploring LLM-assisted coding workflows across multiple human languages.
+- Vision: [docs/vision.md](docs/vision.md)
+- Core 1.0: [docs/spec/core_1_0.md](docs/spec/core_1_0.md)
+- 1.0 roadmap: [docs/roadmaps/multilingual_1_0.md](docs/roadmaps/multilingual_1_0.md)
+
+## What Multilingual Is
+
+- a human-language-first programming language
+- a shared semantic model expressed through multiple language surfaces
+- an AI-native language platform, not just a syntax experiment
+- a research and implementation space for multilingual programming systems
 
 ## Why Multilingual
 
-- **Language-inclusive syntax**: Use localized keywords and built-in aliases (for example, `intervalle`, `rango`, `intervallo`).
-- **Single execution pipeline**: Same flow for every language: lexer -> parser -> core lowering -> semantic checks -> Python codegen -> runtime.
-- **Data-driven extensibility**: Add languages by updating registries/resources, not by rewriting parser/codegen logic.
-- **REPL-first experience**: Start quickly, switch languages live, inspect keywords/operators from inside REPL.
+- **Human-language-first programming**: code should not force people to abandon
+  their language or mode of expression.
+- **Shared semantics**: different human-language surfaces should express the
+  same underlying program.
+- **AI-native direction**: models, tools, retrieval, and semantic workflows are
+  becoming first-class language concepts.
+- **Portable architecture**: one language should move across runtimes and
+  environments without losing meaning.
 
 ### Pipeline Illustration
 
 ![Multilingual pipeline with surface normalization](docs/assets/multilingual_pipeline_surface.svg)
 
-## What This Is / Is Not
+## Current Platform
 
-- `Is`: a multilingual frontend family over one formal core.
-- `Is`: a research/prototyping platform for localization-aware language tooling.
-- `Is`: a forward-compilation model (`surface -> core -> execution`) with no round-trip guarantee.
-- `Is not`: a claim that syntax translation alone solves all onboarding barriers.
-- `Is not`: full natural-language understanding.
-- `Is not`: a replacement for English-heavy ecosystem docs, examples, and tooling (yet).
+Today the repository already provides:
+
+- multilingual frontends driven by the USM keyword model
+- a shared parser and AST
+- semantic analysis and code generation
+- Python execution support
+- WAT/WASM generation
+- browser demos and DOM-oriented workflows
+
+This is an active language platform in motion, not just a whitepaper.
 
 ## Current Limitations
 
-- Localized keywords can still feel unnatural in some languages because grammar/word order is mostly shared.
-- A small declarative surface-normalization layer now supports selected alternate phrasing patterns, but coverage is still limited.
-- The project supports a controlled subset (CNL-style) per language, not unconstrained natural language.
-- Standard library/module APIs mostly stay canonical Python names; localization is focused on keywords and selected builtins.
-- Full drop-in compatibility with arbitrary existing Python code is not claimed yet.
+- the current semantic core is still thinner than the long-term Core 1.0 model
+- some localized surfaces still feel less natural than they should
+- the project currently exposes more of its historical compiler pipeline than
+  its future language identity
+- AI-native, multimodal, and reactive constructs are still in the design and
+  buildout phase
 
 Details:
+
 - Word order and naturalness: [docs/word_order_and_naturalness.md](docs/word_order_and_naturalness.md)
-- Stdlib localization boundaries: [docs/stdlib_localization.md](docs/stdlib_localization.md)
 - Controlled language scope: [docs/cnl_scope.md](docs/cnl_scope.md)
-- Python compatibility matrix: [docs/compatibility_matrix.md](docs/compatibility_matrix.md)
-- Python 3.12 compatibility roadmap: [docs/compatibility_roadmap.md](docs/compatibility_roadmap.md)
+- Current compatibility matrix: [docs/compatibility_matrix.md](docs/compatibility_matrix.md)
 
 ## Quick Start
 
-Source files for this language use the `.ml` extension (for example: `hello.ml`).
-Requires Python 3.12 or newer.
+Source files use the `.ml` extension. Running the current implementation
+requires Python 3.12 or newer.
 
-### Try The Playground (No Install Required)
+### Try The Playground
 
 You can try `multilingual` directly in your browser:
 
@@ -68,21 +90,17 @@ You can try `multilingual` directly in your browser:
 
 The playground lets you:
 
-- Write code in supported human languages
-- Run full execution in Pyodide
-- Inspect generated Python
-- Inspect generated WAT/WASM output
-- Inspect generated Rust bridge code (Wasmtime workflow)
+- write code in supported human languages
+- run execution in Pyodide
+- inspect generated Python
+- inspect generated WAT/WASM output
+- inspect generated Wasmtime bridge code
 
-If you are evaluating the project, please test the playground with your language and open an issue with feedback:
-
-- Issues: https://github.com/johnsamuelwrites/multilingual/issues
-
-### 1. Install
+## Install
 
 PyPI package: https://pypi.org/project/multilingualprogramming/
 
-Option 1 (recommended): install in a virtual environment.
+Option 1:
 
 ```bash
 python3 -m venv .venv
@@ -91,20 +109,20 @@ python -m pip install --upgrade pip
 python -m pip install multilingualprogramming
 ```
 
-Option 2: install with `pipx` (isolated CLI install).
+Option 2:
 
 ```bash
 pipx install multilingualprogramming
 ```
 
-For local development from source, use:
+For local development from source:
 
 ```bash
 pip install -r requirements.txt
 pip install .
 ```
 
-### 2. Hello World In Multiple Languages
+## Hello World
 
 ```text
 # English
@@ -113,73 +131,19 @@ print("Hello world")
 # French
 afficher("Bonjour le monde")
 
-# Spanish (another language example)
+# Spanish
 imprimir("Hola mundo")
-
-# Japanese
-表示("こんにちは世界")
-
 ```
 
-### 3. Use the REPL (interactive mode)
-
-Start REPL:
+## Use the REPL
 
 ```bash
-# 0) Direct interactive mode (like `python`)
 multilingual
-
-# 1) Explicit REPL command (same behavior as above)
 multilingual repl
-
-# 2) French mode
 multilingual repl --lang fr
-
-# Optional: show generated Python while executing
 multilingual repl --show-python
-
-# Optional: show generated WAT (WebAssembly Text) code while executing
 multilingual repl --show-wat
-
-# Optional: show generated Rust/Wasmtime bridge code while executing
 multilingual repl --show-rust
-```
-
-Inside the REPL, type code and press Enter to execute.
-Both `multilingual` and `multilingual repl` start the same REPL.
-
-Default mode example (English):
-
-```text
->>> let total = 0
->>> for i in range(4):
-...     total = total + i
-...
->>> print(total)
-6
-```
-
-French mode example:
-
-```text
->>> soit somme = 0
->>> pour i dans intervalle(4):
-...     somme = somme + i
-...
->>> afficher(somme)
-6
-```
-
-French phrase aliases are also supported:
-
-```text
-si x:
-    afficher("ok")
-sinon si y:
-    afficher("fallback")
-
-pour chaque i dans intervalle(3):
-    afficher(i)
 ```
 
 REPL commands:
@@ -187,59 +151,25 @@ REPL commands:
 - `:help` show commands
 - `:language <code>` switch language
 - `:python` toggle generated Python display
-- `:wat` toggle generated WAT (WebAssembly Text) display
-- `:rust` toggle generated Rust/Wasmtime bridge code display
+- `:wat` toggle generated WAT display
+- `:rust` toggle generated Wasmtime bridge display
 - `:reset` clear session state
 - `:kw [XX]` show language keywords
 - `:ops [XX]` show operators and symbols
 - `:q` exit
 
-Note: selected universal built-ins (for example `range`, `len`, `sum`) support localized aliases while keeping the universal names available.
-
-### 4. Execute and inspect programs
-
-Execution/transpilation examples and AST parsing examples are in [USAGE.md](USAGE.md).
-
-### 5. Run A `.ml` Source File
-
-Create a file, for example `hello.ml`:
-
-```text
-print("Hello world")
-```
-
-Run it:
+## Run a Program
 
 ```bash
 multilingual hello.ml
-```
-
-Equivalent explicit form:
-
-```bash
 multilingual run hello.ml
-```
-
-Optional (force language instead of auto-detect):
-
-```bash
-multilingual hello.ml --lang fr
 multilingual run hello.ml --lang fr
-```
-
-Optional (show which execution backend was used):
-
-```bash
-multilingual hello.ml --show-backend
 multilingual run hello.ml --show-backend
 ```
 
-This writes a short backend report to stderr, for example
-`[backend] python (python-codegen-exec)`.
+## Cross-Language Module Imports
 
-### 6. Cross-Language Module Imports
-
-You can import `.ml` modules across languages in one program. Example:
+You can import `.ml` modules across language surfaces in one program.
 
 `module_fr.ml`:
 
@@ -262,129 +192,22 @@ Run:
 multilingual run main_en.ml --lang en
 ```
 
-## Roadmap (Short)
+## Roadmap
 
-- v0 (today): toy-but-working interpreter/transpiler, multiple languages, core constructs, REPL, and a tested end-to-end pipeline.
-- next: better tooling, IDE support, more languages, stronger frontend equivalence tests, and potential LLM-assisted code translation workflows.
+Near-term priorities:
 
-## What You Can Use
+- establish the Core 1.0 semantic model
+- introduce a real typed semantic IR
+- add first-class modern language constructs such as `fn`, `var`, `enum`, `|>`, and `?`
+- build AI-native and reactive language features on top of that core
 
-- Numerals across scripts: `MPNumeral`, `UnicodeNumeral`, `RomanNumeral`
-- Extended numerals: `ComplexNumeral`, `FractionNumeral`, `NumeralConverter`
-- Keyword model: `KeywordRegistry`, `KeywordValidator`
-- Date/time: `MPDate`, `MPTime`, `MPDatetime`
-- Frontend: `Lexer`, `Parser`, AST nodes, `SemanticAnalyzer`
-- Runtime: `PythonCodeGenerator`, `RuntimeBuiltins`, `ProgramExecutor`, `REPL`
-- WAT/WASM backend: `WATCodeGenerator` — compiles multilingual AST to executable WebAssembly (core language + OOP with dynamic dispatch/type tags, `super()`, `@property`, and classmethod/staticmethod lowering; real `try/except/finally` with numeric exception codes; `input()` / `argc()` / `argv()` WASI builtins; DOM bridge via `"env"` host imports)
+See:
 
-Additional syntax now supported:
+- [docs/roadmaps/multilingual_1_0.md](docs/roadmaps/multilingual_1_0.md)
 
-- Type annotations (`x: int`, `def f(x: int) -> str`)
-- Nested comprehension clauses (`[x for row in rows for x in row]`)
-- Set literals (`{1, 2, 3}`)
-- Multiple context managers (`with A() as a, B() as b`)
-- Dictionary unpacking (`{**d1, **d2}`)
-- Hex/oct/bin literals (`0xFF`, `0o77`, `0b101`)
-- Scientific notation (`1.5e-3`)
-- Async features (`async def`, `await`, `async for`, `async with`)
-- Walrus operator (`:=`)
+## More Documentation
 
-Supported pilot languages: English, French, Spanish, German, Italian, Portuguese, Polish, Dutch, Swedish, Danish, Finnish, Hindi, Arabic, Bengali, Tamil, Chinese (Simplified), Japanese.
-
-## Run Examples
-
-See [examples/README.md](examples/README.md) for narrative `.ml` examples
-(English/French equivalents) and runnable commands.
-
-### Japanese Surface Syntax Example
-
-These two files compute the same result (`15`) using canonical and alternate
-surface loop phrasing:
-
-- Surface form: `examples/surface_for_ja.ml`
-- Canonical form: `examples/surface_for_ja_canonical.ml`
-
-Run:
-
-```bash
-multilingual run examples/surface_for_ja.ml --lang ja
-multilingual run examples/surface_for_ja_canonical.ml --lang ja
-```
-
-### Spanish And Portuguese Surface Syntax Examples
-
-These pairs compute the same result using canonical and iterable-first loop phrasing:
-
-- Spanish surface: `examples/surface_for_es.ml`
-- Spanish canonical: `examples/surface_for_es_canonical.ml`
-- Portuguese surface: `examples/surface_for_pt.ml`
-- Portuguese canonical: `examples/surface_for_pt_canonical.ml`
-
-Run:
-
-```bash
-multilingual run examples/surface_for_es.ml --lang es
-multilingual run examples/surface_for_es_canonical.ml --lang es
-multilingual run examples/surface_for_pt.ml --lang pt
-multilingual run examples/surface_for_pt_canonical.ml --lang pt
-```
-
-### Semantic Equivalence (English vs French)
-
-These two snippets are semantically equivalent:
-
-English (`examples/arithmetics_en.ml`):
-
-```text
-let a = 10
-let b = 3
-print("a + b =", a + b)
-```
-
-French (`examples/arithmetics_fr.ml`):
-
-```text
-soit a = 10
-soit b = 3
-afficher("a + b =", a + b)
-```
-
-## Documentation
-
-Use this README for setup and workflow; use `docs/` for design rationale and policy details.
-
-- Browser playground (interactive): https://johnsamuel.info/multilingual/playground.html
-- Usage guide: [USAGE.md](USAGE.md)
-- Examples guide: [examples/README.md](examples/README.md)
-- Detailed reference: [docs/reference.md](docs/reference.md)
-- Design overview: [docs/design.md](docs/design.md)
-- Related work and differentiation: [docs/related_work.md](docs/related_work.md)
-- Core formalization: [docs/core_spec.md](docs/core_spec.md)
-- Frontend translation contracts: [docs/frontend_contracts.md](docs/frontend_contracts.md)
-- Evaluation plan: [docs/evaluation_plan.md](docs/evaluation_plan.md)
-- Word order and syntax naturalness notes: [docs/word_order_and_naturalness.md](docs/word_order_and_naturalness.md)
-- Standard library localization strategy: [docs/stdlib_localization.md](docs/stdlib_localization.md)
-- Controlled language scope and ambiguity policy: [docs/cnl_scope.md](docs/cnl_scope.md)
-- Python compatibility matrix: [docs/compatibility_matrix.md](docs/compatibility_matrix.md)
-- Python 3.12 compatibility roadmap: [docs/compatibility_roadmap.md](docs/compatibility_roadmap.md)
-- Translation governance guide: [docs/translation_guidelines.md](docs/translation_guidelines.md)
-- Development and debugging guide: [docs/development.md](docs/development.md)
-- Guide complet en francais: [docs/fr/programmation.md](docs/fr/programmation.md)
-- Language onboarding guide: [docs/language_onboarding.md](docs/language_onboarding.md)
-- WAT/WASM architecture overview: [docs/WASM_ARCHITECTURE_OVERVIEW.md](docs/WASM_ARCHITECTURE_OVERVIEW.md)
-- WAT/WASM OOP object model reference: [docs/wat_oop_model.md](docs/wat_oop_model.md)
-- Contribution guide: [CONTRIBUTING.md](CONTRIBUTING.md)
-- Release process: [docs/releasing.md](docs/releasing.md)
-- Changelog: [CHANGELOG.md](CHANGELOG.md)
-
-## Development
-
-```bash
-python -m pytest -q
-python -m pylint $(git ls-files '*.py')
-```
-
-## License
-
-- Code: GPLv3+
-- Documentation/content: CC BY-SA 4.0
+- Usage examples: [USAGE.md](USAGE.md)
+- Language design overview: [docs/design.md](docs/design.md)
+- Frontend contracts: [docs/frontend_contracts.md](docs/frontend_contracts.md)
+- Core spec draft: [docs/spec/core_1_0.md](docs/spec/core_1_0.md)
