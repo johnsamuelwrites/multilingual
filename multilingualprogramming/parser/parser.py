@@ -26,6 +26,8 @@ from multilingualprogramming.parser.ast_nodes import (
     ComprehensionClause,
     ListComprehension, DictComprehension, GeneratorExpr, SetComprehension,
     FStringLiteral, AssertStatement, ChainedAssignment, DictUnpackEntry,
+    # Core 1.0 structured data and reactive
+    EnumDecl, EnumVariant, RecordDecl, RecordField, ObserveDeclaration,
 )
 from multilingualprogramming.parser.error_messages import ErrorMessageRegistry
 from multilingualprogramming.parser.surface_normalizer import (
@@ -41,6 +43,8 @@ DEFAULT_MAX_RECURSION = 500  # Alternative: set sys.setrecursionlimit before par
 _COMPOUND_CONCEPTS = {
     "COND_IF", "LOOP_WHILE", "LOOP_FOR", "FUNC_DEF", "CLASS_DEF",
     "TRY", "MATCH", "WITH",
+    # Core 1.0
+    "ENUM", "TYPE_DECL",
 }
 
 # Concepts that begin simple keyword statements
@@ -48,6 +52,8 @@ _SIMPLE_CONCEPTS = {
     "LET", "CONST", "RETURN", "YIELD", "RAISE",
     "LOOP_BREAK", "LOOP_CONTINUE", "PASS",
     "GLOBAL", "LOCAL", "NONLOCAL", "DEL", "IMPORT", "FROM", "ASSERT",
+    # Core 1.0
+    "OBSERVE",
 }
 
 # Concepts treated as identifiers when appearing in expressions
@@ -347,6 +353,10 @@ class Parser:
             return self._parse_match_statement()
         if concept == "WITH":
             return self._parse_with_statement()
+        if concept == "ENUM":
+            return self._parse_enum_declaration()
+        if concept == "TYPE_DECL":
+            return self._parse_type_declaration()
         self._error("UNEXPECTED_TOKEN", self._current(),
                      token=self._current().value)
 
@@ -380,6 +390,8 @@ class Parser:
             return self._parse_from_import_statement()
         if concept == "ASSERT":
             return self._parse_assert_statement()
+        if concept == "OBSERVE":
+            return self._parse_observe_declaration()
         self._error("UNEXPECTED_TOKEN", self._current(),
                      token=self._current().value)
 
@@ -491,6 +503,117 @@ class Parser:
             name_tok.value, value, is_const=True,
             line=tok.line, column=tok.column,
             declaration_kind="const",
+        )
+
+    # ------------------------------------------------------------------
+    # Core 1.0: enum, type (record), observe
+    # ------------------------------------------------------------------
+
+    def _parse_enum_declaration(self):
+        """Parse: ENUM Name = | Variant [{ field: T }] ...
+
+        Grammar:
+            enum_decl  ::=  ENUM name '=' variant+
+            variant    ::=  '|' Name [ '{' field_list '}' ]
+            field_list ::=  field (',' field)*
+            field      ::=  name ':' annotation
+        """
+        tok = self._advance()  # consume ENUM
+        name_tok = self._expect_identifier()
+        self._expect_operator("=")
+        variants = []
+        while self._match_operator("|"):
+            self._advance()  # consume |
+            vname_tok = self._expect_identifier()
+            fields = []
+            if self._match_delimiter("{"):
+                self._advance()  # consume {
+                while not self._match_delimiter("}"):
+                    fname_tok = self._expect_identifier()
+                    self._expect_delimiter(":")
+                    annotation = self._parse_annotation_expression()
+                    fields.append((fname_tok.value, annotation))
+                    if self._match_delimiter(","):
+                        self._advance()
+                self._expect_delimiter("}")
+            variants.append(EnumVariant(
+                vname_tok.value, fields,
+                line=vname_tok.line, column=vname_tok.column,
+            ))
+        return EnumDecl(
+            name_tok.value, variants,
+            line=tok.line, column=tok.column,
+        )
+
+    def _parse_type_declaration(self):
+        """Parse: TYPE_DECL Name = '{' field_list '}'
+
+        Grammar:
+            type_decl  ::=  TYPE Name '=' '{' field_list '}'
+            field_list ::=  NEWLINE INDENT field+ DEDENT | inline_fields
+            field      ::=  name ':' annotation NEWLINE?
+        """
+        tok = self._advance()  # consume TYPE_DECL
+        name_tok = self._expect_identifier()
+        self._expect_operator("=")
+        self._expect_delimiter("{")
+        self._skip_newlines()
+        # Handle optional indentation inside braces
+        indented = False
+        if self._match_type(TokenType.INDENT):
+            self._advance()
+            indented = True
+        fields = []
+        while not self._match_delimiter("}") and not self._at_end():
+            if self._match_type(TokenType.DEDENT):
+                self._advance()
+                break
+            self._skip_newlines()
+            if self._match_delimiter("}"):
+                break
+            fname_tok = self._expect_identifier()
+            self._expect_delimiter(":")
+            annotation = self._parse_annotation_expression()
+            fields.append(RecordField(
+                fname_tok.value, annotation,
+                line=fname_tok.line, column=fname_tok.column,
+            ))
+            if self._match_delimiter(","):
+                self._advance()
+            self._skip_newlines()
+        if indented and self._match_type(TokenType.DEDENT):
+            self._advance()
+        self._expect_delimiter("}")
+        return RecordDecl(
+            name_tok.value, fields,
+            line=tok.line, column=tok.column,
+        )
+
+    def _parse_observe_declaration(self):
+        """Parse: OBSERVE VAR name [: T] = value.
+
+        OBSERVE is a keyword concept.  The 'var' that follows may appear as
+        a separate KEYWORD token (concept LET with value 'var') or as a plain
+        IDENTIFIER if the surface language does not alias it.
+        """
+        tok = self._advance()  # consume OBSERVE
+        # Consume the optional/required 'var' token
+        cur = self._current()
+        if (cur.type == TokenType.KEYWORD and cur.concept == "LET"
+                and cur.value == "var"):
+            self._advance()  # consume var
+        elif cur.type == TokenType.IDENTIFIER and cur.value == "var":
+            self._advance()
+        name_tok = self._expect_identifier()
+        annotation = None
+        if self._match_delimiter(":"):
+            self._advance()
+            annotation = self._parse_annotation_expression()
+        self._expect_operator("=")
+        value = self._parse_expression()
+        return ObserveDeclaration(
+            name_tok.value, value, annotation,
+            line=tok.line, column=tok.column,
         )
 
     def _parse_assignment_or_expression(self):
@@ -1140,14 +1263,31 @@ class Parser:
         return self._parse_expression()
 
     def _parse_named_expression(self):
-        """Parse assignment expression: conditional_expr [:= expression]."""
-        left = self._parse_conditional_expression()
+        """Parse assignment expression: pipe_expr [:= expression]."""
+        left = self._parse_pipe_expression()
         if self._match_operator(":="):
             tok = self._advance()
             if not isinstance(left, Identifier):
                 self._error("UNEXPECTED_TOKEN", tok, token=tok.value)
             value = self._parse_expression()
             return NamedExpr(left, value, line=tok.line, column=tok.column)
+        return left
+
+    def _parse_pipe_expression(self):
+        """Parse: conditional_expr (|> conditional_expr)*.
+
+        |> is the pipe operator.  It is left-associative and threads the left
+        value as the first argument of the right-hand callable.  This makes
+          a |> f |> g
+        equivalent to
+          g(f(a))
+        and is the primary composition primitive for Core 1.0 pipelines.
+        """
+        left = self._parse_conditional_expression()
+        while self._match_operator("|>"):
+            tok = self._advance()
+            right = self._parse_conditional_expression()
+            left = BinaryOp(left, "|>", right, line=tok.line, column=tok.column)
         return left
 
     def _parse_conditional_expression(self):
@@ -1194,7 +1334,20 @@ class Parser:
             tok = self._advance()
             operand = self._parse_not_expression()
             return UnaryOp("NOT", operand, line=tok.line, column=tok.column)
-        return self._parse_comparison()
+        return self._parse_semantic_match()
+
+    def _parse_semantic_match(self):
+        """Parse: comparison (~= comparison)*.
+
+        ~= is the semantic approximate-match operator.  It binds at the same
+        level as comparison operators so that  a ~= b  reads naturally.
+        """
+        left = self._parse_comparison()
+        while self._match_operator("~="):
+            tok = self._advance()
+            right = self._parse_comparison()
+            left = BinaryOp(left, "~=", right, line=tok.line, column=tok.column)
+        return left
 
     def _parse_comparison(self):
         """Parse: bitwise_or (comp_op bitwise_or)*  (chained).
@@ -1326,7 +1479,11 @@ class Parser:
         return base
 
     def _parse_primary(self):
-        """Parse: atom trailer*  where trailer is (args) or [index] or .attr."""
+        """Parse: atom trailer* ?*
+
+        trailer is  (args)  |  [index]  |  .attr
+        ?  is the postfix result-propagation operator (Core 1.0).
+        """
         node = self._parse_atom()
 
         while True:
@@ -1343,6 +1500,10 @@ class Parser:
                 attr_tok = self._expect_identifier()
                 node = AttributeAccess(node, attr_tok.value,
                                        line=tok.line, column=tok.column)
+            elif self._match_operator("?"):
+                # Result-propagation postfix: expr?
+                tok = self._advance()
+                node = UnaryOp("?", node, line=tok.line, column=tok.column)
             else:
                 break
 

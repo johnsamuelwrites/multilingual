@@ -478,3 +478,37 @@ class ChainedAssignment(ASTNode):
         super().__init__(line, column)
         self.targets = targets
         self.value = value
+# ---------------------------------------------------------------------------
+# Core 1.0 structured data declarations
+# ---------------------------------------------------------------------------
+class EnumVariant(ASTNode):
+    """Single variant in an enum declaration: Variant [{ field: T, ... }]."""
+    def __init__(self, name, fields=None, line=0, column=0):
+        super().__init__(line, column)
+        self.name = name
+        self.fields = fields or []   # list of (field_name, annotation) tuples
+class EnumDecl(ASTNode):
+    """Tagged union declaration: enum Name = | Variant ..."""
+    def __init__(self, name, variants, line=0, column=0):
+        super().__init__(line, column)
+        self.name = name
+        self.variants = variants   # list of EnumVariant
+class RecordField(ASTNode):
+    """Single field in a record type: name: Type."""
+    def __init__(self, name, annotation, line=0, column=0):
+        super().__init__(line, column)
+        self.name = name
+        self.annotation = annotation
+class RecordDecl(ASTNode):
+    """Record type declaration: type Name = { field: T, ... }."""
+    def __init__(self, name, fields, line=0, column=0):
+        super().__init__(line, column)
+        self.name = name
+        self.fields = fields   # list of RecordField
+class ObserveDeclaration(ASTNode):
+    """Reactive mutable binding: observe var name [: T] = value."""
+    def __init__(self, name, value, annotation=None, line=0, column=0):
+        super().__init__(line, column)
+        self.name = name
+        self.value = value
+        self.annotation = annotation

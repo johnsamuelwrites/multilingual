@@ -13,11 +13,14 @@ from multilingualprogramming.lexer.source_reader import SourceReader
 from multilingualprogramming.keyword.keyword_registry import KeywordRegistry
 from multilingualprogramming.exceptions import UnexpectedTokenError
 # Operator characters and multi-character operators
-_DEFAULT_SINGLE_OPERATORS = set("+-*/%<>=!&|^~")
+_DEFAULT_SINGLE_OPERATORS = set("+-*/%<>=!&|^~?")
 _DEFAULT_MULTI_OPERATORS = {
     "**", "//", "==", "!=", "<=", ">=", "<<", ">>",
     "+=", "-=", "*=", "/=", "->", ":=",
     "**=", "//=", "%=", "&=", "|=", "^=", "<<=", ">>=",
+    # Core 1.0 composition operators
+    "|>",   # pipe: left |> right  →  right(left)
+    "~=",   # semantic match: left ~= right
 }
 # Unicode operator alternatives
 _DEFAULT_UNICODE_OPERATORS = {
@@ -72,7 +75,7 @@ def _load_operator_config():
             single_ops, multi_ops, unicode_ops,
             delimiters, unicode_delims, date_open, date_close,
         )
-    for section in ("arithmetic", "comparison", "assignment", "bitwise"):
+    for section in ("arithmetic", "comparison", "assignment", "bitwise", "composition"):
         entries = data.get(section, {})
         for meta in entries.values():
             symbols = meta.get("symbols", [])

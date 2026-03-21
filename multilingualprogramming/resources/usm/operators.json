@@ -345,6 +345,71 @@
       "unicode_alt": []
     }
   },
+  "composition": {
+    "PIPE": {
+      "symbols": ["|>"],
+      "unicode_alt": [],
+      "description": {
+        "en": "pipe (thread left value into right function)",
+        "fr": "tube",
+        "de": "Pipe",
+        "es": "tubería",
+        "hi": "पाइप",
+        "ar": "أنبوب",
+        "zh": "管道",
+        "ja": "パイプ",
+        "it": "tubo",
+        "pt": "tubo",
+        "pl": "potok",
+        "nl": "pijp",
+        "sv": "ror",
+        "da": "ror",
+        "fi": "putki"
+      }
+    },
+    "SEMANTIC_MATCH": {
+      "symbols": ["~="],
+      "unicode_alt": [],
+      "description": {
+        "en": "semantic approximate match",
+        "fr": "correspondance sémantique",
+        "de": "semantischer Vergleich",
+        "es": "coincidencia semántica",
+        "hi": "अर्थपूर्ण मिलान",
+        "ar": "تطابق دلالي",
+        "zh": "语义匹配",
+        "ja": "意味的照合",
+        "it": "corrispondenza semantica",
+        "pt": "correspondência semântica",
+        "pl": "dopasowanie semantyczne",
+        "nl": "semantische overeenkomst",
+        "sv": "semantisk matchning",
+        "da": "semantisk matchning",
+        "fi": "semanttinen vastaavuus"
+      }
+    },
+    "RESULT_PROP": {
+      "symbols": ["?"],
+      "unicode_alt": [],
+      "description": {
+        "en": "result propagation (propagate Err to caller)",
+        "fr": "propagation de résultat",
+        "de": "Ergebnisweiterleitung",
+        "es": "propagación de resultado",
+        "hi": "परिणाम प्रसार",
+        "ar": "نشر النتيجة",
+        "zh": "结果传播",
+        "ja": "結果伝播",
+        "it": "propagazione del risultato",
+        "pt": "propagação de resultado",
+        "pl": "propagacja wyniku",
+        "nl": "resultaatpropagatie",
+        "sv": "resultatpropagering",
+        "da": "resultatpropagering",
+        "fi": "tuloslevitys"
+      }
+    }
+  },
   "bitwise": {
     "BIT_AND": {
       "symbols": [
