@@ -388,11 +388,10 @@ class KeywordRegistryTestSuite(unittest.TestCase):
 
         self.assertIn("RETURN", concepts)
 
-        # 14 control_flow + 10 definitions + 8 logical + 4 error_handling
+        # Stable concepts now include core language constructs plus
+        # concurrency, observability, placement, and swarm coordination terms.
 
-        # + 6 variables + 6 types + 2 io = 50 total (NOT_IN added to logical)
-
-        self.assertEqual(len(concepts), 50)
+        self.assertEqual(len(concepts), 61)
 
 
 
@@ -547,6 +546,14 @@ class KeywordValidatorTestSuite(unittest.TestCase):
                     "Ambiguity entry should have >1 concepts"
 
                 )
+
+    def test_duplicate_concept_entries_do_not_count_as_ambiguity(self):
+
+        """A repeated concept/category mapping should not self-report as ambiguous."""
+
+        english_index = self.validator.registry.get_language_index("en")
+
+        self.assertEqual(english_index["local"], ["LOCAL"])
 
 
 

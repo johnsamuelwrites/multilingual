@@ -191,7 +191,7 @@ _CONCURRENCY_CANONICAL: dict[str, str] = {
     "spawn":         "spawn",
     "launch":        "spawn",  # en alias
     "lancer":        "spawn",  # fr
-    "lanzar":        "spawn",  # es
+    "iniciar":       "spawn",  # es
     "starten":       "spawn",  # de / nl
     "प्रारंभ":      "spawn",  # hi
     "أطلق":         "spawn",  # ar

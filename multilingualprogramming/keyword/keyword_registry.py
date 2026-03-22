@@ -92,7 +92,8 @@ class KeywordRegistry:
                     for keyword in keywords:
                         if keyword not in self._reverse_index[lang]:
                             self._reverse_index[lang][keyword] = []
-                        self._reverse_index[lang][keyword].append(concept_id)
+                        if concept_id not in self._reverse_index[lang][keyword]:
+                            self._reverse_index[lang][keyword].append(concept_id)
 
     def _check_language(self, language):
         """Raise UnsupportedLanguageError if language is not in the registry."""
