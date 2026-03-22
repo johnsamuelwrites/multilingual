@@ -785,6 +785,146 @@ class PythonCodeGenerator:
         value = self._expr_ir(node.value) if node.value is not None else "None"
         self._emit(f"asyncio.create_task({value})")
 
+    def _emit_IRChannelExpr(self, node):
+        """channel<T>() → _MLChannel() — statement context (e.g. bare channel)."""
+        self._ensure_channel()
+        cap = self._expr_ir(node.capacity) if node.capacity is not None else ""
+        arg = f"capacity={cap}" if cap else ""
+        self._emit(f"_MLChannel({arg})")
+
+    def _emit_IRSendExpr(self, node):
+        """channel.send(v) → await channel.put(v)"""
+        channel = self._expr_ir(node.channel) if node.channel is not None else "_ch"
+        value = self._expr_ir(node.value) if node.value is not None else "None"
+        self._emit(f"await {channel}.send({value})")
+
+    def _emit_IRReceiveExpr(self, node):
+        """channel.receive() → await channel.get()"""
+        channel = self._expr_ir(node.channel) if node.channel is not None else "_ch"
+        self._emit(f"await {channel}.receive()")
+
+    # ------------------------------------------------------------------
+    # Observability constructs
+    # ------------------------------------------------------------------
+
+    def _ensure_observability(self):
+        """Inject observability imports the first time they are needed."""
+        if getattr(self, "_observability_emitted", False):
+            return
+        self._observability_emitted = True
+        self._lines.insert(
+            0,
+            "from multilingualprogramming.runtime.observability import "
+            "ml_trace as _ml_trace, ml_cost as _ml_cost, ml_explain as _ml_explain",
+        )
+
+    def _emit_IRTraceExpr(self, node):
+        self._ensure_observability()
+        value = self._expr_ir(node.value) if node.value is not None else "None"
+        label = self._expr_ir(node.label) if node.label is not None else '"trace"'
+        self._emit(f"_ml_trace({value}, label={label})")
+
+    def _emit_IRCostExpr(self, node):
+        self._ensure_observability()
+        value = self._expr_ir(node.value) if node.value is not None else "None"
+        self._emit(f"_ml_cost({value})")
+
+    def _emit_IRExplainExpr(self, node):
+        self._ensure_observability()
+        value = self._expr_ir(node.value) if node.value is not None else "None"
+        model = self._expr_ir(node.model) if node.model is not None else "None"
+        if node.model is not None:
+            self._emit(f"_ml_explain({value}, model={model})")
+        else:
+            self._emit(f"_ml_explain({value})")
+
+    # ------------------------------------------------------------------
+    # Placement annotations
+    # ------------------------------------------------------------------
+
+    def _ensure_placement(self):
+        """Inject placement imports the first time they are needed."""
+        if getattr(self, "_placement_emitted", False):
+            return
+        self._placement_emitted = True
+        self._lines.insert(
+            0,
+            "from multilingualprogramming.runtime.placement import "
+            "local as _ml_local, edge as _ml_edge, cloud as _ml_cloud",
+        )
+
+    def _emit_IRPlacementDecl(self, node):
+        self._ensure_placement()
+        placement_map = {"local": "_ml_local", "edge": "_ml_edge", "cloud": "_ml_cloud"}
+        decorator = placement_map.get(node.placement, "_ml_local")
+        self._emit(f"@{decorator}")
+        if node.target is not None:
+            self._emit_ir_stmt(node.target)
+
+    # ------------------------------------------------------------------
+    # Agent memory and coordination
+    # ------------------------------------------------------------------
+
+    def _ensure_memory(self):
+        if getattr(self, "_memory_emitted", False):
+            return
+        self._memory_emitted = True
+        self._lines.insert(
+            0,
+            "from multilingualprogramming.runtime.memory_store import ml_memory as _ml_memory",
+        )
+
+    def _ensure_swarm(self):
+        if getattr(self, "_swarm_emitted", False):
+            return
+        self._swarm_emitted = True
+        self._lines.insert(
+            0,
+            "from multilingualprogramming.runtime.swarm import "
+            "Swarm as _MLSwarm, ml_delegate as _ml_delegate, "
+            "swarm_decorator as _ml_swarm",
+        )
+
+    def _emit_IRMemoryExpr(self, node):
+        self._ensure_memory()
+        name = self._expr_ir(node.name) if node.name is not None else '"default"'
+        scope = node.scope or "session"
+        self._emit(f'_ml_memory({name}, scope={scope!r})')
+
+    def _emit_IRSwarmDecl(self, node):
+        self._ensure_swarm()
+        # Emit a @_ml_swarm(agents=[...]) decorator followed by a regular function
+        agent_refs = ", ".join(self._expr_ir(a) for a in node.agents)
+        self._emit(f"@_ml_swarm(agents=[{agent_refs}])")
+        # Emit the underlying function body
+        from multilingualprogramming.core import ir_nodes as ir
+        fn_node = ir.IRFunction(
+            name=node.name,
+            parameters=node.parameters,
+            body=node.body,
+            return_type=node.return_type,
+            effects=node.effects,
+            line=node.line, column=node.column,
+        )
+        self._emit_IRFunction(fn_node)
+
+    def _emit_IRDelegateExpr(self, node):
+        self._ensure_swarm()
+        self._ensure_asyncio()
+        agent = self._expr_ir(node.agent) if node.agent is not None else "None"
+        message = self._expr_ir(node.message) if node.message is not None else "None"
+        self._emit(f"await _ml_delegate({agent}, {message})")
+
+    def _ensure_channel(self):
+        if getattr(self, "_channel_emitted", False):
+            return
+        self._channel_emitted = True
+        self._ensure_asyncio()
+        self._lines.insert(
+            0,
+            "from multilingualprogramming.runtime.channel import Channel as _MLChannel",
+        )
+
     def _ir_match_case_condition(self, case, match_var, is_semantic):
         """Return (condition, prelude_lines) for a semantic IR match case."""
         pattern = case.pattern
@@ -1590,3 +1730,43 @@ class _IRExpressionGenerator:
         """spawn expr as an expression → asyncio.create_task(expr)"""
         value = self.render(node.value) if node.value is not None else "None"
         return f"asyncio.create_task({value})"
+
+    def _render_IRChannelExpr(self, node):
+        cap = self.render(node.capacity) if node.capacity is not None else ""
+        arg = f"capacity={cap}" if cap else ""
+        return f"_MLChannel({arg})"
+
+    def _render_IRSendExpr(self, node):
+        ch = self.render(node.channel) if node.channel is not None else "_ch"
+        val = self.render(node.value) if node.value is not None else "None"
+        return f"await {ch}.send({val})"
+
+    def _render_IRReceiveExpr(self, node):
+        ch = self.render(node.channel) if node.channel is not None else "_ch"
+        return f"await {ch}.receive()"
+
+    def _render_IRTraceExpr(self, node):
+        value = self.render(node.value) if node.value is not None else "None"
+        label = self.render(node.label) if node.label is not None else '"trace"'
+        return f"_ml_trace({value}, label={label})"
+
+    def _render_IRCostExpr(self, node):
+        value = self.render(node.value) if node.value is not None else "None"
+        return f"_ml_cost({value})"
+
+    def _render_IRExplainExpr(self, node):
+        value = self.render(node.value) if node.value is not None else "None"
+        if node.model is not None:
+            model = self.render(node.model)
+            return f"_ml_explain({value}, model={model})"
+        return f"_ml_explain({value})"
+
+    def _render_IRMemoryExpr(self, node):
+        name = self.render(node.name) if node.name is not None else '"default"'
+        scope = node.scope or "session"
+        return f'_ml_memory({name}, scope={scope!r})'
+
+    def _render_IRDelegateExpr(self, node):
+        agent = self.render(node.agent) if node.agent is not None else "None"
+        message = self.render(node.message) if node.message is not None else "None"
+        return f"await _ml_delegate({agent}, {message})"

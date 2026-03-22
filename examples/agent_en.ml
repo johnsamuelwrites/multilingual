@@ -4,36 +4,43 @@
 # is idiomatic in any human language.
 #
 # Features demonstrated:
-#   @tool, @agent, think, prompt, par [ ... ], spawn, uses effects
+#   @tool, @agent, @cloud, think, prompt, parallel [ ... ], spawn,
+#   memory, trace, cost, explain, uses effects
 
 @tool(description="Search the web for current information")
 fn web_search(query: str) -> str uses net:
     pass
 
-@tool(description="Calculate a mathematical expression")
-fn calculate(expression: str) -> str:
-    pass
-
+@cloud
 @agent(model=@claude-sonnet)
 fn research_agent(question: str) -> str uses ai, net:
+    # Persistent memory for caching answers
+    let cache = memory("answers", scope="persistent")
+    if question in cache:
+        return cache[question]
+
     # Think first: break the question into parallel sub-queries
     let plan = think @claude-sonnet:
         Break down this research question into two independent sub-queries
         that can be answered in parallel.
         question: question
 
-    # Run both sub-queries concurrently via par
-    let results = par [
-        prompt @claude-sonnet: plan.conclusion + "\nFocus on facts.",
-        prompt @claude-sonnet: plan.conclusion + "\nFocus on context."
+    # Run both sub-queries concurrently via parallel, with cost tracking
+    let results = parallel [
+        cost(prompt @claude-sonnet: plan.conclusion + "\nFocus on facts."),
+        trace(prompt @claude-sonnet: plan.conclusion + "\nFocus on context.",
+              "context-trace")
     ]
 
     # Synthesise the parallel results into a final answer
-    let answer = prompt @claude-sonnet:
-        "Synthesise these two research threads into one clear answer:\n"
-        + results[0] + "\n---\n" + results[1]
+    let answer_with_cost, context = results[0], results[1]
+    let answer, cost_info = answer_with_cost
 
-    return answer
+    # Ask the model to explain its answer
+    let final_answer, explanation = explain(answer)
+
+    cache[question] = final_answer
+    return final_answer
 
 fn main():
     let result = research_agent("What is the population of Tokyo?")

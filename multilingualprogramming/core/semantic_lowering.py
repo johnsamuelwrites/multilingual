@@ -92,11 +92,21 @@ from multilingualprogramming.core.ir_nodes import (
     IRParameter,
     IRPassStatement,
     IRPipeExpr,
+    IRChannelExpr,
+    IRCostExpr,
+    IRDelegateExpr,
+    IRExplainExpr,
+    IRMemoryExpr,
     IRParExpr,
+    IRPlacementDecl,
     IRPlanExpr,
     IRProgram,
     IRPromptExpr,
+    IRReceiveExpr,
+    IRSendExpr,
     IRSpawnExpr,
+    IRSwarmDecl,
+    IRTraceExpr,
     IRRaiseStatement,
     IRRenderExpr,
     IRResultPropagation,
@@ -198,6 +208,248 @@ _CONCURRENCY_CANONICAL: dict[str, str] = {
 }
 
 _CONCURRENCY_CALL_NAMES = frozenset(_CONCURRENCY_CANONICAL)
+
+# Also add channel/send/receive to concurrency canonical
+_CONCURRENCY_CANONICAL.update({
+    # CHANNEL
+    "channel":   "channel",
+    "canal":     "channel",   # fr / es / pt
+    "kanal":     "channel",   # de / pl
+    "चैनल":     "channel",   # hi
+    "قناة":     "channel",   # ar
+    "চ্যানেল": "channel",   # bn
+    "சேனல்":   "channel",   # ta
+    "通道":      "channel",   # zh
+    "チャネル":  "channel",   # ja
+    "canale":    "channel",   # it
+    "kanaal":    "channel",   # nl
+    "kanava":    "channel",   # fi
+
+    # SEND
+    "send":      "send",
+    "envoyer":   "send",   # fr
+    "enviar":    "send",   # es / pt
+    "senden":    "send",   # de
+    "भेजो":     "send",   # hi
+    "أرسل":     "send",   # ar
+    "পাঠাও":   "send",   # bn
+    "அனுப்பு": "send",   # ta
+    "发送":      "send",   # zh
+    "送る":      "send",   # ja
+    "invia":     "send",   # it
+    "wyslij":    "send",   # pl
+    "stuur":     "send",   # nl
+    "skicka":    "send",   # sv
+    "laheta":    "send",   # fi
+
+    # RECEIVE
+    "receive":   "receive",
+    "recevoir":  "receive",  # fr
+    "recibir":   "receive",  # es
+    "empfangen": "receive",  # de
+    "प्राप्त": "receive",  # hi
+    "استقبل":   "receive",  # ar
+    "গ্রহণ":   "receive",  # bn
+    "பெறு":    "receive",  # ta
+    "接收":      "receive",  # zh
+    "受信":      "receive",  # ja
+    "ricevi":    "receive",  # it
+    "receber":   "receive",  # pt
+    "odbierz":   "receive",  # pl
+    "ontvang":   "receive",  # nl
+    "ta_emot":   "receive",  # sv
+    "modtag":    "receive",  # da
+    "vastaanota":"receive",  # fi
+})
+
+# Rebuild the frozenset to include channel/send/receive
+_CONCURRENCY_CALL_NAMES = frozenset(_CONCURRENCY_CANONICAL)
+
+# ---------------------------------------------------------------------------
+# Observability keywords: trace, cost, explain — all 17 languages
+# ---------------------------------------------------------------------------
+
+_OBSERVABILITY_CANONICAL: dict[str, str] = {
+    # TRACE
+    "trace":       "trace",
+    "tracer":      "trace",    # fr
+    "trazar":      "trace",    # es
+    "verfolgen":   "trace",    # de
+    "अनुरेखण":   "trace",    # hi
+    "تتبع":       "trace",    # ar
+    "ট্রেস":     "trace",    # bn
+    "தடமறி":     "trace",    # ta
+    "追踪":        "trace",    # zh
+    "トレース":    "trace",    # ja
+    "traccia":     "trace",    # it
+    "rastrear":    "trace",    # pt
+    "sledz":       "trace",    # pl
+    "volg":        "trace",    # nl
+    "spar":        "trace",    # sv
+    "spor":        "trace",    # da
+    "jaljita":     "trace",    # fi
+
+    # COST
+    "cost":        "cost",
+    "cout":        "cost",     # fr
+    "costo":       "cost",     # es / it
+    "kosten":      "cost",     # de / nl
+    "लागत":       "cost",     # hi
+    "تكلفة":      "cost",     # ar
+    "খরচ":        "cost",     # bn
+    "செலவு":      "cost",     # ta
+    "费用":        "cost",     # zh
+    "コスト":      "cost",     # ja
+    "custo":       "cost",     # pt
+    "koszt":       "cost",     # pl
+    "kostnad":     "cost",     # sv
+    "omkostning":  "cost",     # da
+    "kustannus":   "cost",     # fi
+
+    # EXPLAIN
+    "explain":     "explain",
+    "expliquer":   "explain",  # fr
+    "explicar":    "explain",  # es / pt
+    "erklaren":    "explain",  # de
+    "समझाओ":      "explain",  # hi
+    "اشرح":       "explain",  # ar
+    "ব্যাখ্যা":  "explain",  # bn
+    "விளக்கு":   "explain",  # ta
+    "解释":        "explain",  # zh
+    "説明":        "explain",  # ja
+    "spiega":      "explain",  # it
+    "wyjasni":     "explain",  # pl
+    "uitleggen":   "explain",  # nl
+    "forklara":    "explain",  # sv
+    "forklar":     "explain",  # da
+    "selita":      "explain",  # fi
+}
+
+_OBSERVABILITY_CALL_NAMES = frozenset(_OBSERVABILITY_CANONICAL)
+
+# ---------------------------------------------------------------------------
+# Placement decorators: @local, @edge, @cloud — all 17 languages
+# ---------------------------------------------------------------------------
+
+_PLACEMENT_CANONICAL: dict[str, str] = {
+    # LOCAL
+    "local":        "local",
+    "lokal":        "local",   # de / sv / da
+    "स्थानीय":    "local",   # hi
+    "محلي":        "local",   # ar
+    "স্থানীয়":  "local",   # bn
+    "உள்ளூர்":  "local",   # ta
+    "本地":         "local",   # zh
+    "ローカル":     "local",   # ja
+    "locale":       "local",   # it / fr
+    "lokalny":      "local",   # pl
+    "lokaal":       "local",   # nl
+    "paikallinen":  "local",   # fi
+
+    # EDGE
+    "edge":         "edge",
+    "peripherique": "edge",    # fr
+    "borde":        "edge",    # es
+    "rand":         "edge",    # de / nl
+    "किनारा":      "edge",    # hi
+    "حافة":        "edge",    # ar
+    "প্রান্ত":    "edge",    # bn
+    "விளிம்பு": "edge",    # ta
+    "边缘":         "edge",    # zh
+    "エッジ":       "edge",    # ja
+    "bordo":        "edge",    # it
+    "borda":        "edge",    # pt
+    "krawedz":      "edge",    # pl
+    "kant":         "edge",    # sv / da
+    "reuna":        "edge",    # fi
+
+    # CLOUD
+    "cloud":        "cloud",
+    "nuage":        "cloud",   # fr
+    "nube":         "cloud",   # es
+    "wolke":        "cloud",   # de
+    "बादल":        "cloud",   # hi
+    "سحابة":       "cloud",   # ar
+    "মেঘ":         "cloud",   # bn
+    "மேகம்":      "cloud",   # ta
+    "云":           "cloud",   # zh
+    "クラウド":     "cloud",   # ja
+    "nuvola":       "cloud",   # it
+    "nuvem":        "cloud",   # pt
+    "chmura":       "cloud",   # pl
+    "wolk":         "cloud",   # nl
+    "moln":         "cloud",   # sv
+    "sky":          "cloud",   # da
+    "pilvi":        "cloud",   # fi
+}
+
+_PLACEMENT_DECORATOR_NAMES = frozenset(_PLACEMENT_CANONICAL)
+
+# ---------------------------------------------------------------------------
+# Agent memory and coordination keywords — all 17 languages
+# ---------------------------------------------------------------------------
+
+_AGENT_CANONICAL: dict[str, str] = {
+    # MEMORY
+    "memory":     "memory",
+    "memoire":    "memory",    # fr
+    "memoria":    "memory",    # es / it / pt
+    "speicher":   "memory",    # de
+    "स्मृति":    "memory",    # hi
+    "ذاكرة":     "memory",    # ar
+    "স্মৃতি":   "memory",    # bn
+    "நினைவகம்": "memory",    # ta
+    "记忆":       "memory",    # zh
+    "メモリ":     "memory",    # ja
+    "pamiec":     "memory",    # pl
+    "geheugen":   "memory",    # nl
+    "minne":      "memory",    # sv
+    "hukommelse": "memory",    # da
+    "muisti":     "memory",    # fi
+
+    # SWARM
+    "swarm":      "swarm",
+    "essaim":     "swarm",     # fr
+    "enjambre":   "swarm",     # es
+    "schwarm":    "swarm",     # de
+    "झुंड":      "swarm",     # hi
+    "سرب":       "swarm",     # ar
+    "ঝাঁক":     "swarm",     # bn
+    "திரள்":    "swarm",     # ta
+    "群集":       "swarm",     # zh
+    "スウォーム": "swarm",     # ja
+    "sciame":     "swarm",     # it
+    "enxame":     "swarm",     # pt
+    "roj":        "swarm",     # pl
+    "zwerm":      "swarm",     # nl
+    "svarm":      "swarm",     # sv / da
+    "parvi":      "swarm",     # fi
+
+    # DELEGATE
+    "delegate":    "delegate",
+    "deleguer":    "delegate",  # fr
+    "delegar":     "delegate",  # es / pt
+    "delegieren":  "delegate",  # de
+    "सौंपना":     "delegate",  # hi
+    "فوّض":       "delegate",  # ar
+    "অর্পণ":     "delegate",  # bn
+    "ஒப்படை":   "delegate",  # ta
+    "委托":        "delegate",  # zh
+    "委任":        "delegate",  # ja
+    "delegare":    "delegate",  # it
+    "deleguj":     "delegate",  # pl
+    "delegeer":    "delegate",  # nl
+    "delegera":    "delegate",  # sv
+    "delegere":    "delegate",  # da
+    "valtuuta":    "delegate",  # fi
+}
+
+_AGENT_CALL_NAMES = frozenset(_AGENT_CANONICAL)
+
+_SWARM_DECORATOR = "swarm"
+_SWARM_DECORATOR_NAMES = frozenset(
+    k for k, v in _AGENT_CANONICAL.items() if v == "swarm"
+)
 
 
 # ---------------------------------------------------------------------------
@@ -432,6 +684,10 @@ class _LoweringContext:
             return self._lower_ai_call(func_name, node)
         if func_name in _CONCURRENCY_CALL_NAMES:
             return self._lower_concurrency_call(func_name, node)
+        if func_name in _OBSERVABILITY_CALL_NAMES:
+            return self._lower_observability_call(func_name, node)
+        if func_name in _AGENT_CALL_NAMES:
+            return self._lower_agent_call(func_name, node)
         return IRCallExpr(
             func=self.lower(node.func),
             args=self.lower_list(node.args),
@@ -538,6 +794,64 @@ class _LoweringContext:
         if name == "spawn":
             value = self.lower(args[0]) if args else None
             return IRSpawnExpr(value=value, line=ln, column=col)
+        if name == "channel":
+            capacity = self.lower(args[0]) if args else None
+            return IRChannelExpr(capacity=capacity, line=ln, column=col)
+        if name == "send":
+            # send(channel, value)
+            channel = self.lower(args[0]) if args else None
+            value = self.lower(args[1]) if len(args) > 1 else None
+            return IRSendExpr(channel=channel, value=value, line=ln, column=col)
+        if name == "receive":
+            channel = self.lower(args[0]) if args else None
+            return IRReceiveExpr(channel=channel, line=ln, column=col)
+        return IRExpression(line=ln, column=col)
+
+    def _lower_observability_call(self, name: str, node: ast.CallExpr) -> object:
+        """Lift trace/cost/explain calls to observability IR nodes."""
+        name = _OBSERVABILITY_CANONICAL.get(name, name)
+        args = node.args or []
+        ln, col = node.line, node.column
+        if name == "trace":
+            # trace(expr) or trace(label, expr)
+            if len(args) >= 2:
+                label = self.lower(args[0])
+                value = self.lower(args[1])
+            else:
+                label = None
+                value = self.lower(args[0]) if args else None
+            return IRTraceExpr(value=value, label=label, line=ln, column=col)
+        if name == "cost":
+            value = self.lower(args[0]) if args else None
+            return IRCostExpr(value=value, line=ln, column=col)
+        if name == "explain":
+            # explain(expr) or explain(model, expr)
+            model = None
+            if args and isinstance(args[0], ast.ModelRefLiteral):
+                model = self.lower(args[0])
+                value = self.lower(args[1]) if len(args) > 1 else None
+            else:
+                value = self.lower(args[0]) if args else None
+            return IRExplainExpr(value=value, model=model, line=ln, column=col)
+        return IRExpression(line=ln, column=col)
+
+    def _lower_agent_call(self, name: str, node: ast.CallExpr) -> object:
+        """Lift memory/delegate calls to agent-coordination IR nodes."""
+        name = _AGENT_CANONICAL.get(name, name)
+        args = node.args or []
+        keywords = {k: self.lower(v) for k, v in self._lower_keywords(node.keywords)}
+        ln, col = node.line, node.column
+        if name == "memory":
+            name_arg = self.lower(args[0]) if args else None
+            scope = keywords.get("scope", None)
+            scope_str = "session"
+            if isinstance(scope, IRLiteral):
+                scope_str = str(scope.value)
+            return IRMemoryExpr(name=name_arg, scope=scope_str, line=ln, column=col)
+        if name == "delegate":
+            agent = self.lower(args[0]) if args else None
+            message = self.lower(args[1]) if len(args) > 1 else None
+            return IRDelegateExpr(agent=agent, message=message, line=ln, column=col)
         return IRExpression(line=ln, column=col)
 
     def _lower_AttributeAccess(self, node: ast.AttributeAccess) -> IRAttributeAccess:
@@ -720,19 +1034,35 @@ class _LoweringContext:
             column=node.column,
         )
 
-    def _lower_FunctionDef(self, node: ast.FunctionDef) -> IRFunction | IRAgentDecl | IRToolDecl:
+    def _lower_FunctionDef(self, node: ast.FunctionDef) -> IRFunction | IRAgentDecl | IRToolDecl | IRSwarmDecl | IRPlacementDecl:
         decorators = self.lower_list(node.decorators)
-        # Detect @agent and @tool decorators before generic lowering.
+        # Detect @agent, @tool, @swarm, and placement decorators.
         agent_model = _detect_agent_decorator(node.decorators)
         tool_desc = _detect_tool_decorator(node.decorators)
+        swarm_agents = _detect_swarm_decorator(node.decorators)
+        placement = _detect_placement_decorator(node.decorators)
         params = self._lower_params(node.params)
         body = self.lower_list(node.body)
         ret = _lower_annotation(node.return_annotation)
         effects = _parse_effects_annotation(node)
 
+        if swarm_agents is not None:
+            self.require_effect("ai")
+            return IRSwarmDecl(
+                name=node.name,
+                agents=[self.lower(a) for a in swarm_agents],
+                parameters=params,
+                body=body,
+                return_type=ret,
+                effects=effects,
+                decorators=decorators,
+                line=node.line, column=node.column,
+            )
+
+        inner: IRFunction | IRAgentDecl | IRToolDecl
         if agent_model is not None:
             self.require_effect("ai")
-            return IRAgentDecl(
+            inner = IRAgentDecl(
                 name=node.name,
                 model=IRModelRef(model_name=agent_model,
                                  inferred_type=MODEL_TYPE,
@@ -746,7 +1076,7 @@ class _LoweringContext:
             )
 
         if tool_desc is not None:
-            return IRToolDecl(
+            inner = IRToolDecl(
                 name=node.name,
                 description=tool_desc,
                 parameters=params,
@@ -755,18 +1085,27 @@ class _LoweringContext:
                 effects=effects,
                 line=node.line, column=node.column,
             )
+        elif agent_model is None:
+            inner = IRFunction(
+                name=node.name,
+                parameters=params,
+                body=body,
+                return_type=ret,
+                effects=effects,
+                is_async=node.is_async,
+                syntax_keyword=getattr(node, "syntax_keyword", "fn"),
+                decorators=decorators,
+                line=node.line, column=node.column,
+            )
 
-        return IRFunction(
-            name=node.name,
-            parameters=params,
-            body=body,
-            return_type=ret,
-            effects=effects,
-            is_async=node.is_async,
-            syntax_keyword=getattr(node, "syntax_keyword", "fn"),
-            decorators=decorators,
-            line=node.line, column=node.column,
-        )
+        # Wrap with placement annotation if present
+        if placement is not None:
+            return IRPlacementDecl(
+                placement=placement,
+                target=inner,
+                line=node.line, column=node.column,
+            )
+        return inner
 
     def _lower_params(self, params: list) -> list[IRParameter]:
         result = []
@@ -1071,6 +1410,41 @@ def _detect_tool_decorator(decorators: list) -> str | None:
                 return ""
         elif isinstance(dec, ast.Identifier) and dec.name == _TOOL_DECORATOR:
             return ""
+    return None
+
+
+def _detect_swarm_decorator(decorators: list) -> list | None:
+    """Return the agents list if a @swarm decorator is present, else None."""
+    for dec in (decorators or []):
+        if isinstance(dec, ast.CallExpr):
+            if _AGENT_CANONICAL.get(_call_name(dec.func), "") == "swarm":
+                # agents=[a, b, ...] keyword or positional list
+                for kw in (dec.keywords or []):
+                    key, val = (
+                        kw if isinstance(kw, tuple)
+                        else (getattr(kw, "arg", ""), getattr(kw, "value", None))
+                    )
+                    if key == "agents" and isinstance(val, ast.ListLiteral):
+                        return val.elements
+                if dec.args and isinstance(dec.args[0], ast.ListLiteral):
+                    return dec.args[0].elements
+                return []
+        elif isinstance(dec, ast.Identifier):
+            if _AGENT_CANONICAL.get(dec.name, "") == "swarm":
+                return []
+    return None
+
+
+def _detect_placement_decorator(decorators: list) -> str | None:
+    """Return the canonical placement ('local'/'edge'/'cloud') if present."""
+    for dec in (decorators or []):
+        name = None
+        if isinstance(dec, ast.Identifier):
+            name = dec.name
+        elif isinstance(dec, ast.CallExpr):
+            name = _call_name(dec.func)
+        if name and _PLACEMENT_CANONICAL.get(name) in ("local", "edge", "cloud"):
+            return _PLACEMENT_CANONICAL[name]
     return None
 
 

@@ -954,6 +954,151 @@ class IRSpawnExpr(IRNode):
     inferred_type: CoreType | None = None   # GenericType("future", ...)
 
 
+@dataclass
+class IRChannelExpr(IRNode):
+    """Typed async channel: channel<T>()
+
+    A bounded or unbounded first-in-first-out message pipe between
+    concurrent tasks.  Lowers to asyncio.Queue on the Python backend.
+    """
+
+    element_type: CoreType | None = None
+    capacity: IRNode | None = None   # None → unbounded
+    inferred_type: CoreType | None = None
+
+
+@dataclass
+class IRSendExpr(IRNode):
+    """Send a value into a channel: channel.send(value)
+
+    Lowers to ``await channel.put(value)`` on the Python backend.
+    """
+
+    channel: IRNode | None = None
+    value: IRNode | None = None
+    inferred_type: CoreType | None = None
+
+
+@dataclass
+class IRReceiveExpr(IRNode):
+    """Receive a value from a channel: channel.receive()
+
+    Lowers to ``await channel.get()`` on the Python backend.
+    """
+
+    channel: IRNode | None = None
+    inferred_type: CoreType | None = None
+
+
+# ---------------------------------------------------------------------------
+# Observability
+# ---------------------------------------------------------------------------
+
+@dataclass
+class IRTraceExpr(IRNode):
+    """Trace expression execution: trace(expr) or trace(label, expr)
+
+    Wraps an expression with timing and event logging.  Returns the
+    original result unchanged; the trace is a side-effect.
+    """
+
+    value: IRNode | None = None
+    label: IRNode | None = None   # optional string label
+    inferred_type: CoreType | None = None
+
+
+@dataclass
+class IRCostExpr(IRNode):
+    """Token / compute cost tracking: cost(expr)
+
+    Evaluates expr and returns a (result, cost_info) pair where
+    cost_info carries token counts and latency from any AI calls made
+    during the evaluation.
+    """
+
+    value: IRNode | None = None
+    inferred_type: CoreType | None = None
+
+
+@dataclass
+class IRExplainExpr(IRNode):
+    """Request a natural-language explanation: explain(expr)
+
+    Evaluates expr and asks the model that produced the result to
+    provide a step-by-step explanation.  Returns (result, explanation).
+    """
+
+    value: IRNode | None = None
+    model: IRNode | None = None   # optional model override
+    inferred_type: CoreType | None = None
+
+
+# ---------------------------------------------------------------------------
+# Distribution and placement
+# ---------------------------------------------------------------------------
+
+@dataclass
+class IRPlacementDecl(IRNode):
+    """Placement annotation: @local, @edge, or @cloud
+
+    Attaches a deployment target hint to a function or agent.  The
+    Python backend records the hint for inspection but executes locally;
+    a future distributed backend honours the placement for routing.
+    """
+
+    placement: str = ""   # "local", "edge", or "cloud"
+    target: IRNode | None = None   # the annotated function / agent / tool
+
+
+# ---------------------------------------------------------------------------
+# Agent memory and coordination
+# ---------------------------------------------------------------------------
+
+@dataclass
+class IRMemoryExpr(IRNode):
+    """Named persistent memory store: memory(name)
+
+    Returns a dict-like store keyed by name.  The Python backend
+    defaults to an in-process session store; a persistent backend can
+    swap this for a database or vector store.
+    """
+
+    name: IRNode | None = None
+    scope: str = "session"   # "session" | "persistent" | "shared"
+    inferred_type: CoreType | None = None
+
+
+@dataclass
+class IRSwarmDecl(IRNode):
+    """Multi-agent swarm coordinator: @swarm(agents=[...]) fn name(...)
+
+    Declares a coordinator function that can fan-out work across a pool
+    of specialised sub-agents via delegation and message passing.
+    """
+
+    name: str = ""
+    agents: list[IRNode] = field(default_factory=list)
+    parameters: list[IRParameter] = field(default_factory=list)
+    body: list[IRNode] = field(default_factory=list)
+    return_type: CoreType | None = None
+    effects: EffectSet = field(default_factory=EffectSet)
+    decorators: list[IRNode] = field(default_factory=list)
+
+
+@dataclass
+class IRDelegateExpr(IRNode):
+    """Delegate a task to another agent: delegate(agent, message)
+
+    Sends a message to a named agent and returns a future of the
+    agent's response.  Enables typed message-passing between agents
+    inside a swarm or across agent boundaries.
+    """
+
+    agent: IRNode | None = None
+    message: IRNode | None = None
+    inferred_type: CoreType | None = None
+
+
 # ---------------------------------------------------------------------------
 # Backward-compatible placeholder (kept for gradual migration)
 # ---------------------------------------------------------------------------

@@ -4,18 +4,21 @@
 # est idiomatique dans n'importe quelle langue humaine.
 #
 # Fonctionnalités démontrées :
-#   @outil, @agent, réfléchir, demander, parallèle [ ... ], lancer, utilise effets
+#   @outil, @agent, @nuage, réfléchir, demander, parallèle [ ... ], lancer,
+#   memoire, tracer, cout, expliquer, utilise effets
 
 @outil(description="Chercher sur le web des informations actuelles")
 fn recherche_web(requête: str) -> str utilise réseau:
     passer
 
-@outil(description="Calculer une expression mathématique")
-fn calculer(expression: str) -> str:
-    passer
-
+@nuage
 @agent(modèle=@claude-sonnet)
 fn agent_recherche(question: str) -> str utilise ai, réseau:
+    # Mémoire persistante pour les réponses en cache
+    soit cache = memoire("réponses", scope="persistent")
+    si question dans cache:
+        retourner cache[question]
+
     # Réfléchir d'abord : décomposer la question en sous-requêtes parallèles
     soit plan = réfléchir @claude-sonnet:
         Décomposer cette question de recherche en deux sous-requêtes indépendantes
@@ -24,16 +27,20 @@ fn agent_recherche(question: str) -> str utilise ai, réseau:
 
     # Exécuter les deux sous-requêtes simultanément via parallèle
     soit résultats = parallèle [
-        demander @claude-sonnet: plan.conclusion + "\nConcentrez-vous sur les faits.",
-        demander @claude-sonnet: plan.conclusion + "\nConcentrez-vous sur le contexte."
+        cout(demander @claude-sonnet: plan.conclusion + "\nConcentrez-vous sur les faits."),
+        tracer(demander @claude-sonnet: plan.conclusion + "\nConcentrez-vous sur le contexte.",
+               "trace-contexte")
     ]
 
     # Synthétiser les résultats parallèles en une réponse finale
-    soit réponse = demander @claude-sonnet:
-        "Synthétisez ces deux fils de recherche en une réponse claire :\n"
-        + résultats[0] + "\n---\n" + résultats[1]
+    soit réponse_avec_cout, contexte = résultats[0], résultats[1]
+    soit réponse, info_cout = réponse_avec_cout
 
-    retourner réponse
+    # Demander au modèle d'expliquer sa réponse
+    soit réponse_finale, explication = expliquer(réponse)
+
+    cache[question] = réponse_finale
+    retourner réponse_finale
 
 fn principal():
     soit résultat = agent_recherche("Quelle est la population de Tokyo?")
