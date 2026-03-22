@@ -5,12 +5,12 @@
 #
 
 """@agent and @tool decorator runtime tests."""
-# pylint: disable=missing-class-docstring
+# pylint: disable=missing-class-docstring,import-error
 
 import pytest
 
 from multilingualprogramming.runtime.ai_runtime import AIRuntime, MockProvider
-from multilingualprogramming.runtime.ai_types import ModelRef, Plan, PlanStep, ToolCall
+from multilingualprogramming.runtime.ai_types import ModelRef, Plan, ToolCall
 from multilingualprogramming.runtime.tool_runtime import (
     AgentLoop,
     ToolRegistry,
@@ -136,7 +136,7 @@ class TestAgentLoop:
     def test_agent_loop_history_records_tool(self):
         reg = ToolRegistry()
 
-        def calc(expr: str) -> int:
+        def calc(expr: str) -> int:  # pylint: disable=eval-used
             return eval(expr)  # noqa: S307
 
         reg.register(calc, description="Calculate expression", name="calc")

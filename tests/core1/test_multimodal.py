@@ -7,14 +7,11 @@
 """Multimodal value type tests."""
 # pylint: disable=missing-class-docstring
 
-import pytest
-
 from multilingualprogramming.runtime.multimodal_runtime import (
     AudioValue,
     DocumentValue,
     ImageValue,
     MultimodalPrompt,
-    MultimodalValue,
     VideoValue,
 )
 from multilingualprogramming.runtime.ai_types import GenerateResult

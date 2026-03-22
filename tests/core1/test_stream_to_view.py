@@ -9,7 +9,7 @@
 Tests the full pipeline from a (mocked) AI stream through stream_to_view
 into a reactive Signal that drives a CanvasNode.
 """
-# pylint: disable=missing-class-docstring
+# pylint: disable=missing-class-docstring,import-error
 
 import pytest
 

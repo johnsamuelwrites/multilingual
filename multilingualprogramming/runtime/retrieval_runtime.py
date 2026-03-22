@@ -78,6 +78,10 @@ class VectorIndex:
             IndexEntry(text=text, embedding=embedding, metadata=metadata or {})
         )
 
+    def entries(self) -> list[IndexEntry]:
+        """Return the list of all stored index entries."""
+        return self._entries
+
     def __len__(self) -> int:
         return len(self._entries)
 
@@ -123,7 +127,7 @@ def nearest(
             score=_cosine(query, entry.embedding),
             metadata=entry.metadata,
         )
-        for entry in index._entries
+        for entry in index.entries()
     ]
     scored.sort(key=lambda r: r.score, reverse=True)
     filtered = [r for r in scored if r.score >= min_score]

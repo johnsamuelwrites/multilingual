@@ -854,27 +854,33 @@ def _call_name(func) -> str | None:
     return None
 
 
+def _extract_model_from_call(dec: "ast.CallExpr") -> str | None:
+    """Return the model name from an @agent call's keywords or first arg."""
+    for kw in (dec.keywords or []):
+        key, val = (
+            kw
+            if isinstance(kw, tuple)
+            else (getattr(kw, "arg", ""), getattr(kw, "value", None))
+        )
+        if key == "model":
+            if isinstance(val, ast.ModelRefLiteral):
+                return val.model_name
+            if isinstance(val, ast.Identifier):
+                return val.name
+    if dec.args:
+        if isinstance(dec.args[0], ast.ModelRefLiteral):
+            return dec.args[0].model_name
+        if isinstance(dec.args[0], ast.Identifier):
+            return dec.args[0].name
+    return None
+
+
 def _detect_agent_decorator(decorators: list) -> str | None:
     """Return the model name string if an @agent decorator is present."""
     for dec in (decorators or []):
         if isinstance(dec, ast.CallExpr):
             if _call_name(dec.func) == _AGENT_DECORATOR:
-                for kw in (dec.keywords or []):
-                    key, val = (
-                        kw
-                        if isinstance(kw, tuple)
-                        else (getattr(kw, "arg", ""), getattr(kw, "value", None))
-                    )
-                    if key == "model":
-                        if isinstance(val, ast.ModelRefLiteral):
-                            return val.model_name
-                        if isinstance(val, ast.Identifier):
-                            return val.name
-                if dec.args:
-                    if isinstance(dec.args[0], ast.ModelRefLiteral):
-                        return dec.args[0].model_name
-                    if isinstance(dec.args[0], ast.Identifier):
-                        return dec.args[0].name
+                return _extract_model_from_call(dec)
         elif isinstance(dec, ast.Identifier) and dec.name == _AGENT_DECORATOR:
             return ""
     return None

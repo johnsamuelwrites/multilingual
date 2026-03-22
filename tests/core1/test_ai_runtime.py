@@ -5,7 +5,7 @@
 #
 
 """Tests for Core 1.0 AI runtime: types, provider, dispatcher, tools, semantic match."""
-# pylint: disable=missing-class-docstring
+# pylint: disable=missing-class-docstring,import-error
 
 import pytest
 

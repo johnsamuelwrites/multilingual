@@ -48,10 +48,12 @@ class MultimodalValue:
         return f"data:{self.mime_type};base64,{b64}"
 
     def byte_size(self) -> int:
+        """Return the number of bytes in this value's data."""
         return len(self.data)
 
     @classmethod
     def from_path(cls, path: str | Path, mime_type: str = "") -> "MultimodalValue":
+        """Load a multimodal value from a file path."""
         p = Path(path)
         data = p.read_bytes()
         return cls(data=data, mime_type=mime_type, source_path=str(p))
@@ -203,10 +205,12 @@ class MultimodalPrompt:
     parts: list[str | MultimodalValue] = field(default_factory=list)
 
     def add(self, value: MultimodalValue) -> "MultimodalPrompt":
+        """Append a multimodal value part and return self for chaining."""
         self.parts.append(value)
         return self
 
     def add_text(self, text: str) -> "MultimodalPrompt":
+        """Append a plain text part and return self for chaining."""
         self.parts.append(text)
         return self
 

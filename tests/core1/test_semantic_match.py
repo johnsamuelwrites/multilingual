@@ -5,7 +5,7 @@
 #
 
 """SemanticMatcher and ~= operator runtime tests."""
-# pylint: disable=missing-class-docstring
+# pylint: disable=missing-class-docstring,import-error
 
 import pytest
 
@@ -83,13 +83,13 @@ class TestSemanticMatcher:
 
         matcher = SemanticMatcher()
         # "yes" should be its own best match from ["yes", "no", "maybe"]
-        best, score = matcher.best_match("yes", ["yes", "no", "maybe"])
+        best, _ = matcher.best_match("yes", ["yes", "no", "maybe"])
         assert best is not None
         assert best in ["yes", "no", "maybe"]
 
     def test_best_match_empty_candidates(self):
         matcher = SemanticMatcher()
-        best, score = matcher.best_match("yes", [])
+        best, _ = matcher.best_match("yes", [])
         assert best is None
 
     def test_match_with_provider(self):

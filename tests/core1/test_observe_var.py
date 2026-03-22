@@ -9,7 +9,7 @@
 Tests for the reactive Signal / ReactiveEngine plumbing that backs
 ``observe var`` bindings at runtime.
 """
-# pylint: disable=missing-class-docstring
+# pylint: disable=missing-class-docstring,import-error
 
 import pytest
 

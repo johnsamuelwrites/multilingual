@@ -7,10 +7,7 @@
 """VectorIndex and nearest() retrieval runtime tests."""
 # pylint: disable=missing-class-docstring
 
-import pytest
-
 from multilingualprogramming.runtime.retrieval_runtime import (
-    IndexEntry,
     RetrievalResult,
     VectorIndex,
     format_context,

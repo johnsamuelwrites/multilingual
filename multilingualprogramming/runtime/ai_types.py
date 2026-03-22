@@ -138,17 +138,21 @@ class Plan:
     steps: list = field(default_factory=list)   # list[PlanStep]
 
     def add_step(self, description: str) -> "PlanStep":
+        """Append a new pending step and return it."""
         step = PlanStep(index=len(self.steps), description=description)
         self.steps.append(step)
         return step
 
     def pending_steps(self):
+        """Return all steps whose status is 'pending'."""
         return [s for s in self.steps if s.status == "pending"]
 
     def completed_steps(self):
+        """Return all steps whose status is 'done'."""
         return [s for s in self.steps if s.status == "done"]
 
     def is_complete(self) -> bool:
+        """Return True when every step has status 'done'."""
         return all(s.status == "done" for s in self.steps)
 
     def summary(self) -> str:
@@ -182,4 +186,5 @@ class GenerateResult:
 
     @property
     def ok(self) -> bool:
+        """True when structured parsing succeeded and a value is present."""
         return self.value is not None and not self.parse_error

@@ -29,11 +29,13 @@ from multilingualprogramming.core.ir_nodes import (
 
 
 def parse(source: str, language: str = "en"):
+    """Tokenise and parse *source* into a surface AST."""
     tokens = Lexer(source, language=language).tokenize()
     return Parser(tokens, source_language=language).parse()
 
 
 def lower(source: str, language: str = "en"):
+    """Parse and lower *source* to semantic IR."""
     tree = parse(source, language)
     return lower_to_semantic_ir(tree, language)
 
