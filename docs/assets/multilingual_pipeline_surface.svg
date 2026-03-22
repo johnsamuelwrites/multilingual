@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="760" viewBox="0 0 1280 760" role="img" aria-labelledby="title desc">
-  <title id="title">Multilingual processing pipeline with optional surface normalization</title>
-  <desc id="desc">Diagram showing source code flowing through lexer, optional surface normalizer, parser, semantic analyzer, Python code generator, and runtime execution, including async and try/except/else support in the shared pipeline.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="820" viewBox="0 0 1280 820" role="img" aria-labelledby="title desc">
+  <title id="title">Multilingual compiler pipeline with optional surface normalization and dual backends</title>
+  <desc id="desc">Diagram showing multilingual source flowing through lexer, optional surface normalization, parser, semantic IR lowering, semantic analysis, then branching to Python execution and WAT/WASM generation with backend selection.</desc>
   <defs>
     <style>
       .bg { fill: #f7f7f2; }
@@ -25,79 +25,90 @@
     </marker>
   </defs>
 
-  <rect class="bg" x="0" y="0" width="1280" height="760" />
+  <rect class="bg" x="0" y="0" width="1280" height="820" />
 
-  <text class="title" x="40" y="56">How multilingual Works (with Surface Normalization)</text>
-  <text class="subtitle" x="40" y="88">One semantic core, optional language-specific surface rewrites, and shared AST/runtime behavior across languages.</text>
+  <text class="title" x="40" y="56">How multilingual Works Today</text>
+  <text class="subtitle" x="40" y="88">Shared frontends normalize language surfaces into one AST and one semantic IR, then target Python or WAT/WASM.</text>
 
-  <rect class="box" x="42" y="140" width="220" height="110" />
-  <text class="label" x="62" y="176">Source .ml</text>
-  <text class="small" x="62" y="203">Any supported language form:</text>
-  <text class="small" x="62" y="224">canonical or alternate surface</text>
+  <rect class="box" x="40" y="136" width="180" height="96" />
+  <text class="label" x="60" y="170">Source .ml</text>
+  <text class="small" x="60" y="196">17 human-language surfaces</text>
+  <text class="small" x="60" y="216">canonical or alternate phrasing</text>
 
-  <rect class="box-core" x="312" y="140" width="220" height="110" />
-  <text class="label" x="332" y="176">Lexer</text>
-  <text class="small" x="332" y="203">Tokenize Unicode text</text>
-  <text class="small" x="332" y="224">Map keywords to concepts</text>
+  <rect class="box-core" x="270" y="136" width="180" height="96" />
+  <text class="label" x="290" y="170">Lexer</text>
+  <text class="small" x="290" y="196">Unicode tokenization</text>
+  <text class="small" x="290" y="216">keyword to concept mapping</text>
 
-  <rect class="box-optional" x="582" y="112" width="270" height="166" />
-  <text class="label" x="602" y="148">Surface Normalizer (optional)</text>
-  <text class="small" x="602" y="175">Read rules from:</text>
-  <text class="small" x="602" y="196">resources/usm/surface_patterns.json</text>
-  <text class="small" x="602" y="223">Match token patterns</text>
-  <text class="small" x="602" y="244">Rewrite to canonical concept order</text>
-  <text class="small" x="602" y="265">Iterable-first pilot rules: ja, ar, es, pt</text>
+  <rect class="box-optional" x="500" y="118" width="230" height="132" />
+  <text class="label" x="520" y="152">Surface Normalizer</text>
+  <text class="small" x="520" y="178">Optional token rewrite pass</text>
+  <text class="small" x="520" y="200">rules in resources/usm</text>
+  <text class="small" x="520" y="222">surface_patterns.json</text>
 
-  <rect class="box-core" x="902" y="140" width="220" height="110" />
-  <text class="label" x="922" y="176">Parser</text>
-  <text class="small" x="922" y="203">Build canonical AST</text>
-  <text class="small" x="922" y="224">Language-agnostic grammar</text>
+  <rect class="box-core" x="780" y="136" width="180" height="96" />
+  <text class="label" x="800" y="170">Parser</text>
+  <text class="small" x="800" y="196">Language-agnostic AST</text>
+  <text class="small" x="800" y="216">shared node vocabulary</text>
 
-  <rect class="box-core" x="902" y="300" width="220" height="110" />
-  <text class="label" x="922" y="336">Semantic Analyzer</text>
-  <text class="small" x="922" y="363">Scope and symbol checks</text>
-  <text class="small" x="922" y="384">Localized diagnostics</text>
+  <rect class="box-core" x="1010" y="136" width="210" height="96" />
+  <text class="label" x="1030" y="170">Semantic IR Lowering</text>
+  <text class="small" x="1030" y="196">AST to IRProgram</text>
+  <text class="small" x="1030" y="216">core semantic model bridge</text>
 
-  <rect class="box-core" x="902" y="460" width="220" height="110" />
-  <text class="label" x="922" y="496">Python Code Generator</text>
-  <text class="small" x="922" y="523">Emit deterministic Python</text>
-  <text class="small" x="922" y="544">from the same AST model</text>
+  <rect class="box-core" x="1010" y="286" width="210" height="96" />
+  <text class="label" x="1030" y="320">Semantic Analyzer</text>
+  <text class="small" x="1030" y="346">Scope and structure checks</text>
+  <text class="small" x="1030" y="366">core.semantic_analyzer</text>
 
-  <rect class="box-runtime" x="902" y="620" width="220" height="110" />
-  <text class="label" x="922" y="656">Runtime / Executor / REPL</text>
-  <text class="small" x="922" y="683">Execute generated Python</text>
-  <text class="small" x="922" y="704">with localized builtins</text>
+  <rect class="box-core" x="780" y="456" width="180" height="112" />
+  <text class="label" x="800" y="490">Python Backend</text>
+  <text class="small" x="800" y="516">PythonCodeGenerator</text>
+  <text class="small" x="800" y="536">runtime builtins injection</text>
 
-  <path class="arrow" d="M262 195 L312 195" />
-  <path class="arrow-opt" d="M532 195 L582 195" />
-  <path class="arrow" d="M852 195 L902 195" />
-  <path class="arrow" d="M1012 250 L1012 300" />
-  <path class="arrow" d="M1012 410 L1012 460" />
-  <path class="arrow" d="M1012 570 L1012 620" />
+  <rect class="box-runtime" x="780" y="622" width="180" height="112" />
+  <text class="label" x="800" y="656">Python Execution</text>
+  <text class="small" x="800" y="682">ProgramExecutor and REPL</text>
+  <text class="small" x="800" y="702">exec with localized aliases</text>
 
-  <path class="arrow dash" d="M532 250 C670 360, 800 360, 902 250" />
-  <text class="small" x="602" y="360">No matching surface rule: pass through unchanged</text>
+  <rect class="box-core" x="1010" y="456" width="210" height="112" />
+  <text class="label" x="1030" y="490">WAT / WASM Backend</text>
+  <text class="small" x="1030" y="516">WATCodeGenerator</text>
+  <text class="small" x="1030" y="536">optional wasm binary path</text>
 
-  <rect class="legend" x="42" y="300" width="810" height="282" />
-  <text class="label" x="62" y="336">Concrete Example (Iterable-First Loop Normalization)</text>
+  <rect class="box-runtime" x="1010" y="622" width="210" height="112" />
+  <text class="label" x="1030" y="656">Backend Selection</text>
+  <text class="small" x="1030" y="682">wasmtime when available</text>
+  <text class="small" x="1030" y="702">Python fallbacks otherwise</text>
 
-  <rect class="box" x="62" y="356" width="360" height="200" />
-  <text class="small" x="82" y="386">Input surface code</text>
-  <text class="small" x="82" y="416">range(4) 内の 各 i に対して:</text>
-  <text class="small" x="82" y="438">    合計 = 合計 + i</text>
-  <text class="small" x="82" y="460">Equivalent surface variants exist for ar/es/pt.</text>
+  <path class="arrow" d="M220 184 L270 184" />
+  <path class="arrow-opt" d="M450 184 L500 184" />
+  <path class="arrow" d="M730 184 L780 184" />
+  <path class="arrow" d="M960 184 L1010 184" />
+  <path class="arrow" d="M1115 232 L1115 286" />
+  <path class="arrow" d="M1115 382 L1115 456" />
+  <path class="arrow" d="M1115 568 L1115 622" />
+  <path class="arrow" d="M1115 382 C1115 430, 900 420, 870 456" />
+  <path class="arrow" d="M870 568 L870 622" />
 
-  <rect class="box-optional" x="462" y="356" width="370" height="200" />
-  <text class="small" x="482" y="386">Pattern match captures:</text>
-  <text class="small" x="482" y="416">iterable = range(4)</text>
-  <text class="small" x="482" y="438">target = i</text>
-  <text class="small" x="482" y="470">Template: for_iterable_first</text>
-  <text class="small" x="482" y="500">Rewrite to canonical:</text>
-  <text class="small" x="482" y="522">FOR target IN iterable :</text>
+  <path class="arrow dash" d="M450 232 C585 332, 700 332, 780 232" />
+  <text class="small" x="530" y="324">No matching surface rule: tokens pass through unchanged</text>
 
-  <path class="arrow-opt" d="M422 456 L462 456" />
+  <rect class="legend" x="40" y="440" width="660" height="294" />
+  <text class="label" x="60" y="476">Why the Surface Pass Exists</text>
 
-  <text class="small" x="42" y="608">Result: the parser and runtime only see canonical concept order, regardless of surface phrasing.</text>
+  <rect class="box" x="60" y="496" width="270" height="180" />
+  <text class="small" x="80" y="526">Example input surface</text>
+  <text class="small" x="80" y="556">iterable-first or alternate word order</text>
+  <text class="small" x="80" y="582">still reads naturally in a local language</text>
+  <text class="small" x="80" y="616">The source remains language-facing.</text>
+
+  <rect class="box-optional" x="370" y="496" width="310" height="180" />
+  <text class="small" x="390" y="526">Normalizer rewrites matched token patterns</text>
+  <text class="small" x="390" y="552">into canonical concept order before parsing.</text>
+  <text class="small" x="390" y="586">Result: the parser, IR lowering, analyzers,</text>
+  <text class="small" x="390" y="608">and backends see one consistent structure.</text>
+  <text class="small" x="390" y="642">That keeps frontend variety data-driven.</text>
+
+  <path class="arrow-opt" d="M330 586 L370 586" />
 </svg>
-
-
