@@ -116,22 +116,28 @@ class MemoryStore:
         return iter(self._data)
 
     def get(self, key: str, default: Any = None) -> Any:
+        """Return the stored value for *key* or *default* when absent."""
         return self._data.get(key, default)
 
     def keys(self):
+        """Return a dynamic view over the store keys."""
         return self._data.keys()
 
     def values(self):
+        """Return a dynamic view over the store values."""
         return self._data.values()
 
     def items(self):
+        """Return a dynamic view over the store items."""
         return self._data.items()
 
     def update(self, other: dict) -> None:
+        """Merge *other* into the store and persist when needed."""
         self._data.update(other)
         self._save_persistent()
 
     def clear(self) -> None:
+        """Remove all entries from the store and persist when needed."""
         self._data.clear()
         self._save_persistent()
 

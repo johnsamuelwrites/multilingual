@@ -191,7 +191,7 @@ _CONCURRENCY_CANONICAL: dict[str, str] = {
     "spawn":         "spawn",
     "launch":        "spawn",  # en alias
     "lancer":        "spawn",  # fr
-    "iniciar":       "spawn",  # es
+    "lanzar_tarea":  "spawn",  # es
     "starten":       "spawn",  # de / nl
     "प्रारंभ":      "spawn",  # hi
     "أطلق":         "spawn",  # ar
@@ -207,7 +207,7 @@ _CONCURRENCY_CANONICAL: dict[str, str] = {
     "käynnistä":    "spawn",  # fi
 }
 
-_CONCURRENCY_CALL_NAMES = frozenset(_CONCURRENCY_CANONICAL)
+_concurrency_call_names = frozenset(_CONCURRENCY_CANONICAL)
 
 # Also add channel/send/receive to concurrency canonical
 _CONCURRENCY_CANONICAL.update({
@@ -263,7 +263,7 @@ _CONCURRENCY_CANONICAL.update({
 })
 
 # Rebuild the frozenset to include channel/send/receive
-_CONCURRENCY_CALL_NAMES = frozenset(_CONCURRENCY_CANONICAL)
+_concurrency_call_names = frozenset(_CONCURRENCY_CANONICAL)
 
 # ---------------------------------------------------------------------------
 # Observability keywords: trace, cost, explain — all 17 languages
@@ -682,7 +682,7 @@ class _LoweringContext:
         func_name = _call_name(node.func)
         if func_name in _AI_CALL_NAMES:
             return self._lower_ai_call(func_name, node)
-        if func_name in _CONCURRENCY_CALL_NAMES:
+        if func_name in _concurrency_call_names:
             return self._lower_concurrency_call(func_name, node)
         if func_name in _OBSERVABILITY_CALL_NAMES:
             return self._lower_observability_call(func_name, node)
@@ -1034,7 +1034,9 @@ class _LoweringContext:
             column=node.column,
         )
 
-    def _lower_FunctionDef(self, node: ast.FunctionDef) -> IRFunction | IRAgentDecl | IRToolDecl | IRSwarmDecl | IRPlacementDecl:
+    def _lower_FunctionDef(
+        self, node: ast.FunctionDef
+    ) -> IRFunction | IRAgentDecl | IRToolDecl | IRSwarmDecl | IRPlacementDecl:
         decorators = self.lower_list(node.decorators)
         # Detect @agent, @tool, @swarm, and placement decorators.
         agent_model = _detect_agent_decorator(node.decorators)

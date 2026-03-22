@@ -66,6 +66,7 @@ class CostInfo:
 
     @property
     def total_tokens(self) -> int:
+        """Return the combined prompt and completion token count."""
         return self.input_tokens + self.output_tokens
 
     def __str__(self) -> str:
@@ -155,9 +156,14 @@ def ml_explain(value: Any, model: str | None = None) -> tuple[Any, str]:
     your reasoning for: <value>".  The stub is synchronous so that non-AI
     programs can use explain() without an async context.
     """
+    _ = model
+
     conclusion = getattr(value, "conclusion", None)
     if conclusion:
-        explanation = f"Reasoning trace:\n{getattr(value, 'trace', '')}\n\nConclusion:\n{conclusion}"
+        explanation = (
+            f"Reasoning trace:\n{getattr(value, 'trace', '')}\n\n"
+            f"Conclusion:\n{conclusion}"
+        )
     else:
         content = getattr(value, "content", None)
         if content:

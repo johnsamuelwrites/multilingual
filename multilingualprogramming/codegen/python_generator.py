@@ -52,7 +52,7 @@ def _convert_numeral_literal(raw_value):
                 return raw_value
 
 
-class PythonCodeGenerator:
+class PythonCodeGenerator:  # pylint: disable=too-many-instance-attributes
     """
     Visitor-based transpiler that converts a multilingual AST into
     valid Python 3 source code.
@@ -71,6 +71,11 @@ class PythonCodeGenerator:
         self._lines = []
         self._reactive_engine_emitted = False
         self._asyncio_emitted = False
+        self._observability_emitted = False
+        self._placement_emitted = False
+        self._memory_emitted = False
+        self._swarm_emitted = False
+        self._channel_emitted = False
         self._handler_counter = 0
 
     # ------------------------------------------------------------------
@@ -809,7 +814,7 @@ class PythonCodeGenerator:
 
     def _ensure_observability(self):
         """Inject observability imports the first time they are needed."""
-        if getattr(self, "_observability_emitted", False):
+        if self._observability_emitted:
             return
         self._observability_emitted = True
         self._lines.insert(
@@ -844,7 +849,7 @@ class PythonCodeGenerator:
 
     def _ensure_placement(self):
         """Inject placement imports the first time they are needed."""
-        if getattr(self, "_placement_emitted", False):
+        if self._placement_emitted:
             return
         self._placement_emitted = True
         self._lines.insert(
@@ -855,7 +860,11 @@ class PythonCodeGenerator:
 
     def _emit_IRPlacementDecl(self, node):
         self._ensure_placement()
-        placement_map = {"local": "_ml_local", "edge": "_ml_edge", "cloud": "_ml_cloud"}
+        placement_map = {
+            "local": "_ml_local",
+            "edge": "_ml_edge",
+            "cloud": "_ml_cloud",
+        }
         decorator = placement_map.get(node.placement, "_ml_local")
         self._emit(f"@{decorator}")
         if node.target is not None:
@@ -866,7 +875,7 @@ class PythonCodeGenerator:
     # ------------------------------------------------------------------
 
     def _ensure_memory(self):
-        if getattr(self, "_memory_emitted", False):
+        if self._memory_emitted:
             return
         self._memory_emitted = True
         self._lines.insert(
@@ -875,7 +884,7 @@ class PythonCodeGenerator:
         )
 
     def _ensure_swarm(self):
-        if getattr(self, "_swarm_emitted", False):
+        if self._swarm_emitted:
             return
         self._swarm_emitted = True
         self._lines.insert(
@@ -897,7 +906,6 @@ class PythonCodeGenerator:
         agent_refs = ", ".join(self._expr_ir(a) for a in node.agents)
         self._emit(f"@_ml_swarm(agents=[{agent_refs}])")
         # Emit the underlying function body
-        from multilingualprogramming.core import ir_nodes as ir
         fn_node = ir.IRFunction(
             name=node.name,
             parameters=node.parameters,
@@ -916,7 +924,7 @@ class PythonCodeGenerator:
         self._emit(f"await _ml_delegate({agent}, {message})")
 
     def _ensure_channel(self):
-        if getattr(self, "_channel_emitted", False):
+        if self._channel_emitted:
             return
         self._channel_emitted = True
         self._ensure_asyncio()

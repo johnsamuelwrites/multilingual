@@ -91,10 +91,12 @@ class Channel(Generic[T]):
 
     @property
     def empty(self) -> bool:
+        """Return ``True`` when no buffered items are waiting."""
         return self._queue.empty()
 
     @property
     def size(self) -> int:
+        """Return the current number of buffered items."""
         return self._queue.qsize()
 
     def __repr__(self) -> str:

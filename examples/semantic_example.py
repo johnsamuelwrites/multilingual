@@ -9,7 +9,7 @@
 from multilingualprogramming.keyword.keyword_registry import KeywordRegistry
 from multilingualprogramming.lexer.lexer import Lexer
 from multilingualprogramming.parser.parser import Parser
-from multilingualprogramming.parser.semantic_analyzer import SemanticAnalyzer
+from multilingualprogramming.core.semantic_analyzer import SemanticAnalyzer
 
 
 def safe_text(text):

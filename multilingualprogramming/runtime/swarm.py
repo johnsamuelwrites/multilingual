@@ -115,6 +115,8 @@ def swarm_decorator(agents: list | None = None, **kwargs) -> Callable:
     agent names to their callables.  The agents list may contain callables
     directly (their ``__name__`` is used as the key).
     """
+    _ = kwargs
+
     def decorator(fn: Callable) -> Callable:
         agent_map: dict[str, Callable] = {}
         for agent in (agents or []):

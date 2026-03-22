@@ -1,5 +1,6 @@
 [MASTER]
 ignore=.git,.pytest_cache
+ignore-paths=examples/browser/transpiled\.py
 persistent=no
 
 [MESSAGES CONTROL]

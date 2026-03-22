@@ -72,6 +72,7 @@ _IDENTIFIER_LIKE_CONCEPTS = (
         "TYPE_DECL",
         "ENUM",
         "OBSERVE",
+        "USES",
         "PROMPT",
         "THINK",
         "GENERATE",
@@ -82,6 +83,21 @@ _IDENTIFIER_LIKE_CONCEPTS = (
         "PLAN",
         "TRANSCRIBE",
         "RETRIEVE",
+        # Experimental/Core 1.0 soft keywords that currently lower
+        # through ordinary identifier/call syntax in the parser.
+        "PAR",
+        "SPAWN",
+        "CHANNEL",
+        "SEND",
+        "RECEIVE",
+        "TRACE",
+        "COST",
+        "EXPLAIN",
+        "EDGE",
+        "CLOUD",
+        "MEMORY",
+        "SWARM",
+        "DELEGATE",
     }
 )
 _TYPE_CONCEPT_TO_PYTHON = {
