@@ -1680,6 +1680,28 @@ def _lower_pattern_node(ctx: _LoweringContext, pattern) -> object:
                             ast.BooleanLiteral, ast.NoneLiteral)):
         return IRLiteralPattern(value=ctx.lower(pattern),
                                 line=pattern.line, column=pattern.column)
+    # Struct/record pattern: TypeName { field: sub-pattern, ... }
+    if isinstance(pattern, ast.BinaryOp) and pattern.op == "{}":
+        type_name = pattern.left.name if isinstance(pattern.left, ast.Identifier) else ""
+        fields = {}
+        if isinstance(pattern.right, ast.DictLiteral):
+            for entry in pattern.right.entries:
+                if not isinstance(entry, tuple) or len(entry) != 2:
+                    continue
+                key, value = entry
+                if isinstance(key, ast.Identifier):
+                    field_name = key.name
+                elif isinstance(key, ast.StringLiteral):
+                    field_name = key.value
+                else:
+                    continue
+                fields[field_name] = _lower_pattern_node(ctx, value)
+        return IRRecordPattern(
+            type_name=type_name,
+            fields=fields,
+            line=pattern.line,
+            column=pattern.column,
+        )
     # OR pattern: BinaryOp with op="|"
     if isinstance(pattern, ast.BinaryOp) and pattern.op == "|":
         alts = _flatten_or_pattern(ctx, pattern)

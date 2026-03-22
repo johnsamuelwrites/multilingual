@@ -766,6 +766,12 @@ class SemanticAnalyzer:
         self.symbol_table.define(
             node.name, "class", line=node.line, column=node.column
         )
+        if node.declared_type and hasattr(node.declared_type, "variants"):
+            for variant in node.declared_type.variants:
+                if self.symbol_table.lookup_local(variant.name) is None:
+                    self.symbol_table.define(
+                        variant.name, "variable", line=node.line, column=node.column
+                    )
 
     def visit_TryStatement(self, node):
         self._visit_all(node.body)

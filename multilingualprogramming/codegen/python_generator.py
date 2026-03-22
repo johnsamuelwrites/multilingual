@@ -1452,6 +1452,8 @@ class _IRExpressionGenerator:
 
     def render(self, node):
         """Render an IR expression node."""
+        if node is None:
+            return "None"
         method = getattr(self, f"_render_{type(node).__name__}", None)
         if callable(method):
             return method(node)  # pylint: disable=not-callable
