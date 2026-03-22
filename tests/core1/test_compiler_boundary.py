@@ -6,6 +6,8 @@
 
 """Compiler boundary and new primitive regression tests."""
 
+from unittest.mock import patch
+
 from multilingualprogramming.codegen.executor import ProgramExecutor
 from multilingualprogramming.codegen.python_generator import PythonCodeGenerator
 from multilingualprogramming.codegen.wat_generator import WATCodeGenerator
@@ -71,6 +73,18 @@ class TestCompilerBoundary:
     def test_python_generator_accepts_semantic_ir(self):
         ir = _lower("let x = 1\nprint(x)\n")
         code = PythonCodeGenerator().generate(ir)
+        assert "x = 1" in code
+        assert "print(x)" in code
+
+    def test_python_generator_uses_native_ir_path(self):
+        ir = _lower("let x = 1\nprint(x)\n")
+        with patch(
+            "multilingualprogramming.codegen.python_generator."
+            "lower_ir_to_runtime_ast",
+            side_effect=AssertionError("legacy bridge should not run"),
+            create=True,
+        ):
+            code = PythonCodeGenerator().generate(ir)
         assert "x = 1" in code
         assert "print(x)" in code
 
