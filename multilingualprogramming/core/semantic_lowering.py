@@ -1028,7 +1028,7 @@ class _LoweringContext:
         """Lift memory/delegate calls to agent-coordination IR nodes."""
         name = _AGENT_CANONICAL.get(name, name)
         args = node.args or []
-        keywords = {k: self.lower(v) for k, v in self._lower_keywords(node.keywords)}
+        keywords = dict(self._lower_keywords(node.keywords))
         ln, col = node.line, node.column
         if name == "memory":
             name_arg = self.lower(args[0]) if args else None

@@ -93,6 +93,7 @@ _IDENTIFIER_LIKE_CONCEPTS = (
         "TRACE",
         "COST",
         "EXPLAIN",
+        "LOCAL",
         "EDGE",
         "CLOUD",
         "MEMORY",
@@ -657,8 +658,15 @@ class Parser:
         if self._match_delimiter(":"):
             self._advance()
             annotation = self._parse_annotation_expression()
-        self._expect_operator("=")
-        value = self._parse_expression()
+        if self._match_operator("="):
+            self._advance()
+            value = self._parse_expression()
+        else:
+            value = Identifier(
+                name_tok.value,
+                line=name_tok.line,
+                column=name_tok.column,
+            )
         return ObserveDeclaration(
             name_tok.value, value, annotation,
             line=tok.line, column=tok.column,
@@ -672,12 +680,21 @@ class Parser:
         return OnChangeStatement(signal, body, line=tok.line, column=tok.column)
 
     def _parse_canvas_block(self):
-        """Parse: canvas [name] : block."""
+        """Parse: canvas [name] : block  or  canvas [name] { ... }."""
         tok = self._advance()  # consume CANVAS
         name = ""
         if self._match_type(TokenType.IDENTIFIER):
             name = self._advance().value
-        body = self._parse_block()
+        if self._match_delimiter("{"):
+            self._advance()
+            self._skip_bracket_newlines()
+            body = []
+            while not self._at_end() and not self._match_delimiter("}"):
+                body.append(self._parse_statement())
+                self._skip_bracket_newlines()
+            self._expect_delimiter("}")
+        else:
+            body = self._parse_block()
         return CanvasBlock(name=name, body=body, line=tok.line, column=tok.column)
 
     def _parse_render_statement(self):
@@ -920,6 +937,32 @@ class Parser:
         OR patterns (|) and AS binding at the pattern level.
         """
         pattern = self._parse_or_expression()
+
+        if self._match_delimiter("{") and isinstance(pattern, Identifier):
+            entries = []
+            self._advance()
+            self._skip_bracket_newlines()
+            while not self._match_delimiter("}") and not self._at_end():
+                key_tok = self._expect_identifier()
+                key = Identifier(
+                    key_tok.value,
+                    line=key_tok.line,
+                    column=key_tok.column,
+                )
+                self._expect_delimiter(":")
+                value = self._parse_expression()
+                entries.append((key, value))
+                if self._match_delimiter(","):
+                    self._advance()
+                    self._skip_bracket_newlines()
+            self._expect_delimiter("}")
+            pattern = BinaryOp(
+                pattern,
+                "{}",
+                DictLiteral(entries, line=pattern.line, column=pattern.column),
+                line=pattern.line,
+                column=pattern.column,
+            )
 
         # OR patterns: pattern | pattern | ...
         if self._match_operator("|"):
@@ -1242,6 +1285,14 @@ class Parser:
                 and not self._match_type(TokenType.DEDENT) \
                 and not self._match_type(TokenType.EOF):
             value = self._parse_expression()
+            if self._match_delimiter(","):
+                elements = [value]
+                while self._match_delimiter(","):
+                    self._advance()
+                    if self._at_end() or self._match_type(TokenType.NEWLINE):
+                        break
+                    elements.append(self._parse_expression())
+                value = TupleLiteral(elements, line=tok.line, column=tok.column)
         return ReturnStatement(value, line=tok.line, column=tok.column)
 
     def _parse_yield_statement(self):
@@ -1724,6 +1775,10 @@ class Parser:
         if concept == "NONE":
             self._advance()
             return NoneLiteral(line=tok.line, column=tok.column)
+        if concept == "PAR" and self._match_next_delimiter("["):
+            return self._parse_prefix_soft_call()
+        if concept == "SPAWN" and self._has_inline_expression_after_keyword():
+            return self._parse_prefix_soft_call()
         if concept in _AI_NATIVE_CONCEPTS and self._is_native_ai_form():
             return self._parse_native_ai_expression()
         if concept in _IDENTIFIER_LIKE_CONCEPTS:
@@ -1734,6 +1789,33 @@ class Parser:
         if concept == "YIELD":
             return self._parse_yield_expr()
         return None
+
+    def _match_next_delimiter(self, delim):
+        """Check whether the next token is a specific delimiter."""
+        idx = self.pos + 1
+        if idx < len(self.tokens):
+            tok = self.tokens[idx]
+            return tok.type == TokenType.DELIMITER and tok.value == delim
+        return False
+
+    def _has_inline_expression_after_keyword(self):
+        """Return True when the next token starts an inline expression."""
+        idx = self.pos + 1
+        if idx >= len(self.tokens):
+            return False
+        nxt = self.tokens[idx]
+        return nxt.type not in {
+            TokenType.NEWLINE,
+            TokenType.DEDENT,
+            TokenType.EOF,
+        }
+
+    def _parse_prefix_soft_call(self):
+        """Parse soft-keyword prefix forms such as `par [..]` or `spawn expr`."""
+        tok = self._advance()
+        func = Identifier(tok.value, line=tok.line, column=tok.column)
+        arg = self._parse_expression()
+        return CallExpr(func, [arg], [], line=tok.line, column=tok.column)
 
     def _parse_atom(self):  # pylint: disable=too-many-branches
         """Parse atomic expressions: literals, identifiers, parenthesized."""
@@ -1858,7 +1940,7 @@ class Parser:
 
         if self._match_delimiter(":"):
             self._advance()
-            args.append(self._parse_expression())
+            args.append(self._parse_native_ai_template(tok))
         else:
             self._error("EXPECTED_EXPRESSION", self._current(), token=self._current().value)
 
@@ -1870,6 +1952,42 @@ class Parser:
             setattr(node, "core_target_type", self._parse_annotation_expression())
 
         return node
+
+    def _parse_native_ai_template(self, tok):
+        """Parse the template section of a native AI expression."""
+        if not self._match_type(TokenType.NEWLINE):
+            return self._parse_expression()
+
+        self._advance()
+        self._skip_newlines()
+        if not self._match_type(TokenType.INDENT):
+            return StringLiteral("", line=tok.line, column=tok.column)
+
+        self._advance()
+        lines = []
+        current_line = []
+
+        while not self._at_end() and not self._match_type(TokenType.DEDENT):
+            cur = self._current()
+            if cur.type == TokenType.NEWLINE:
+                if current_line:
+                    lines.append(" ".join(current_line).strip())
+                    current_line = []
+                self._advance()
+                continue
+            current_line.append(str(cur.value))
+            self._advance()
+
+        if current_line:
+            lines.append(" ".join(current_line).strip())
+        if self._match_type(TokenType.DEDENT):
+            self._advance()
+
+        return StringLiteral(
+            "\n".join(line for line in lines if line),
+            line=tok.line,
+            column=tok.column,
+        )
 
     def _parse_model_ref_literal(self):
         """Parse a model reference literal starting with `@`."""
@@ -2009,7 +2127,7 @@ class Parser:
             self._advance()  # consume ]
             return ListLiteral([], line=tok.line, column=tok.column)
 
-        first = self._parse_expression()
+        first = self._parse_list_element()
 
         # Check for list comprehension: [expr FOR ...]
         if self._match_concept("LOOP_FOR"):
@@ -2023,10 +2141,23 @@ class Parser:
             self._skip_bracket_newlines()
             if self._match_delimiter("]"):
                 break
-            elements.append(self._parse_expression())
+            elements.append(self._parse_list_element())
         self._skip_bracket_newlines()
         self._expect_delimiter("]")
         return ListLiteral(elements, line=tok.line, column=tok.column)
+
+    def _parse_list_element(self):
+        """Parse a single list element, including starred forms."""
+        if self._match_operator("*"):
+            tok = self._advance()
+            value = self._parse_expression()
+            return StarredExpr(
+                value,
+                is_double=False,
+                line=tok.line,
+                column=tok.column,
+            )
+        return self._parse_expression()
 
     def _parse_brace_literal(self):
         """Parse dict or set literal, including dict unpacking."""
