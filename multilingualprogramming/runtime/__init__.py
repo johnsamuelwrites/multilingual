@@ -11,6 +11,8 @@ Public re-exports
 AI execution
     AIRuntime, AIProvider       — abstract provider protocol
     AnthropicProvider           — Anthropic Messages API backend
+    OllamaProvider              — local Ollama backend
+    OpenAIProvider              — OpenAI Chat Completions backend
 
 Reactive / UI
     ReactiveEngine, Signal      — observable state and reactive bindings
@@ -35,6 +37,8 @@ Agent memory and coordination
 """
 
 from multilingualprogramming.runtime.ai_runtime import AIRuntime, AIProvider
+from multilingualprogramming.runtime.ollama_provider import OllamaProvider
+from multilingualprogramming.runtime.openai_provider import OpenAIProvider
 from multilingualprogramming.runtime.ai_types import (
     EmbeddingVector,
     ModelRef,
@@ -74,6 +78,8 @@ __all__ = [
     # AI
     "AIProvider",
     "AIRuntime",
+    "OllamaProvider",
+    "OpenAIProvider",
     "EmbeddingVector",
     "ModelRef",
     "Plan",
