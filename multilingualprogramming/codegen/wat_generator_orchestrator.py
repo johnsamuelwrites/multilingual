@@ -8,9 +8,9 @@
 
 from multilingualprogramming.core.ir import CoreIRProgram
 from multilingualprogramming.core.ir_nodes import IRProgram
-from multilingualprogramming.core.runtime_lowering import lower_ir_to_runtime_ast
 from multilingualprogramming.parser.ast_nodes import CallExpr, ClassDef, FunctionDef
 
+from multilingualprogramming.codegen.wat_ir_adapter import lower_ir_to_wat_ast
 from multilingualprogramming.codegen.wat_generator_support import (
     _extract_render_mode,
     _name,
@@ -29,7 +29,7 @@ class WATGeneratorOrchestratorMixin:
         if isinstance(program, CoreIRProgram):
             program = program.ast
         elif isinstance(program, IRProgram):
-            program = lower_ir_to_runtime_ast(program)
+            program = lower_ir_to_wat_ast(program)
 
         funcs, classes, top = self._split_program_sections(program)
         self._collect_function_metadata(funcs)

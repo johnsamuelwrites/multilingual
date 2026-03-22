@@ -98,3 +98,15 @@ class TestCompilerBoundary:
         wat = WATCodeGenerator().generate(ir)
         assert isinstance(wat, str)
         assert "(module" in wat
+
+    def test_wat_generator_uses_backend_owned_ir_adapter(self):
+        ir = _lower("let x = 1\nprint(x)\n")
+        with patch(
+            "multilingualprogramming.codegen.wat_generator_orchestrator."
+            "lower_ir_to_runtime_ast",
+            side_effect=AssertionError("generic runtime bridge should not run"),
+            create=True,
+        ):
+            wat = WATCodeGenerator().generate(ir)
+        assert isinstance(wat, str)
+        assert "(module" in wat
