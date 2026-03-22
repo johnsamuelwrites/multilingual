@@ -13,7 +13,7 @@ from pathlib import Path
 
 from multilingualprogramming.codegen.python_generator import PythonCodeGenerator
 from multilingualprogramming.codegen.runtime_builtins import RuntimeBuiltins
-from multilingualprogramming.core.lowering import lower_to_core_ir
+from multilingualprogramming.core.semantic_lowering import lower_to_semantic_ir
 from multilingualprogramming.lexer.lexer import Lexer
 from multilingualprogramming.parser.parser import Parser
 from multilingualprogramming.parser.semantic_analyzer import SemanticAnalyzer
@@ -51,23 +51,21 @@ class _MLLoader(importlib.abc.Loader):
 
         parser = Parser(tokens, source_language=detected_language)
         program = parser.parse()
-        core_program = lower_to_core_ir(
-            program, detected_language, frontend_name="lexer_parser"
-        )
+        ir_program = lower_to_semantic_ir(program, detected_language)
 
         analyzer = SemanticAnalyzer(source_language=detected_language)
         builtins_ns = RuntimeBuiltins(detected_language).namespace()
         for name in builtins_ns:
             analyzer.symbol_table.define(name, "variable", line=0, column=0)
 
-        semantic_errors = analyzer.analyze(core_program.ast)
+        semantic_errors = analyzer.analyze(program)
         if semantic_errors:
             rendered = "; ".join(str(err) for err in semantic_errors)
             raise ImportError(
                 f"Semantic checks failed for {self.source_path}: {rendered}"
             )
 
-        python_source = PythonCodeGenerator().generate(core_program)
+        python_source = PythonCodeGenerator().generate(ir_program)
         code_obj = compile(python_source, str(self.source_path), "exec")
 
         self._CODE_CACHE[cache_key] = {

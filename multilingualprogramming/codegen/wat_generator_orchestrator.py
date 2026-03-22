@@ -6,7 +6,6 @@
 
 """Orchestration/state helpers for the WAT generator."""
 
-from multilingualprogramming.core.ir import CoreIRProgram
 from multilingualprogramming.core.ir_nodes import IRProgram
 from multilingualprogramming.parser.ast_nodes import CallExpr, ClassDef, FunctionDef
 
@@ -26,9 +25,7 @@ class WATGeneratorOrchestratorMixin:
         self._wasm_target = wasm_target
         self._reset_generation_state()
 
-        if isinstance(program, CoreIRProgram):
-            program = program.ast
-        elif isinstance(program, IRProgram):
+        if isinstance(program, IRProgram):
             program = lower_ir_to_wat_ast(program)
 
         funcs, classes, top = self._split_program_sections(program)

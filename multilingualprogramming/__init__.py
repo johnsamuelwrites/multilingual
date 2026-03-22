@@ -34,8 +34,6 @@ from multilingualprogramming.codegen.wat_generator import WATCodeGenerator
 from multilingualprogramming.codegen.runtime_builtins import RuntimeBuiltins
 from multilingualprogramming.codegen.executor import ProgramExecutor, ExecutionResult
 from multilingualprogramming.codegen.repl import REPL
-from multilingualprogramming.core.ir import CoreIRProgram
-from multilingualprogramming.core.lowering import lower_to_core_ir
 from multilingualprogramming.runtime.numeric_primitives import (
     Vec2,
     ComplexScalar,
@@ -76,8 +74,6 @@ __all__ = [
     "ProgramExecutor",
     "ExecutionResult",
     "REPL",
-    "CoreIRProgram",
-    "lower_to_core_ir",
     "Vec2",
     "ComplexScalar",
     "FastRNG",

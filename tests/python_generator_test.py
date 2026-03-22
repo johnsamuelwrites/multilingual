@@ -24,7 +24,6 @@ from multilingualprogramming.parser.ast_nodes import (
     WithStatement, ImportStatement, FromImportStatement,
 )
 from multilingualprogramming.codegen.python_generator import PythonCodeGenerator
-from multilingualprogramming.core.ir import CoreIRProgram
 
 
 class PythonGeneratorExpressionTestSuite(unittest.TestCase):
@@ -308,13 +307,6 @@ class PythonGeneratorStatementTestSuite(unittest.TestCase):
             FromImportStatement("os.path", [("join", "pjoin")])
         )
         self.assertEqual(result, "from os.path import join as pjoin")
-
-    def test_generate_accepts_core_ir_program(self):
-        prog = Program([VariableDeclaration("x", NumeralLiteral("10"))])
-        core = CoreIRProgram(ast=prog, source_language="en")
-        result = self.gen.generate(core).strip()
-        self.assertEqual(result, "x = 10")
-
 
 class PythonGeneratorCompoundTestSuite(unittest.TestCase):
     """Test compound statement code generation."""

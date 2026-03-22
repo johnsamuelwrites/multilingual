@@ -6,7 +6,6 @@
 
 """Python code generator: transpiles AST or semantic IR to valid Python."""
 
-from multilingualprogramming.core.ir import CoreIRProgram
 from multilingualprogramming.core import ir_nodes as ir
 from multilingualprogramming.core.ir_nodes import IRProgram
 from multilingualprogramming.core.types import GenericType
@@ -76,9 +75,7 @@ class PythonCodeGenerator:
 
     def generate(self, node):
         """Generate Python source from the AST root node."""
-        if isinstance(node, CoreIRProgram):
-            node = node.ast
-        elif isinstance(node, IRProgram):
+        if isinstance(node, IRProgram):
             return self._generate_ir_program(node)
         self._depth = 0
         self._lines = []

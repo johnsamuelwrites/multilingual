@@ -9,7 +9,6 @@
 from copy import deepcopy
 import json
 
-from multilingualprogramming.core.ir import CoreIRProgram
 from multilingualprogramming.core.ir_nodes import IRProgram
 from multilingualprogramming.parser.ast_nodes import FunctionDef
 
@@ -29,9 +28,7 @@ class WATGeneratorManifestMixin:
 
     def generate_abi_manifest(self, program) -> dict:
         """Generate ABI manifest metadata for frontend/runtime integration."""
-        if isinstance(program, CoreIRProgram):
-            program = program.ast
-        elif isinstance(program, IRProgram):
+        if isinstance(program, IRProgram):
             program = lower_ir_to_wat_ast(program)
 
         funcs = [s for s in program.body if isinstance(s, FunctionDef)]

@@ -484,15 +484,14 @@ afficher(nom)
         self.assertTrue(result.success, result.errors)
         self.assertIn("print('test')", result.python_source)
 
-    def test_to_core_ir_contains_detected_language(self):
+    def test_to_semantic_ir_contains_detected_language(self):
         source = """\
 soit x = 1
 print(x)
 """
         executor = ProgramExecutor(language="fr")
-        core = executor.to_core_ir(source)
-        self.assertEqual(core.source_language, "fr")
-        self.assertEqual(core.frontend_metadata["frontend_name"], "lexer_parser")
+        ir = executor.to_semantic_ir(source)
+        self.assertEqual(ir.source_language, "fr")
 
 
 class ExecutorErrorTestSuite(unittest.TestCase):

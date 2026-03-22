@@ -20,7 +20,6 @@ from multilingualprogramming.parser.parser import Parser
 from multilingualprogramming.parser.semantic_analyzer import SemanticAnalyzer, Scope, Symbol
 from multilingualprogramming.codegen.python_generator import PythonCodeGenerator
 from multilingualprogramming.codegen.runtime_builtins import RuntimeBuiltins
-from multilingualprogramming.core.lowering import lower_to_core_ir
 from multilingualprogramming.core.semantic_lowering import lower_to_semantic_ir
 from multilingualprogramming.core.validators import validate_all
 from multilingualprogramming.imports import enable_multilingual_imports
@@ -183,13 +182,6 @@ class ProgramExecutor:
         core_program = self.to_semantic_ir(source)
         generator = PythonCodeGenerator()
         return generator.generate(core_program)
-
-    def to_core_ir(self, source):
-        """Compile source into the legacy typed core wrapper."""
-        program, detected_language = self._parse_source(source)
-        return lower_to_core_ir(
-            program, detected_language, frontend_name="lexer_parser"
-        )
 
     def to_semantic_ir(self, source):
         """Compile source into the semantic IR compiler boundary."""

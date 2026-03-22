@@ -10,7 +10,6 @@
 import unittest
 
 from multilingualprogramming.codegen.wat_generator import WATCodeGenerator
-from multilingualprogramming.core.ir import CoreIRProgram
 from multilingualprogramming.parser.ast_nodes import (
     CallExpr,
     ExpressionStatement,
@@ -87,14 +86,6 @@ class WATModuleStructureTestSuite(unittest.TestCase):
     def test_data_section_present_for_string_literal(self):
         wat = _gen(ExpressionStatement(CallExpr(Identifier("print"), [StringLiteral("hi")])))
         self.assertIn("(data", wat)
-
-    def test_generate_accepts_core_ir_program(self):
-        prog = _prog(VariableDeclaration("x", NumeralLiteral("1")))
-        core = CoreIRProgram(ast=prog, source_language="en")
-        wat = WATCodeGenerator().generate(core)
-        self.assertIn("(module", wat)
-        self.assertIn("$x", wat)
-
 
 class WATABIManifestTestSuite(unittest.TestCase):
     """Validate ABI manifest emitted by WATCodeGenerator."""
