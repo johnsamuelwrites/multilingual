@@ -37,6 +37,7 @@ from typing import AsyncIterator, Iterator
 from multilingualprogramming.runtime.ai_types import (
     EmbeddingVector,
     ModelRef,
+    Plan,
     PromptResult,
     Reasoning,
     StreamChunk,
@@ -116,6 +117,28 @@ class AIProvider(abc.ABC):
         """
         result = self.prompt(model, template, **kwargs)
         yield StreamChunk(content=result.content, is_final=True)
+
+    def plan(self, model: ModelRef, goal: str, **kwargs) -> Plan:
+        """Produce a simple multi-step plan for *goal*."""
+        result = self.prompt(model, f"Create a concise step-by-step plan for: {goal}", **kwargs)
+        plan = Plan(goal=goal)
+        lines = [line.strip("-* 0123456789.") for line in result.content.splitlines()]
+        steps = [line for line in lines if line]
+        if not steps:
+            steps = [result.content.strip() or goal]
+        for step in steps:
+            plan.add_step(step)
+        return plan
+
+    def transcribe(self, model: ModelRef, source: object, **kwargs) -> str:
+        """Return a transcription string for *source*.
+
+        Default behavior is a text-only fallback for tests and offline flows.
+        """
+        del model, kwargs
+        if isinstance(source, (bytes, bytearray)):
+            return "<binary audio>"
+        return str(source)
 
     async def prompt_async(self, model: ModelRef, template: str, **kwargs) -> PromptResult:
         """Async version of prompt.  Default: run sync version."""
@@ -252,6 +275,16 @@ class AIRuntime:
     def embed(cls, model: ModelRef, text: str, **kwargs) -> EmbeddingVector:
         """Dispatch an embedding request to the active provider."""
         return cls.get_provider().embed(model, text, **kwargs)
+
+    @classmethod
+    def plan(cls, model: ModelRef, goal: str, **kwargs) -> Plan:
+        """Dispatch a planning request to the active provider."""
+        return cls.get_provider().plan(model, goal, **kwargs)
+
+    @classmethod
+    def transcribe(cls, model: ModelRef, source: object, **kwargs) -> str:
+        """Dispatch a transcription request to the active provider."""
+        return cls.get_provider().transcribe(model, source, **kwargs)
 
     @classmethod
     def reset(cls) -> None:

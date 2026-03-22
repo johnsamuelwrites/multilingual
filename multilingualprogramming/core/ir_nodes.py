@@ -27,6 +27,7 @@ Node families
                     IRSetComp, IRGeneratorExpr
   AI-native       — IRModelRef, IRPromptExpr, IRGenerateExpr, IRThinkExpr,
                     IRStreamExpr, IREmbedExpr, IRExtractExpr, IRClassifyExpr,
+                    IRPlanExpr, IRTranscribeExpr, IRRetrieveExpr,
                     IRSemanticMatchOp
   Statements      — IRAssignment, IRAugAssignment, IRExprStatement,
                     IRReturnStatement, IRBreakStatement, IRContinueStatement,
@@ -566,6 +567,34 @@ class IRClassifyExpr(IRNode):
 
 
 @dataclass
+class IRPlanExpr(IRNode):
+    """Planning expression: plan @model: goal -> Plan."""
+
+    model: IRNode | None = None
+    goal: IRNode | None = None
+    inferred_type: CoreType | None = None
+
+
+@dataclass
+class IRTranscribeExpr(IRNode):
+    """Transcription expression: transcribe @model: audio -> string."""
+
+    model: IRNode | None = None
+    source: IRNode | None = None
+    inferred_type: CoreType | None = None
+
+
+@dataclass
+class IRRetrieveExpr(IRNode):
+    """Indexed retrieval: retrieve index: query -> list<context>."""
+
+    index: IRNode | None = None
+    query: IRNode | None = None
+    model: IRNode | None = None
+    inferred_type: CoreType | None = None
+
+
+@dataclass
 class IRSemanticMatchOp(IRNode):
     """Semantic approximate match: left ~= right.
 
@@ -809,6 +838,13 @@ class IROrPattern(IRNode):
     """Alternative patterns: p1 | p2 | p3."""
 
     alternatives: list[IRNode] = field(default_factory=list)
+
+
+@dataclass
+class IRSequencePattern(IRNode):
+    """Tuple/list destructuring pattern."""
+
+    elements: list[IRNode] = field(default_factory=list)
 
 
 @dataclass

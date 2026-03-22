@@ -1,4 +1,4 @@
-#
+﻿#
 # SPDX-FileCopyrightText: 2026 John Samuel <johnsamuelwrites@gmail.com>
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
@@ -37,9 +37,12 @@ from multilingualprogramming.core.ir_nodes import (
     IRTypeDecl,
     IRAgentDecl,
     IRCapturePattern,
+    IRAsPattern,
+    IRCanvasBlock,
     IRGuardedPattern,
     IRLiteralPattern,
     IROrPattern,
+    IRRecordPattern,
     IRAssertStatement,
     IRAssignment,
     IRAttributeAccess,
@@ -84,25 +87,33 @@ from multilingualprogramming.core.ir_nodes import (
     IRModelRef,
     IRNamedExpr,
     IRNonlocalStatement,
+    IROnChange,
     IRObserveBinding,
     IRParameter,
     IRPassStatement,
     IRPipeExpr,
+    IRPlanExpr,
     IRProgram,
     IRPromptExpr,
     IRRaiseStatement,
+    IRRenderExpr,
+    IRResultPropagation,
     IRReturnStatement,
+    IRRetrieveExpr,
     IRSemanticMatchOp,
     IRSetComp,
     IRSetLiteral,
     IRSliceExpr,
     IRStarredExpr,
     IRStreamExpr,
+    IRSequencePattern,
     IRThinkExpr,
     IRToolDecl,
     IRTryStatement,
     IRTupleLiteral,
+    IRTranscribeExpr,
     IRUnaryOp,
+    IRViewBinding,
     IRWithStatement,
     IRWildcardPattern,
     IRWhileLoop,
@@ -136,6 +147,7 @@ from multilingualprogramming.parser import ast_nodes as ast
 # ---------------------------------------------------------------------------
 _AI_CALL_NAMES = frozenset({
     "prompt", "generate", "think", "stream", "embed", "extract", "classify",
+    "plan", "transcribe", "retrieve",
 })
 
 _AGENT_DECORATOR = "agent"
@@ -260,7 +272,19 @@ class _LoweringContext:
     def _lower_FStringLiteral(self, node: ast.FStringLiteral) -> IRFStringLiteral:
         parts = []
         for part in node.parts:
-            parts.append(self.lower(part) if isinstance(part, ast.ASTNode) else part)
+            if isinstance(part, ast.ASTNode):
+                lowered = self.lower(part)
+                for src_attr, dst_attr in (
+                    ("fstring_format_spec", "fstring_format_spec"),
+                    ("fstring_conversion", "fstring_conversion"),
+                    ("_fstring_format_spec", "_fstring_format_spec"),
+                    ("_fstring_conversion", "_fstring_conversion"),
+                ):
+                    if hasattr(part, src_attr):
+                        setattr(lowered, dst_attr, getattr(part, src_attr))
+                parts.append(lowered)
+            else:
+                parts.append(part)
         return IRFStringLiteral(parts=parts, inferred_type=STRING_TYPE,
                                 line=node.line, column=node.column)
 
@@ -282,7 +306,14 @@ class _LoweringContext:
         entries = []
         for entry in node.entries:
             if isinstance(entry, ast.DictUnpackEntry):
-                entries.append(self.lower(entry.value))
+                entries.append(
+                    IRStarredExpr(
+                        value=self.lower(entry.value),
+                        is_double=True,
+                        line=entry.line,
+                        column=entry.column,
+                    )
+                )
             elif isinstance(entry, tuple) and len(entry) == 2:
                 entries.append((self.lower(entry[0]), self.lower(entry[1])))
         return IRDictLiteral(entries=entries, line=node.line, column=node.column)
@@ -323,6 +354,12 @@ class _LoweringContext:
         )
 
     def _lower_UnaryOp(self, node: ast.UnaryOp) -> IRUnaryOp:
+        if node.op == "?":
+            return IRResultPropagation(
+                operand=self.lower(node.operand),
+                line=node.line,
+                column=node.column,
+            )
         return IRUnaryOp(op=node.op, operand=self.lower(node.operand),
                          line=node.line, column=node.column)
 
@@ -408,6 +445,32 @@ class _LoweringContext:
                                   categories=categories,
                                   target_type=target_type,
                                   line=ln, column=col)
+        if name == "plan":
+            return IRPlanExpr(
+                model=model,
+                goal=payload,
+                inferred_type=NamedType("plan"),
+                line=ln,
+                column=col,
+            )
+        if name == "transcribe":
+            return IRTranscribeExpr(
+                model=model,
+                source=payload,
+                inferred_type=STRING_TYPE,
+                line=ln,
+                column=col,
+            )
+        if name == "retrieve":
+            index = self.lower(args[0]) if args else None
+            query = self.lower(args[1]) if len(args) > 1 else None
+            return IRRetrieveExpr(
+                index=index,
+                query=query,
+                model=model,
+                line=ln,
+                column=col,
+            )
         return IRExpression(line=ln, column=col)
 
     def _lower_AttributeAccess(self, node: ast.AttributeAccess) -> IRAttributeAccess:
@@ -557,6 +620,38 @@ class _LoweringContext:
             line=node.line, column=node.column,
         )
 
+    def _lower_OnChangeStatement(self, node: ast.OnChangeStatement) -> IROnChange:
+        return IROnChange(
+            signal=self.lower(node.signal),
+            body=self.lower_list(node.body),
+            line=node.line,
+            column=node.column,
+        )
+
+    def _lower_CanvasBlock(self, node: ast.CanvasBlock) -> IRCanvasBlock:
+        return IRCanvasBlock(
+            name=node.name,
+            children=self.lower_list(node.body),
+            line=node.line,
+            column=node.column,
+        )
+
+    def _lower_RenderStatement(self, node: ast.RenderStatement) -> IRRenderExpr:
+        return IRRenderExpr(
+            target=self.lower(node.target),
+            value=self.lower(node.value),
+            line=node.line,
+            column=node.column,
+        )
+
+    def _lower_ViewBindingStatement(self, node: ast.ViewBindingStatement) -> IRViewBinding:
+        return IRViewBinding(
+            signal=self.lower(node.signal),
+            target=self.lower(node.target),
+            line=node.line,
+            column=node.column,
+        )
+
     def _lower_FunctionDef(self, node: ast.FunctionDef) -> IRFunction | IRAgentDecl | IRToolDecl:
         decorators = self.lower_list(node.decorators)
         # Detect @agent and @tool decorators before generic lowering.
@@ -653,10 +748,14 @@ class _LoweringContext:
         )
 
     def _lower_ChainedAssignment(self, node: ast.ChainedAssignment) -> IRAssignment:
-        # a = b = value  →  flatten into last target = value for now
-        last = self.lower(node.targets[-1]) if node.targets else None
-        return IRAssignment(target=last, value=self.lower(node.value),
-                            line=node.line, column=node.column)
+        assignment = IRAssignment(
+            target=self.lower(node.targets[-1]) if node.targets else None,
+            value=self.lower(node.value),
+            line=node.line,
+            column=node.column,
+        )
+        assignment.chain_targets = self.lower_list(node.targets)
+        return assignment
 
     def _lower_ExpressionStatement(self, node: ast.ExpressionStatement) -> IRExprStatement:
         return IRExprStatement(expression=self.lower(node.expression),
@@ -925,6 +1024,17 @@ def _lower_pattern_node(ctx: _LoweringContext, pattern) -> object:
     """Lower a parser pattern node to an IR pattern node."""
     if pattern is None:
         return IRWildcardPattern()
+    if isinstance(pattern, ast.BinaryOp) and pattern.op == " as ":
+        if isinstance(pattern.right, ast.Identifier):
+            bound_name = pattern.right.name
+        else:
+            bound_name = str(pattern.right)
+        return IRAsPattern(
+            pattern=_lower_pattern_node(ctx, pattern.left),
+            name=bound_name,
+            line=pattern.line,
+            column=pattern.column,
+        )
     # Wildcard: _
     if isinstance(pattern, ast.Identifier) and pattern.name == "_":
         return IRWildcardPattern(line=pattern.line, column=pattern.column)
@@ -942,6 +1052,31 @@ def _lower_pattern_node(ctx: _LoweringContext, pattern) -> object:
         alts = _flatten_or_pattern(ctx, pattern)
         return IROrPattern(alternatives=alts,
                            line=pattern.line, column=pattern.column)
+    if isinstance(pattern, (ast.TupleLiteral, ast.ListLiteral)):
+        return IRSequencePattern(
+            elements=[_lower_pattern_node(ctx, element) for element in pattern.elements],
+            line=pattern.line,
+            column=pattern.column,
+        )
+    if isinstance(pattern, ast.DictLiteral):
+        fields = {}
+        for entry in pattern.entries:
+            if not isinstance(entry, tuple) or len(entry) != 2:
+                continue
+            key, value = entry
+            if isinstance(key, ast.Identifier):
+                field_name = key.name
+            elif isinstance(key, ast.StringLiteral):
+                field_name = key.value
+            else:
+                continue
+            fields[field_name] = _lower_pattern_node(ctx, value)
+        return IRRecordPattern(
+            type_name="",
+            fields=fields,
+            line=pattern.line,
+            column=pattern.column,
+        )
     # Default: emit capture with a warning
     return IRCapturePattern(name=str(type(pattern).__name__),
                             line=getattr(pattern, "line", 0),

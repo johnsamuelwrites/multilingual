@@ -1,4 +1,4 @@
-#
+﻿#
 # SPDX-FileCopyrightText: 2024 John Samuel <johnsamuelwrites@gmail.com>
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
@@ -7,6 +7,8 @@
 """Python code generator: transpiles the multilingual AST to valid Python source."""
 
 from multilingualprogramming.core.ir import CoreIRProgram
+from multilingualprogramming.core.ir_nodes import IRProgram
+from multilingualprogramming.core.runtime_lowering import lower_ir_to_runtime_ast
 from multilingualprogramming.exceptions import CodeGenerationError
 from multilingualprogramming.numeral.mp_numeral import MPNumeral
 
@@ -53,6 +55,8 @@ class PythonCodeGenerator:
         """Generate Python source from the AST root node."""
         if isinstance(node, CoreIRProgram):
             node = node.ast
+        elif isinstance(node, IRProgram):
+            node = lower_ir_to_runtime_ast(node)
         self._depth = 0
         self._lines = []
         node.accept(self)
@@ -273,6 +277,9 @@ class PythonCodeGenerator:
         self._emit_body(node.body)
 
     def visit_MatchStatement(self, node):
+        if self._needs_match_if_chain(node):
+            self._emit_match_if_chain(node)
+            return
         subject = self._expr(node.subject)
         self._emit(f"match {subject}:")
         self._indent()
@@ -324,10 +331,148 @@ class PythonCodeGenerator:
         dots = "." * getattr(node, "level", 0)
         self._emit(f"from {dots}{node.module} import {names}")
 
+    def visit_ObserveDeclaration(self, node):
+        val = self._expr(node.value)
+        self._emit(f"{node.name} = {val}")
+
+    def visit_OnChangeStatement(self, _node):
+        self._emit("pass  # reactive on-change handler lowered separately")
+
+    def visit_CanvasBlock(self, _node):
+        self._emit("pass  # canvas block lowered separately")
+
+    def visit_RenderStatement(self, _node):
+        self._emit("pass  # render statement lowered separately")
+
+    def visit_ViewBindingStatement(self, _node):
+        self._emit("pass  # view binding lowered separately")
+
+    def visit_RecordDecl(self, node):
+        self._emit(f"class {node.name}(dict):")
+        self._emit_body([])
+
+    def visit_EnumDecl(self, node):
+        self._emit(f"class {node.name}:")
+        self._emit_body([])
+        for variant in node.variants:
+            self._emit(f"{node.name}.{variant.name} = {variant.name!r}")
+
     def generic_visit(self, node):
         """Raise when statement node code generation is not implemented."""
         self._error(
             f"Unsupported AST node type: {type(node).__name__}", node
+        )
+
+    def _needs_match_if_chain(self, node):
+        """Return True when a match statement needs if/elif fallback codegen."""
+        for case in node.cases:
+            pattern = getattr(case, "pattern", None)
+            if self._match_capture_name(pattern) is not None:
+                return True
+            if self._match_has_as_binding(pattern):
+                return True
+        return False
+
+    def _emit_match_if_chain(self, node):
+        """Emit match/case as an if/elif chain for capture-heavy patterns."""
+        subject = self._expr(node.subject)
+        match_var = f"__ml_match_subject_{id(node)}"
+        self._emit(f"{match_var} = {subject}")
+        first = True
+        for case in node.cases:
+            keyword = "if" if first else "elif"
+            cond, prelude = self._match_case_condition(case, match_var)
+            self._emit(f"{keyword} {cond}:")
+            self._indent()
+            for line in prelude:
+                self._emit(line)
+            if case.body:
+                for stmt in case.body:
+                    stmt.accept(self)
+            else:
+                self._emit("pass")
+            self._dedent()
+            first = False
+        if not node.cases:
+            self._emit("pass")
+
+    def _match_case_condition(self, case, match_var):
+        """Return (condition, prelude_lines) for a fallback match case."""
+        pattern = getattr(case, "pattern", None)
+        guard = getattr(case, "guard", None)
+        prelude = []
+        capture_name = self._match_capture_name(pattern)
+        if case.is_default or self._is_wildcard_pattern(pattern):
+            cond = "True"
+        elif capture_name is not None:
+            prelude.append(f"{capture_name} = {match_var}")
+            cond = self._expr(guard) if guard is not None else "True"
+        elif self._match_has_as_binding(pattern):
+            bound_name = pattern.right.name
+            base_cond, base_prelude = self._match_pattern_condition(pattern.left, match_var)
+            prelude.extend(base_prelude)
+            prelude.append(f"{bound_name} = {match_var}")
+            cond = base_cond
+            if guard is not None:
+                cond = f"({cond}) and ({self._expr(guard)})"
+        else:
+            cond, extra = self._match_pattern_condition(pattern, match_var)
+            prelude.extend(extra)
+            if guard is not None:
+                cond = f"({cond}) and ({self._expr(guard)})"
+        return cond, prelude
+
+    def _match_pattern_condition(self, pattern, match_var):
+        """Return (condition, prelude_lines) for a non-capture pattern."""
+        if pattern is None or self._is_wildcard_pattern(pattern):
+            return "True", []
+        if self._match_capture_name(pattern) is not None:
+            name = self._match_capture_name(pattern)
+            return "True", [f"{name} = {match_var}"]
+        if type(pattern).__name__ in {
+            "NumeralLiteral",
+            "StringLiteral",
+            "BooleanLiteral",
+            "NoneLiteral",
+        }:
+            return f"{match_var} == {self._expr(pattern)}", []
+        if type(pattern).__name__ == "BinaryOp" and pattern.op == "|":
+            left, left_prelude = self._match_pattern_condition(pattern.left, match_var)
+            right, right_prelude = self._match_pattern_condition(pattern.right, match_var)
+            return f"({left}) or ({right})", left_prelude + right_prelude
+        if type(pattern).__name__ == "TupleLiteral":
+            elems = [self._expr(elem) for elem in pattern.elements]
+            return f"{match_var} == ({', '.join(elems)})", []
+        if type(pattern).__name__ == "ListLiteral":
+            elems = [self._expr(elem) for elem in pattern.elements]
+            return f"{match_var} == [{', '.join(elems)}]", []
+        if type(pattern).__name__ == "DictLiteral":
+            return f"{match_var} == {self._expr(pattern)}", []
+        return f"{match_var} == {self._expr(pattern)}", []
+
+    @staticmethod
+    def _is_wildcard_pattern(pattern):
+        return (
+            pattern is not None
+            and type(pattern).__name__ == "Identifier"
+            and getattr(pattern, "name", None) == "_"
+        )
+
+    @staticmethod
+    def _match_capture_name(pattern):
+        if pattern is not None and type(pattern).__name__ == "Identifier":
+            name = getattr(pattern, "name", "")
+            if name != "_":
+                return name
+        return None
+
+    @staticmethod
+    def _match_has_as_binding(pattern):
+        return (
+            pattern is not None
+            and type(pattern).__name__ == "BinaryOp"
+            and getattr(pattern, "op", None) == " as "
+            and type(getattr(pattern, "right", None)).__name__ == "Identifier"
         )
 
 
@@ -424,6 +569,9 @@ class _ExpressionGenerator:
 
     def visit_Identifier(self, node):
         return node.name
+
+    def visit_ModelRefLiteral(self, node):
+        return f"ModelRef({node.model_name!r})"
 
     def visit_BinaryOp(self, node):
         left = self._expr(node.left)

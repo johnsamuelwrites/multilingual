@@ -1,4 +1,4 @@
-#
+﻿#
 # SPDX-FileCopyrightText: 2024 John Samuel <johnsamuelwrites@gmail.com>
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
@@ -520,3 +520,35 @@ class ObserveDeclaration(ASTNode):
         self.name = name
         self.value = value
         self.annotation = annotation
+
+
+class OnChangeStatement(ASTNode):
+    """Reactive event handler: on signal.change: body."""
+    def __init__(self, signal, body=None, line=0, column=0):
+        super().__init__(line, column)
+        self.signal = signal
+        self.body = body or []
+
+
+class CanvasBlock(ASTNode):
+    """Declarative UI block: canvas name?: body."""
+    def __init__(self, name=None, body=None, line=0, column=0):
+        super().__init__(line, column)
+        self.name = name or ""
+        self.body = body or []
+
+
+class RenderStatement(ASTNode):
+    """Render statement: render target with value."""
+    def __init__(self, target, value, line=0, column=0):
+        super().__init__(line, column)
+        self.target = target
+        self.value = value
+
+
+class ViewBindingStatement(ASTNode):
+    """Bind a signal or stream to a target: bind signal -> target."""
+    def __init__(self, signal, target, line=0, column=0):
+        super().__init__(line, column)
+        self.signal = signal
+        self.target = target

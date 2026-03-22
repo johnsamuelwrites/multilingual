@@ -9,6 +9,7 @@
 from multilingualprogramming.core.ir import CoreIRProgram
 from multilingualprogramming.core.lowering import lower_to_core_ir
 from multilingualprogramming.core.ir_nodes import IRBinding, IRFunction, IRProgram
+from multilingualprogramming.core.runtime_lowering import lower_ir_to_runtime_ast
 from multilingualprogramming.core.semantic_lowering import lower_to_semantic_ir
 from multilingualprogramming.core.validators import validate_semantic_ir
 
@@ -17,6 +18,7 @@ __all__ = [
     "IRBinding",
     "IRFunction",
     "IRProgram",
+    "lower_ir_to_runtime_ast",
     "lower_to_core_ir",
     "lower_to_semantic_ir",
     "validate_semantic_ir",

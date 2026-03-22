@@ -1,4 +1,4 @@
-#
+﻿#
 # SPDX-FileCopyrightText: 2024 John Samuel <johnsamuelwrites@gmail.com>
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
@@ -30,6 +30,7 @@ from multilingualprogramming.parser.ast_nodes import (
     FStringLiteral, AssertStatement, ChainedAssignment, DictUnpackEntry,
     # Core 1.0 structured data and reactive
     EnumDecl, EnumVariant, RecordDecl, RecordField, ObserveDeclaration,
+    OnChangeStatement, CanvasBlock, RenderStatement, ViewBindingStatement,
 )
 from multilingualprogramming.parser.error_messages import ErrorMessageRegistry
 from multilingualprogramming.parser.surface_normalizer import (
@@ -46,7 +47,7 @@ _COMPOUND_CONCEPTS = {
     "COND_IF", "LOOP_WHILE", "LOOP_FOR", "FUNC_DEF", "CLASS_DEF",
     "TRY", "MATCH", "WITH",
     # Core 1.0
-    "ENUM", "TYPE_DECL",
+    "ENUM", "TYPE_DECL", "ON_CHANGE", "CANVAS",
 }
 
 # Concepts that begin simple keyword statements
@@ -55,7 +56,7 @@ _SIMPLE_CONCEPTS = {
     "LOOP_BREAK", "LOOP_CONTINUE", "PASS",
     "GLOBAL", "LOCAL", "NONLOCAL", "DEL", "IMPORT", "FROM", "ASSERT",
     # Core 1.0
-    "OBSERVE",
+    "OBSERVE", "RENDER", "BIND",
 }
 
 # Concepts treated as identifiers when appearing in expressions
@@ -78,6 +79,9 @@ _IDENTIFIER_LIKE_CONCEPTS = (
         "EMBED",
         "EXTRACT",
         "CLASSIFY",
+        "PLAN",
+        "TRANSCRIBE",
+        "RETRIEVE",
     }
 )
 _TYPE_CONCEPT_TO_PYTHON = {
@@ -90,7 +94,7 @@ _TYPE_CONCEPT_TO_PYTHON = {
 }
 _AI_NATIVE_CONCEPTS = frozenset({
     "PROMPT", "THINK", "GENERATE", "STREAM_KW",
-    "EMBED", "EXTRACT", "CLASSIFY",
+    "EMBED", "EXTRACT", "CLASSIFY", "PLAN", "TRANSCRIBE", "RETRIEVE",
 })
 
 # Augmented assignment operators
@@ -377,6 +381,10 @@ class Parser:
             return self._parse_enum_declaration()
         if concept == "TYPE_DECL":
             return self._parse_type_declaration()
+        if concept == "ON_CHANGE":
+            return self._parse_on_change_statement()
+        if concept == "CANVAS":
+            return self._parse_canvas_block()
         self._error("UNEXPECTED_TOKEN", self._current(),
                      token=self._current().value)
 
@@ -412,6 +420,10 @@ class Parser:
             return self._parse_assert_statement()
         if concept == "OBSERVE":
             return self._parse_observe_declaration()
+        if concept == "RENDER":
+            return self._parse_render_statement()
+        if concept == "BIND":
+            return self._parse_view_binding_statement()
         self._error("UNEXPECTED_TOKEN", self._current(),
                      token=self._current().value)
 
@@ -635,6 +647,41 @@ class Parser:
             name_tok.value, value, annotation,
             line=tok.line, column=tok.column,
         )
+
+    def _parse_on_change_statement(self):
+        """Parse: on signal.change: block."""
+        tok = self._advance()  # consume ON_CHANGE
+        signal = self._parse_expression()
+        body = self._parse_block()
+        return OnChangeStatement(signal, body, line=tok.line, column=tok.column)
+
+    def _parse_canvas_block(self):
+        """Parse: canvas [name] : block."""
+        tok = self._advance()  # consume CANVAS
+        name = ""
+        if self._match_type(TokenType.IDENTIFIER):
+            name = self._advance().value
+        body = self._parse_block()
+        return CanvasBlock(name=name, body=body, line=tok.line, column=tok.column)
+
+    def _parse_render_statement(self):
+        """Parse: render target with value."""
+        tok = self._advance()  # consume RENDER
+        target = self._parse_expression()
+        if self._match_concept("WITH"):
+            self._advance()
+        else:
+            self._error("UNEXPECTED_TOKEN", self._current(), token=self._current().value)
+        value = self._parse_expression()
+        return RenderStatement(target, value, line=tok.line, column=tok.column)
+
+    def _parse_view_binding_statement(self):
+        """Parse: bind signal -> target."""
+        tok = self._advance()  # consume BIND
+        signal = self._parse_expression()
+        self._expect_operator("->")
+        target = self._parse_expression()
+        return ViewBindingStatement(signal, target, line=tok.line, column=tok.column)
 
     def _parse_assignment_or_expression(self):
         """Parse assignment or expression statement."""
@@ -1769,6 +1816,8 @@ class Parser:
 
     def _is_native_ai_form(self):
         """Return True when the current AI keyword starts native Core 1.0 syntax."""
+        if self._current().type == TokenType.KEYWORD and self._current().concept == "RETRIEVE":
+            return True
         idx = self.pos + 1
         if idx >= len(self.tokens):
             return False
@@ -1779,6 +1828,13 @@ class Parser:
         """Parse native AI syntax such as `prompt @model: template`."""
         tok = self._advance()
         func = Identifier(tok.value, line=tok.line, column=tok.column)
+        if tok.concept == "RETRIEVE":
+            index = self._parse_expression()
+            self._expect_delimiter(":")
+            query = self._parse_expression()
+            node = CallExpr(func, [index, query], line=tok.line, column=tok.column)
+            setattr(node, "native_ai_syntax", True)
+            return node
         args = []
 
         if self._match_delimiter("@"):

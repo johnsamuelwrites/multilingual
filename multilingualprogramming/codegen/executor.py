@@ -21,6 +21,8 @@ from multilingualprogramming.parser.semantic_analyzer import SemanticAnalyzer, S
 from multilingualprogramming.codegen.python_generator import PythonCodeGenerator
 from multilingualprogramming.codegen.runtime_builtins import RuntimeBuiltins
 from multilingualprogramming.core.lowering import lower_to_core_ir
+from multilingualprogramming.core.semantic_lowering import lower_to_semantic_ir
+from multilingualprogramming.core.validators import validate_all
 from multilingualprogramming.imports import enable_multilingual_imports
 from multilingualprogramming.exceptions import (
     RuntimeExecutionError,
@@ -91,6 +93,7 @@ class ProgramExecutor:
         """
         self.language = language
         self.check_semantics = check_semantics
+        self._last_program_ast = None
 
     def execute(self, source, capture_output=True, globals_dict=None):
         """
@@ -106,9 +109,9 @@ class ProgramExecutor:
             ExecutionResult with output, generated Python source, and errors.
         """
         try:
-            # Step 1-3: Frontend to typed core representation
-            core_program = self.to_core_ir(source)
-            detected_language = core_program.source_language
+            # Step 1-3: Frontend to semantic IR
+            ir_program = self.to_semantic_ir(source)
+            detected_language = ir_program.source_language
 
             # Step 4: Semantic analysis (optional)
             if self.check_semantics:
@@ -126,17 +129,24 @@ class ProgramExecutor:
                     builtins_scope.define(Symbol(name, "variable"))
                 # Attach the builtins scope as the parent of the global scope.
                 analyzer.symbol_table.global_scope.parent = builtins_scope
-                semantic_errors = analyzer.analyze(core_program.ast)
+                semantic_errors = analyzer.analyze(self._last_program_ast)
                 if semantic_errors:
                     return ExecutionResult(
                         errors=[str(e) for e in semantic_errors],
                         success=False,
                         backend_details={"stage": "semantic-analysis"},
                     )
+            ir_diagnostics = validate_all(ir_program)
+            if ir_diagnostics:
+                return ExecutionResult(
+                    errors=ir_diagnostics,
+                    success=False,
+                    backend_details={"stage": "semantic-ir-validation"},
+                )
 
-            # Step 5: Lowered core to Python
+            # Step 5: Semantic IR to Python
             generator = PythonCodeGenerator()
-            python_source = generator.generate(core_program)
+            python_source = generator.generate(ir_program)
 
             # Step 6: Execute
             return self._exec_python(
@@ -170,21 +180,32 @@ class ProgramExecutor:
         Raises:
             Various exceptions on lex/parse/codegen errors.
         """
-        core_program = self.to_core_ir(source)
+        core_program = self.to_semantic_ir(source)
         generator = PythonCodeGenerator()
         return generator.generate(core_program)
 
     def to_core_ir(self, source):
-        """Compile source into the typed core representation."""
+        """Compile source into the legacy typed core wrapper."""
+        program, detected_language = self._parse_source(source)
+        return lower_to_core_ir(
+            program, detected_language, frontend_name="lexer_parser"
+        )
+
+    def to_semantic_ir(self, source):
+        """Compile source into the semantic IR compiler boundary."""
+        program, detected_language = self._parse_source(source)
+        return lower_to_semantic_ir(program, detected_language)
+
+    def _parse_source(self, source):
+        """Tokenize and parse *source*, caching the AST for later stages."""
         lexer = Lexer(source, language=self.language)
         tokens = lexer.tokenize()
         detected_language = lexer.language or self.language or "en"
 
         parser = Parser(tokens, source_language=detected_language)
         program = parser.parse()
-        return lower_to_core_ir(
-            program, detected_language, frontend_name="lexer_parser"
-        )
+        self._last_program_ast = program
+        return program, detected_language
 
     def _exec_python(self, python_source, language,
                      capture_output, globals_dict):

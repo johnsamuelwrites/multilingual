@@ -7,6 +7,8 @@
 """Orchestration/state helpers for the WAT generator."""
 
 from multilingualprogramming.core.ir import CoreIRProgram
+from multilingualprogramming.core.ir_nodes import IRProgram
+from multilingualprogramming.core.runtime_lowering import lower_ir_to_runtime_ast
 from multilingualprogramming.parser.ast_nodes import CallExpr, ClassDef, FunctionDef
 
 from multilingualprogramming.codegen.wat_generator_support import (
@@ -26,6 +28,8 @@ class WATGeneratorOrchestratorMixin:
 
         if isinstance(program, CoreIRProgram):
             program = program.ast
+        elif isinstance(program, IRProgram):
+            program = lower_ir_to_runtime_ast(program)
 
         funcs, classes, top = self._split_program_sections(program)
         self._collect_function_metadata(funcs)

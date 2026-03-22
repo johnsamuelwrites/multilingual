@@ -1,4 +1,4 @@
-"""
+﻿"""
 Pytest configuration and fixtures for WASM and fallback backend testing.
 
 Provides fixtures for:
@@ -9,8 +9,12 @@ Provides fixtures for:
 """
 
 import os
+import shutil
 import time
+import tempfile
 import importlib.util
+from pathlib import Path
+from uuid import uuid4
 import pytest  # pylint: disable=import-error
 from multilingualprogramming.runtime.backend_selector import BackendSelector, Backend
 from multilingualprogramming.runtime.python_fallbacks import (
@@ -28,6 +32,39 @@ from multilingualprogramming.runtime.python_fallbacks import (
 
 # Environment variable to force backend selection
 WASM_BACKEND_PREFERENCE = os.environ.get("WASM_BACKEND", "auto").lower()
+_WORKSPACE_TEMP = Path(__file__).resolve().parent.parent / ".tmp_test_runtime"
+_WORKSPACE_TEMP.mkdir(exist_ok=True)
+tempfile.tempdir = str(_WORKSPACE_TEMP)
+os.environ.setdefault(
+    "PYTEST_DEBUG_TEMPROOT",
+    str(_WORKSPACE_TEMP / f"pytest-root-{uuid4().hex}"),
+)
+Path(os.environ["PYTEST_DEBUG_TEMPROOT"]).mkdir(parents=True, exist_ok=True)
+
+
+class _WorkspaceTemporaryDirectory:
+    """Workspace-local TemporaryDirectory avoiding flaky Windows ACL cleanup."""
+
+    def __init__(self, suffix="", prefix="tmp", temp_dir=None):
+        base = Path(temp_dir) if temp_dir else _WORKSPACE_TEMP
+        base.mkdir(exist_ok=True)
+        name = f"{prefix}{uuid4().hex}{suffix}"
+        self.name = str(base / name)
+        Path(self.name).mkdir(parents=True, exist_ok=False)
+
+    def __enter__(self):
+        return self.name
+
+    def __exit__(self, exc_type, exc, tb):
+        self.cleanup()
+        return False
+
+    def cleanup(self):
+        """Best-effort cleanup for workspace-local temp directories."""
+        shutil.rmtree(self.name, ignore_errors=True)
+
+
+tempfile.TemporaryDirectory = _WorkspaceTemporaryDirectory
 
 
 def pytest_configure(config):
@@ -50,6 +87,13 @@ def pytest_configure(config):
 def backend_preference():
     """Get the backend preference from environment."""
     return WASM_BACKEND_PREFERENCE
+
+
+@pytest.fixture
+def tmp_path():
+    """Provide a workspace-local tmp_path that avoids flaky Windows temp roots."""
+    with _WorkspaceTemporaryDirectory(prefix="pytest-") as temp_name:
+        yield Path(temp_name)
 
 
 @pytest.fixture(scope="session")

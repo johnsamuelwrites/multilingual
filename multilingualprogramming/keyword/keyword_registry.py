@@ -1,4 +1,4 @@
-#
+﻿#
 # SPDX-FileCopyrightText: 2024 John Samuel <johnsamuelwrites@gmail.com>
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
@@ -27,6 +27,13 @@ _EXPERIMENTAL_CONCEPT_IDS = frozenset({
     "EMBED",
     "EXTRACT",
     "CLASSIFY",
+    "PLAN",
+    "TRANSCRIBE",
+    "RETRIEVE",
+    "ON_CHANGE",
+    "CANVAS",
+    "RENDER",
+    "BIND",
 })
 
 

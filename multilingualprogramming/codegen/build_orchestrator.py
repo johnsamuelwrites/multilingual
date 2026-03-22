@@ -12,7 +12,7 @@ import time
 import hashlib
 from dataclasses import dataclass
 from pathlib import Path
-from tempfile import NamedTemporaryFile
+from tempfile import mkstemp
 
 try:
     import wasmtime  # type: ignore
@@ -82,18 +82,41 @@ class BuildOrchestrator:  # pylint: disable=too-many-instance-attributes
     @staticmethod
     def _atomic_write_text(path: Path, content: str):
         path.parent.mkdir(parents=True, exist_ok=True)
-        with NamedTemporaryFile("w", encoding="utf-8", delete=False, dir=path.parent) as tmp:
-            tmp.write(content)
-            tmp_path = Path(tmp.name)
-        os.replace(tmp_path, path)
+        fd, tmp_name = mkstemp(dir=path.parent)
+        tmp_path = Path(tmp_name)
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as tmp:
+                tmp.write(content)
+            BuildOrchestrator._replace_file(tmp_path, path)
+        finally:
+            if tmp_path.exists():
+                tmp_path.unlink(missing_ok=True)
 
     @staticmethod
     def _atomic_write_bytes(path: Path, content: bytes):
         path.parent.mkdir(parents=True, exist_ok=True)
-        with NamedTemporaryFile("wb", delete=False, dir=path.parent) as tmp:
-            tmp.write(content)
-            tmp_path = Path(tmp.name)
-        os.replace(tmp_path, path)
+        fd, tmp_name = mkstemp(dir=path.parent)
+        tmp_path = Path(tmp_name)
+        try:
+            with os.fdopen(fd, "wb") as tmp:
+                tmp.write(content)
+            BuildOrchestrator._replace_file(tmp_path, path)
+        finally:
+            if tmp_path.exists():
+                tmp_path.unlink(missing_ok=True)
+
+    @staticmethod
+    def _replace_file(tmp_path: Path, path: Path, retries: int = 5, delay: float = 0.05):
+        """Replace *path* with *tmp_path*, retrying around Windows file locks."""
+        for attempt in range(retries):
+            try:
+                os.replace(tmp_path, path)
+                return
+            except PermissionError:
+                if attempt == retries - 1:
+                    raise
+                path.unlink(missing_ok=True)
+                time.sleep(delay)
 
     @staticmethod
     def _compile_wasm_bytes(wat_source: str) -> bytes | None:

@@ -10,7 +10,7 @@
 import pytest
 
 from multilingualprogramming.runtime.ai_types import (
-    EmbeddingVector, ModelRef, Reasoning, ToolCall,
+    EmbeddingVector, ModelRef, Plan, Reasoning, ToolCall,
 )
 from multilingualprogramming.runtime.ai_runtime import AIRuntime, MockProvider
 from multilingualprogramming.runtime.tool_runtime import (
@@ -173,6 +173,17 @@ class TestAIRuntime:
         AIRuntime.register(MockProvider().add_response("hello"))
         chunks = list(AIRuntime.stream(ModelRef("m"), "hi"))
         assert chunks[0].content == "hello"
+
+    def test_plan_returns_structured_plan(self):
+        AIRuntime.register(MockProvider().add_response("1. Gather context\n2. Write summary"))
+        plan = AIRuntime.plan(ModelRef("m"), "Summarise a report")
+        assert isinstance(plan, Plan)
+        assert len(plan.steps) == 2
+
+    def test_transcribe_returns_string(self):
+        AIRuntime.register(MockProvider())
+        text = AIRuntime.transcribe(ModelRef("m"), b"audio-bytes")
+        assert isinstance(text, str)
 
 
 # ===========================================================================

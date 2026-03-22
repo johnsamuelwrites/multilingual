@@ -16,6 +16,15 @@ import json
 from pathlib import Path
 
 from multilingualprogramming.keyword.keyword_registry import KeywordRegistry
+from multilingualprogramming.runtime.ai_runtime import AIRuntime
+from multilingualprogramming.runtime.ai_types import ModelRef
+from multilingualprogramming.runtime.multimodal_runtime import (
+    AudioValue,
+    DocumentValue,
+    ImageValue,
+    MultimodalPrompt,
+    VideoValue,
+)
 from multilingualprogramming.runtime.numeric_primitives import (
     Vec2,
     ComplexScalar,
@@ -23,6 +32,88 @@ from multilingualprogramming.runtime.numeric_primitives import (
     BoundedArray,
     MinDistanceAccumulator,
 )
+from multilingualprogramming.runtime.reactive import ReactiveEngine, Signal, stream_to_view
+from multilingualprogramming.runtime.retrieval_runtime import (
+    VectorIndex,
+    format_context,
+    nearest,
+)
+from multilingualprogramming.runtime.semantic_match import semantic_match
+from multilingualprogramming.runtime.tool_runtime import AgentLoop, get_registry, tool
+
+
+def _coerce_model(model):
+    """Normalize model inputs to ModelRef values."""
+    if isinstance(model, ModelRef):
+        return model
+    if model is None:
+        return ModelRef("")
+    return ModelRef(str(model))
+
+
+def _prompt(model, template):
+    return AIRuntime.prompt(_coerce_model(model), str(template)).content
+
+
+def _generate(model, template, target_type=None):
+    return AIRuntime.generate(_coerce_model(model), str(template), target_type=target_type)
+
+
+def _think(model, template):
+    return AIRuntime.think(_coerce_model(model), str(template))
+
+
+def _stream(model, template):
+    return AIRuntime.stream(_coerce_model(model), str(template))
+
+
+def _embed(model, value):
+    return AIRuntime.embed(_coerce_model(model), str(value))
+
+
+def _extract(model, source, target_type=None):
+    return AIRuntime.generate(_coerce_model(model), str(source), target_type=target_type)
+
+
+def _classify(model, subject, *categories, target_type=None):
+    prompt = f"Classify {subject!r} into one of: {', '.join(map(str, categories))}"
+    return AIRuntime.generate(_coerce_model(model), prompt, target_type=target_type)
+
+
+def _plan(model, goal):
+    return AIRuntime.plan(_coerce_model(model), str(goal))
+
+
+def _transcribe(model, source):
+    return AIRuntime.transcribe(_coerce_model(model), source)
+
+
+def _retrieve(index, query, *, top_k=5, min_score=0.0, model=None):
+    query_value = query
+    if not isinstance(query, list):
+        embed_model = _coerce_model(model or "text-embedding-3-small")
+        query_value = AIRuntime.embed(embed_model, str(query)).values
+    return nearest(query_value, index, top_k=top_k, min_score=min_score)
+
+
+def _result_propagate(value):
+    """Best-effort runtime lowering for Core 1.0 result propagation."""
+    if isinstance(value, tuple) and len(value) == 2:
+        tag, payload = value
+        if tag == "ok":
+            return payload
+        if tag == "err":
+            raise RuntimeError(str(payload))
+    if isinstance(value, dict):
+        if value.get("ok") is True:
+            return value.get("value")
+        if value.get("ok") is False and "error" in value:
+            raise RuntimeError(str(value["error"]))
+    if hasattr(value, "ok") and hasattr(value, "value"):
+        if value.ok:
+            return value.value
+        raise RuntimeError(getattr(value, "parse_error", "result propagation failed"))
+    return value
 
 
 class RuntimeBuiltins:
@@ -207,6 +298,34 @@ class RuntimeBuiltins:
         "FastRNG": FastRNG,
         "BoundedArray": BoundedArray,
         "MinDistanceAccumulator": MinDistanceAccumulator,
+        "AIRuntime": AIRuntime,
+        "ModelRef": ModelRef,
+        "prompt": _prompt,
+        "generate": _generate,
+        "think": _think,
+        "stream": _stream,
+        "embed": _embed,
+        "extract": _extract,
+        "classify": _classify,
+        "plan": _plan,
+        "transcribe": _transcribe,
+        "retrieve": _retrieve,
+        "__ml_result_propagate": _result_propagate,
+        "semantic_match": semantic_match,
+        "VectorIndex": VectorIndex,
+        "nearest": nearest,
+        "format_context": format_context,
+        "ReactiveEngine": ReactiveEngine,
+        "Signal": Signal,
+        "stream_to_view": stream_to_view,
+        "ImageValue": ImageValue,
+        "AudioValue": AudioValue,
+        "VideoValue": VideoValue,
+        "DocumentValue": DocumentValue,
+        "MultimodalPrompt": MultimodalPrompt,
+        "AgentLoop": AgentLoop,
+        "tool": tool,
+        "get_tool_registry": get_registry,
     }
 
     # Non-callable special values available in exec() namespace

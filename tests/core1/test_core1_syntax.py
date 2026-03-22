@@ -21,12 +21,12 @@ from multilingualprogramming.parser.ast_nodes import (
     FunctionDef,
     ObserveDeclaration,
     RecordDecl,
-    UnaryOp,
     VariableDeclaration,
 )
 from multilingualprogramming.core.semantic_lowering import lower_to_semantic_ir
 from multilingualprogramming.core.ir_nodes import (
     IRBinding,
+    IRResultPropagation,
     IREnumDecl,
     IRFunction,
     IRLiteral,
@@ -156,22 +156,17 @@ class TestPipeOperator:
 
 class TestResultPropagation:
     def test_question_mark_produces_unary_op(self):
-        program = parse("fn f():\n    let x = parse(data)?\n    return x\n")
-        fn = program.body[0]
+        ir = lower("fn f():\n    let x = parse(data)?\n    return x\n")
+        fn = ir.body[0]
         body_stmt = fn.body[0]
-        # The ? is on the value of the let declaration
-        assert isinstance(body_stmt, VariableDeclaration)
-        value = body_stmt.value
-        assert isinstance(value, UnaryOp)
-        assert value.op == "?"
+        assert isinstance(body_stmt, IRBinding)
+        assert isinstance(body_stmt.value, IRResultPropagation)
 
     def test_chained_propagation(self):
-        program = parse("fn f():\n    let x = a()?.b()?\n    return x\n")
-        fn = program.body[0]
+        ir = lower("fn f():\n    let x = a()?.b()?\n    return x\n")
+        fn = ir.body[0]
         value = fn.body[0].value
-        # Outermost ? wraps the chained call
-        assert isinstance(value, UnaryOp)
-        assert value.op == "?"
+        assert isinstance(value, IRResultPropagation)
 
 
 # ===========================================================================
