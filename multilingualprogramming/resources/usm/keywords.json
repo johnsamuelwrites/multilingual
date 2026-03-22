@@ -659,22 +659,64 @@
       },
       "NOT_IN": {
         "en": "not in",
-        "fr": ["pas dans", "pas_dans", "non dans", "not in"],
-        "es": ["no en", "no_en"],
-        "de": ["nicht in", "nicht_in"],
-        "hi": ["नहीं में", "नहीं_में"],
-        "ar": ["ليس في", "ليس_في"],
-        "bn": ["না মধ্যে", "না_মধ্যে"],
-        "ta": ["இல் இல்லை", "இல்_இல்லை"],
+        "fr": [
+          "pas dans",
+          "pas_dans",
+          "non dans",
+          "not in"
+        ],
+        "es": [
+          "no en",
+          "no_en"
+        ],
+        "de": [
+          "nicht in",
+          "nicht_in"
+        ],
+        "hi": [
+          "नहीं में",
+          "नहीं_में"
+        ],
+        "ar": [
+          "ليس في",
+          "ليس_في"
+        ],
+        "bn": [
+          "না মধ্যে",
+          "না_মধ্যে"
+        ],
+        "ta": [
+          "இல் இல்லை",
+          "இல்_இல்லை"
+        ],
         "zh": "不在",
         "ja": "中にない",
-        "it": ["non in", "non_in"],
-        "pt": ["não em", "nao em"],
-        "pl": ["nie w", "nie_w"],
-        "nl": ["niet in", "niet_in"],
-        "sv": ["inte i"],
-        "da": ["ikke i"],
-        "fi": ["ei sisalla", "ei_sisalla"]
+        "it": [
+          "non in",
+          "non_in"
+        ],
+        "pt": [
+          "não em",
+          "nao em"
+        ],
+        "pl": [
+          "nie w",
+          "nie_w"
+        ],
+        "nl": [
+          "niet in",
+          "niet_in"
+        ],
+        "sv": [
+          "inte i"
+        ],
+        "da": [
+          "ikke i"
+        ],
+        "fi": [
+          "ei sisalla",
+          "ei_sisalla"
+        ]
       },
       "TRUE": {
         "en": "True",
@@ -959,11 +1001,11 @@
         "da": "slet",
         "fi": "poista"
       },
-        "OBSERVE": {
-          "en": "observe",
-          "fr": "observer",
-          "es": "observar",
-          "de": "beobachten",
+      "OBSERVE": {
+        "en": "observe",
+        "fr": "observer",
+        "es": "observar",
+        "de": "beobachten",
         "hi": "देखो",
         "ar": "راقب",
         "bn": "পর্যবেক্ষণ",
@@ -973,88 +1015,88 @@
         "it": "osserva",
         "pt": "observar",
         "pl": "obserwuj",
-          "nl": "observeer",
-          "sv": "observera",
-          "da": "observer",
-          "fi": "havainnoi"
-        },
-        "ON_CHANGE": {
-          "en": "on",
-          "fr": "onchange",
-          "es": "onchange",
-          "de": "onchange",
-          "hi": "onchange",
-          "ar": "onchange",
-          "bn": "onchange",
-          "ta": "onchange",
-          "zh": "onchange",
-          "ja": "onchange",
-          "it": "onchange",
-          "pt": "onchange",
-          "pl": "onchange",
-          "nl": "onchange",
-          "sv": "onchange",
-          "da": "onchange",
-          "fi": "onchange"
-        },
-        "CANVAS": {
-          "en": "canvas",
-          "fr": "canvas",
-          "es": "canvas",
-          "de": "canvas",
-          "hi": "canvas",
-          "ar": "canvas",
-          "bn": "canvas",
-          "ta": "canvas",
-          "zh": "canvas",
-          "ja": "canvas",
-          "it": "canvas",
-          "pt": "canvas",
-          "pl": "canvas",
-          "nl": "canvas",
-          "sv": "canvas",
-          "da": "canvas",
-          "fi": "canvas"
-        },
-        "RENDER": {
-          "en": "render",
-          "fr": "render",
-          "es": "render",
-          "de": "render",
-          "hi": "render",
-          "ar": "render",
-          "bn": "render",
-          "ta": "render",
-          "zh": "render",
-          "ja": "render",
-          "it": "render",
-          "pt": "render",
-          "pl": "render",
-          "nl": "render",
-          "sv": "render",
-          "da": "render",
-          "fi": "render"
-        },
-        "BIND": {
-          "en": "bind",
-          "fr": "bind",
-          "es": "bind",
-          "de": "bind",
-          "hi": "bind",
-          "ar": "bind",
-          "bn": "bind",
-          "ta": "bind",
-          "zh": "bind",
-          "ja": "bind",
-          "it": "bind",
-          "pt": "bind",
-          "pl": "bind",
-          "nl": "bind",
-          "sv": "bind",
-          "da": "bind",
-          "fi": "bind"
-        }
+        "nl": "observeer",
+        "sv": "observera",
+        "da": "observer",
+        "fi": "havainnoi"
       },
+      "ON_CHANGE": {
+        "en": "on",
+        "fr": "onchange",
+        "es": "onchange",
+        "de": "onchange",
+        "hi": "onchange",
+        "ar": "onchange",
+        "bn": "onchange",
+        "ta": "onchange",
+        "zh": "onchange",
+        "ja": "onchange",
+        "it": "onchange",
+        "pt": "onchange",
+        "pl": "onchange",
+        "nl": "onchange",
+        "sv": "onchange",
+        "da": "onchange",
+        "fi": "onchange"
+      },
+      "CANVAS": {
+        "en": "canvas",
+        "fr": "canvas",
+        "es": "canvas",
+        "de": "canvas",
+        "hi": "canvas",
+        "ar": "canvas",
+        "bn": "canvas",
+        "ta": "canvas",
+        "zh": "canvas",
+        "ja": "canvas",
+        "it": "canvas",
+        "pt": "canvas",
+        "pl": "canvas",
+        "nl": "canvas",
+        "sv": "canvas",
+        "da": "canvas",
+        "fi": "canvas"
+      },
+      "RENDER": {
+        "en": "render",
+        "fr": "render",
+        "es": "render",
+        "de": "render",
+        "hi": "render",
+        "ar": "render",
+        "bn": "render",
+        "ta": "render",
+        "zh": "render",
+        "ja": "render",
+        "it": "render",
+        "pt": "render",
+        "pl": "render",
+        "nl": "render",
+        "sv": "render",
+        "da": "render",
+        "fi": "render"
+      },
+      "BIND": {
+        "en": "bind",
+        "fr": "bind",
+        "es": "bind",
+        "de": "bind",
+        "hi": "bind",
+        "ar": "bind",
+        "bn": "bind",
+        "ta": "bind",
+        "zh": "bind",
+        "ja": "bind",
+        "it": "bind",
+        "pt": "bind",
+        "pl": "bind",
+        "nl": "bind",
+        "sv": "bind",
+        "da": "bind",
+        "fi": "bind"
+      }
+    },
     "types": {
       "TYPE_INT": {
         "en": "int",
@@ -1352,10 +1394,10 @@
         "da": "udtrek",
         "fi": "poimia"
       },
-        "CLASSIFY": {
-          "en": "classify",
-          "fr": "classer",
-          "es": "clasificar",
+      "CLASSIFY": {
+        "en": "classify",
+        "fr": "classer",
+        "es": "clasificar",
         "de": "klassifizieren",
         "hi": "वर्गीकृत",
         "ar": "صنِّف",
@@ -1366,68 +1408,108 @@
         "it": "classifica",
         "pt": "classificar",
         "pl": "klasyfikuj",
-          "nl": "classificeer",
-          "sv": "klassificera",
-          "da": "klassificer",
-          "fi": "luokittele"
-        },
-        "PLAN": {
-          "en": "plan",
-          "fr": "plan",
-          "es": "plan",
-          "de": "plan",
-          "hi": "plan",
-          "ar": "plan",
-          "bn": "plan",
-          "ta": "plan",
-          "zh": "plan",
-          "ja": "plan",
-          "it": "plan",
-          "pt": "plan",
-          "pl": "plan",
-          "nl": "plan",
-          "sv": "plan",
-          "da": "plan",
-          "fi": "plan"
-        },
-        "TRANSCRIBE": {
-          "en": "transcribe",
-          "fr": "transcribe",
-          "es": "transcribe",
-          "de": "transcribe",
-          "hi": "transcribe",
-          "ar": "transcribe",
-          "bn": "transcribe",
-          "ta": "transcribe",
-          "zh": "transcribe",
-          "ja": "transcribe",
-          "it": "transcribe",
-          "pt": "transcribe",
-          "pl": "transcribe",
-          "nl": "transcribe",
-          "sv": "transcribe",
-          "da": "transcribe",
-          "fi": "transcribe"
-        },
-        "RETRIEVE": {
-          "en": "retrieve",
-          "fr": "retrieve",
-          "es": "retrieve",
-          "de": "retrieve",
-          "hi": "retrieve",
-          "ar": "retrieve",
-          "bn": "retrieve",
-          "ta": "retrieve",
-          "zh": "retrieve",
-          "ja": "retrieve",
-          "it": "retrieve",
-          "pt": "retrieve",
-          "pl": "retrieve",
-          "nl": "retrieve",
-          "sv": "retrieve",
-          "da": "retrieve",
-          "fi": "retrieve"
-        }
+        "nl": "classificeer",
+        "sv": "klassificera",
+        "da": "klassificer",
+        "fi": "luokittele"
+      },
+      "PLAN": {
+        "en": "plan",
+        "fr": "plan",
+        "es": "plan",
+        "de": "plan",
+        "hi": "plan",
+        "ar": "plan",
+        "bn": "plan",
+        "ta": "plan",
+        "zh": "plan",
+        "ja": "plan",
+        "it": "plan",
+        "pt": "plan",
+        "pl": "plan",
+        "nl": "plan",
+        "sv": "plan",
+        "da": "plan",
+        "fi": "plan"
+      },
+      "TRANSCRIBE": {
+        "en": "transcribe",
+        "fr": "transcribe",
+        "es": "transcribe",
+        "de": "transcribe",
+        "hi": "transcribe",
+        "ar": "transcribe",
+        "bn": "transcribe",
+        "ta": "transcribe",
+        "zh": "transcribe",
+        "ja": "transcribe",
+        "it": "transcribe",
+        "pt": "transcribe",
+        "pl": "transcribe",
+        "nl": "transcribe",
+        "sv": "transcribe",
+        "da": "transcribe",
+        "fi": "transcribe"
+      },
+      "RETRIEVE": {
+        "en": "retrieve",
+        "fr": "retrieve",
+        "es": "retrieve",
+        "de": "retrieve",
+        "hi": "retrieve",
+        "ar": "retrieve",
+        "bn": "retrieve",
+        "ta": "retrieve",
+        "zh": "retrieve",
+        "ja": "retrieve",
+        "it": "retrieve",
+        "pt": "retrieve",
+        "pl": "retrieve",
+        "nl": "retrieve",
+        "sv": "retrieve",
+        "da": "retrieve",
+        "fi": "retrieve"
       }
+    },
+    "concurrency": {
+      "PAR": {
+        "en": "par",
+        "fr": "par",
+        "es": "par",
+        "de": "par",
+        "hi": "par",
+        "ar": "par",
+        "bn": "par",
+        "ta": "par",
+        "zh": "par",
+        "ja": "par",
+        "it": "par",
+        "pt": "par",
+        "pl": "par",
+        "nl": "par",
+        "sv": "par",
+        "da": "par",
+        "fi": "par"
+      },
+      "SPAWN": {
+        "en": "spawn",
+        "fr": "spawn",
+        "es": "spawn",
+        "de": "spawn",
+        "hi": "spawn",
+        "ar": "spawn",
+        "bn": "spawn",
+        "ta": "spawn",
+        "zh": "spawn",
+        "ja": "spawn",
+        "it": "spawn",
+        "pt": "spawn",
+        "pl": "spawn",
+        "nl": "spawn",
+        "sv": "spawn",
+        "da": "spawn",
+        "fi": "spawn"
+      }
+    }
   }
 }

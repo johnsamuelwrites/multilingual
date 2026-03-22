@@ -92,9 +92,11 @@ from multilingualprogramming.core.ir_nodes import (
     IRParameter,
     IRPassStatement,
     IRPipeExpr,
+    IRParExpr,
     IRPlanExpr,
     IRProgram,
     IRPromptExpr,
+    IRSpawnExpr,
     IRRaiseStatement,
     IRRenderExpr,
     IRResultPropagation,
@@ -152,6 +154,9 @@ _AI_CALL_NAMES = frozenset({
 
 _AGENT_DECORATOR = "agent"
 _TOOL_DECORATOR = "tool"
+
+# Concurrency keywords detected transitionally from call expressions
+_CONCURRENCY_CALL_NAMES = frozenset({"par", "spawn"})
 
 
 # ---------------------------------------------------------------------------
@@ -384,6 +389,8 @@ class _LoweringContext:
         func_name = _call_name(node.func)
         if func_name in _AI_CALL_NAMES:
             return self._lower_ai_call(func_name, node)
+        if func_name in _CONCURRENCY_CALL_NAMES:
+            return self._lower_concurrency_call(func_name, node)
         return IRCallExpr(
             func=self.lower(node.func),
             args=self.lower_list(node.args),
@@ -471,6 +478,23 @@ class _LoweringContext:
                 line=ln,
                 column=col,
             )
+        return IRExpression(line=ln, column=col)
+
+    def _lower_concurrency_call(self, name: str, node: ast.CallExpr) -> object:
+        """Transitionally lift par(...) and spawn(...) to concurrency IR nodes."""
+        args = node.args or []
+        ln, col = node.line, node.column
+        if name == "par":
+            # par(expr1, expr2, ...) or par([expr1, expr2, ...])
+            # Flatten a single list-literal argument into branches
+            if len(args) == 1 and isinstance(args[0], ast.ListLiteral):
+                branches = self.lower_list(args[0].elements)
+            else:
+                branches = self.lower_list(args)
+            return IRParExpr(branches=branches, line=ln, column=col)
+        if name == "spawn":
+            value = self.lower(args[0]) if args else None
+            return IRSpawnExpr(value=value, line=ln, column=col)
         return IRExpression(line=ln, column=col)
 
     def _lower_AttributeAccess(self, node: ast.AttributeAccess) -> IRAttributeAccess:

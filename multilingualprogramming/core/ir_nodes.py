@@ -922,6 +922,39 @@ class IRViewBinding(IRNode):
 
 
 # ---------------------------------------------------------------------------
+# Concurrency
+# ---------------------------------------------------------------------------
+
+@dataclass
+class IRParExpr(IRNode):
+    """Parallel fan-out expression: par [ expr1, expr2, ... ]
+
+    Evaluates all branches concurrently and returns a tuple of results.
+    All branches must complete before execution continues (structured
+    concurrency — no dangling tasks).
+
+    Lowers to asyncio.gather() on the Python backend.
+    """
+
+    branches: list[IRNode] = field(default_factory=list)
+    inferred_type: CoreType | None = None   # TupleType of branch result types
+
+
+@dataclass
+class IRSpawnExpr(IRNode):
+    """Spawn a concurrent task: spawn expr
+
+    Returns a future<T> immediately.  The task runs independently.
+    Retrieve the result with ``await``.
+
+    Lowers to asyncio.create_task() on the Python backend.
+    """
+
+    value: IRNode | None = None
+    inferred_type: CoreType | None = None   # GenericType("future", ...)
+
+
+# ---------------------------------------------------------------------------
 # Backward-compatible placeholder (kept for gradual migration)
 # ---------------------------------------------------------------------------
 

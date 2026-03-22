@@ -23,14 +23,29 @@ from __future__ import annotations
 from multilingualprogramming.core.ir_nodes import (
     IRAgentDecl,
     IRBinding,
+    IRCanvasBlock,
+    IRClassifyExpr,
     IREnumDecl,
+    IREmbedExpr,
+    IRExtractExpr,
     IRFunction,
+    IRGenerateExpr,
     IRMatchStatement,
     IRNode,
     IRObserveBinding,
+    IROnChange,
+    IRPlanExpr,
     IRProgram,
+    IRPromptExpr,
+    IRRenderExpr,
+    IRRetrieveExpr,
+    IRSemanticMatchOp,
+    IRStreamExpr,
+    IRThinkExpr,
     IRToolDecl,
+    IRTranscribeExpr,
     IRTypeDecl,
+    IRViewBinding,
 )
 
 
@@ -50,6 +65,7 @@ def validate_all(program: IRProgram) -> list[str]:
         _check_bindings,
         _check_declarations,
         _check_effects,
+        _check_effect_completeness,
         _check_match_statements,
     ):
         fn(program, diagnostics)
@@ -88,6 +104,16 @@ def validate_effects(program: IRProgram) -> None:
 # ---------------------------------------------------------------------------
 
 _KNOWN_EFFECTS = frozenset({"ai", "ui", "net", "fs", "time", "process"})
+
+# IR node types that require each capability effect
+_AI_NODE_TYPES = (
+    IRPromptExpr, IRGenerateExpr, IRThinkExpr, IRStreamExpr, IREmbedExpr,
+    IRExtractExpr, IRClassifyExpr, IRPlanExpr, IRTranscribeExpr, IRRetrieveExpr,
+    IRSemanticMatchOp,
+)
+_UI_NODE_TYPES = (
+    IRCanvasBlock, IROnChange, IRRenderExpr, IRViewBinding,
+)
 
 
 def _check_program_root(program: IRProgram, diags: list[str]) -> None:
@@ -168,6 +194,42 @@ def _check_effects(program: IRProgram, diags: list[str]) -> None:
                     )
 
 
+def _check_effect_completeness(program: IRProgram, diags: list[str]) -> None:
+    """Check that every function/agent/tool declares the effects it actually uses.
+
+    Walks each callable body and reports any capability that is used but not
+    declared.  Also checks top-level statements against program-level effects.
+    """
+    # Collect callables (function/agent/tool) plus the program root itself
+    callables: list[tuple[str, object, list[IRNode]]] = []
+    for node in _walk(program):
+        if isinstance(node, (IRFunction, IRAgentDecl, IRToolDecl)):
+            callables.append((
+                f"{type(node).__name__} {node.name!r}",
+                node.effects,
+                node.body,
+            ))
+
+    # Also check top-level statements against program-level effects
+    callables.append(("module level", program.effects, program.body))
+
+    for label, effects, body in callables:
+        declared = {e.name for e in effects.effects}
+        needs_ai = any(isinstance(n, _AI_NODE_TYPES) for n in _walk_list(body))
+        needs_ui = any(isinstance(n, _UI_NODE_TYPES) for n in _walk_list(body))
+
+        if needs_ai and "ai" not in declared:
+            diags.append(
+                f"{label} uses AI operations (prompt/generate/embed/…) "
+                f"but does not declare 'uses ai'"
+            )
+        if needs_ui and "ui" not in declared:
+            diags.append(
+                f"{label} uses UI/reactive operations (canvas/on-change/render/…) "
+                f"but does not declare 'uses ui'"
+            )
+
+
 def _check_match_statements(program: IRProgram, diags: list[str]) -> None:
     for node in _walk(program):
         if isinstance(node, IRMatchStatement):
@@ -200,3 +262,27 @@ def _walk(node: IRNode):
             for item in field_value:
                 if isinstance(item, IRNode):
                     yield from _walk(item)
+
+
+def _walk_list(nodes: list[IRNode]):
+    """Yield all IR nodes reachable from a list of root nodes, depth-first.
+
+    Does not descend into nested function/agent/tool bodies — those are
+    checked separately as their own callables in _check_effect_completeness.
+    """
+    _callable_types = (IRFunction, IRAgentDecl, IRToolDecl)
+    for node in nodes:
+        if not isinstance(node, IRNode):
+            continue
+        yield node
+        # Stop recursion at callable boundaries: a nested fn's body is covered
+        # by its own entry in the callables list.
+        if isinstance(node, _callable_types):
+            continue
+        for field_value in vars(node).values():
+            if isinstance(field_value, IRNode):
+                yield from _walk_list([field_value])
+            elif isinstance(field_value, list):
+                yield from _walk_list([i for i in field_value if isinstance(i, IRNode)])
+            elif isinstance(field_value, tuple):
+                yield from _walk_list([i for i in field_value if isinstance(i, IRNode)])

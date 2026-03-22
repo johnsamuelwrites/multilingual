@@ -68,6 +68,9 @@ class PythonCodeGenerator:
         self.indent_str = indent_str
         self._depth = 0
         self._lines = []
+        self._reactive_engine_emitted = False
+        self._asyncio_emitted = False
+        self._handler_counter = 0
 
     # ------------------------------------------------------------------
     # Public API
@@ -384,21 +387,82 @@ class PythonCodeGenerator:
         dots = "." * getattr(node, "level", 0)
         self._emit(f"from {dots}{node.module} import {names}")
 
+    # ------------------------------------------------------------------
+    # Reactive constructs
+    # ------------------------------------------------------------------
+
+    def _ensure_asyncio(self):
+        """Inject ``import asyncio`` at the top of the output the first time a
+        concurrency construct (par / spawn) is emitted."""
+        if self._asyncio_emitted:
+            return
+        self._asyncio_emitted = True
+        self._lines.insert(0, "import asyncio")
+
+    def _ensure_reactive_engine(self):
+        """Emit the ReactiveEngine import and singleton the first time it is
+        needed, so that purely non-reactive programs pay no overhead."""
+        if self._reactive_engine_emitted:
+            return
+        self._reactive_engine_emitted = True
+        self._lines.insert(
+            0,
+            "from multilingualprogramming.runtime.reactive import "
+            "ReactiveEngine as _MLReactiveEngine, CanvasNode as _MLCanvasNode, "
+            "stream_to_view as _ml_stream_to_view",
+        )
+        self._lines.insert(1, "_ml_reactive_engine = _MLReactiveEngine()")
+
     def visit_ObserveDeclaration(self, node):
+        self._ensure_reactive_engine()
         val = self._expr(node.value)
-        self._emit(f"{node.name} = {val}")
+        self._emit(
+            f"{node.name} = _ml_reactive_engine.declare({node.name!r}, {val})"
+        )
 
-    def visit_OnChangeStatement(self, _node):
-        self._emit("pass  # reactive on-change handler lowered separately")
+    def visit_OnChangeStatement(self, node):
+        from multilingualprogramming.parser.ast_nodes import AttributeAccess, Identifier
+        self._ensure_reactive_engine()
+        sig = node.signal
+        if isinstance(sig, AttributeAccess) and sig.attr == "change":
+            raw_name = sig.obj.name if isinstance(sig.obj, Identifier) else self._expr(sig.obj)
+        elif isinstance(sig, Identifier):
+            raw_name = sig.name
+        else:
+            raw_name = self._expr(sig) if sig is not None else ""
+        self._handler_counter += 1
+        handler_name = f"_ml_handler_{self._handler_counter}"
+        param = raw_name if raw_name.isidentifier() else f"_val_{self._handler_counter}"
+        self._emit(f"@_ml_reactive_engine.on_change({raw_name!r})")
+        self._emit(f"def {handler_name}({param}):")
+        self._emit_body(node.body)
 
-    def visit_CanvasBlock(self, _node):
-        self._emit("pass  # canvas block lowered separately")
+    def visit_CanvasBlock(self, node):
+        self._ensure_reactive_engine()
+        canvas_var = f"_ml_canvas_{node.name}" if node.name else f"_ml_canvas_{id(node)}"
+        self._emit(
+            f"{canvas_var} = _MLCanvasNode({node.name!r})"
+        )
+        for child in node.body:
+            child.accept(self)
 
-    def visit_RenderStatement(self, _node):
-        self._emit("pass  # render statement lowered separately")
+    def visit_RenderStatement(self, node):
+        self._ensure_reactive_engine()
+        target = self._expr(node.target)
+        value = self._expr(node.value)
+        # In the Python backend, rendering means pushing a value into the
+        # target signal (or printing if the target is not a Signal).
+        self._emit(
+            f"_ml_reactive_engine.declare({target}).set({value})"
+            if target.startswith(("'", '"'))
+            else f"{target}.set({value}) if hasattr({target}, 'set') else print({value})"
+        )
 
-    def visit_ViewBindingStatement(self, _node):
-        self._emit("pass  # view binding lowered separately")
+    def visit_ViewBindingStatement(self, node):
+        self._ensure_reactive_engine()
+        signal = self._expr(node.signal)
+        target = self._expr(node.target)
+        self._emit(f"_ml_stream_to_view({signal}, {target})")
 
     def visit_RecordDecl(self, node):
         self._emit(f"class {node.name}(dict):")
@@ -430,7 +494,11 @@ class PythonCodeGenerator:
             self._emit(f"{target} = {value}")
 
     def _emit_IRObserveBinding(self, node):
-        self._emit_IRBinding(node)
+        self._ensure_reactive_engine()
+        val = self._expr_ir(node.value)
+        self._emit(
+            f"{node.name} = _ml_reactive_engine.declare({node.name!r}, {val})"
+        )
 
     def _emit_IRAssignment(self, node):
         chain_targets = getattr(node, "chain_targets", None)
@@ -645,17 +713,73 @@ class PythonCodeGenerator:
     def _emit_IRTypeDecl(self, node):
         self._emit(f"{node.name} = {_format_ir_type(node.declared_type)}")
 
-    def _emit_IROnChange(self, _node):
-        self._emit("pass  # reactive on-change handler lowered separately")
+    def _emit_IROnChange(self, node):
+        self._ensure_reactive_engine()
+        # `on count.change:` lowers to IROnChange(signal=IRAttributeAccess(count, change))
+        # We need the base signal name as a string for ReactiveEngine.on_change().
+        sig = node.signal
+        if isinstance(sig, ir.IRAttributeAccess) and sig.attr == "change":
+            raw_name = sig.obj.name if isinstance(sig.obj, ir.IRIdentifier) else self._expr_ir(sig.obj)
+        elif isinstance(sig, ir.IRIdentifier):
+            raw_name = sig.name
+        else:
+            raw_name = self._expr_ir(sig) if sig is not None else ""
+        self._handler_counter += 1
+        handler_name = f"_ml_handler_{self._handler_counter}"
+        param = raw_name if raw_name.isidentifier() else f"_val_{self._handler_counter}"
+        self._emit(f"@_ml_reactive_engine.on_change({raw_name!r})")
+        self._emit(f"def {handler_name}({param}):")
+        self._emit_ir_body(node.body)
 
-    def _emit_IRCanvasBlock(self, _node):
-        self._emit("pass  # canvas block lowered separately")
+    def _emit_IRCanvasBlock(self, node):
+        self._ensure_reactive_engine()
+        canvas_var = (
+            f"_ml_canvas_{node.name}" if node.name else f"_ml_canvas_{id(node)}"
+        )
+        self._emit(f"{canvas_var} = _MLCanvasNode({node.name!r})")
+        for child in node.children:
+            self._emit_ir_stmt(child)
 
-    def _emit_IRRenderExpr(self, _node):
-        self._emit("pass  # render statement lowered separately")
+    def _emit_IRRenderExpr(self, node):
+        self._ensure_reactive_engine()
+        target = self._expr_ir(node.target)
+        value = self._expr_ir(node.value)
+        if target.startswith(("'", '"')):
+            self._emit(f"_ml_reactive_engine.declare({target}).set({value})")
+        else:
+            self._emit(
+                f"{target}.set({value}) if hasattr({target}, 'set') else print({value})"
+            )
 
-    def _emit_IRViewBinding(self, _node):
-        self._emit("pass  # view binding lowered separately")
+    def _emit_IRViewBinding(self, node):
+        self._ensure_reactive_engine()
+        signal = self._expr_ir(node.signal)
+        target = self._expr_ir(node.target)
+        self._emit(f"_ml_stream_to_view({signal}, {target})")
+
+    # ------------------------------------------------------------------
+    # Structured concurrency constructs
+    # ------------------------------------------------------------------
+
+    def _emit_IRParExpr(self, node):
+        """par [ b1, b2, ... ] → await asyncio.gather(b1, b2, ...)
+
+        Emitted as a statement (expression result discarded).  Use
+        _render_IRParExpr when the result is needed as a value.
+        """
+        self._ensure_asyncio()
+        branches = ", ".join(self._expr_ir(b) for b in node.branches)
+        self._emit(f"await asyncio.gather({branches})")
+
+    def _emit_IRSpawnExpr(self, node):
+        """spawn expr → asyncio.create_task(expr)
+
+        Emitted as a statement (fire-and-forget).  Use _render_IRSpawnExpr
+        when the returned task handle is bound to a name.
+        """
+        self._ensure_asyncio()
+        value = self._expr_ir(node.value) if node.value is not None else "None"
+        self._emit(f"asyncio.create_task({value})")
 
     def _ir_match_case_condition(self, case, match_var, is_semantic):
         """Return (condition, prelude_lines) for a semantic IR match case."""
@@ -1452,3 +1576,13 @@ class _IRExpressionGenerator:
         if node.model is not None:
             args.append(f"model={self.render(node.model)}")
         return f"semantic_match({', '.join(args)})"
+
+    def _render_IRParExpr(self, node):
+        """par [ b1, b2 ] as an expression → await asyncio.gather(b1, b2)"""
+        branches = ", ".join(self.render(b) for b in node.branches)
+        return f"await asyncio.gather({branches})"
+
+    def _render_IRSpawnExpr(self, node):
+        """spawn expr as an expression → asyncio.create_task(expr)"""
+        value = self.render(node.value) if node.value is not None else "None"
+        return f"asyncio.create_task({value})"
