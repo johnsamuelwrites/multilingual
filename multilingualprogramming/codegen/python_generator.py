@@ -11,6 +11,7 @@ from multilingualprogramming.core.ir_nodes import IRProgram
 from multilingualprogramming.core.types import GenericType
 from multilingualprogramming.exceptions import CodeGenerationError
 from multilingualprogramming.numeral.mp_numeral import MPNumeral
+from multilingualprogramming.parser.ast_nodes import AttributeAccess, Identifier
 
 
 def _emit_raw_literal(prefix: str, value: str) -> str:
@@ -421,7 +422,6 @@ class PythonCodeGenerator:
         )
 
     def visit_OnChangeStatement(self, node):
-        from multilingualprogramming.parser.ast_nodes import AttributeAccess, Identifier
         self._ensure_reactive_engine()
         sig = node.signal
         if isinstance(sig, AttributeAccess) and sig.attr == "change":
@@ -719,7 +719,11 @@ class PythonCodeGenerator:
         # We need the base signal name as a string for ReactiveEngine.on_change().
         sig = node.signal
         if isinstance(sig, ir.IRAttributeAccess) and sig.attr == "change":
-            raw_name = sig.obj.name if isinstance(sig.obj, ir.IRIdentifier) else self._expr_ir(sig.obj)
+            raw_name = (
+                sig.obj.name
+                if isinstance(sig.obj, ir.IRIdentifier)
+                else self._expr_ir(sig.obj)
+            )
         elif isinstance(sig, ir.IRIdentifier):
             raw_name = sig.name
         else:

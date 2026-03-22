@@ -40,7 +40,6 @@ from multilingualprogramming.runtime.ai_runtime import AIProvider
 from multilingualprogramming.runtime.ai_types import (
     EmbeddingVector,
     ModelRef,
-    Plan,
     PromptResult,
     Reasoning,
     StreamChunk,
@@ -82,7 +81,7 @@ class AnthropicProvider(AIProvider):
         max_tokens: int = _DEFAULT_MAX_TOKENS,
     ) -> None:
         try:
-            import anthropic as _anthropic  # noqa: PLC0415
+            import anthropic as _anthropic  # pylint: disable=import-outside-toplevel
         except ImportError as exc:
             raise ImportError(
                 "The 'anthropic' package is required to use AnthropicProvider.\n"
@@ -229,7 +228,8 @@ class AnthropicProvider(AIProvider):
 
         json_prompt = (
             f"{template}\n\n"
-            f"Respond with valid JSON only matching the schema for {getattr(target_type, '__name__', str(target_type))}. "
+            "Respond with valid JSON only matching the schema for "
+            f"{getattr(target_type, '__name__', str(target_type))}. "
             "Do not include any text outside the JSON object."
         )
         result = self.prompt(model, json_prompt, **kwargs)

@@ -155,8 +155,49 @@ _AI_CALL_NAMES = frozenset({
 _AGENT_DECORATOR = "agent"
 _TOOL_DECORATOR = "tool"
 
-# Concurrency keywords detected transitionally from call expressions
-_CONCURRENCY_CALL_NAMES = frozenset({"par", "spawn"})
+# Concurrency keywords detected transitionally from call expressions.
+# Maps every language surface form to its canonical name ("par" / "spawn").
+_CONCURRENCY_CANONICAL: dict[str, str] = {
+    # PAR — parallel fan-out (en + all language translations)
+    "par":           "par",
+    "parallel":      "par",   # en alias
+    "parallèle":     "par",   # fr
+    "parallele":     "par",   # fr (no accent)
+    "paralelo":      "par",   # es / pt
+    # de/nl share "parallel" with the en alias above
+    "समानांतर":     "par",   # hi
+    "متوازٍ":       "par",   # ar
+    "সমান্তরাল":   "par",   # bn
+    "இணையாக":      "par",   # ta
+    "并行":          "par",   # zh
+    "並列":          "par",   # ja
+    "parallelo":     "par",   # it
+    "rownolegly":    "par",   # pl
+    "parallellt":    "par",   # sv
+    "parallelt":     "par",   # da
+    "rinnakkain":    "par",   # fi
+
+    # SPAWN — launch a background task (en + all language translations)
+    "spawn":         "spawn",
+    "launch":        "spawn",  # en alias
+    "lancer":        "spawn",  # fr
+    "lanzar":        "spawn",  # es
+    "starten":       "spawn",  # de / nl
+    "प्रारंभ":      "spawn",  # hi
+    "أطلق":         "spawn",  # ar
+    "শুরু":         "spawn",  # bn
+    "தொடங்கு":     "spawn",  # ta
+    "启动":          "spawn",  # zh
+    "起動":          "spawn",  # ja
+    "avviare":       "spawn",  # it
+    "iniciar":       "spawn",  # pt
+    "uruchom":       "spawn",  # pl
+    "starta":        "spawn",  # sv
+    "start":         "spawn",  # da
+    "käynnistä":    "spawn",  # fi
+}
+
+_CONCURRENCY_CALL_NAMES = frozenset(_CONCURRENCY_CANONICAL)
 
 
 # ---------------------------------------------------------------------------
@@ -482,6 +523,8 @@ class _LoweringContext:
 
     def _lower_concurrency_call(self, name: str, node: ast.CallExpr) -> object:
         """Transitionally lift par(...) and spawn(...) to concurrency IR nodes."""
+        # Normalise multilingual surface form to canonical English name
+        name = _CONCURRENCY_CANONICAL.get(name, name)
         args = node.args or []
         ln, col = node.line, node.column
         if name == "par":

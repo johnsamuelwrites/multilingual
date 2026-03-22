@@ -4,7 +4,7 @@
 # est idiomatique dans n'importe quelle langue humaine.
 #
 # Fonctionnalités démontrées :
-#   @outil, @agent, réfléchir, demander, par [ ... ], lancer, utilise effets
+#   @outil, @agent, réfléchir, demander, parallèle [ ... ], lancer, utilise effets
 
 @outil(description="Chercher sur le web des informations actuelles")
 fn recherche_web(requête: str) -> str utilise réseau:
@@ -22,8 +22,8 @@ fn agent_recherche(question: str) -> str utilise ai, réseau:
         pouvant être traitées en parallèle.
         question: question
 
-    # Exécuter les deux sous-requêtes simultanément via par
-    soit résultats = par [
+    # Exécuter les deux sous-requêtes simultanément via parallèle
+    soit résultats = parallèle [
         demander @claude-sonnet: plan.conclusion + "\nConcentrez-vous sur les faits.",
         demander @claude-sonnet: plan.conclusion + "\nConcentrez-vous sur le contexte."
     ]

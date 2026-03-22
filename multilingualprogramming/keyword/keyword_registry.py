@@ -30,6 +30,8 @@ _EXPERIMENTAL_CONCEPT_IDS = frozenset({
     "PLAN",
     "TRANSCRIBE",
     "RETRIEVE",
+    "PAR",
+    "SPAWN",
     "ON_CHANGE",
     "CANVAS",
     "RENDER",

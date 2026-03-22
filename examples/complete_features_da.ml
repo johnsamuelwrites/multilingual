@@ -28,7 +28,7 @@ lad fil_tekst = ""
 med aabn("tmp_complete_en.txt", "r", encoding="utf-8") som fil_laes:
     fil_tekst = fil_laes.read()
 
-lad sammenkoblede_par = liste(par([1, 2, 3], [4, 5, 6]))
+lad sammenkoblede_par = liste(zip([1, 2, 3], [4, 5, 6]))
 lad unikke_vaerdier = maengde([1, 1, 2, 3])
 lad faste_vaerdier = tupel([10, 20, 30])
 lad foerste_element, *mellem_elementer, sidste_element = [1, 2, 3, 4]

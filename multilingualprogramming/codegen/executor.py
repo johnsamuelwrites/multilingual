@@ -17,9 +17,9 @@ import sys
 
 from multilingualprogramming.lexer.lexer import Lexer
 from multilingualprogramming.parser.parser import Parser
-from multilingualprogramming.parser.semantic_analyzer import SemanticAnalyzer, Scope, Symbol
 from multilingualprogramming.codegen.python_generator import PythonCodeGenerator
 from multilingualprogramming.codegen.runtime_builtins import RuntimeBuiltins
+from multilingualprogramming.core.semantic_analyzer import SemanticAnalyzer, Scope, Symbol
 from multilingualprogramming.core.semantic_lowering import lower_to_semantic_ir
 from multilingualprogramming.core.validators import validate_all
 from multilingualprogramming.imports import enable_multilingual_imports
