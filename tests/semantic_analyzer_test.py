@@ -7,6 +7,8 @@
 """Tests for the semantic analyzer."""
 
 import unittest
+
+from multilingualprogramming.core.semantic_lowering import lower_to_semantic_ir
 from multilingualprogramming.lexer.lexer import Lexer
 from multilingualprogramming.parser.parser import Parser
 from multilingualprogramming.parser.semantic_analyzer import (
@@ -22,6 +24,18 @@ def _analyze(source, language="en"):
     program = parser.parse()
     analyzer = SemanticAnalyzer(source_language=language)
     errors = analyzer.analyze(program)
+    return errors, analyzer
+
+
+def _analyze_ir(source, language="en"):
+    """Helper: lex + parse + lower + analyze semantic IR."""
+    lexer = Lexer(source, language=language)
+    tokens = lexer.tokenize()
+    parser = Parser(tokens, source_language=language)
+    program = parser.parse()
+    ir_program = lower_to_semantic_ir(program, language)
+    analyzer = SemanticAnalyzer(source_language=language)
+    errors = analyzer.analyze(ir_program)
     return errors, analyzer
 
 
@@ -63,6 +77,14 @@ class SemanticScopeTestSuite(unittest.TestCase):
         source = "def f(a, b):\n    a + b\n"
         errors, _ = _analyze(source)
         self.assertEqual(len(errors), 0)
+
+    def test_ir_scope_analysis_resolves_bindings(self):
+        errors, _ = _analyze_ir("let x = 5\nx\n")
+        self.assertEqual(len(errors), 0)
+
+    def test_ir_reports_undefined_variable_error(self):
+        errors, _ = _analyze_ir("y\n")
+        self.assertTrue(any("y" in str(e) for e in errors))
 
 
 class SemanticConstTestSuite(unittest.TestCase):
@@ -162,6 +184,10 @@ class SemanticControlFlowTestSuite(unittest.TestCase):
         errors, _ = _analyze(source)
         async_with_errors = [e for e in errors if "async with" in str(e).lower()]
         self.assertEqual(len(async_with_errors), 0)
+
+    def test_ir_return_outside_function_error(self):
+        errors, _ = _analyze_ir("return 1\n")
+        self.assertTrue(any("return" in str(e).lower() for e in errors))
 
 
 class SemanticDefinitionTestSuite(unittest.TestCase):

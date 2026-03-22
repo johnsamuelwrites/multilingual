@@ -128,7 +128,7 @@ class ProgramExecutor:
                     builtins_scope.define(Symbol(name, "variable"))
                 # Attach the builtins scope as the parent of the global scope.
                 analyzer.symbol_table.global_scope.parent = builtins_scope
-                semantic_errors = analyzer.analyze(self._last_program_ast)
+                semantic_errors = analyzer.analyze(ir_program)
                 if semantic_errors:
                     return ExecutionResult(
                         errors=[str(e) for e in semantic_errors],

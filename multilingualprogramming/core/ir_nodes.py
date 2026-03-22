@@ -112,6 +112,7 @@ class IRBinding(IRNode):
     name: str = ""
     value: IRNode | None = None
     is_mutable: bool = False
+    binding_kind: str = "let"
     annotation: CoreType | None = None
 
 

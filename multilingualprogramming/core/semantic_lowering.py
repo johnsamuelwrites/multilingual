@@ -578,6 +578,7 @@ class _LoweringContext:
                                     line=node.line, column=node.column)
         return IRBinding(name=node.name, value=value,
                          is_mutable=(kind == "var"),
+                         binding_kind=kind,
                          annotation=annotation,
                          line=node.line, column=node.column)
 

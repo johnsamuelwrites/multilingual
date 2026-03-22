@@ -6,9 +6,12 @@
 
 """Compiler boundary and new primitive regression tests."""
 
+from unittest.mock import patch
+
 from multilingualprogramming.codegen.executor import ProgramExecutor
 from multilingualprogramming.codegen.python_generator import PythonCodeGenerator
 from multilingualprogramming.codegen.wat_generator import WATCodeGenerator
+from multilingualprogramming.core.ir_nodes import IRProgram
 from multilingualprogramming.core.ir_nodes import (
     IRCanvasBlock,
     IROnChange,
@@ -78,6 +81,18 @@ class TestCompilerBoundary:
         result = ProgramExecutor(language="en").execute("let x = 2\nprint(x)\n")
         assert result.success, result.errors
         assert result.output.strip() == "2"
+
+    def test_executor_runs_semantic_analysis_on_ir_program(self):
+        with patch(
+            "multilingualprogramming.parser.semantic_analyzer.SemanticAnalyzer.analyze"
+        ) as analyze:
+            def _analyze(program):
+                assert isinstance(program, IRProgram)
+                return []
+
+            analyze.side_effect = _analyze
+            result = ProgramExecutor(language="en").execute("let x = 2\nprint(x)\n")
+        assert result.success, result.errors
 
     def test_wat_generator_accepts_semantic_ir(self):
         ir = _lower("let x = 1\nprint(x)\n")

@@ -58,7 +58,7 @@ class _MLLoader(importlib.abc.Loader):
         for name in builtins_ns:
             analyzer.symbol_table.define(name, "variable", line=0, column=0)
 
-        semantic_errors = analyzer.analyze(program)
+        semantic_errors = analyzer.analyze(ir_program)
         if semantic_errors:
             rendered = "; ".join(str(err) for err in semantic_errors)
             raise ImportError(
