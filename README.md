@@ -27,6 +27,20 @@ Read the language direction here:
 - Core 1.0: [docs/spec/core_1_0.md](docs/spec/core_1_0.md)
 - 1.0 roadmap: [docs/roadmaps/multilingual_1_0.md](docs/roadmaps/multilingual_1_0.md)
 
+## Strategic Direction
+
+The project is moving toward a clearer identity:
+
+- one semantic programming model expressed through many human languages
+- first-class semantics for AI, retrieval, tools, and multimodal workflows
+- structured concurrency, observability, memory, and agent coordination
+- reactive and distributed programs that span browser, device, edge, and cloud
+- portable execution where semantics stay stable while backends adapt
+
+The repository already contains early pieces of that future, but the current
+implementation is still a transitional platform between the historical
+multilingual compiler pipeline and the fuller Core 1.0 language model.
+
 ## What Multilingual Is
 
 - a human-language-first programming language
@@ -54,10 +68,10 @@ Read the language direction here:
 Today the repository already provides:
 
 - multilingual frontends driven by the USM keyword model
-- a shared parser and AST
-- semantic analysis and code generation
+- a shared parser, AST, and semantic-IR direction
+- semantic analysis plus Python and WAT/WASM code generation
 - Python execution support
-- WAT/WASM generation
+- WAT/WASM generation and backend selection
 - browser demos and DOM-oriented workflows
 
 This is an active language platform in motion, not just a whitepaper.
@@ -66,10 +80,12 @@ This is an active language platform in motion, not just a whitepaper.
 
 - the current semantic core is still thinner than the long-term Core 1.0 model
 - some localized surfaces still feel less natural than they should
-- the project currently exposes more of its historical compiler pipeline than
-  its future language identity
-- AI-native, multimodal, and reactive constructs are still in the design and
-  buildout phase
+- parts of the implementation still reflect the historical compiler pipeline
+  more than the future language experience
+- AI-native, multimodal, reactive, concurrent, and distributed constructs are
+  in mixed stages of design, prototyping, and rollout
+- documentation still needs ongoing migration from "current compiler" wording
+  toward "future language platform" wording
 
 Details:
 
@@ -196,10 +212,12 @@ multilingual run main_en.ml --lang en
 
 Near-term priorities:
 
-- establish the Core 1.0 semantic model
-- introduce a real typed semantic IR
-- add first-class modern language constructs such as `fn`, `var`, `enum`, `|>`, and `?`
-- build AI-native and reactive language features on top of that core
+- stabilize the Core 1.0 semantic model
+- strengthen the semantic IR and capability-aware analysis pipeline
+- ship more unmistakable language features such as `fn`, `var`, `enum`, `|>`,
+  `par`, `spawn`, `memory`, and observability primitives
+- continue building AI-native, multimodal, reactive, and distributed features
+  on top of that core
 
 See:
 

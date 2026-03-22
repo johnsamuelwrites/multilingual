@@ -5,15 +5,22 @@ It is intended for contributors, language-onboarding authors, and curious users.
 
 ## Layered Model
 
-The implementation is structured as four explicit layers:
+The implementation is structured as five explicit layers:
 
 1. Concrete surface syntax (`CS_lang`): language-specific source text.
 2. Shared Core AST: language-agnostic parser output (`ast_nodes.py`).
 3. Typed Core IR container: `CoreIRProgram` (`multilingualprogramming/core/ir.py`).
-4. Python-target lowering/codegen: executable Python generation/runtime.
+4. Backend lowering/codegen: Python and WAT/WASM oriented generation paths.
+5. Runtime execution and backend selection.
 
 This makes boundary questions explicit: parsing maps `CS_lang` to Core AST,
-and code generation consumes a typed core object rather than raw frontend text.
+semantic bridging consumes shared frontend structures, and execution targets
+consume backend artifacts rather than raw frontend text.
+
+This document describes the current implementation shape. It should be read
+alongside the broader [Vision](vision.md) and [Core 1.0](spec/core_1_0.md)
+documents, which define where the language is heading beyond the present
+compiler architecture.
 
 ## Core Concepts
 
@@ -81,11 +88,16 @@ So a French keyword file can still call a function named in English (or another 
 The execution pipeline is:
 
 1. `Lexer` tokenizes source and resolves keyword concepts.
-2. `Parser` builds a language-agnostic AST.
-3. `lower_to_semantic_ir` lowers parser output into `IRProgram`.
-4. `core.semantic_analyzer.SemanticAnalyzer` checks scope and structural constraints.
-5. `PythonCodeGenerator` emits executable Python.
-6. Runtime/executor runs generated code with multilingual built-in aliases.
+2. Optional surface normalization rewrites supported alternate forms.
+3. `Parser` builds a language-agnostic AST.
+4. `lower_to_semantic_ir` lowers parser output into `IRProgram`.
+5. `core.semantic_analyzer.SemanticAnalyzer` checks scope and structural constraints.
+6. Backends emit Python or WAT/WASM artifacts.
+7. Runtime/executor selects the available execution path and runs with multilingual built-in aliases.
+
+The long-term direction is not "a Python transpiler with translations" but a
+portable semantic language with multiple execution targets. The current
+pipeline is the implementation vehicle for that direction.
 
 ## Frontend Contract
 
@@ -105,12 +117,13 @@ See also:
 
 ## Roadmap (Short)
 
-- v0 (today): toy-but-working interpreter/transpiler, multiple languages, core constructs, REPL, tests.
+- v0 (today): working multilingual language platform with a transitional compiler pipeline, multiple languages, REPL, tests, Python execution, and WAT/WASM support.
 - next:
+  - stronger semantic IR and capability-aware analysis
+  - more unmistakable Core 1.0 language features
   - better tooling and diagnostics
   - stronger IDE/editor integration
   - more languages and improved locale quality
-  - formalized language spec
-  - possible LLM-assisted translation/refactoring workflows
+  - formalized language spec for AI-native, multimodal, reactive, and distributed workflows
 
 `multilingual` is intentionally both serious and experimental: stable enough to use, open enough for community feedback.

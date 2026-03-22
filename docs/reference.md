@@ -100,7 +100,7 @@ Key capabilities:
 Key capabilities:
 
 - transpile multilingual semantic IR to Python source
-- execute full pipeline: source -> tokens -> AST -> IR -> checks -> Python -> runtime
+- execute full pipeline: source -> tokens -> optional normalization -> AST -> IR -> checks -> Python/WAT -> runtime
 - inject multilingual runtime builtins
 - interactive REPL with language switching and Python-preview mode
 

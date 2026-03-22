@@ -41,8 +41,11 @@
 | **Playground** | https://johnsamuel.info/multilingual/playground.html |
 
 **Purpose**: A multilingual programming language where code can be written in any of 17 natural
-languages. All frontends share a single backend (Python transpiler or WebAssembly). Keywords,
-operators, and builtins are data-driven (JSON), not hard-coded.
+languages. The long-term direction is a human-language-first semantic platform
+for AI-native, multimodal, reactive, concurrent, and distributed programming.
+The current repository implements a transitional compiler/runtime stack toward
+that goal. Keywords, operators, and builtins are data-driven (JSON), not
+hard-coded.
 
 ---
 
@@ -57,11 +60,17 @@ Source (.ml, 17 languages)
     Lexer                   multilingualprogramming/lexer/lexer.py
         │  tokens
         ▼
+SurfaceNormalizer?          multilingualprogramming/parser/surface_normalizer.py
+        │  normalized tokens
+        ▼
     Parser                  multilingualprogramming/parser/parser.py
         │  AST
         ▼
- SemanticAnalyzer           multilingualprogramming/parser/semantic_analyzer.py
-        │  annotated AST
+Semantic IR lowering        multilingualprogramming/core/lowering.py
+        │  IRProgram
+        ▼
+ SemanticAnalyzer           multilingualprogramming/core/semantic_analyzer.py
+        │  checked IR / analysis
         ▼
   ┌─────┴──────┐
   │            │
@@ -69,7 +78,7 @@ Source (.ml, 17 languages)
 PythonCodeGen  WATCodeGen   multilingualprogramming/codegen/python_generator.py
   │            │            multilingualprogramming/codegen/wat_generator.py
   ▼            ▼
-Python src    WAT text
+Python src    WAT text / WASM artifacts
   │            │
   ▼            ▼
 exec()       wasmtime      (or Python fallbacks via runtime/backend_selector.py)
@@ -81,12 +90,27 @@ exec()       wasmtime      (or Python fallbacks via runtime/backend_selector.py)
   `multilingualprogramming/resources/usm/`. No language keywords are hard-coded in Python.
 - **Single AST**: All 17 language frontends produce the same AST node types
   (`multilingualprogramming/parser/ast_nodes.py`).
+- **Semantic-core direction**: the parser output is increasingly bridged into a
+  shared semantic IR so the project can grow beyond a historical
+  parser-to-backend compiler shape into a fuller Core 1.0 language model.
 - **Dual backend**: Python backend (always available) + optional WAT/WASM backend
   (`wasmtime` optional dependency). Smart backend selector lives in
   `multilingualprogramming/runtime/backend_selector.py`.
 - **Surface normalization**: Alternate keyword forms (e.g., Spanish iterable-first, Japanese
   variants) are normalized by `multilingualprogramming/parser/surface_normalizer.py` before
   parsing.
+
+### Architecture Note for Agents
+
+When updating docs or implementation notes, distinguish between:
+
+- **Current implementation**: the repository's working parser/IR/backend pipeline.
+- **Strategic vision**: Multilingual 1.0 as a human-language-first semantic
+  platform for AI, multimodal, reactive, concurrent, and distributed programs.
+
+Do not collapse those into one claim. Prefer wording like "currently", "today",
+"transitional", "direction", or "long-term" when a statement is about roadmap
+rather than shipped behavior.
 
 ---
 
@@ -118,8 +142,8 @@ multilingual/
 │   ├── unicode_string.py               ← Unicode string utilities
 │   │
 │   ├── codegen/
-│   │   ├── executor.py                 ← ProgramExecutor: full pipeline + exec()
-│   │   ├── python_generator.py         ← AST → Python source transpiler
+│   │   ├── executor.py                 ← ProgramExecutor: full pipeline + backend/runtime execution
+│   │   ├── python_generator.py         ← AST/IR → Python source transpiler
 │   │   ├── wat_generator.py            ← AST → WAT: top-level entry point
 │   │   ├── wat_generator_core.py       ← WAT: core state and helpers
 │   │   ├── wat_generator_expression.py ← WAT: expression lowering
@@ -137,7 +161,8 @@ multilingual/
 │   │
 │   ├── core/
 │   │   ├── ir.py                       ← Core IR representation
-│   │   └── lowering.py                 ← AST → Core IR
+│   │   ├── lowering.py                 ← AST → Core IR
+│   │   └── semantic_analyzer.py        ← scope, symbol table, type/effect checks
 │   │
 │   ├── datetime/
 │   │   ├── mp_date.py / mp_time.py / mp_datetime.py
@@ -168,7 +193,6 @@ multilingual/
 │   │   ├── parser.py                   ← recursive-descent parser
 │   │   ├── ast_nodes.py                ← all AST node classes
 │   │   ├── ast_printer.py              ← AST pretty-printer
-│   │   ├── semantic_analyzer.py        ← scope, symbol table, type checking
 │   │   ├── error_messages.py           ← localized error messages
 │   │   └── surface_normalizer.py       ← keyword/form normalization
 │   │
@@ -291,7 +315,14 @@ registry = KeywordRegistry.get_instance()
 - `_skip_bracket_newlines()`: skips NEWLINE, COMMENT, INDENT, DEDENT — **required** inside
   list/dict/call/tuple to handle multi-line literals.
 
-### SemanticAnalyzer (`parser/semantic_analyzer.py`)
+### Semantic IR Lowering (`core/lowering.py`)
+
+- Bridges the shared parser AST toward the Core 1.0 semantic direction.
+- Produces `IRProgram` and related IR nodes for downstream analysis/codegen.
+- This layer matters when documenting future-facing work: new language ideas
+  often appear conceptually in IR before every backend fully converges.
+
+### SemanticAnalyzer (`core/semantic_analyzer.py`)
 
 - Builds symbol table, checks scope, does basic type analysis.
 - **Builtins scope**: `executor.py` pre-seeds a *parent* builtins scope (not the global scope),
@@ -300,13 +331,15 @@ registry = KeywordRegistry.get_instance()
 
 ### PythonCodeGenerator (`codegen/python_generator.py`)
 
-- Walks AST, emits Python source string. Called by `ProgramExecutor`.
+- Emits Python source from the repository's current shared frontend
+  representation rather than a purely legacy AST-only path.
 
 ### ProgramExecutor (`codegen/executor.py`)
 
 - `ProgramExecutor.execute(source, globals_dict=None)` → `ExecutionResult`.
 - `ExecutionResult`: `.output`, `.return_value`, `.python_source`, `.errors`, `.success`.
-- Internally calls `make_exec_globals(language)` for the exec() namespace.
+- Internally drives lexing, parsing, semantic analysis, backend generation, and
+  runtime namespace setup via `make_exec_globals(language)`.
 
 ### Runtime Builtins (`codegen/runtime_builtins.py`)
 

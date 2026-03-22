@@ -161,7 +161,7 @@ Tasks:
 Suggested repository targets:
 
 - `multilingualprogramming/core/effects.py`
-- `multilingualprogramming/parser/semantic_analyzer.py`
+- `multilingualprogramming/core/semantic_analyzer.py`
 - `multilingualprogramming/runtime/backend_selector.py`
 
 Exit criteria:
