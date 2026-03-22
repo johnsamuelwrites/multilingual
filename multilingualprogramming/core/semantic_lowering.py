@@ -157,10 +157,201 @@ from multilingualprogramming.parser import ast_nodes as ast
 # Names of call expressions that are transitionally lifted to AI IR nodes
 # until the parser gains native keyword support.
 # ---------------------------------------------------------------------------
-_AI_CALL_NAMES = frozenset({
-    "prompt", "generate", "think", "stream", "embed", "extract", "classify",
-    "plan", "transcribe", "retrieve",
-})
+# Maps every language surface form of an AI keyword to its canonical English name.
+# Extend this table as more language translations are added to keywords.json.
+_AI_CANONICAL: dict[str, str] = {
+    # PROMPT
+    "prompt":      "prompt",
+    "requête":     "prompt",   # fr
+    "requete":     "prompt",   # fr (no accent)
+    "preguntar":   "prompt",   # es
+    "abfragen":    "prompt",   # de
+    "पूछो":       "prompt",   # hi
+    "استفسر":     "prompt",   # ar
+    "জিজ্ঞেস":   "prompt",   # bn
+    "கேள்":      "prompt",   # ta
+    "提示":        "prompt",   # zh
+    "プロンプト":  "prompt",   # ja
+    "chiedi":      "prompt",   # it
+    "perguntar":   "prompt",   # pt
+    "zapytaj":     "prompt",   # pl
+    "vraag":       "prompt",   # nl
+    "fraga":       "prompt",   # sv
+    "sporg":       "prompt",   # da
+    "kysy":        "prompt",   # fi
+
+    # THINK
+    "think":       "think",
+    "réfléchir":   "think",    # fr
+    "pensar":      "think",    # es
+    "denken":      "think",    # de
+    "सोचो":       "think",    # hi
+    "فكر":        "think",    # ar
+    "ভাবো":       "think",    # bn
+    "சிந்தி":    "think",    # ta
+    "思考":        "think",    # zh
+    "考える":      "think",    # ja
+    "pensa":       "think",    # it
+    "pensar":      "think",    # pt (same as es)
+    "mysl":        "think",    # pl
+    "denk":        "think",    # nl
+    "tank":        "think",    # sv
+    "taenk":       "think",    # da
+    "mieti":       "think",    # fi
+
+    # GENERATE
+    "generate":    "generate",
+    "générer":     "generate", # fr
+    "generar":     "generate", # es
+    "generieren":  "generate", # de
+    "उत्पन्न":    "generate", # hi
+    "أنشئ":       "generate", # ar
+    "তৈরি":       "generate", # bn
+    "உருவாக்கு":  "generate", # ta
+    "生成":        "generate", # zh
+    "生成する":    "generate", # ja
+    "genera":      "generate", # it
+    "gerar":       "generate", # pt
+    "generuj":     "generate", # pl
+    "genereer":    "generate", # nl
+    "generera":    "generate", # sv
+    "generer":     "generate", # da
+    "tuota":       "generate", # fi
+
+    # STREAM (keyword)
+    "stream":      "stream",
+    "diffuser":    "stream",   # fr
+    "transmitir":  "stream",   # es
+    "streamen":    "stream",   # de
+    "धारा":       "stream",   # hi
+    "بث":         "stream",   # ar
+    "প্রবাহ":     "stream",   # bn
+    "ஓட்டம்":    "stream",   # ta
+    "流":          "stream",   # zh
+    "ストリーム":  "stream",   # ja
+    "trasmetti":   "stream",   # it
+    "transmitir":  "stream",   # pt (same as es)
+    "strumien":    "stream",   # pl
+    "stroom":      "stream",   # nl
+    "strom":       "stream",   # sv / da
+    "virta":       "stream",   # fi
+
+    # EMBED
+    "embed":       "embed",
+    "incorporer":  "embed",    # fr
+    "incrustar":   "embed",    # es
+    "einbetten":   "embed",    # de
+    "समाहित":     "embed",    # hi
+    "ضمِّن":      "embed",    # ar
+    "এমবেড":      "embed",    # bn
+    "உட்பொதி":   "embed",    # ta
+    "嵌入":        "embed",    # zh
+    "埋め込む":    "embed",    # ja
+    "incorpora":   "embed",    # it
+    "incorporar":  "embed",    # pt
+    "osadz":       "embed",    # pl
+    "insluiten":   "embed",    # nl
+    "badda_in":    "embed",    # sv
+    "indsaet":     "embed",    # da
+    "upota":       "embed",    # fi
+
+    # EXTRACT
+    "extract":     "extract",
+    "extraire":    "extract",  # fr
+    "extraer":     "extract",  # es
+    "extrahieren": "extract",  # de
+    "निकालो":     "extract",  # hi
+    "استخرج":     "extract",  # ar
+    "বের_করো":    "extract",  # bn
+    "பிரி":       "extract",  # ta
+    "提取":        "extract",  # zh
+    "抽出する":    "extract",  # ja
+    "estrai":      "extract",  # it
+    "extrair":     "extract",  # pt
+    "wyodrebnij":  "extract",  # pl
+    "extraheer":   "extract",  # nl
+    "extrahera":   "extract",  # sv
+    "udtrek":      "extract",  # da
+    "pura":        "extract",  # fi
+
+    # CLASSIFY
+    "classify":    "classify",
+    "classifier":  "classify", # fr
+    "clasificar":  "classify", # es
+    "klassifizieren": "classify", # de
+    "वर्गीकृत":   "classify", # hi
+    "صنّف":       "classify", # ar
+    "শ্রেণীবদ্ধ": "classify", # bn
+    "வகைப்படுத்து": "classify", # ta
+    "分类":        "classify", # zh
+    "分類する":    "classify", # ja
+    "classifica":  "classify", # it
+    "classificar": "classify", # pt
+    "klasyfikuj":  "classify", # pl
+    "classificeer":"classify", # nl
+    "klassificera":"classify", # sv
+    "klassificer": "classify", # da
+    "luokittele":  "classify", # fi
+
+    # PLAN
+    "plan":        "plan",
+    "planifier":   "plan",     # fr
+    "planificar":  "plan",     # es
+    "planen":      "plan",     # de
+    "योजना":      "plan",     # hi
+    "خطّط":       "plan",     # ar
+    "পরিকল্পনা":  "plan",     # bn
+    "திட்டமிடு":  "plan",     # ta
+    "规划":        "plan",     # zh
+    "計画する":    "plan",     # ja
+    "pianifica":   "plan",     # it
+    "planejar":    "plan",     # pt
+    "planuj":      "plan",     # pl
+    "plan":        "plan",     # nl (same)
+    "planera":     "plan",     # sv
+    "planlæg":     "plan",     # da
+    "suunnittele": "plan",     # fi
+
+    # TRANSCRIBE
+    "transcribe":  "transcribe",
+    "transcrire":  "transcribe",  # fr
+    "transcribir": "transcribe",  # es
+    "transkribieren": "transcribe", # de
+    "लिखित_करो":  "transcribe",  # hi
+    "انسخ":       "transcribe",  # ar
+    "লিখে_নাও":   "transcribe",  # bn
+    "எழுதெடு":   "transcribe",  # ta
+    "转录":        "transcribe",  # zh
+    "書き起こす":  "transcribe",  # ja
+    "trascrivi":   "transcribe",  # it
+    "transcrever": "transcribe",  # pt
+    "transkrybuj": "transcribe",  # pl
+    "transcribeer":"transcribe",  # nl
+    "transkribera":"transcribe",  # sv
+    "transskriber":"transcribe",  # da
+    "litteroi":    "transcribe",  # fi
+
+    # RETRIEVE
+    "retrieve":    "retrieve",
+    "récupérer":   "retrieve", # fr
+    "recuperar":   "retrieve", # es
+    "abrufen":     "retrieve", # de
+    "प्राप्त_करो": "retrieve", # hi
+    "استرجع":     "retrieve", # ar
+    "পুনরুদ্ধার": "retrieve", # bn
+    "மீட்டெடு":  "retrieve", # ta
+    "检索":        "retrieve", # zh
+    "取得する":    "retrieve", # ja
+    "recupera":    "retrieve", # it
+    "recuperar":   "retrieve", # pt
+    "pobierz":     "retrieve", # pl
+    "ophalen":     "retrieve", # nl
+    "hamta":       "retrieve", # sv
+    "hent":        "retrieve", # da
+    "hae":         "retrieve", # fi
+}
+
+_AI_CALL_NAMES = frozenset(_AI_CANONICAL)
 
 _AGENT_DECORATOR = "agent"
 _TOOL_DECORATOR = "tool"
@@ -706,6 +897,8 @@ class _LoweringContext:
 
     def _lower_ai_call(self, name: str, node: ast.CallExpr) -> object:
         """Transitionally lift known AI call patterns to AI IR nodes."""
+        # Normalise multilingual surface form to canonical English name
+        name = _AI_CANONICAL.get(name, name)
         self.require_effect("ai")
         args = node.args or []
         model = None

@@ -104,11 +104,219 @@ Key capabilities:
 - inject multilingual runtime builtins
 - interactive REPL with language switching and Python-preview mode
 
+### AI Runtime
+
+- `AIRuntime` — singleton registry that dispatches AI calls to the active provider
+- `AIProvider` — abstract base class for LLM backends
+- `AnthropicProvider` — concrete provider backed by the Anthropic Messages API
+
+Key capabilities:
+
+- `prompt(model, template)` — single-turn text completion
+- `think(model, template)` — extended chain-of-thought reasoning (returns `Reasoning`)
+- `generate(model, template, target_type)` — structured / JSON-mode generation
+- `stream(model, template)` — token-by-token streaming (returns `Iterator[StreamChunk]`)
+- `embed(model, text)` — text embedding (returns `EmbeddingVector`)
+- `extract / classify / plan / transcribe / retrieve` — specialised AI operations
+- provider registration: `AIRuntime.register(AnthropicProvider())`
+
+Model reference literals in source (`@claude-sonnet`, `@claude-haiku`, …) resolve to
+full model IDs via `AnthropicProvider._MODEL_ALIASES`.
+
+### Reactive / UI Runtime
+
+- `ReactiveEngine` — engine managing observable `Signal` objects
+- `Signal` — a value cell that notifies subscribers on change
+- `CanvasNode` — a named UI canvas region
+- `stream_to_view(signal, target)` — bind a signal stream to a view target
+
+Key capabilities:
+
+- `observe name = value` / `on name.change:` reactive declarations
+- `canvas name:` / `render target = value` canvas and rendering
+- `view target = signal` binding
+
+### Structured Concurrency Runtime
+
+- `Channel` — typed async FIFO channel backed by `asyncio.Queue`
+
+Key capabilities:
+
+- `channel<T>()` creates a `Channel` (unbounded or with `capacity`)
+- `await ch.send(value)` / `await ch.receive()` — async message passing
+- `async for item in ch:` — iteration until channel is closed
+- `par [ expr1, expr2, … ]` — parallel fan-out; lowers to `asyncio.gather()`
+- `spawn expr` — background task; lowers to `asyncio.create_task()`
+
+### Observability Runtime
+
+- `ml_trace(value, label)` — record a `TraceEvent` and return value unchanged
+- `ml_cost(value)` — return `(value, CostInfo)` with token and latency data
+- `ml_explain(value)` — return `(value, explanation_text)` from the model
+
+Key capabilities:
+
+- transparent: original result always flows through unchanged
+- `TraceEvent` / `CostInfo` data classes for structured inspection
+- global trace log via `get_trace_log()` / `clear_trace_log()`
+
+### Placement Runtime
+
+- `@local` / `@edge` / `@cloud` — deployment target annotations
+
+Key capabilities:
+
+- decorators attach `__ml_placement__` to any function or agent
+- Python backend executes locally; a distributed backend routes on the hint
+- `get_placement(fn)` — inspect the placement of any callable
+
+### Agent Memory and Coordination Runtime
+
+- `MemoryStore` / `ml_memory(name, scope)` — named key-value stores
+- `Swarm` — pool of named sub-agents with fan-out and delegation
+- `ml_delegate(swarm_or_agent, …)` — async message to an agent
+- `swarm_decorator` — `@swarm(agents=[…])` decorator factory
+
+Key capabilities:
+
+- memory scopes: `"session"` (in-process), `"persistent"` (JSON file), `"shared"` (swarm-wide)
+- `Swarm.broadcast(message)` — fan-out to all sub-agents concurrently
+- `delegate(agent, message)` in source lowers to `await ml_delegate(…)`
+
 ## Language Features
 
-The implementation includes support for:
+### AI-native constructs
 
-- variable declarations and assignment
+Effects must be declared on the enclosing function or agent with `uses ai`:
+
+```text
+fn summarise(text: str) -> str uses ai:
+    return prompt @claude-sonnet: "Summarise: " + text
+
+fn reasoning_demo() uses ai:
+    let r = think @claude-sonnet:
+        What are the implications of AI-native programming?
+    print(r.conclusion)
+
+fn typed_output() uses ai:
+    let result: SentimentLabel = generate @claude-sonnet: "Classify: great product"
+```
+
+Available AI keywords (all 17 languages supported — see `keywords.json`):
+
+| Concept | English | French | Japanese |
+|---------|---------|--------|----------|
+| prompt  | `prompt` | `requête` / `requete` | `プロンプト` |
+| think   | `think` | `réfléchir` | `考える` |
+| generate | `generate` | `générer` | `生成する` |
+| stream  | `stream` | `diffuser` | `ストリーム` |
+| embed   | `embed` | `incorporer` | `埋め込む` |
+| extract | `extract` | `extraire` | `抽出する` |
+| classify | `classify` | `classifier` | `分類する` |
+| plan    | `plan` | `planifier` | `計画する` |
+| transcribe | `transcribe` | `transcrire` | `書き起こす` |
+| retrieve | `retrieve` | `récupérer` | `取得する` |
+
+Agent and tool declarations:
+
+```text
+@tool(description="Search the web")
+fn web_search(query: str) -> str uses net:
+    pass
+
+@agent(model=@claude-sonnet)
+fn researcher(question: str) -> str uses ai, net:
+    return prompt @claude-sonnet: question
+```
+
+### Structured concurrency
+
+```text
+# Parallel fan-out — all branches run concurrently, results returned as tuple
+let results = parallel [
+    prompt @claude-sonnet: "Answer A",
+    prompt @claude-sonnet: "Answer B"
+]
+
+# Background task — returns immediately with a future
+let task = spawn long_running_operation()
+
+# Typed channel — async FIFO between tasks
+let ch = channel()
+spawn producer(ch)
+let item = ch.receive()
+```
+
+All concurrency keywords are multilingual:
+
+| Concept | English | French | Japanese |
+|---------|---------|--------|----------|
+| parallel | `par` / `parallel` | `parallèle` | `並列` |
+| spawn   | `spawn` / `launch` | `lancer` | `起動` |
+| channel | `channel` | `canal` | `チャネル` |
+| send    | `send` | `envoyer` | `送る` |
+| receive | `receive` | `recevoir` | `受信` |
+
+### Observability
+
+```text
+fn monitored() uses ai:
+    # trace — log timing; value passes through unchanged
+    let result = trace(prompt @claude-sonnet: "Hello", "my-label")
+
+    # cost — returns (value, CostInfo) with token counts
+    let answer, info = cost(prompt @claude-sonnet: "What is AI?")
+    print(info)   # CostInfo(model='claude-sonnet-4-6', tokens=42, latency=1200ms)
+
+    # explain — returns (value, explanation_text)
+    let value, why = explain(answer)
+```
+
+### Distributed placement
+
+```text
+@local
+fn preprocess(data: str) -> str:
+    pass          # hint: run on local machine
+
+@edge
+fn classify_fast(img: str) -> str uses ai:
+    pass          # hint: run at the network edge
+
+@cloud
+@agent(model=@claude-sonnet)
+fn heavy_reasoning(prompt: str) -> str uses ai:
+    pass          # hint: run in the cloud
+```
+
+Placement keywords are multilingual (`local`/`lokal`/`स्थानीय`/`本地`/`ローカル` …).
+
+### Agent memory and coordination
+
+```text
+fn with_memory() uses ai:
+    # Named session store (dict-like)
+    let facts = memory("facts")
+    facts["answer"] = "Paris"
+
+    # Persistent across runs
+    let cache = memory("cache", scope="persistent")
+
+@swarm(agents=[researcher, writer, reviewer])
+fn team_coordinator(task: str) -> str uses ai:
+    # Fan-out to two sub-agents simultaneously
+    let draft, review = parallel [
+        delegate(writer, task),
+        delegate(reviewer, task)
+    ]
+    return prompt @claude-sonnet: "Merge: " + draft + "\n" + review
+```
+
+Memory scopes: `"session"` (default, in-process), `"persistent"` (JSON-backed file), `"shared"` (swarm-wide in-process).
+
+### General language features
+
+The implementation includes support for:
 - booleans and `None`, including identity checks (`is`, `is not`)
 - control flow (`if/else`, `for`, `while`)
 - async constructs (`async def`, `await`, `async for`, `async with`)

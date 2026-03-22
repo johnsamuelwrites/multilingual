@@ -1282,7 +1282,7 @@
     "ai": {
       "PROMPT": {
         "en": "prompt",
-        "fr": "invite",
+        "fr": ["requête", "requete"],
         "es": "preguntar",
         "de": "abfragen",
         "hi": "पूछो",

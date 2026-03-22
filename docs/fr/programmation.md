@@ -488,6 +488,144 @@ executor = ProgramExecutor()
 executor.transpile(source_code, language="fr")   # TypeError
 ```
 
+## 11. Constructions IA natives, concurrence et observabilite
+
+Cette section couvre les capacites avancees introduites dans Core 1.0 :
+IA native, concurrence structuree, observabilite, placement distribue
+et coordination d'agents.
+
+### IA native
+
+Les constructions IA s'utilisent dans les fonctions declarant `utilise ai` :
+
+```text
+fn resumer(texte: str) -> str utilise ai:
+    retour requête @claude-sonnet: "Resumer : " + texte
+
+fn raisonnement() utilise ai:
+    soit r = réfléchir @claude-sonnet:
+        Quelles sont les implications de la programmation IA ?
+    afficher(r.conclusion)
+```
+
+Mots-cles IA disponibles en francais :
+
+| Concept    | Francais        |
+|------------|-----------------|
+| prompt     | `requête`        |
+| think      | `réfléchir`     |
+| generate   | `générer`       |
+| stream     | `diffuser`      |
+| embed      | `incorporer`    |
+| extract    | `extraire`      |
+| classify   | `classifier`    |
+| plan       | `planifier`     |
+| transcribe | `transcrire`    |
+| retrieve   | `récupérer`     |
+
+Declarations d'agent et d'outil :
+
+```text
+@outil(description="Chercher sur le web")
+fn recherche_web(requete: str) -> str utilise reseau:
+    passer
+
+@agent(modele=@claude-sonnet)
+fn chercheur(question: str) -> str utilise ai, reseau:
+    retour requête @claude-sonnet: question
+```
+
+### Concurrence structuree
+
+```text
+# Execution parallele — toutes les branches tournent simultanement
+soit resultats = parallèle [
+    requête @claude-sonnet: "Repondre A",
+    requête @claude-sonnet: "Repondre B"
+]
+
+# Tache en arriere-plan — retourne immediatement un futur
+soit tache = lancer operation_longue()
+
+# Canal type — FIFO asynchrone entre taches
+soit ch = canal()
+```
+
+Mots-cles de concurrence en francais :
+
+| Concept  | Francais      |
+|----------|---------------|
+| parallel | `parallèle`   |
+| spawn    | `lancer`      |
+| channel  | `canal`       |
+| send     | `envoyer`     |
+| receive  | `recevoir`    |
+
+### Observabilite
+
+```text
+fn surveille() utilise ai:
+    # tracer — enregistre le temps ; la valeur passe sans modification
+    soit res = tracer(requête @claude-sonnet: "Bonjour", "mon-label")
+
+    # cout — retourne (valeur, InfoCout) avec le nombre de tokens
+    soit reponse, info = cout(requête @claude-sonnet: "Qu'est-ce que l'IA ?")
+    afficher(info)
+
+    # expliquer — retourne (valeur, texte_explication)
+    soit valeur, pourquoi = expliquer(reponse)
+```
+
+### Placement distribue
+
+```text
+@local
+fn pretraiter(donnees: str) -> str:
+    passer          # conseil : executer en local
+
+@peripherique
+fn classer_rapide(img: str) -> str utilise ai:
+    passer          # conseil : executer a la peripherie
+
+@nuage
+@agent(modele=@claude-sonnet)
+fn raisonnement_lourd(question: str) -> str utilise ai:
+    passer          # conseil : executer dans le nuage
+```
+
+### Memoire et coordination d'agents
+
+```text
+fn avec_memoire() utilise ai:
+    # Memoire de session (interface dict)
+    soit faits = memoire("faits")
+    faits["reponse"] = "Paris"
+
+    # Persistante entre les executions
+    soit cache = memoire("cache", scope="persistent")
+
+@essaim(agents=[chercheur, redacteur, reviseur])
+fn coordinateur(tache: str) -> str utilise ai:
+    # Fan-out vers deux sous-agents simultanement
+    soit brouillon, revue = parallèle [
+        deleguer(redacteur, tache),
+        deleguer(reviseur, tache)
+    ]
+    retour requête @claude-sonnet: "Fusionner : " + brouillon + "\n" + revue
+```
+
+Portees de memoire :
+- `"session"` (defaut) — dict en memoire, perdu a la fin du processus
+- `"persistent"` — sauvegarde JSON dans le repertoire courant
+- `"shared"` — partage entre tous les agents d'un essaim
+
+Exemple complet demontrant toutes ces constructions :
+
+```bash
+multilingual run examples/agent_fr.ml --lang fr
+multilingual run examples/research_swarm_en.ml --lang en
+```
+
 ## 10. Documentation associee
 
 - **Mots-cles complets** (tous les mots-cles + alias built-ins): [mots_cles.md](mots_cles.md)

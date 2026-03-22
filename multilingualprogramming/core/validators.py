@@ -24,25 +24,36 @@ from multilingualprogramming.core.ir_nodes import (
     IRAgentDecl,
     IRBinding,
     IRCanvasBlock,
+    IRChannelExpr,
     IRClassifyExpr,
+    IRCostExpr,
+    IRDelegateExpr,
     IREnumDecl,
     IREmbedExpr,
+    IRExplainExpr,
     IRExtractExpr,
     IRFunction,
     IRGenerateExpr,
     IRMatchStatement,
+    IRMemoryExpr,
     IRNode,
     IRObserveBinding,
     IROnChange,
+    IRParExpr,
     IRPlanExpr,
     IRProgram,
     IRPromptExpr,
+    IRReceiveExpr,
     IRRenderExpr,
     IRRetrieveExpr,
     IRSemanticMatchOp,
+    IRSendExpr,
+    IRSpawnExpr,
     IRStreamExpr,
+    IRSwarmDecl,
     IRThinkExpr,
     IRToolDecl,
+    IRTraceExpr,
     IRTranscribeExpr,
     IRTypeDecl,
     IRViewBinding,
@@ -110,6 +121,10 @@ _AI_NODE_TYPES = (
     IRPromptExpr, IRGenerateExpr, IRThinkExpr, IRStreamExpr, IREmbedExpr,
     IRExtractExpr, IRClassifyExpr, IRPlanExpr, IRTranscribeExpr, IRRetrieveExpr,
     IRSemanticMatchOp,
+    # Observability wrappers that ultimately invoke AI operations
+    IRCostExpr, IRExplainExpr,
+    # Agent coordination constructs that require AI capability
+    IRSwarmDecl, IRDelegateExpr,
 )
 _UI_NODE_TYPES = (
     IRCanvasBlock, IROnChange, IRRenderExpr, IRViewBinding,
@@ -148,7 +163,7 @@ def _check_bindings(program: IRProgram, diags: list[str]) -> None:
 
 def _check_declarations(program: IRProgram, diags: list[str]) -> None:
     for node in _walk(program):
-        if isinstance(node, (IRFunction, IRAgentDecl, IRToolDecl)):
+        if isinstance(node, (IRFunction, IRAgentDecl, IRToolDecl, IRSwarmDecl)):
             if not node.name:
                 diags.append(
                     f"{type(node).__name__} at {node.line}:{node.column} "
@@ -184,7 +199,7 @@ def _check_declarations(program: IRProgram, diags: list[str]) -> None:
 
 def _check_effects(program: IRProgram, diags: list[str]) -> None:
     for node in _walk(program):
-        if isinstance(node, (IRFunction, IRAgentDecl, IRToolDecl)):
+        if isinstance(node, (IRFunction, IRAgentDecl, IRToolDecl, IRSwarmDecl)):
             for effect in node.effects.effects:
                 if effect.name not in _KNOWN_EFFECTS:
                     diags.append(
@@ -203,7 +218,7 @@ def _check_effect_completeness(program: IRProgram, diags: list[str]) -> None:
     # Collect callables (function/agent/tool) plus the program root itself
     callables: list[tuple[str, object, list[IRNode]]] = []
     for node in _walk(program):
-        if isinstance(node, (IRFunction, IRAgentDecl, IRToolDecl)):
+        if isinstance(node, (IRFunction, IRAgentDecl, IRToolDecl, IRSwarmDecl)):
             callables.append((
                 f"{type(node).__name__} {node.name!r}",
                 node.effects,
@@ -270,7 +285,7 @@ def _walk_list(nodes: list[IRNode]):
     Does not descend into nested function/agent/tool bodies — those are
     checked separately as their own callables in _check_effect_completeness.
     """
-    _callable_types = (IRFunction, IRAgentDecl, IRToolDecl)
+    _callable_types = (IRFunction, IRAgentDecl, IRToolDecl, IRSwarmDecl)
     for node in nodes:
         if not isinstance(node, IRNode):
             continue
