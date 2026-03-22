@@ -6,7 +6,7 @@ implementation phases.
 ## Goal
 
 Build Multilingual 1.0 into a multilingual semantic platform with AI-native,
-multimodal, and reactive capabilities.
+multimodal, concurrent, distributed, and reactive capabilities.
 
 ## Current Starting Point
 
@@ -31,17 +31,22 @@ Multilingual 1.0 is successful when:
 - the semantic IR is the true language boundary
 - structured data and matching are central language features
 - AI and multimodal workflows are first-class
+- concurrent and parallel execution are expressible as language-level constructs
+- multi-agent programs with coordination and shared memory are demonstrable
 - reactive web programming is part of the main story
+- distribution and observability are expressible without library workarounds
 - the transition is test-backed and staged rather than disruptive
 
 ## Workstreams
 
-The roadmap is organized into six workstreams:
+The roadmap is organized into eight workstreams:
 
 - language definition
 - compiler architecture
 - type/effect system
 - AI and multimodal runtime
+- concurrency and parallelism
+- distribution, memory, and observability
 - reactive UI and web tooling
 - ecosystem and developer experience
 
@@ -62,7 +67,8 @@ Repository targets:
 
 - `docs/vision.md`
 - `docs/spec/core_1_0.md`
-- future companion specs for `ai`, `effects`, `reactive_ui`, and `multimodal`
+- future companion specs for `ai`, `effects`, `reactive_ui`, `multimodal`,
+  `concurrency`, and `distribution`
 
 Exit criteria:
 
@@ -277,7 +283,151 @@ Exit criteria:
 - a streaming AI response can update a reactive view in a single pipeline
   expression
 
-## Phase 7: Tooling and Positioning
+## Phase 7: Structured Concurrency and Parallelism
+
+Goal:
+
+- make concurrent and parallel execution a language-level concern, not a
+  library pattern
+
+Tasks:
+
+- add `par [ expr1, expr2, ... ]` as a parallel fan-out expression that
+  produces a tuple of results; all branches run concurrently
+- add `spawn expr` as a keyword that starts a concurrent task and returns
+  `future<T>`
+- add `channel<T>` as a typed first-class value for inter-task communication
+- add `future<T>` as a value type; `await future` retrieves the result
+- implement scope-bounded concurrency: tasks spawned in a block are joined
+  before the block exits; dangling tasks are a semantic error
+- add `par` and `spawn` to the USM keyword registry for all 17 languages
+- lower `par` to `asyncio.gather` on the Python backend and to structured
+  Promise.all on the browser backend
+- integrate `par` with AI operations: `par [ embed q1, embed q2, embed q3 ]`
+  should fan out model calls automatically
+
+Suggested repository additions:
+
+- `multilingualprogramming/core/ir_nodes.py` — `IRParExpr`, `IRSpawnExpr`,
+  `IRChannelExpr`, `IRFutureAwait`
+- `multilingualprogramming/runtime/concurrency_runtime.py`
+- `multilingualprogramming/codegen/concurrency_lowering.py`
+- `multilingualprogramming/resources/usm/keywords.json` — `par`, `spawn`
+
+Suggested tests:
+
+- `tests/core1/test_par_operator.py`
+- `tests/core1/test_spawn_future.py`
+- `tests/core1/test_channel.py`
+- `tests/core1/test_parallel_ai.py`
+
+Exit criteria:
+
+- `par [ prompt @m: q1, prompt @m: q2 ]` executes both calls concurrently
+- `spawn` returns a `future<T>` that can be awaited independently
+- scope-bounded concurrency prevents tasks from outliving their scope
+- parallel constructs are usable in at least three surface languages
+
+## Phase 8: Multi-Agent Coordination
+
+Goal:
+
+- make networks of cooperating agents a language-level feature, not an
+  orchestration library
+
+Tasks:
+
+- add `@swarm` decorator that declares a group of agents with shared tools and
+  a named memory store
+- add inter-agent message passing via typed channels as a standard coordination
+  pattern within a swarm
+- add a coordinator pattern: one agent in a swarm can delegate subtasks to
+  others and collect results
+- define how agents in a swarm share tools: tools declared inside the swarm
+  block are available to all member agents
+- add `plan` as an agent-level orchestration primitive that returns a
+  structured sequence of subtasks
+- register `swarm` in the USM keyword registry for all 17 languages
+- demonstrate a swarm of three agents completing a research task in parallel
+
+Suggested repository additions:
+
+- `multilingualprogramming/core/ir_nodes.py` — `IRSwarmDecl`
+- `multilingualprogramming/runtime/swarm_runtime.py`
+- `multilingualprogramming/resources/usm/keywords.json` — `swarm`
+
+Suggested tests:
+
+- `tests/core1/test_swarm_declaration.py`
+- `tests/core1/test_agent_delegation.py`
+- `tests/core1/test_swarm_shared_tools.py`
+
+Suggested demos:
+
+- `examples/research_swarm_en.ml`
+- `examples/research_swarm_fr.ml`
+- `examples/research_swarm_ja.ml`
+
+Exit criteria:
+
+- a `@swarm` with three agents completes a delegated research task
+- the same swarm program is demonstrable in three surface languages
+- agents communicate through typed channels without manual callback wiring
+
+## Phase 9: Distribution, Memory, and Observability
+
+Goal:
+
+- make distribution and long-running programs expressible at the language level
+
+Tasks:
+
+### Placement annotations
+
+- add `@local`, `@edge`, `@cloud` as placement decorators on functions and
+  agents
+- implement placement-aware dispatch in the runtime backend selector
+- ensure semantic identity is preserved regardless of placement
+
+### Persistent memory
+
+- add `memory` as a named, typed, session-persistent store
+- support `kb.store(key, value)`, `kb.retrieve(key)`, and
+  `kb.search(query)` (embedding-based)
+- memory stores should survive across program invocations for agent use cases
+- add `memory` to the USM keyword registry for all 17 languages
+
+### Observability primitives
+
+- add `trace expr` to capture the model, inputs, outputs, and timing of an
+  AI expression
+- add `cost expr` to return the token or compute cost of an AI expression
+- add `explain expr` to request a natural-language justification of a result
+- these should compose naturally with `|>` and `par`
+
+Suggested repository additions:
+
+- `multilingualprogramming/core/ir_nodes.py` — `IRPlacementAnnotation`,
+  `IRMemoryStore`, `IRTraceExpr`, `IRCostExpr`, `IRExplainExpr`
+- `multilingualprogramming/runtime/memory_runtime.py`
+- `multilingualprogramming/runtime/observability_runtime.py`
+- `multilingualprogramming/resources/usm/keywords.json` — `memory`, `trace`,
+  `cost`, `explain`
+
+Suggested tests:
+
+- `tests/core1/test_placement_annotations.py`
+- `tests/core1/test_memory_store.py`
+- `tests/core1/test_observability.py`
+
+Exit criteria:
+
+- `@local` and `@cloud` annotated functions dispatch to different backends
+- `memory` stores data that survives across separate program runs
+- `trace` and `cost` produce structured provenance values
+- observability constructs are usable in at least three surface languages
+
+## Phase 10: Tooling and Positioning
 
 Goal:
 
@@ -287,14 +437,19 @@ Tasks:
 
 - add CLI support for semantic IR inspection
 - add legacy vs core execution modes
+- add `multilingual explain` to describe what a program does and what
+  capabilities it requires
+- add `multilingual cost` to estimate AI token usage before running
 - improve playground messaging and examples
 - add language-server and diagnostics goals to the roadmap
-- reposition examples and docs around AI, multimodal, and reactive workflows
+- reposition examples and docs around AI, multimodal, concurrent, and reactive
+  workflows
 
 Suggested CLI additions:
 
 - `multilingual ir`
 - `multilingual explain`
+- `multilingual cost`
 - `multilingual ui-preview`
 - `multilingual run --mode legacy|core`
 
@@ -308,6 +463,8 @@ Exit criteria:
 
 - the project feels like a modern language platform rather than only a
   transpiler
+- `multilingual explain` can describe any program's capabilities and AI usage
+  in natural language
 
 ## Recommended Near-Term Deliverables
 
@@ -321,6 +478,9 @@ The highest-value next steps are:
 6. define AI runtime abstractions (`prompt`, `think`, `stream`, `embed`,
    `@agent`, `@tool`) before any provider-specific integrations
 7. build reactive UI with `observe var` on top of existing DOM groundwork
+8. implement `par [ ... ]` and `spawn` for structured concurrent execution
+9. implement `@swarm` for multi-agent coordination with shared tools
+10. implement `memory` and `trace` as observable, persistent language constructs
 
 ## Flagship Examples for 1.0
 
@@ -335,9 +495,18 @@ The first public examples of the new direction should include:
 - a retrieval-based question-answering example using `embed` and `nearest`
 - a streaming chat UI showing a `stream` expression bound to a reactive view
 - a semantic intent classifier using `~=` across multilingual user input
+- a parallel document analysis pipeline using `par` with three simultaneous
+  AI operations (`examples/parallel_analysis.ml`)
+- a research swarm of three coordinated agents using `@swarm`, written in
+  Arabic, showing that multi-agent programs are as portable as single-agent
+  ones (`examples/research_swarm_ar.ml`)
+- a long-running personal assistant that uses `memory` to recall user
+  preferences across sessions (`examples/persistent_assistant.ml`)
+- an observable AI pipeline using `trace` and `cost` to show provenance and
+  token budgeting (`examples/observable_pipeline.ml`)
 
 These examples should become the public face of Multilingual 1.0.
 
-The most compelling demo is the agent shown in three languages: it proves the
-core claim that Multilingual is the only AI programming platform where the same
-agent logic is idiomatic in any human language.
+The most compelling demo is the agent swarm shown in three languages: it proves
+the core claim that Multilingual is the only platform where the same
+multi-agent, parallel, observable program is idiomatic in any human language.

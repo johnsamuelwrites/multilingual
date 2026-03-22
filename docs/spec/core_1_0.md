@@ -14,12 +14,13 @@ Core 1.0 exists to give Multilingual:
 
 - one precise semantic identity
 - one shared foundation across human-language surfaces
-- one language model for code, data, AI, and interaction
+- one language model for code, data, AI, concurrency, and interaction
 - one portable representation that can move across execution environments
+- one semantic basis for distributed and long-running programs
 
-Detailed specifications for AI, multimodal, and reactive UI layers may grow
-into companion documents, but Core 1.0 defines the semantic ground they stand
-on.
+Detailed specifications for AI, multimodal, reactive UI, concurrency, and
+distribution layers may grow into companion documents, but Core 1.0 defines
+the semantic ground they stand on.
 
 ## Semantic Model
 
@@ -67,6 +68,9 @@ Core 1.0 is also designed to host these first-class capability-oriented values:
 - `model`
 - `tool`
 - `resource`
+- `future<T>`
+- `channel<T>`
+- `memory`
 
 These are not second-class library conventions. They belong to the language
 model.
@@ -249,6 +253,67 @@ Core 1.0 supports:
 `stream<T>` is the standard representation for incrementally produced values,
 including event sources, generated tokens, and long-lived computations.
 
+## Structured Concurrency and Parallelism
+
+Concurrent and parallel execution are first-class semantic properties.
+
+Core 1.0 provides:
+
+### Parallel fan-out
+
+`par` runs a fixed set of expressions simultaneously and collects their results
+as a tuple. All branches must complete before execution continues.
+
+```text
+let (summary, tags, sentiment) = par [
+  summarize(doc),
+  extract_tags(doc),
+  classify_sentiment(doc)
+]
+```
+
+This is the primary idiom for running multiple AI operations in parallel.
+
+### Spawning concurrent tasks
+
+`spawn` launches a task that runs concurrently and returns a `future<T>`. The
+result is retrieved with `await`.
+
+```text
+let task = spawn long_computation(input)
+let result = await task
+```
+
+### Typed channels
+
+`channel<T>` is a typed conduit between concurrent tasks. Channels are
+directional, buffered or unbounded, and composable with `stream<T>`.
+
+```text
+let ch: channel<string> = channel()
+spawn producer(ch)
+for await msg in ch:
+  handle(msg)
+```
+
+### Scope-bounded concurrency
+
+All concurrent work should have a bounded scope. Tasks spawned within a block
+are joined before the block exits. This prevents leaking concurrent work across
+semantic boundaries and makes programs easier to reason about.
+
+### Parallel pipelines
+
+`|>` composes values sequentially. When fan-out is needed, `par` provides an
+explicit parallel step that integrates naturally into pipeline style:
+
+```text
+let result = doc
+  |> preprocess()
+  |> par [ summarize, translate, embed ]
+  |> store_all()
+```
+
 ## AI-Native Semantics
 
 AI operations are language forms.
@@ -319,6 +384,24 @@ fn researcher(question: string) -> Report uses ai, net:
   Report(content: body.conclusion)
 ```
 
+### Multi-agent coordination
+
+`@swarm` declares a coordinated group of agents that share tools, memory, and
+communication channels. Agents within a swarm can delegate tasks to each other
+and communicate through typed channels.
+
+```text
+@swarm(coordinator: @lead_agent)
+let research_team = swarm {
+  @agent(model: @claude-sonnet) fn lead_agent(goal: string) -> Report uses ai, net: ...
+  @agent(model: @claude-sonnet) fn web_searcher(query: string) -> list<string> uses net: ...
+  @agent(model: @claude-sonnet) fn summarizer(docs: list<string>) -> string uses ai: ...
+}
+```
+
+Agents in a swarm can run in parallel and pass results through the coordinator
+without manual orchestration code.
+
 ## Semantic Matching
 
 Core 1.0 includes semantic comparison as a language capability.
@@ -381,6 +464,67 @@ on count.change:
 The same reactive semantics should be able to power interfaces, event-driven
 systems, and live agent workflows.
 
+## Observability and Provenance
+
+Programs that delegate to AI models, run concurrently, or span distributed
+environments should be observable by design.
+
+Core 1.0 provides observability primitives that attach to AI expressions:
+
+- `trace expr` — captures the model, inputs, and outputs of an AI operation
+- `cost expr` — returns the token or compute cost of an AI operation
+- `explain expr` — requests a natural-language explanation of the result
+
+```text
+let analysis = trace think @claude-sonnet:
+  "Evaluate the risks in: {proposal}"
+
+let c = cost embed @text-embedding-3-small: query
+```
+
+Provenance values carry the full context of a decision: which model, which
+inputs, which output, and when. They should be storable, queryable, and
+renderable.
+
+## Distribution and Placement
+
+Programs should be able to declare where computation runs without writing
+manual coordination code.
+
+### Placement annotations
+
+Functions and agents can be annotated with placement hints:
+
+- `@local` — run on the user's device
+- `@edge` — run in a nearby compute node
+- `@cloud` — run in a remote cloud environment
+
+```text
+@local
+fn preprocess(img: image) -> image: ...
+
+@cloud
+@agent(model: @claude-sonnet)
+fn analyze(img: image) -> Report uses ai: ...
+```
+
+The runtime honors placement annotations and manages data transfer. Semantics
+are preserved regardless of where execution happens.
+
+### Long-running programs and memory
+
+Agents and programs that span sessions need persistent state. `memory` is a
+named, typed, queryable store accessible across invocations.
+
+```text
+let kb: memory<string> = memory("user-notes")
+kb.store("preference", "prefers short answers")
+let pref = kb.retrieve("preference")
+```
+
+Memory should support: named stores, typed values, time-scoped retrieval, and
+embedding-based semantic search over stored content.
+
 ## Modules and Packages
 
 Core 1.0 includes explicit module boundaries and package metadata.
@@ -409,6 +553,10 @@ The shared semantic representation should model at least:
 - AI-native constructs
 - reactive constructs
 - async and stream semantics
+- concurrent constructs: `par`, `spawn`, `channel`, `future`
+- multi-agent coordination: `@swarm`, delegation, message passing
+- observability: `trace`, `cost`, `explain` annotations
+- distribution: placement annotations, `memory` stores
 - backend-neutral calls and data flow
 
 This representation is the defining boundary of the language.
@@ -436,4 +584,9 @@ The highest-value implementation priorities for Core 1.0 are:
 9. semantic matching
 10. reactive bindings and event forms
 11. async and stream consistency
+12. `par` and `spawn` for structured concurrency
+13. `channel<T>` and `future<T>` as principal values
+14. multi-agent coordination via `@swarm`
+15. observability primitives: `trace`, `cost`, `explain`
+16. placement annotations and `memory` stores
 
