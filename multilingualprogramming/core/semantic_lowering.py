@@ -192,7 +192,6 @@ _AI_CANONICAL: dict[str, str] = {
     "思考":        "think",    # zh
     "考える":      "think",    # ja
     "pensa":       "think",    # it
-    "pensar":      "think",    # pt (same as es)
     "mysl":        "think",    # pl
     "denk":        "think",    # nl
     "tank":        "think",    # sv
@@ -230,7 +229,6 @@ _AI_CANONICAL: dict[str, str] = {
     "流":          "stream",   # zh
     "ストリーム":  "stream",   # ja
     "trasmetti":   "stream",   # it
-    "transmitir":  "stream",   # pt (same as es)
     "strumien":    "stream",   # pl
     "stroom":      "stream",   # nl
     "strom":       "stream",   # sv / da
@@ -307,7 +305,6 @@ _AI_CANONICAL: dict[str, str] = {
     "pianifica":   "plan",     # it
     "planejar":    "plan",     # pt
     "planuj":      "plan",     # pl
-    "plan":        "plan",     # nl (same)
     "planera":     "plan",     # sv
     "planlæg":     "plan",     # da
     "suunnittele": "plan",     # fi
@@ -343,7 +340,6 @@ _AI_CANONICAL: dict[str, str] = {
     "检索":        "retrieve", # zh
     "取得する":    "retrieve", # ja
     "recupera":    "retrieve", # it
-    "recuperar":   "retrieve", # pt
     "pobierz":     "retrieve", # pl
     "ophalen":     "retrieve", # nl
     "hamta":       "retrieve", # sv
