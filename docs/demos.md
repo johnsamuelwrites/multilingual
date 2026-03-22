@@ -11,33 +11,33 @@ The most compelling demo: the same agent logic written in English, French, and
 Japanese, running identically.  Proves that Multilingual is the only AI
 programming platform where agent code is idiomatic in any human language.
 
-- [`examples/agent_en.ml`](../../examples/agent_en.ml) — English
-- [`examples/agent_fr.ml`](../../examples/agent_fr.ml) — French
-- [`examples/agent_ja.ml`](../../examples/agent_ja.ml) — Japanese
+- `examples/agent_en.ml` — English
+- `examples/agent_fr.ml` — French
+- `examples/agent_ja.ml` — Japanese
 
 ### Reactive counter
 
 `observe var` + `on .change` + `canvas` — the simplest reactive web app.
 
-- [`examples/reactive_counter.ml`](../../examples/reactive_counter.ml)
+- `examples/reactive_counter.ml`
 
 ### Streaming chat (French)
 
 A streaming AI response bound to a reactive view, written in French.
 
-- [`examples/streaming_chat_fr.ml`](../../examples/streaming_chat_fr.ml)
+- `examples/streaming_chat_fr.ml`
 
 ### Semantic search (Japanese)
 
 `embed` + `nearest` + `~=` semantic match across Japanese user input.
 
-- [`examples/semantic_search_ja.ml`](../../examples/semantic_search_ja.ml)
+- `examples/semantic_search_ja.ml`
 
 ### Multilingual AI dashboard
 
 `@agent`, reactive state, streaming output, and canvas composition.
 
-- [`examples/multilingual_dashboard.ml`](../../examples/multilingual_dashboard.ml)
+- `examples/multilingual_dashboard.ml`
 
 ## CLI tools for Core 1.0
 
