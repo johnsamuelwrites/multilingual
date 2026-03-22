@@ -16,6 +16,7 @@ from multilingualprogramming.parser.ast_nodes import (
     BooleanLiteral, NoneLiteral, ListLiteral, DictLiteral, SetLiteral,
     Identifier, BinaryOp, UnaryOp, BooleanOp, CompareOp,
     CallExpr, AttributeAccess, IndexAccess, ConditionalExpr,
+    ModelRefLiteral,
     LambdaExpr, YieldExpr, AwaitExpr, NamedExpr,
     VariableDeclaration, Assignment, AnnAssignment, ExpressionStatement,
     PassStatement, ReturnStatement, BreakStatement, ContinueStatement,
@@ -87,6 +88,10 @@ _TYPE_CONCEPT_TO_PYTHON = {
     "TYPE_LIST": "list",
     "TYPE_DICT": "dict",
 }
+_AI_NATIVE_CONCEPTS = frozenset({
+    "PROMPT", "THINK", "GENERATE", "STREAM_KW",
+    "EMBED", "EXTRACT", "CLASSIFY",
+})
 
 # Augmented assignment operators
 _AUGMENTED_OPS = {
@@ -1632,7 +1637,7 @@ class Parser:
             # Look ahead for '='
             save_pos = self.pos
             name_tok = self._advance()
-            if self._match_operator("="):
+            if self._match_operator("=") or self._match_delimiter(":"):
                 self._advance()
                 value = self._parse_expression()
                 keywords.append((name_tok.value, value))
@@ -1656,6 +1661,8 @@ class Parser:
         if concept == "NONE":
             self._advance()
             return NoneLiteral(line=tok.line, column=tok.column)
+        if concept in _AI_NATIVE_CONCEPTS and self._is_native_ai_form():
+            return self._parse_native_ai_expression()
         if concept in _IDENTIFIER_LIKE_CONCEPTS:
             self._advance()
             return Identifier(tok.value, line=tok.line, column=tok.column)
@@ -1712,6 +1719,10 @@ class Parser:
             if keyword_atom is not None:
                 return keyword_atom
 
+        # Model reference literal
+        if self._match_delimiter("@"):
+            return self._parse_model_ref_literal()
+
         # Parenthesized expression or generator expression
         if self._match_delimiter("("):
             open_tok = self._advance()
@@ -1755,6 +1766,63 @@ class Parser:
             return self._parse_brace_literal()
 
         self._error("EXPECTED_EXPRESSION", tok, token=tok.value)
+
+    def _is_native_ai_form(self):
+        """Return True when the current AI keyword starts native Core 1.0 syntax."""
+        idx = self.pos + 1
+        if idx >= len(self.tokens):
+            return False
+        nxt = self.tokens[idx]
+        return nxt.type == TokenType.DELIMITER and nxt.value in {"@", ":"}
+
+    def _parse_native_ai_expression(self):
+        """Parse native AI syntax such as `prompt @model: template`."""
+        tok = self._advance()
+        func = Identifier(tok.value, line=tok.line, column=tok.column)
+        args = []
+
+        if self._match_delimiter("@"):
+            args.append(self._parse_model_ref_literal())
+
+        if self._match_delimiter(":"):
+            self._advance()
+            args.append(self._parse_expression())
+        else:
+            self._error("EXPECTED_EXPRESSION", self._current(), token=self._current().value)
+
+        node = CallExpr(func, args, line=tok.line, column=tok.column)
+        setattr(node, "native_ai_syntax", True)
+
+        if tok.concept in {"GENERATE", "EXTRACT", "CLASSIFY"} and self._match_operator("->"):
+            self._advance()
+            setattr(node, "core_target_type", self._parse_annotation_expression())
+
+        return node
+
+    def _parse_model_ref_literal(self):
+        """Parse a model reference literal starting with `@`."""
+        tok = self._advance()  # consume @
+        parts = []
+
+        while True:
+            cur = self._current()
+            if cur.type == TokenType.EOF:
+                break
+            if cur.type == TokenType.NEWLINE:
+                break
+            if cur.type == TokenType.DELIMITER and cur.value in {":", ",", ")", "]", "}"}:
+                break
+            if cur.type == TokenType.OPERATOR and cur.value not in {"-", "/"}:
+                break
+
+            parts.append(cur.value)
+            self._advance()
+
+        model_name = "".join(parts).strip()
+        if not model_name:
+            self._error("EXPECTED_IDENTIFIER", self._current(), token=self._current().value)
+
+        return ModelRefLiteral(model_name, line=tok.line, column=tok.column)
 
     def _parse_fstring(self, tok):  # pylint: disable=too-many-statements
         """Parse an f-string by extracting {expr} segments from the raw text.

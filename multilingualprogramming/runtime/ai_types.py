@@ -101,3 +101,85 @@ class ToolResult:
     def success(self) -> bool:
         """Return True when the tool invocation completed without error."""
         return self.error is None
+
+
+# ---------------------------------------------------------------------------
+# Plan — structured multi-step reasoning primitive
+# ---------------------------------------------------------------------------
+
+@dataclass
+class PlanStep:
+    """A single step in a plan."""
+    index: int
+    description: str
+    status: str = "pending"   # "pending" | "in_progress" | "done" | "failed"
+    result: str = ""
+
+
+@dataclass
+class Plan:
+    """Structured multi-step reasoning result produced by the `plan` primitive.
+
+    Agents use Plan to break a goal into discrete steps before executing.
+
+    Usage::
+
+        plan = Plan(goal="Summarise a PDF and email it")
+        plan.add_step("Extract text from the PDF")
+        plan.add_step("Summarise to 3 bullet points")
+        plan.add_step("Compose email body")
+        plan.add_step("Send email")
+
+        for step in plan.pending_steps():
+            step.status = "done"
+    """
+
+    goal: str = ""
+    steps: list = field(default_factory=list)   # list[PlanStep]
+
+    def add_step(self, description: str) -> "PlanStep":
+        step = PlanStep(index=len(self.steps), description=description)
+        self.steps.append(step)
+        return step
+
+    def pending_steps(self):
+        return [s for s in self.steps if s.status == "pending"]
+
+    def completed_steps(self):
+        return [s for s in self.steps if s.status == "done"]
+
+    def is_complete(self) -> bool:
+        return all(s.status == "done" for s in self.steps)
+
+    def summary(self) -> str:
+        lines = [f"Goal: {self.goal}"]
+        for s in self.steps:
+            lines.append(f"  [{s.status:10s}] {s.index+1}. {s.description}")
+        return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
+# GenerateResult — schema-constrained generation output
+# ---------------------------------------------------------------------------
+
+@dataclass
+class GenerateResult:
+    """Result of a schema-constrained generate expression.
+
+    Carries both the raw text and the parsed structured value.
+
+    Usage::
+
+        result: Invoice = generate @model: context -> Invoice
+        # result.value is the Invoice instance (if parsing succeeded)
+        # result.raw is the raw text from the model
+    """
+
+    raw: str = ""
+    value: object = None          # the parsed structured value, or None on failure
+    declared_type: str = ""       # name of the declared return type
+    parse_error: str = ""         # non-empty if structured parsing failed
+
+    @property
+    def ok(self) -> bool:
+        return self.value is not None and not self.parse_error

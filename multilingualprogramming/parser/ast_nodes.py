@@ -161,6 +161,11 @@ class ConditionalExpr(ASTNode):
         self.condition = condition
         self.true_expr = true_expr
         self.false_expr = false_expr
+class ModelRefLiteral(ASTNode):
+    """Model reference literal: @claude-sonnet, @gpt-4o, etc."""
+    def __init__(self, model_name, line=0, column=0):
+        super().__init__(line, column)
+        self.model_name = model_name
 # ---------------------------------------------------------------------------
 # Simple statement nodes
 # ---------------------------------------------------------------------------

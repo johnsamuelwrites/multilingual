@@ -294,6 +294,14 @@ class _LoweringContext:
     def _lower_Identifier(self, node: ast.Identifier) -> IRIdentifier:
         return IRIdentifier(name=node.name, line=node.line, column=node.column)
 
+    def _lower_ModelRefLiteral(self, node: ast.ModelRefLiteral) -> IRModelRef:
+        return IRModelRef(
+            model_name=node.model_name,
+            inferred_type=MODEL_TYPE,
+            line=node.line,
+            column=node.column,
+        )
+
     def _lower_BinaryOp(self, node: ast.BinaryOp) -> IRBinaryOp | IRPipeExpr | IRSemanticMatchOp:
         if node.op == "|>":
             return IRPipeExpr(
@@ -359,31 +367,47 @@ class _LoweringContext:
         """Transitionally lift known AI call patterns to AI IR nodes."""
         self.require_effect("ai")
         args = node.args or []
-        model = self.lower(args[0]) if args else None
-        template = self.lower(args[1]) if len(args) > 1 else None
+        model = None
+        payload = None
+        if args and isinstance(args[0], ast.ModelRefLiteral):
+            model = self.lower(args[0])
+            payload = self.lower(args[1]) if len(args) > 1 else None
+        elif len(args) > 1:
+            model = self.lower(args[0])
+            payload = self.lower(args[1])
+        elif args:
+            payload = self.lower(args[0])
+
+        target_type = _lower_annotation(getattr(node, "core_target_type", None))
         ln, col = node.line, node.column
         if name == "prompt":
-            return IRPromptExpr(model=model, template=template,
+            return IRPromptExpr(model=model, template=payload,
                                 inferred_type=STRING_TYPE, line=ln, column=col)
         if name == "generate":
-            return IRGenerateExpr(model=model, template=template,
+            return IRGenerateExpr(model=model, template=payload,
+                                  target_type=target_type,
                                   line=ln, column=col)
         if name == "think":
-            return IRThinkExpr(model=model, template=template,
+            return IRThinkExpr(model=model, template=payload,
                                line=ln, column=col)
         if name == "stream":
-            return IRStreamExpr(model=model, template=template,
+            return IRStreamExpr(model=model, template=payload,
                                 inferred_type=STREAM_STR, line=ln, column=col)
         if name == "embed":
-            return IREmbedExpr(model=model, value=template,
+            return IREmbedExpr(model=model, value=payload,
                                inferred_type=VECTOR_FLOAT, line=ln, column=col)
         if name == "extract":
-            return IRExtractExpr(model=model, source=template,
+            return IRExtractExpr(model=model, source=payload,
+                                 target_type=target_type,
                                  line=ln, column=col)
         if name == "classify":
             categories = self.lower_list(args[2:])
-            return IRClassifyExpr(model=model, subject=template,
-                                  categories=categories, line=ln, column=col)
+            if payload is not None and len(args) == 1:
+                categories = []
+            return IRClassifyExpr(model=model, subject=payload,
+                                  categories=categories,
+                                  target_type=target_type,
+                                  line=ln, column=col)
         return IRExpression(line=ln, column=col)
 
     def _lower_AttributeAccess(self, node: ast.AttributeAccess) -> IRAttributeAccess:
@@ -841,10 +865,16 @@ def _detect_agent_decorator(decorators: list) -> str | None:
                         if isinstance(kw, tuple)
                         else (getattr(kw, "arg", ""), getattr(kw, "value", None))
                     )
-                    if key == "model" and isinstance(val, ast.Identifier):
-                        return val.name
-                if dec.args and isinstance(dec.args[0], ast.Identifier):
-                    return dec.args[0].name
+                    if key == "model":
+                        if isinstance(val, ast.ModelRefLiteral):
+                            return val.model_name
+                        if isinstance(val, ast.Identifier):
+                            return val.name
+                if dec.args:
+                    if isinstance(dec.args[0], ast.ModelRefLiteral):
+                        return dec.args[0].model_name
+                    if isinstance(dec.args[0], ast.Identifier):
+                        return dec.args[0].name
         elif isinstance(dec, ast.Identifier) and dec.name == _AGENT_DECORATOR:
             return ""
     return None
