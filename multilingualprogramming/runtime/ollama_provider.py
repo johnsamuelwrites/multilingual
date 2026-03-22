@@ -40,7 +40,6 @@ from multilingualprogramming.runtime.ai_types import (
     EmbeddingVector,
     ModelRef,
     PromptResult,
-    Reasoning,
     StreamChunk,
 )
 
@@ -123,7 +122,8 @@ class OllamaProvider(AIProvider):
             options=options,
             **kwargs,
         )
-        content = response.message.content if response.message else ""
+        message = getattr(response, "message", None)
+        content = getattr(message, "content", "")
         usage = {}
         if hasattr(response, "eval_count") and response.eval_count:
             usage = {
@@ -144,7 +144,7 @@ class OllamaProvider(AIProvider):
         embed_model = kwargs.pop("embed_model", model_tag)
         try:
             response = self._client.embeddings(model=embed_model, prompt=text)
-            values = list(response.embedding)
+            values = list(getattr(response, "embedding", []))
             return EmbeddingVector(
                 values=values, model=embed_model, dimensions=len(values)
             )
@@ -174,7 +174,8 @@ class OllamaProvider(AIProvider):
             options=options,
             **kwargs,
         ):
-            content = chunk.message.content if chunk.message else ""
+            message = getattr(chunk, "message", None)
+            content = getattr(message, "content", "")
             is_final = getattr(chunk, "done", False)
             yield StreamChunk(content=content, is_final=is_final)
 
@@ -214,7 +215,8 @@ class OllamaProvider(AIProvider):
             options=options,
             **kwargs,
         )
-        raw = (response.message.content if response.message else "").strip()
+        message = getattr(response, "message", None)
+        raw = getattr(message, "content", "").strip()
         if raw.startswith("```"):
             raw = raw.split("\n", 1)[-1].rsplit("```", 1)[0].strip()
         try:
@@ -244,7 +246,8 @@ class OllamaProvider(AIProvider):
             options=options,
             **kwargs,
         )
-        content = response.message.content if response.message else ""
+        message = getattr(response, "message", None)
+        content = getattr(message, "content", "")
         usage = {}
         if hasattr(response, "eval_count") and response.eval_count:
             usage = {

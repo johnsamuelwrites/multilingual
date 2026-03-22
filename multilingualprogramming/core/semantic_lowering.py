@@ -1655,6 +1655,7 @@ def _parse_effects_annotation(node: ast.FunctionDef) -> EffectSet:
 
 def _lower_pattern_node(ctx: _LoweringContext, pattern) -> object:
     """Lower a parser pattern node to an IR pattern node."""
+    # pylint: disable=too-many-branches
     if pattern is None:
         return IRWildcardPattern()
     if isinstance(pattern, ast.BinaryOp) and pattern.op == " as ":

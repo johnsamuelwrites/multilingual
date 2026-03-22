@@ -40,7 +40,6 @@ from multilingualprogramming.runtime.ai_types import (
     EmbeddingVector,
     ModelRef,
     PromptResult,
-    Reasoning,
     StreamChunk,
 )
 
