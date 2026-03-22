@@ -19,6 +19,7 @@ from multilingualprogramming.runtime.semantic_match import (
 
 @pytest.fixture(autouse=True)
 def reset():
+    """Reset runtime and semantic-match caches around each test."""
     AIRuntime.reset()
     clear_cache()
     yield

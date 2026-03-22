@@ -156,6 +156,7 @@ class Plan:
         return all(s.status == "done" for s in self.steps)
 
     def summary(self) -> str:
+        """Render a human-readable summary of the goal and step statuses."""
         lines = [f"Goal: {self.goal}"]
         for s in self.steps:
             lines.append(f"  [{s.status:10s}] {s.index+1}. {s.description}")

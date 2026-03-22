@@ -7,6 +7,8 @@
 """@agent and @tool decorator runtime tests."""
 # pylint: disable=missing-class-docstring,import-error
 
+import ast
+
 import pytest
 
 from multilingualprogramming.runtime.ai_runtime import AIRuntime, MockProvider
@@ -20,6 +22,7 @@ from multilingualprogramming.runtime.tool_runtime import (
 
 @pytest.fixture(autouse=True)
 def reset():
+    """Reset the shared AI runtime around each test."""
     AIRuntime.reset()
     yield
     AIRuntime.reset()
@@ -136,8 +139,14 @@ class TestAgentLoop:
     def test_agent_loop_history_records_tool(self):
         reg = ToolRegistry()
 
-        def calc(expr: str) -> int:  # pylint: disable=eval-used
-            return eval(expr)  # noqa: S307
+        def calc(expr: str) -> int:
+            """Evaluate a simple integer arithmetic expression for the test."""
+            node = ast.parse(expr, mode="eval")
+            assert isinstance(node.body, ast.BinOp)
+            assert isinstance(node.body.op, ast.Mult)
+            assert isinstance(node.body.left, ast.Constant)
+            assert isinstance(node.body.right, ast.Constant)
+            return int(node.body.left.value) * int(node.body.right.value)
 
         reg.register(calc, description="Calculate expression", name="calc")
 
