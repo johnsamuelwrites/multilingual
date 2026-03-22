@@ -403,9 +403,10 @@ Le flux est identique pour toutes les langues:
 
 1. `Lexer` tokenize le code source Unicode.
 2. `Parser` construit un AST.
-3. `SemanticAnalyzer` valide portees, symboles et coherence.
-4. `PythonCodeGenerator` genere du Python executable.
-5. `ProgramExecutor` lance l'execution avec les built-ins runtime.
+3. `lower_to_semantic_ir` produit un `IRProgram`.
+4. `core.semantic_analyzer.SemanticAnalyzer` valide portees, symboles et coherence.
+5. `PythonCodeGenerator` genere du Python executable.
+6. `ProgramExecutor` lance l'execution avec les built-ins runtime.
 
 Ce design permet d'ajouter des langues sans reecrire parser/codegen.
 
@@ -417,12 +418,13 @@ Points d'entree principaux:
 from multilingualprogramming import (
     Lexer,
     Parser,
-    SemanticAnalyzer,
     PythonCodeGenerator,
     ProgramExecutor,
     REPL,
     KeywordRegistry,
 )
+
+from multilingualprogramming.core.semantic_analyzer import SemanticAnalyzer
 ```
 
 Signatures des constructeurs importants:

@@ -9,11 +9,11 @@
 import unittest
 
 from multilingualprogramming.core.semantic_lowering import lower_to_semantic_ir
-from multilingualprogramming.lexer.lexer import Lexer
-from multilingualprogramming.parser.parser import Parser
-from multilingualprogramming.parser.semantic_analyzer import (
+from multilingualprogramming.core.semantic_analyzer import (
     Symbol, SymbolTable, SemanticAnalyzer,
 )
+from multilingualprogramming.lexer.lexer import Lexer
+from multilingualprogramming.parser.parser import Parser
 
 
 def _analyze(source, language="en"):

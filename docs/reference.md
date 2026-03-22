@@ -80,7 +80,7 @@ Key capabilities:
 - `Lexer`
 - `Parser`
 - AST node model in `multilingualprogramming/parser/ast_nodes.py`
-- `SemanticAnalyzer`
+- `core.semantic_analyzer.SemanticAnalyzer`
 - `ASTPrinter`
 
 Key capabilities:
@@ -99,8 +99,8 @@ Key capabilities:
 
 Key capabilities:
 
-- transpile multilingual AST to Python source
-- execute full pipeline: source -> tokens -> AST -> checks -> Python -> runtime
+- transpile multilingual semantic IR to Python source
+- execute full pipeline: source -> tokens -> AST -> IR -> checks -> Python -> runtime
 - inject multilingual runtime builtins
 - interactive REPL with language switching and Python-preview mode
 
@@ -165,12 +165,13 @@ from multilingualprogramming import (
     MPDate,
     Lexer,
     Parser,
-    SemanticAnalyzer,
     ASTPrinter,
     PythonCodeGenerator,
     ProgramExecutor,
     REPL,
 )
+
+from multilingualprogramming.core.semantic_analyzer import SemanticAnalyzer
 ```
 
 ## CLI and REPL

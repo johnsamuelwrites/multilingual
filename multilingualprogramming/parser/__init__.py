@@ -22,7 +22,4 @@ from multilingualprogramming.parser.ast_nodes import (
 )
 from multilingualprogramming.parser.parser import Parser
 from multilingualprogramming.parser.ast_printer import ASTPrinter
-from multilingualprogramming.core.semantic_analyzer import (
-    Symbol, Scope, SymbolTable, SemanticAnalyzer,
-)
 from multilingualprogramming.parser.error_messages import ErrorMessageRegistry

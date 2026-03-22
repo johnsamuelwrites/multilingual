@@ -84,7 +84,7 @@ class TestCompilerBoundary:
 
     def test_executor_runs_semantic_analysis_on_ir_program(self):
         with patch(
-            "multilingualprogramming.parser.semantic_analyzer.SemanticAnalyzer.analyze"
+            "multilingualprogramming.core.semantic_analyzer.SemanticAnalyzer.analyze"
         ) as analyze:
             def _analyze(program):
                 assert isinstance(program, IRProgram)

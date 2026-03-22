@@ -82,8 +82,8 @@ The execution pipeline is:
 
 1. `Lexer` tokenizes source and resolves keyword concepts.
 2. `Parser` builds a language-agnostic AST.
-3. `lower_to_core_ir` wraps parser output into `CoreIRProgram`.
-4. `SemanticAnalyzer` checks scope and structural constraints.
+3. `lower_to_semantic_ir` lowers parser output into `IRProgram`.
+4. `core.semantic_analyzer.SemanticAnalyzer` checks scope and structural constraints.
 5. `PythonCodeGenerator` emits executable Python.
 6. Runtime/executor runs generated code with multilingual built-in aliases.
 
