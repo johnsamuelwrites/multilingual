@@ -83,6 +83,7 @@ from multilingualprogramming.codegen.wat_generator_support import (
     _FILTER_NAMES,
     _INPUT_NAMES,
     _INT_NAMES,
+    _ROUND_NAMES,
     _LEN_NAMES,
     _MAP_NAMES,
     _MAX_NAMES,
@@ -1133,6 +1134,10 @@ class WATCodeGenerator(
             elif resolved_fname in {"math.sqrt", "sqrt"} and len(node.args) == 1:
                 self._gen_expr(node.args[0], indent)
                 self._emit(f"{indent}f64.sqrt")
+            elif fname in _ROUND_NAMES and len(node.args) == 1:
+                # round(x) → f64.nearest (IEEE 754 round-half-to-even)
+                self._gen_expr(node.args[0], indent)
+                self._emit(f"{indent}f64.nearest")
             elif resolved_fname in {"math.floor", "floor"} and len(node.args) == 1:
                 self._gen_expr(node.args[0], indent)
                 self._emit(f"{indent}f64.floor")
