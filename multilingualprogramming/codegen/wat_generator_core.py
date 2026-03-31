@@ -189,7 +189,7 @@ class WATGeneratorCoreMixin:
     # Total WASM memory pages.  4 pages = 256 KB — enough for all current
     # examples.  Scratch area lives in the last 64 bytes of the last page so
     # the heap (which grows from the data section upward) can never reach it.
-    _WASM_PAGES: int = 4
+    _WASM_PAGES: int = 1024
 
     def _emit_wasi_runtime(self, heap_base: int) -> None:
         """Emit self-contained WAT functions for I/O and math.
@@ -2630,6 +2630,29 @@ class WATGeneratorCoreMixin:
     local.get $np
     f64.convert_i32_u
   )
+  ;; $__list_append_owned(list_ptr f64, elem f64) -> f64 new list_ptr with old storage released
+  (func $__list_append_owned (param $lp f64) (param $elem f64) (result f64)
+    (local $lpi i32) (local $cnt_i i32) (local $newp f64)
+    local.get $lp
+    i32.trunc_f64_u
+    local.set $lpi
+    local.get $lpi
+    f64.load
+    i32.trunc_f64_u
+    local.set $cnt_i
+    local.get $lp
+    local.get $elem
+    call $__list_append
+    local.set $newp
+    local.get $lpi
+    local.get $cnt_i
+    i32.const 1
+    i32.add
+    i32.const 8
+    i32.mul
+    call $ml_free
+    local.get $newp
+  )
   ;; $__list_pop(list_ptr f64) -> f64 last element (decrements count in-place)
   (func $__list_pop (param $lp f64) (result f64)
     (local $lpi i32) (local $cnt_i i32) (local $last f64)
@@ -2753,6 +2776,29 @@ class WATGeneratorCoreMixin:
     end
     local.get $np
     f64.convert_i32_u
+  )
+  ;; $__list_extend_owned(list_a f64, list_b f64) -> f64 new list_ptr with old lhs storage released
+  (func $__list_extend_owned (param $la f64) (param $lb f64) (result f64)
+    (local $lai i32) (local $ca i32) (local $newp f64)
+    local.get $la
+    i32.trunc_f64_u
+    local.set $lai
+    local.get $lai
+    f64.load
+    i32.trunc_f64_u
+    local.set $ca
+    local.get $la
+    local.get $lb
+    call $__list_extend
+    local.set $newp
+    local.get $lai
+    local.get $ca
+    i32.const 1
+    i32.add
+    i32.const 8
+    i32.mul
+    call $ml_free
+    local.get $newp
   )
   ;; ── End WASI runtime ─────────────────────────────────────────────────────"""
         self._funcs.insert(0, runtime)

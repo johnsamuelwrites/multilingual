@@ -692,7 +692,7 @@ class WATCodeGenerator(
                 elif (isinstance(expr.func, AttributeAccess)
                       and expr.func.attr == "append"
                       and isinstance(expr.func.obj, Identifier)
-                      and self._is_tracked_list_name(expr.func.obj.name)
+                      and self._is_mutable_list_name(expr.func.obj.name)
                       and len(expr.args) == 1):
                     # lst.append(x) → allocate new list, update local
                     obj_name = expr.func.obj.name
@@ -704,7 +704,7 @@ class WATCodeGenerator(
                 elif (isinstance(expr.func, AttributeAccess)
                       and expr.func.attr == "pop"
                       and isinstance(expr.func.obj, Identifier)
-                      and self._is_tracked_list_name(expr.func.obj.name)
+                      and self._is_mutable_list_name(expr.func.obj.name)
                       and not expr.args):
                     # lst.pop() statement — result discarded
                     obj_name = expr.func.obj.name
@@ -715,7 +715,7 @@ class WATCodeGenerator(
                 elif (isinstance(expr.func, AttributeAccess)
                       and expr.func.attr == "extend"
                       and isinstance(expr.func.obj, Identifier)
-                      and self._is_tracked_list_name(expr.func.obj.name)
+                      and self._is_mutable_list_name(expr.func.obj.name)
                       and len(expr.args) == 1):
                     # lst.extend(other) → allocate new list, update local
                     obj_name = expr.func.obj.name

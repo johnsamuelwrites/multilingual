@@ -804,8 +804,9 @@ class WATDOMBridgeTestSuite(unittest.TestCase):
                 )
             ),
         )
+        expected_dom_buf = getattr(WATCodeGenerator, "_WASM_PAGES") * 65536 - 1536
         self.assertIn("(func $dom_value", wat)
-        self.assertIn("i32.const 260608", wat)
+        self.assertIn(f"i32.const {expected_dom_buf}", wat)
         self.assertNotIn("The dom_value wrapper uses argv_data as its internal string buffer.", wat)
 
     def test_no_dom_imports_when_unused(self):

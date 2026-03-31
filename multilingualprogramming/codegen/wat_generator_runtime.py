@@ -70,6 +70,10 @@ class WATGeneratorRuntimeMixin:
             or name in getattr(self, "_module_global_tuple_names", set())
         )
 
+    def _is_mutable_list_name(self, name: str) -> bool:
+        """Return True when *name* can be updated through list-style methods."""
+        return self._is_tracked_list_name(name) or self._is_module_global(name)
+
     def _emit_name_get(self, name: str, indent: str) -> bool:
         """Emit a load for *name* from local or module-global storage."""
         if name in self._locals:
