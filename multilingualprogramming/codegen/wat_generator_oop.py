@@ -339,6 +339,7 @@ class WATGeneratorOOPMixin:  # pylint: disable=too-many-instance-attributes,too-
         func_name = emitted_name or _name(func_def.name)
         param_names = _real_params(func_def)
         self._locals = set(param_names)
+        self._list_locals.update(self._func_param_list_names.get(func_name, set()))
 
         self._gen_stmts(func_def.body, "    ")
         body_instrs = list(self._instrs)

@@ -369,29 +369,33 @@ class WATCodeGenerator(
                 self._emit(f"{indent};; unpacking declaration lowered")
             else:
                 name = _name(stmt.name)
-                self._locals.add(name)
                 self._emit(f"{indent};; let {name} = ...")
                 self._gen_expr(stmt.value, indent)
-                self._emit(f"{indent}local.set ${self._wat_symbol(name)}")
+                if not self._is_module_global(name):
+                    self._locals.add(name)
+                self._emit_name_set(name, indent)
                 self._update_assignment_tracking(name, stmt.value, indent)
 
         elif isinstance(stmt, Assignment):
             target = stmt.target
             if isinstance(target, Identifier):
                 name = target.name
-                self._locals.add(name)
                 op = stmt.op
                 if op == "=":
                     self._emit(f"{indent};; {name} = ...")
                     self._gen_expr(stmt.value, indent)
-                    self._emit(f"{indent}local.set ${self._wat_symbol(name)}")
+                    if not self._is_module_global(name):
+                        self._locals.add(name)
+                    self._emit_name_set(name, indent)
                     self._update_assignment_tracking(name, stmt.value, indent)
                 else:
                     # Compound assignment: a op= b
                     self._emit(f"{indent};; {name} {op} ...")
-                    self._emit(f"{indent}local.get ${self._wat_symbol(name)}")
+                    if not self._is_module_global(name):
+                        self._locals.add(name)
+                    self._emit_name_get(name, indent)
                     self._gen_augmented_op(op, stmt.value, indent)
-                    self._emit(f"{indent}local.set ${self._wat_symbol(name)}")
+                    self._emit_name_set(name, indent)
                     self._clear_assignment_tracking(name)
             elif (isinstance(target, AttributeAccess)
                   and isinstance(target.obj, Identifier)):
@@ -457,7 +461,6 @@ class WATCodeGenerator(
         elif isinstance(stmt, AnnAssignment):
             if isinstance(stmt.target, Identifier):
                 name = stmt.target.name
-                self._locals.add(name)
                 self._emit(f"{indent};; annotated assignment {name}: ...")
                 if stmt.value is None:
                     self._emit(f"{indent}f64.const 0")
@@ -465,7 +468,9 @@ class WATCodeGenerator(
                 else:
                     self._gen_expr(stmt.value, indent)
                     self._update_assignment_tracking(name, stmt.value, indent)
-                self._emit(f"{indent}local.set ${self._wat_symbol(name)}")
+                if not self._is_module_global(name):
+                    self._locals.add(name)
+                self._emit_name_set(name, indent)
             else:
                 self._emit(f"{indent};; annotated assignment with complex target (nop in WAT)")
 
@@ -478,9 +483,10 @@ class WATCodeGenerator(
             for target in stmt.targets:
                 if isinstance(target, Identifier):
                     name = target.name
-                    self._locals.add(name)
                     self._emit(f"{indent}local.get ${self._wat_symbol(tmp_name)}")
-                    self._emit(f"{indent}local.set ${self._wat_symbol(name)}")
+                    if not self._is_module_global(name):
+                        self._locals.add(name)
+                    self._emit_name_set(name, indent)
                     self._update_assignment_tracking(name, stmt.value, indent)
                 else:
                     self._emit(
@@ -686,38 +692,38 @@ class WATCodeGenerator(
                 elif (isinstance(expr.func, AttributeAccess)
                       and expr.func.attr == "append"
                       and isinstance(expr.func.obj, Identifier)
-                      and expr.func.obj.name in self._list_locals
+                      and self._is_tracked_list_name(expr.func.obj.name)
                       and len(expr.args) == 1):
                     # lst.append(x) → allocate new list, update local
                     obj_name = expr.func.obj.name
                     self._emit(f"{indent};; {obj_name}.append(x)")
-                    self._gen_expr(expr.func.obj, indent)
+                    self._emit_name_get(obj_name, indent)
                     self._gen_expr(expr.args[0], indent)
                     self._emit(f"{indent}call $__list_append")
-                    self._emit(f"{indent}local.set ${self._wat_symbol(obj_name)}")
+                    self._emit_name_set(obj_name, indent)
                 elif (isinstance(expr.func, AttributeAccess)
                       and expr.func.attr == "pop"
                       and isinstance(expr.func.obj, Identifier)
-                      and expr.func.obj.name in self._list_locals
+                      and self._is_tracked_list_name(expr.func.obj.name)
                       and not expr.args):
                     # lst.pop() statement — result discarded
                     obj_name = expr.func.obj.name
                     self._emit(f"{indent};; {obj_name}.pop() (result discarded)")
-                    self._gen_expr(expr.func.obj, indent)
+                    self._emit_name_get(obj_name, indent)
                     self._emit(f"{indent}call $__list_pop")
                     self._emit(f"{indent}drop")
                 elif (isinstance(expr.func, AttributeAccess)
                       and expr.func.attr == "extend"
                       and isinstance(expr.func.obj, Identifier)
-                      and expr.func.obj.name in self._list_locals
+                      and self._is_tracked_list_name(expr.func.obj.name)
                       and len(expr.args) == 1):
                     # lst.extend(other) → allocate new list, update local
                     obj_name = expr.func.obj.name
                     self._emit(f"{indent};; {obj_name}.extend(other)")
-                    self._gen_expr(expr.func.obj, indent)
+                    self._emit_name_get(obj_name, indent)
                     self._gen_expr(expr.args[0], indent)
                     self._emit(f"{indent}call $__list_extend")
-                    self._emit(f"{indent}local.set ${self._wat_symbol(obj_name)}")
+                    self._emit_name_set(obj_name, indent)
                 else:
                     # Closure, constructor, builtin, or other non-WAT callable
                     self._emit(f"{indent};; unsupported call: {fname}(...) — not a WAT function")
@@ -1069,8 +1075,7 @@ class WATCodeGenerator(
                 self._emit(f"{indent}f64.const 0  ;; unsupported expr: DictLiteral")
 
         elif isinstance(node, Identifier):
-            if node.name in self._locals:
-                self._emit(f"{indent}local.get ${self._wat_symbol(node.name)}")
+            if self._emit_name_get(node.name, indent):
                 if node.name in self._string_len_locals:
                     len_local = self._string_len_locals[node.name]
                     self._emit(f"{indent}local.get ${self._wat_symbol(len_local)}")
@@ -1792,11 +1797,11 @@ class WATCodeGenerator(
         elif isinstance(node, IndexAccess):
             obj = node.obj
             if isinstance(obj, Identifier) and (
-                obj.name in self._list_locals or obj.name in self._tuple_locals
+                self._is_tracked_list_name(obj.name) or self._is_tracked_tuple_name(obj.name)
             ):
                 # list[i] / tuple[i]  →  load from base + 8 + i*8
                 self._emit(f"{indent};; {obj.name}[i]")
-                self._emit(f"{indent}local.get ${self._wat_symbol(obj.name)}")
+                self._emit_name_get(obj.name, indent)
                 self._emit(f"{indent}i32.trunc_f64_u")
                 self._gen_expr(node.index, indent)
                 self._emit(f"{indent}i32.trunc_f64_u")

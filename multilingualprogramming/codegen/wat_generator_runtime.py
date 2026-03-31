@@ -52,6 +52,38 @@ class WATGeneratorRuntimeMixin:
         """Expose runtime helper availability for mixin-aware callers."""
         return True
 
+    def _is_module_global(self, name: str) -> bool:
+        """Return True when *name* should lower to a mutable module-global slot."""
+        return name in getattr(self, "_module_global_names", set()) and name not in self._locals
+
+    def _is_tracked_list_name(self, name: str) -> bool:
+        """Return True when *name* refers to a tracked list-like value."""
+        return name in self._list_locals or name in getattr(self, "_module_global_list_names", set())
+
+    def _is_tracked_tuple_name(self, name: str) -> bool:
+        """Return True when *name* refers to a tracked tuple-like value."""
+        return name in self._tuple_locals or name in getattr(self, "_module_global_tuple_names", set())
+
+    def _emit_name_get(self, name: str, indent: str) -> bool:
+        """Emit a load for *name* from local or module-global storage."""
+        if name in self._locals:
+            self._emit(f"{indent}local.get ${self._wat_symbol(name)}")
+            return True
+        if self._is_module_global(name):
+            self._emit(f"{indent}global.get ${self._wat_symbol(name)}")
+            return True
+        return False
+
+    def _emit_name_set(self, name: str, indent: str) -> bool:
+        """Emit a store for *name* into local or module-global storage."""
+        if name in self._locals:
+            self._emit(f"{indent}local.set ${self._wat_symbol(name)}")
+            return True
+        if self._is_module_global(name):
+            self._emit(f"{indent}global.set ${self._wat_symbol(name)}")
+            return True
+        return False
+
     def _gen_dom_call(self, fname: str, args, indent: str) -> None:
         """Lower a DOM builtin call to its WAT wrapper function.
 
@@ -116,10 +148,10 @@ class WATGeneratorRuntimeMixin:
             if arg_node.name in self._string_len_locals:
                 len_local = self._string_len_locals[arg_node.name]
                 self._emit(f"{indent}local.get ${self._wat_symbol(len_local)}")
-            elif arg_node.name in self._list_locals or arg_node.name in self._tuple_locals \
+            elif self._is_tracked_list_name(arg_node.name) or self._is_tracked_tuple_name(arg_node.name) \
                     or arg_node.name in self._dict_key_maps:
                 # Load element count from the list header at offset 0.
-                self._emit(f"{indent}local.get ${self._wat_symbol(arg_node.name)}")
+                self._emit_name_get(arg_node.name, indent)
                 self._emit(f"{indent}i32.trunc_f64_u")
                 self._emit(f"{indent}f64.load  ;; list length from header")
             else:
@@ -180,18 +212,20 @@ class WATGeneratorRuntimeMixin:
 
     def _update_collection_tracking(self, name: str, value) -> None:
         """Refresh tracked list/tuple metadata after storing into *name*."""
+        list_names = self._module_global_list_names if self._is_module_global(name) else self._list_locals
+        tuple_names = self._module_global_tuple_names if self._is_module_global(name) else self._tuple_locals
         if self._value_tracks_as_tuple(value):
-            self._tuple_locals.add(name)
-            self._list_locals.discard(name)
+            tuple_names.add(name)
+            list_names.discard(name)
         elif self._value_tracks_as_list(value):
-            self._list_locals.add(name)
-            self._tuple_locals.discard(name)
-        elif name in self._list_locals:
-            self._list_locals.remove(name)
-        elif name in self._tuple_locals:
-            self._tuple_locals.remove(name)
+            list_names.add(name)
+            tuple_names.discard(name)
+        elif name in list_names:
+            list_names.remove(name)
+        elif name in tuple_names:
+            tuple_names.remove(name)
         elements = self._resolve_static_sequence_elements(value)
-        if elements is not None and (name in self._list_locals or name in self._tuple_locals):
+        if elements is not None and (name in list_names or name in tuple_names):
             self._static_sequence_elements[name] = elements
         elif name in self._static_sequence_elements:
             del self._static_sequence_elements[name]
@@ -401,6 +435,10 @@ class WATGeneratorRuntimeMixin:
             self._list_locals.remove(name)
         if name in self._tuple_locals:
             self._tuple_locals.remove(name)
+        if name in getattr(self, "_module_global_list_names", set()):
+            self._module_global_list_names.remove(name)
+        if name in getattr(self, "_module_global_tuple_names", set()):
+            self._module_global_tuple_names.remove(name)
         if name in self._dict_key_maps:
             del self._dict_key_maps[name]
         if name in self._static_sequence_elements:

@@ -7,10 +7,23 @@
 """Orchestration/state helpers for the WAT generator."""
 
 from multilingualprogramming.core.ir_nodes import IRProgram
-from multilingualprogramming.parser.ast_nodes import CallExpr, ClassDef, FunctionDef
+from multilingualprogramming.parser.ast_nodes import (
+    AnnAssignment,
+    Assignment,
+    AttributeAccess,
+    CallExpr,
+    ChainedAssignment,
+    ClassDef,
+    FunctionDef,
+    GlobalStatement,
+    Identifier,
+    IndexAccess,
+    VariableDeclaration,
+)
 
 from multilingualprogramming.codegen.wat_ir_adapter import lower_ir_to_wat_ast
 from multilingualprogramming.codegen.wat_generator_support import (
+    _LEN_NAMES,
     _extract_render_mode,
     _name,
     _real_params,
@@ -29,6 +42,7 @@ class WATGeneratorOrchestratorMixin:
             program = lower_ir_to_wat_ast(program)
 
         funcs, classes, top = self._split_program_sections(program)
+        self._collect_module_globals(funcs, classes, top)
         self._collect_function_metadata(funcs)
         self._collect_class_lowering(classes)
         self._collect_import_aliases(top)
@@ -58,6 +72,7 @@ class WATGeneratorOrchestratorMixin:
             fname = _name(func.name)
             self._func_real_params[fname] = _real_params(func)
             self._func_render_modes[fname] = _extract_render_mode(func)
+            self._func_param_list_names[fname] = _infer_list_like_params(func)
             if self._returns_string_like(func):
                 self._string_return_funcs.add(fname)
 
@@ -95,6 +110,19 @@ class WATGeneratorOrchestratorMixin:
         saved = self._capture_func_state()
         self._reset_func_state()
         return saved
+
+    def _collect_module_globals(self, funcs: list, classes: list, top: list) -> None:
+        """Record module-scoped identifiers that must lower to mutable WASM globals."""
+        for stmt in top:
+            _record_module_global_assignment(self, stmt)
+        for func in funcs:
+            for name in _find_declared_global_names(func):
+                self._module_global_names.add(name)
+        for cls in classes:
+            for member in getattr(cls, "body", []) or []:
+                if isinstance(member, FunctionDef):
+                    for name in _find_declared_global_names(member):
+                        self._module_global_names.add(name)
 
 
 def _reset_generator_state(generator) -> None:
@@ -150,6 +178,102 @@ def _reset_generator_state(generator) -> None:
         "_property_getters": {},
         "_class_ids": {},
         "_dispatch_func_names": {},
+        "_module_global_names": set(),
+        "_module_global_list_names": set(),
+        "_module_global_tuple_names": set(),
+        "_module_global_dict_names": set(),
+        "_func_param_list_names": {},
     }
     for name, value in state.items():
         setattr(generator, name, value)
+
+
+def _record_module_global_assignment(generator, stmt) -> None:
+    """Update tracked module-global names from a top-level assignment-like node."""
+    pairs = []
+    if isinstance(stmt, VariableDeclaration) and isinstance(stmt.name, Identifier):
+        pairs.append((stmt.name.name, stmt.value))
+    elif isinstance(stmt, Assignment) and isinstance(stmt.target, Identifier):
+        pairs.append((stmt.target.name, stmt.value))
+    elif isinstance(stmt, AnnAssignment) and isinstance(stmt.target, Identifier):
+        pairs.append((stmt.target.name, stmt.value))
+    elif isinstance(stmt, ChainedAssignment):
+        for target in stmt.targets:
+            if isinstance(target, Identifier):
+                pairs.append((target.name, stmt.value))
+    for name, value in pairs:
+        generator._module_global_names.add(name)
+        if generator._value_tracks_as_tuple(value):
+            generator._module_global_tuple_names.add(name)
+            generator._module_global_list_names.discard(name)
+        elif generator._value_tracks_as_list(value):
+            generator._module_global_list_names.add(name)
+            generator._module_global_tuple_names.discard(name)
+        else:
+            generator._module_global_list_names.discard(name)
+            generator._module_global_tuple_names.discard(name)
+
+
+def _find_declared_global_names(func_def: FunctionDef) -> set[str]:
+    """Return names referenced by ``global ...`` statements inside a function."""
+    names = set()
+
+    def visit(node):
+        if node is None:
+            return
+        if isinstance(node, GlobalStatement):
+            names.update(node.names)
+            return
+        if isinstance(node, list):
+            for item in node:
+                visit(item)
+            return
+        if isinstance(node, (str, int, float, bool)):
+            return
+        for value in getattr(node, "__dict__", {}).values():
+            visit(value)
+
+    visit(getattr(func_def, "body", []))
+    return names
+
+
+def _infer_list_like_params(func_def: FunctionDef) -> set[str]:
+    """Infer function parameters that should be treated as list-like in WAT."""
+    params = set(_real_params(func_def))
+    if not params:
+        return set()
+
+    inferred = set()
+
+    def visit(node):
+        if node is None:
+            return
+        if isinstance(node, IndexAccess) and isinstance(node.obj, Identifier):
+            if node.obj.name in params:
+                inferred.add(node.obj.name)
+        elif isinstance(node, CallExpr):
+            if (
+                _name(node.func) in _LEN_NAMES
+                and len(node.args) == 1
+                and isinstance(node.args[0], Identifier)
+                and node.args[0].name in params
+            ):
+                inferred.add(node.args[0].name)
+            if (
+                isinstance(node.func, AttributeAccess)
+                and isinstance(node.func.obj, Identifier)
+                and node.func.obj.name in params
+                and node.func.attr in ("append", "extend", "pop")
+            ):
+                inferred.add(node.func.obj.name)
+        if isinstance(node, list):
+            for item in node:
+                visit(item)
+            return
+        if isinstance(node, (str, int, float, bool)):
+            return
+        for value in getattr(node, "__dict__", {}).values():
+            visit(value)
+
+    visit(getattr(func_def, "body", []))
+    return inferred

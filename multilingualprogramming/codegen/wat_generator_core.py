@@ -78,6 +78,10 @@ class WATGeneratorCoreMixin:
         lines.append(
             '  (global $__last_exc_code (export "__last_exception_code") (mut i32) (i32.const 0))'
         )
+        for global_name in sorted(getattr(self, "_module_global_names", set())):
+            lines.append(
+                f'  (global ${self._wat_symbol(global_name)} (mut f64) (f64.const 0))'
+            )
         if self._lambda_table:
             n = len(self._lambda_table)
             lines.append(f'  (table {n} funcref)')
