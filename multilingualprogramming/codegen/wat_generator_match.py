@@ -40,7 +40,10 @@ class WATGeneratorMatchMixin:
         subj_var_name = _name(stmt.subject) if isinstance(stmt.subject, Identifier) else None
         subj_is_list = bool(
             subj_var_name
-            and (subj_var_name in self._list_locals or subj_var_name in self._tuple_locals)
+            and (
+                self._is_tracked_list_name(subj_var_name)
+                or self._is_tracked_tuple_name(subj_var_name)
+            )
         )
 
         self._emit(f"{indent};; match ...")

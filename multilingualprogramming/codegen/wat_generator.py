@@ -415,7 +415,7 @@ class WATCodeGenerator(
                 )
                 if prop_setter_fn is not None and stmt.op == "=":
                     self._emit(f"{indent};; @property.setter {obj_name}.{attr}(val)")
-                    self._emit(f"{indent}local.get ${self._wat_symbol(obj_name)}")
+                    self._emit_name_get(obj_name, indent)
                     self._gen_expr(stmt.value, indent)
                     self._emit(f"{indent}call ${self._wat_symbol(prop_setter_fn)}")
                     self._emit(f"{indent}drop")
@@ -425,7 +425,7 @@ class WATCodeGenerator(
                     op = stmt.op
                     if op == "=":
                         self._emit(f"{indent};; {obj_name}.{attr} = ...")
-                        self._emit(f"{indent}local.get ${self._wat_symbol(obj_name)}")
+                        self._emit_name_get(obj_name, indent)
                         self._emit(f"{indent}i32.trunc_f64_u")
                         self._emit(f"{indent}i32.const {offset}")
                         self._emit(f"{indent}i32.add")
@@ -437,7 +437,7 @@ class WATCodeGenerator(
                         self._locals.add(tmp)
                         self._emit(f"{indent};; {obj_name}.{attr} {op} ...")
                         # Load current field value, apply op, save result.
-                        self._emit(f"{indent}local.get ${self._wat_symbol(obj_name)}")
+                        self._emit_name_get(obj_name, indent)
                         self._emit(f"{indent}i32.trunc_f64_u")
                         self._emit(f"{indent}i32.const {offset}")
                         self._emit(f"{indent}i32.add")
@@ -445,7 +445,7 @@ class WATCodeGenerator(
                         self._gen_augmented_op(op, stmt.value, indent)
                         self._emit(f"{indent}local.set ${self._wat_symbol(tmp)}")
                         # Store new value (recompute address).
-                        self._emit(f"{indent}local.get ${self._wat_symbol(obj_name)}")
+                        self._emit_name_get(obj_name, indent)
                         self._emit(f"{indent}i32.trunc_f64_u")
                         self._emit(f"{indent}i32.const {offset}")
                         self._emit(f"{indent}i32.add")
@@ -1269,7 +1269,8 @@ class WATCodeGenerator(
             elif resolved_fname in {"json.dumps", "dumps"} and len(node.args) == 1:
                 arg = node.args[0]
                 if isinstance(arg, Identifier) and (
-                    arg.name in self._list_locals or arg.name in self._tuple_locals
+                    self._is_tracked_list_name(arg.name)
+                    or self._is_tracked_tuple_name(arg.name)
                 ):
                     self._emit(f"{indent};; json.dumps(list) → JSON array string")
                     self._gen_expr(arg, indent)
@@ -1311,7 +1312,7 @@ class WATCodeGenerator(
                     lst_name = _name(lst_arg) if isinstance(lst_arg, Identifier) else None
                     if (isinstance(fn_arg, Identifier)
                             and fn_name in self._defined_func_names
-                            and lst_name and lst_name in self._list_locals):
+                            and lst_name and self._is_tracked_list_name(lst_name)):
                         self._gen_map_list(fn_name, lst_name, indent)
                     else:
                         self._emit(f"{indent}f64.const 0  ;; unsupported: map(...)")
@@ -1323,12 +1324,12 @@ class WATCodeGenerator(
                     lst_name = _name(lst_arg) if isinstance(lst_arg, Identifier) else None
                     if (isinstance(fn_arg, Identifier)
                             and fn_name in self._defined_func_names
-                            and lst_name and lst_name in self._list_locals):
+                            and lst_name and self._is_tracked_list_name(lst_name)):
                         self._gen_filter_list(fn_name, lst_name, indent)
                     else:
                         self._emit(f"{indent}f64.const 0  ;; unsupported: filter(...)")
                 elif (isinstance(arg, Identifier)
-                      and arg.name in self._list_locals):
+                      and self._is_tracked_list_name(arg.name)):
                     # list(existing_list) → shallow copy
                     self._gen_list_copy(arg.name, indent)
                 else:
@@ -1526,7 +1527,7 @@ class WATCodeGenerator(
             elif (isinstance(node.func, AttributeAccess)
                   and node.func.attr == "pop"
                   and isinstance(node.func.obj, Identifier)
-                  and node.func.obj.name in self._list_locals
+                  and self._is_tracked_list_name(node.func.obj.name)
                   and not node.args):
                 # lst.pop() → last element (modifies count in-place)
                 obj_name = node.func.obj.name
@@ -1635,7 +1636,10 @@ class WATCodeGenerator(
             )
             is_list_comp = (
                 len(node.clauses) == 1
-                and (iterable_name in self._list_locals or iterable_name in self._tuple_locals)
+                and (
+                    self._is_tracked_list_name(iterable_name)
+                    or self._is_tracked_tuple_name(iterable_name)
+                )
                 and not clause.conditions
                 and isinstance(node, (ListComprehension, GeneratorExpr))
             )
@@ -1701,12 +1705,12 @@ class WATCodeGenerator(
                 len_var2 = f"__llen_{n2}"
                 for loc in (acc_var2, idx_var2, len_var2):
                     self._locals.add(loc)
-                blk2 = f"lcomp_blk_{n2}"
-                lp2 = f"lcomp_lp_{n2}"
+                blk2 = f"comp_list_blk_{n2}"
+                lp2 = f"comp_list_lp_{n2}"
 
                 self._emit(f"{indent};; listcomp over list variable {iterable_name!r}")
                 # Load length from list header (offset 0).
-                self._emit(f"{indent}local.get ${self._wat_symbol(iterable_name)}")
+                self._emit_name_get(iterable_name, indent)
                 self._emit(f"{indent}i32.trunc_f64_u")
                 self._emit(f"{indent}f64.load")
                 self._emit(f"{indent}local.set ${self._wat_symbol(len_var2)}")
@@ -1772,7 +1776,7 @@ class WATCodeGenerator(
             if prop_fn is not None:
                 self._emit(f"{indent};; @property {obj_name}.{node.attr}()")
                 if cls and self._needs_runtime_object(cls):
-                    self._emit(f"{indent}local.get ${self._wat_symbol(obj_name)}")
+                    self._emit_name_get(obj_name, indent)
                 else:
                     self._emit(f"{indent}f64.const 0  ;; implicit self")
                 self._emit(f"{indent}call ${self._wat_symbol(prop_fn)}")
@@ -1780,7 +1784,7 @@ class WATCodeGenerator(
                 offset = self._resolve_field(cls, node.attr) if cls else None
                 if offset is not None:
                     self._emit(f"{indent};; load {obj_name}.{node.attr}")
-                    self._emit(f"{indent}local.get ${self._wat_symbol(obj_name)}")
+                    self._emit_name_get(obj_name, indent)
                     self._emit(f"{indent}i32.trunc_f64_u")
                     self._emit(f"{indent}i32.const {offset}")
                     self._emit(f"{indent}i32.add")
@@ -2243,7 +2247,7 @@ class WATCodeGenerator(
 
         # Save base pointer and load length from header (offset 0).
         self._emit(f"{indent};; for {iter_var} in {list_name} (list)")
-        self._emit(f"{indent}local.get ${self._wat_symbol(list_name)}")
+        self._emit_name_get(list_name, indent)
         self._emit(f"{indent}local.set ${self._wat_symbol(base_local)}")
         self._emit_sequence_len_setup(base_local, len_local, idx_local, indent)
 

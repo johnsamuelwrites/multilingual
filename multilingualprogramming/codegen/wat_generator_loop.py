@@ -45,7 +45,8 @@ class WATGeneratorLoopMixin:
             enum_arg = stmt.iterable.args[0]
             enum_list_name = _name(enum_arg) if isinstance(enum_arg, Identifier) else None
             if enum_list_name and (
-                enum_list_name in self._list_locals or enum_list_name in self._tuple_locals
+                self._is_tracked_list_name(enum_list_name)
+                or self._is_tracked_tuple_name(enum_list_name)
             ):
                 self._gen_for_enumerate_list(stmt, enum_list_name, blk, lp, n, indent)
                 self._loop_stack.pop()
@@ -67,7 +68,8 @@ class WATGeneratorLoopMixin:
         else:
             iterable_name = _name(stmt.iterable) if isinstance(stmt.iterable, Identifier) else None
             if iterable_name and (
-                iterable_name in self._list_locals or iterable_name in self._tuple_locals
+                self._is_tracked_list_name(iterable_name)
+                or self._is_tracked_tuple_name(iterable_name)
             ):
                 self._gen_for_list(stmt, iterable_name, iter_var, blk, lp, n, indent)
             elif (isinstance(stmt.iterable, CallExpr)
@@ -161,7 +163,7 @@ class WATGeneratorLoopMixin:
             self._locals.add(loc)
 
         self._emit(f"{indent};; for ({idx_var}, {val_var}) in enumerate({list_name})")
-        self._emit(f"{indent}local.get ${self._wat_symbol(list_name)}")
+        self._emit_name_get(list_name, indent)
         self._emit(f"{indent}local.set ${self._wat_symbol(base_local)}")
         self._emit_sequence_len_setup(base_local, len_local, idx_var, indent)
         # idx_var was set to 0 by _emit_sequence_len_setup (it initializes $idx to 0).

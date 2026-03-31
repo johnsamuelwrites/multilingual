@@ -58,11 +58,17 @@ class WATGeneratorRuntimeMixin:
 
     def _is_tracked_list_name(self, name: str) -> bool:
         """Return True when *name* refers to a tracked list-like value."""
-        return name in self._list_locals or name in getattr(self, "_module_global_list_names", set())
+        return (
+            name in self._list_locals
+            or name in getattr(self, "_module_global_list_names", set())
+        )
 
     def _is_tracked_tuple_name(self, name: str) -> bool:
         """Return True when *name* refers to a tracked tuple-like value."""
-        return name in self._tuple_locals or name in getattr(self, "_module_global_tuple_names", set())
+        return (
+            name in self._tuple_locals
+            or name in getattr(self, "_module_global_tuple_names", set())
+        )
 
     def _emit_name_get(self, name: str, indent: str) -> bool:
         """Emit a load for *name* from local or module-global storage."""
@@ -148,8 +154,11 @@ class WATGeneratorRuntimeMixin:
             if arg_node.name in self._string_len_locals:
                 len_local = self._string_len_locals[arg_node.name]
                 self._emit(f"{indent}local.get ${self._wat_symbol(len_local)}")
-            elif self._is_tracked_list_name(arg_node.name) or self._is_tracked_tuple_name(arg_node.name) \
-                    or arg_node.name in self._dict_key_maps:
+            elif (
+                self._is_tracked_list_name(arg_node.name)
+                or self._is_tracked_tuple_name(arg_node.name)
+                or arg_node.name in self._dict_key_maps
+            ):
                 # Load element count from the list header at offset 0.
                 self._emit_name_get(arg_node.name, indent)
                 self._emit(f"{indent}i32.trunc_f64_u")
@@ -212,8 +221,16 @@ class WATGeneratorRuntimeMixin:
 
     def _update_collection_tracking(self, name: str, value) -> None:
         """Refresh tracked list/tuple metadata after storing into *name*."""
-        list_names = self._module_global_list_names if self._is_module_global(name) else self._list_locals
-        tuple_names = self._module_global_tuple_names if self._is_module_global(name) else self._tuple_locals
+        list_names = (
+            self._module_global_list_names
+            if self._is_module_global(name)
+            else self._list_locals
+        )
+        tuple_names = (
+            self._module_global_tuple_names
+            if self._is_module_global(name)
+            else self._tuple_locals
+        )
         if self._value_tracks_as_tuple(value):
             tuple_names.add(name)
             list_names.discard(name)

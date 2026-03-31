@@ -123,7 +123,10 @@ class WATGeneratorSequenceMixin(WATGeneratorRuntimeMixin, WATGeneratorPrintMixin
     def _sorted_copy_context(self, seq_expr):
         if not (
             isinstance(seq_expr, Identifier)
-            and (seq_expr.name in self._list_locals or seq_expr.name in self._tuple_locals)
+            and (
+                self._is_tracked_list_name(seq_expr.name)
+                or self._is_tracked_tuple_name(seq_expr.name)
+            )
         ):
             return None
         label = self._new_label()
@@ -244,7 +247,7 @@ class WATGeneratorSequenceMixin(WATGeneratorRuntimeMixin, WATGeneratorPrintMixin
                 return len(self._static_sequence_elements[node.name])
             if node.name in self._dict_key_maps:
                 return len(self._dict_key_maps[node.name])
-            if node.name in self._list_locals or node.name in self._tuple_locals:
+            if self._is_tracked_list_name(node.name) or self._is_tracked_tuple_name(node.name):
                 return None
         return None
 
@@ -352,7 +355,7 @@ class WATGeneratorSequenceMixin(WATGeneratorRuntimeMixin, WATGeneratorPrintMixin
         if isinstance(stmt, YieldStatement) and stmt.is_from:
             if isinstance(stmt.value, Identifier):
                 src = stmt.value.name
-                if src in self._list_locals or src in self._tuple_locals:
+                if self._is_tracked_list_name(src) or self._is_tracked_tuple_name(src):
                     return ("list_copy", src)
         # Shape 3: for x in range(...): yield expr
         if isinstance(stmt, ForLoop):
@@ -367,7 +370,10 @@ class WATGeneratorSequenceMixin(WATGeneratorRuntimeMixin, WATGeneratorPrintMixin
         if isinstance(stmt, ForLoop):
             if isinstance(stmt.iterable, Identifier):
                 src = stmt.iterable.name
-                if (src in self._list_locals or src in self._tuple_locals) and len(stmt.body) == 1:
+                if (
+                    self._is_tracked_list_name(src)
+                    or self._is_tracked_tuple_name(src)
+                ) and len(stmt.body) == 1:
                     inner = stmt.body[0]
                     if isinstance(inner, YieldStatement) and not inner.is_from:
                         if isinstance(stmt.target, Identifier):
@@ -391,7 +397,7 @@ class WATGeneratorSequenceMixin(WATGeneratorRuntimeMixin, WATGeneratorPrintMixin
             # yield from seq — return a copy of the source list as the generator result.
             src_name = spec[1]
             self._emit(f"    ;; generator: yield from {src_name}")
-            self._emit(f"    local.get ${self._wat_symbol(src_name)}")
+            self._emit_name_get(src_name, "    ")
             self._emit("    return")
 
         elif spec[0] == "list_iter":
@@ -403,7 +409,7 @@ class WATGeneratorSequenceMixin(WATGeneratorRuntimeMixin, WATGeneratorPrintMixin
             idx_local = f"__gen_idx_{label}"
             len_local = f"__gen_len_{label}"
             self._add_local_names(src_ptr, ptr_local, idx_local, len_local, iter_var)
-            self._emit(f"    local.get ${self._wat_symbol(src_name)}")
+            self._emit_name_get(src_name, "    ")
             self._emit(f"    local.set ${self._wat_symbol(src_ptr)}")
             self._emit(f"    local.get ${self._wat_symbol(src_ptr)}")
             self._emit("    i32.trunc_f64_u")
@@ -497,7 +503,10 @@ class WATGeneratorSequenceMixin(WATGeneratorRuntimeMixin, WATGeneratorPrintMixin
         iterable = clause.iterable
         if not isinstance(iterable, Identifier):
             return False
-        if iterable.name not in self._list_locals and iterable.name not in self._tuple_locals:
+        if (
+            not self._is_tracked_list_name(iterable.name)
+            and not self._is_tracked_tuple_name(iterable.name)
+        ):
             return False
         src_name = iterable.name
         iter_var = (
@@ -514,7 +523,7 @@ class WATGeneratorSequenceMixin(WATGeneratorRuntimeMixin, WATGeneratorPrintMixin
         self._add_local_names(src_ptr, ptr_local, src_len, write_idx, read_idx, iter_var)
         self._need_heap_ptr = True
         # Source list pointer and length.
-        self._emit(f"{indent}local.get ${self._wat_symbol(src_name)}")
+        self._emit_name_get(src_name, indent)
         self._emit(f"{indent}local.set ${self._wat_symbol(src_ptr)}")
         self._emit(f"{indent}local.get ${self._wat_symbol(src_ptr)}")
         self._emit(f"{indent}i32.trunc_f64_u")
@@ -747,7 +756,7 @@ class WATGeneratorSequenceMixin(WATGeneratorRuntimeMixin, WATGeneratorPrintMixin
             isinstance(clause.iterable, CallExpr)
             and _name(clause.iterable.func) in _RANGE_NAMES
         )
-        is_list = iterable_name in self._list_locals
+        is_list = self._is_tracked_list_name(iterable_name)
         if not (is_range or is_list):
             return False
         ctx = self._simple_comprehension_context(clause)
@@ -793,7 +802,7 @@ class WATGeneratorSequenceMixin(WATGeneratorRuntimeMixin, WATGeneratorPrintMixin
             self._emit(f"{indent}local.set ${self._wat_symbol(ctx['len_local'])}")
         else:
             iterable_name = _name(clause.iterable)
-            self._emit(f"{indent}local.get ${self._wat_symbol(iterable_name)}")
+            self._emit_name_get(iterable_name, indent)
             self._emit(f"{indent}i32.trunc_f64_u")
             self._emit(f"{indent}f64.load")
             self._emit(f"{indent}local.set ${self._wat_symbol(ctx['src_len_local'])}")
@@ -842,7 +851,10 @@ class WATGeneratorSequenceMixin(WATGeneratorRuntimeMixin, WATGeneratorPrintMixin
         if isinstance(value, (ListLiteral, TupleLiteral, SetLiteral)):
             return True
         if isinstance(value, Identifier):
-            return value.name in self._list_locals or value.name in self._tuple_locals
+            return (
+                self._is_tracked_list_name(value.name)
+                or self._is_tracked_tuple_name(value.name)
+            )
         if (
             isinstance(value, CallExpr)
             and len(value.args) == 1

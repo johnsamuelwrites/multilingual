@@ -554,8 +554,8 @@ class WATStatementTestSuite(unittest.TestCase):
         wat = self._wat(ChainedAssignment([Identifier("a"), Identifier("b")], NumeralLiteral("9")))
         self.assertIn(";; chained assignment", wat)
         self.assertIn("local.set $__chain_", wat)
-        self.assertIn("local.set $a", wat)
-        self.assertIn("local.set $b", wat)
+        self.assertTrue("local.set $a" in wat or "global.set $a" in wat)
+        self.assertTrue("local.set $b" in wat or "global.set $b" in wat)
 
     def test_del_identifier_clears_local(self):
         wat = self._wat(

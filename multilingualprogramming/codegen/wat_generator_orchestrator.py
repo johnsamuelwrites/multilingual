@@ -201,17 +201,22 @@ def _record_module_global_assignment(generator, stmt) -> None:
         for target in stmt.targets:
             if isinstance(target, Identifier):
                 pairs.append((target.name, stmt.value))
+    tracks_as_tuple = getattr(generator, "_value_tracks_as_tuple")
+    tracks_as_list = getattr(generator, "_value_tracks_as_list")
+    module_global_names = getattr(generator, "_module_global_names")
+    module_global_tuple_names = getattr(generator, "_module_global_tuple_names")
+    module_global_list_names = getattr(generator, "_module_global_list_names")
     for name, value in pairs:
-        generator._module_global_names.add(name)
-        if generator._value_tracks_as_tuple(value):
-            generator._module_global_tuple_names.add(name)
-            generator._module_global_list_names.discard(name)
-        elif generator._value_tracks_as_list(value):
-            generator._module_global_list_names.add(name)
-            generator._module_global_tuple_names.discard(name)
+        module_global_names.add(name)
+        if tracks_as_tuple(value):
+            module_global_tuple_names.add(name)
+            module_global_list_names.discard(name)
+        elif tracks_as_list(value):
+            module_global_list_names.add(name)
+            module_global_tuple_names.discard(name)
         else:
-            generator._module_global_list_names.discard(name)
-            generator._module_global_tuple_names.discard(name)
+            module_global_list_names.discard(name)
+            module_global_tuple_names.discard(name)
 
 
 def _find_declared_global_names(func_def: FunctionDef) -> set[str]:
