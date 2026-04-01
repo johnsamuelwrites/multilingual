@@ -220,7 +220,7 @@ class WATGeneratorCoreMixin:
         argc_addr = mem_end - 384   # 4-byte i32 storing argc after init
 
         runtime = f"""
-  ;; ── WASI runtime ────────────────────────────────────────────────────────────
+  ;; -- WASI runtime ------------------------------------------------------------
   ;; Write `len` bytes at `ptr` to stdout via WASI fd_write.
   (func $__wasi_write (param $ptr i32) (param $len i32)
     i32.const {iovec}
@@ -666,8 +666,8 @@ class WATGeneratorCoreMixin:
     end
     local.get $result
   )
-  ;; ── Allocator ────────────────────────────────────────────────────────────
-  ;; Three segregated free lists by size class (≤32, ≤64, ≤256 bytes).
+  ;; -- Allocator ------------------------------------------------------------
+  ;; Three segregated free lists by size class (=32, =64, =256 bytes).
   ;; Larger blocks are bump-allocated and never freed (no GC needed for them).
   (global $__fl_s32  (mut i32) (i32.const 0))
   (global $__fl_s64  (mut i32) (i32.const 0))
@@ -922,7 +922,7 @@ class WATGeneratorCoreMixin:
       call $__wasi_write
     end
   )
-  ;; argv support ─────────────────────────────────────────────────────────────
+  ;; argv support -------------------------------------------------------------
   ;; $__ml_argc caches the argument count after $__ml_init_argv is called.
   ;; Populated at module startup; never written by user code.
   ;; Init: reads argc + argv via WASI args_sizes_get / args_get into static buffers.
@@ -1165,7 +1165,7 @@ class WATGeneratorCoreMixin:
       f64.const 0
       return
     end
-    ;; edge: needle longer than haystack → not found
+    ;; edge: needle longer than haystack ? not found
     local.get $hlen
     local.get $nlen
     i32.lt_s
@@ -1233,8 +1233,8 @@ class WATGeneratorCoreMixin:
     end
     f64.const -1
   )
-  ;; ── String helpers ────────────────────────────────────────────────────────
-  ;; ASCII uppercase: allocates copy, a-z → A-Z.
+  ;; -- String helpers --------------------------------------------------------
+  ;; ASCII uppercase: allocates copy, a-z ? A-Z.
   ;; Params: $ptr i32, $len i32.  Returns f64 ptr; $__last_str_len = len.
   (func $__str_upper (param $ptr i32) (param $len i32) (result f64)
     (local $out i32) (local $i i32) (local $b i32)
@@ -1284,7 +1284,7 @@ class WATGeneratorCoreMixin:
     local.get $out
     f64.convert_i32_u
   )
-  ;; ASCII lowercase: allocates copy, A-Z → a-z.
+  ;; ASCII lowercase: allocates copy, A-Z ? a-z.
   ;; Params: $ptr i32, $len i32.  Returns f64 ptr; $__last_str_len = len.
   (func $__str_lower (param $ptr i32) (param $len i32) (result f64)
     (local $out i32) (local $i i32) (local $b i32)
@@ -1730,7 +1730,7 @@ class WATGeneratorCoreMixin:
     local.get $out
     f64.convert_i32_u
   )
-  ;; ── JSON helpers ──────────────────────────────────────────────────────────
+  ;; -- JSON helpers ----------------------------------------------------------
   ;; Encode a tracked list of f64 values as a JSON array "[n1,n2,...]".
   ;; Param: $ptr f64 (list header pointer).
   ;; Returns f64 ptr to heap string; $__last_str_len = byte length.
@@ -1954,10 +1954,41 @@ class WATGeneratorCoreMixin:
     local.get $out
     f64.convert_i32_u
   )
-  ;; ── Math helpers ──────────────────────────────────────────────────────────
-  ;; sin(x): 6-term Horner polynomial, accurate to ~1e-9 for |x| < π.
+  ;; -- Math helpers ----------------------------------------------------------
+  ;; sin(x): range-reduced to [-pi/2, pi/2] before the 6-term Horner polynomial.
   (func $math_sin (param $x f64) (result f64)
     (local $u f64) (local $t f64)
+    local.get $x
+    f64.const 3.141592653589793
+    f64.add
+    local.set $x
+    local.get $x
+    local.get $x
+    f64.const 6.283185307179586
+    f64.div
+    f64.floor
+    f64.const 6.283185307179586
+    f64.mul
+    f64.sub
+    local.set $x
+    local.get $x
+    f64.const 1.5707963267948966
+    f64.gt
+    if
+      f64.const 3.141592653589793
+      local.get $x
+      f64.sub
+      local.set $x
+    end
+    local.get $x
+    f64.const -1.5707963267948966
+    f64.lt
+    if
+      f64.const -3.141592653589793
+      local.get $x
+      f64.sub
+      local.set $x
+    end
     local.get $x
     local.get $x
     f64.mul
@@ -1998,9 +2029,46 @@ class WATGeneratorCoreMixin:
     local.get $t
     f64.mul
   )
-  ;; cos(x): 6-term Horner polynomial, accurate to ~1e-9 for |x| < π.
+  ;; cos(x): range-reduced to [-pi/2, pi/2] with the correct reflection sign.
   (func $math_cos (param $x f64) (result f64)
-    (local $u f64) (local $t f64)
+    (local $u f64) (local $t f64) (local $sign f64)
+    f64.const 1.0
+    local.set $sign
+    local.get $x
+    f64.const 3.141592653589793
+    f64.add
+    local.set $x
+    local.get $x
+    local.get $x
+    f64.const 6.283185307179586
+    f64.div
+    f64.floor
+    f64.const 6.283185307179586
+    f64.mul
+    f64.sub
+    local.set $x
+    local.get $x
+    f64.const 1.5707963267948966
+    f64.gt
+    if
+      f64.const -1.0
+      local.set $sign
+      f64.const 3.141592653589793
+      local.get $x
+      f64.sub
+      local.set $x
+    end
+    local.get $x
+    f64.const -1.5707963267948966
+    f64.lt
+    if
+      f64.const -1.0
+      local.set $sign
+      f64.const -3.141592653589793
+      local.get $x
+      f64.sub
+      local.set $x
+    end
     local.get $x
     local.get $x
     f64.mul
@@ -2036,6 +2104,8 @@ class WATGeneratorCoreMixin:
     f64.mul
     f64.const 1.0
     f64.add
+    local.get $sign
+    f64.mul
   )
   ;; tan(x) = sin(x) / cos(x).
   (func $math_tan (param $x f64) (result f64)
@@ -2627,7 +2697,7 @@ class WATGeneratorCoreMixin:
     i32.add
     local.get $elem
     f64.store
-    ;; free the old list block (reclaimed by free list if size ≤ 256)
+    ;; free the old list block (reclaimed by free list if size = 256)
     local.get $lpi
     local.get $cnt_i
     i32.const 1
