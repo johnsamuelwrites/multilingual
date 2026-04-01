@@ -453,6 +453,26 @@ class WATCodeGenerator(
                         self._emit(f"{indent}f64.store")
                 elif prop_setter_fn is None:
                     self._emit(f"{indent};; (complex assignment target — unsupported in WAT)")
+            elif (
+                isinstance(target, IndexAccess)
+                and isinstance(target.obj, Identifier)
+                and stmt.op == "="
+            ):
+                # list[idx] = value  — direct memory store into list element slot
+                name = target.obj.name
+                self._emit(f"{indent};; {name}[i] = ...")
+                # Address = list_ptr + 8 + idx * 8  (skip f64 length header)
+                self._emit_name_get(name, indent)  # f64 list pointer
+                self._emit(f"{indent}i32.trunc_f64_u")
+                self._gen_expr(target.index, indent)  # f64 index
+                self._emit(f"{indent}i32.trunc_f64_u")
+                self._emit(f"{indent}i32.const 8")
+                self._emit(f"{indent}i32.mul")
+                self._emit(f"{indent}i32.const 8")
+                self._emit(f"{indent}i32.add")
+                self._emit(f"{indent}i32.add")
+                self._gen_expr(stmt.value, indent)   # f64 value
+                self._emit(f"{indent}f64.store")
             elif self._gen_unpack_assignment(target, stmt.value, indent):
                 self._emit(f"{indent};; unpacking assignment lowered")
             else:

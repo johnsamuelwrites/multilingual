@@ -2627,23 +2627,7 @@ class WATGeneratorCoreMixin:
     i32.add
     local.get $elem
     f64.store
-    local.get $np
-    f64.convert_i32_u
-  )
-  ;; $__list_append_owned(list_ptr f64, elem f64) -> f64 new list_ptr with old storage released
-  (func $__list_append_owned (param $lp f64) (param $elem f64) (result f64)
-    (local $lpi i32) (local $cnt_i i32) (local $newp f64)
-    local.get $lp
-    i32.trunc_f64_u
-    local.set $lpi
-    local.get $lpi
-    f64.load
-    i32.trunc_f64_u
-    local.set $cnt_i
-    local.get $lp
-    local.get $elem
-    call $__list_append
-    local.set $newp
+    ;; free the old list block (reclaimed by free list if size ≤ 256)
     local.get $lpi
     local.get $cnt_i
     i32.const 1
@@ -2651,7 +2635,15 @@ class WATGeneratorCoreMixin:
     i32.const 8
     i32.mul
     call $ml_free
-    local.get $newp
+    local.get $np
+    f64.convert_i32_u
+  )
+  ;; $__list_append_owned(list_ptr f64, elem f64) -> f64 new list_ptr with old storage released
+  ;; Note: $__list_append already frees the old block, so this is now an alias.
+  (func $__list_append_owned (param $lp f64) (param $elem f64) (result f64)
+    local.get $lp
+    local.get $elem
+    call $__list_append
   )
   ;; $__list_pop(list_ptr f64) -> f64 last element (decrements count in-place)
   (func $__list_pop (param $lp f64) (result f64)
