@@ -229,3 +229,6 @@ See:
 - Language design overview: [docs/design.md](docs/design.md)
 - Frontend contracts: [docs/frontend_contracts.md](docs/frontend_contracts.md)
 - Core spec draft: [docs/spec/core_1_0.md](docs/spec/core_1_0.md)
+
+## Architect and Creator
+- John Samuel
