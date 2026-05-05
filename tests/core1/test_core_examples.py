@@ -6,7 +6,7 @@
 
 """Tests for Core 1.0 example files in examples/core/.
 
-Each .ml file in examples/core/ is discovered automatically.
+Each source file in examples/core/ is discovered automatically.
 The test pipeline for every example:
   1. Lex the source code (language-aware tokenisation)
   2. Parse the token stream into a surface AST
@@ -22,6 +22,7 @@ from multilingualprogramming.core.semantic_lowering import lower_to_semantic_ir
 from multilingualprogramming.core.validators import validate_semantic_ir
 from multilingualprogramming.lexer.lexer import Lexer
 from multilingualprogramming.parser.parser import Parser
+from multilingualprogramming.source_extensions import iter_source_files
 
 
 _CORE_EXAMPLES_DIR = (
@@ -42,7 +43,7 @@ def _detect_lang(path: pathlib.Path) -> str:
 
 
 def _lower(path: pathlib.Path):
-    """Lex, parse, and lower a .ml example file to Core 1.0 IR."""
+    """Lex, parse, and lower a source example file to Core 1.0 IR."""
     lang = _detect_lang(path)
     source = path.read_text(encoding="utf-8")
     tokens = Lexer(source, language=lang).tokenize()
@@ -51,7 +52,7 @@ def _lower(path: pathlib.Path):
 
 
 def _example_files():
-    return sorted(_CORE_EXAMPLES_DIR.glob("*.ml"))
+    return iter_source_files(_CORE_EXAMPLES_DIR, "*")
 
 
 # ---------------------------------------------------------------------------

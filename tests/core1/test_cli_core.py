@@ -34,7 +34,7 @@ def _lower(source: str, lang: str = "en"):
 
 
 def _tmp_ml_file(tmp_path: Path, source: str) -> Path:
-    p = tmp_path / "test.ml"
+    p = tmp_path / "test.multi"
     p.write_text(source, encoding="utf-8")
     return p
 

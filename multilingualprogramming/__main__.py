@@ -9,7 +9,7 @@ CLI entry point for the multilingual programming language.
 
 Usage:
     python -m multilingualprogramming                     # Start REPL
-    python -m multilingualprogramming <file>.ml          # Execute a source file
+    python -m multilingualprogramming <file>.multi       # Execute a source file
     python -m multilingualprogramming run <file>           # Execute a file
     python -m multilingualprogramming repl [--lang XX]     # Start REPL
     python -m multilingualprogramming compile <file>       # Show generated Python
@@ -42,6 +42,10 @@ from multilingualprogramming.keyword.language_pack_validator import (
 from multilingualprogramming.exceptions import UnsupportedLanguageError
 from multilingualprogramming.lexer.lexer import Lexer
 from multilingualprogramming.parser.parser import Parser
+from multilingualprogramming.source_extensions import (
+    find_package_init,
+    has_source_extension,
+)
 from multilingualprogramming.version import __version__
 
 
@@ -83,13 +87,13 @@ def cmd_run(args):
     source = _read_source_file(args.file)
 
     # Determine package context so that relative imports work.
-    # Walk up from the file's directory while __init__.ml files exist;
+    # Walk up from the file's directory while package initializer files exist;
     # that chain of directories forms the package name.  The directory
     # above the outermost package becomes the sys.path entry.
     resolved = Path(args.file).resolve()
     pkg_parts = []
     current = resolved.parent
-    while (current / "__init__.ml").is_file():
+    while find_package_init(current) is not None:
         pkg_parts.append(current.name)
         current = current.parent
     pkg_parts.reverse()
@@ -436,14 +440,14 @@ def cmd_ui_preview(args):
 
 
 def _maybe_dispatch_direct_file_run(argv):
-    """Dispatch `multilingual <file>.ml [--lang XX]` to `cmd_run`."""
+    """Dispatch `multilingual <file> [--lang XX]` to `cmd_run`."""
     if not argv:
         return False
 
     first = argv[0]
     if first.startswith("-"):
         return False
-    if not first.lower().endswith(".ml"):
+    if not has_source_extension(first):
         return False
 
     arg_parser = argparse.ArgumentParser(
@@ -475,7 +479,7 @@ def main():  # pylint: disable=too-many-statements
         description=(
             "Multilingual Programming Language CLI "
             "(default command starts interactive REPL; "
-            "pass <file>.ml to run directly)"
+            "pass <file>.multi or <file>.ml to run directly)"
         ),
     )
     parser.add_argument(

@@ -600,6 +600,12 @@ Runnable examples are documented in:
 
 - [examples/README.md](_generated/examples/README.md)
 
+Preferred starter examples:
+
+- `examples/hello_en.multi`
+- `examples/hello_fr.multi`
+- `examples/cross_import_main_en.multi`
+
 Complete feature coverage examples:
 
 - `examples/complete_features_*.ml` (one file per supported language)

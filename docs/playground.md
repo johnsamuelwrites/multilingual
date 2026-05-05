@@ -35,7 +35,7 @@ For production web apps, compile ahead of time with `build-wasm-bundle`, ship
 download required.
 
 ```
-multilingual build-wasm-bundle my_app.ml --out-dir dist/wasm
+multilingual build-wasm-bundle my_app.multi --out-dir dist/wasm
 ```
 
 Live demos using this approach are in [`examples/browser`](../../examples/browser/).

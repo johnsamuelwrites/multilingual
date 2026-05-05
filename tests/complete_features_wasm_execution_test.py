@@ -16,6 +16,7 @@ import unittest
 from multilingualprogramming.codegen.wat_generator import WATCodeGenerator
 from multilingualprogramming.lexer.lexer import Lexer
 from multilingualprogramming.parser.parser import Parser
+from multilingualprogramming.source_extensions import iter_source_files
 
 
 _EXAMPLES_DIR = pathlib.Path(__file__).parent.parent / "examples"
@@ -25,7 +26,7 @@ _EXECUTION_FUEL_LIMIT = 500_000
 def _load_complete_feature_examples() -> list[tuple[str, pathlib.Path, str]]:
     """Return (lang, path, code) tuples for complete_features examples."""
     rows: list[tuple[str, pathlib.Path, str]] = []
-    for fpath in sorted(_EXAMPLES_DIR.glob("complete_features_*.ml")):
+    for fpath in iter_source_files(_EXAMPLES_DIR, "complete_features_*"):
         lang = fpath.stem.split("_")[-1]
         rows.append((lang, fpath, fpath.read_text(encoding="utf-8")))
     return rows

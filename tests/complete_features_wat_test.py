@@ -5,9 +5,9 @@
 #
 
 """
-Regression tests for all complete_features_*.ml example files.
+Regression tests for all complete_features source example files.
 
-Each complete_features_<lang>.ml file exercises every feature of the
+Each complete_features_<lang> source file exercises every feature of the
 multilingual language for that human language.  These tests verify:
 
   1. Parsing  — each file must parse without error.
@@ -30,6 +30,7 @@ from multilingualprogramming.codegen.executor import ProgramExecutor
 from multilingualprogramming.codegen.wat_generator import WATCodeGenerator
 from multilingualprogramming.lexer.lexer import Lexer
 from multilingualprogramming.parser.parser import Parser
+from multilingualprogramming.source_extensions import iter_source_files
 
 
 # ---------------------------------------------------------------------------
@@ -51,7 +52,7 @@ _WAT_RUNTIME_FUNCS = frozenset({
 def _load_examples():
     """Return a sorted list of (lang_code, source_code) for every example file."""
     pairs = []
-    for fpath in sorted(_EXAMPLES_DIR.glob("complete_features_*.ml")):
+    for fpath in iter_source_files(_EXAMPLES_DIR, "complete_features_*"):
         lang = fpath.stem.split("_")[-1]
         pairs.append((lang, fpath.read_text(encoding="utf-8")))
     return pairs
@@ -111,7 +112,7 @@ def _wat_validity_errors(wat: str) -> list:
 # ---------------------------------------------------------------------------
 
 class CompleteFeaturesParseSuite(unittest.TestCase):
-    """Parsing every complete_features_*.ml must succeed without exceptions."""
+    """Parsing every complete_features source file must succeed."""
 
     def test_all_files_parse_without_error(self):
         for lang, code in _load_examples():
@@ -143,7 +144,7 @@ class CompleteFeaturesParseSuite(unittest.TestCase):
 # ---------------------------------------------------------------------------
 
 class CompleteFeaturesExecutionSuite(unittest.TestCase):
-    """Executing every complete_features_*.ml must succeed."""
+    """Executing every complete_features source file must succeed."""
 
     def test_all_files_execute_without_error(self):
         for lang, code in _load_examples():
@@ -184,7 +185,7 @@ class CompleteFeaturesExecutionSuite(unittest.TestCase):
 # ---------------------------------------------------------------------------
 
 class CompleteFeaturesWATGenerationSuite(unittest.TestCase):
-    """WAT generation for every complete_features_*.ml must succeed."""
+    """WAT generation for every complete_features source file must succeed."""
 
     def test_all_files_wat_generation_no_exception(self):
         for lang, code in _load_examples():

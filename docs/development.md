@@ -32,16 +32,16 @@ Installed CLI commands (end-user style):
 
 ```bash
 multilingual repl
-multilingual run hello.ml
-multilg run hello.ml
+multilingual run hello_en.multi
+multilg run hello_en.multi
 ```
 
 Python module style (recommended while developing/debugging):
 
 ```bash
 python -m multilingualprogramming repl
-python -m multilingualprogramming run hello.ml --lang fr
-python -m multilingualprogramming compile hello.ml
+python -m multilingualprogramming run hello_fr.multi --lang fr
+python -m multilingualprogramming compile hello_en.multi
 python -m multilingualprogramming smoke --all
 ```
 
@@ -106,7 +106,7 @@ python -m multilingualprogramming repl --show-python
 Debug parser/codegen behavior quickly:
 
 ```bash
-python -m multilingualprogramming compile examples/surface_for_es.ml --lang es
+python -m multilingualprogramming compile examples/hello_en.multi --lang en
 ```
 
 Use temporary breakpoints in code:
@@ -118,7 +118,7 @@ breakpoint()
 Then run the exact module path you are testing:
 
 ```bash
-python -m multilingualprogramming run examples/arithmetics_en.ml --lang en
+python -m multilingualprogramming run examples/hello_en.multi --lang en
 ```
 
 ## Packaging Sanity Check

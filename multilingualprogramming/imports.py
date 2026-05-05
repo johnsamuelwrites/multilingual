@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 
-"""Import hook for loading `.ml` modules/packages."""
+"""Import hook for loading `.multi` and `.ml` modules/packages."""
 
 import importlib.abc
 import importlib.util
@@ -17,10 +17,14 @@ from multilingualprogramming.core.semantic_analyzer import SemanticAnalyzer
 from multilingualprogramming.core.semantic_lowering import lower_to_semantic_ir
 from multilingualprogramming.lexer.lexer import Lexer
 from multilingualprogramming.parser.parser import Parser
+from multilingualprogramming.source_extensions import (
+    find_module_source,
+    find_package_init,
+)
 
 
 class _MLLoader(importlib.abc.Loader):
-    """Loader that transpiles and executes `.ml` source modules."""
+    """Loader that transpiles and executes multilingual source modules."""
 
     _CODE_CACHE = {}
 
@@ -84,14 +88,14 @@ class _MLLoader(importlib.abc.Loader):
 
 
 class _MLFinder(importlib.abc.MetaPathFinder):
-    """Meta-path finder for `.ml` modules and packages."""
+    """Meta-path finder for `.multi` and `.ml` modules and packages."""
 
     @staticmethod
     def _candidate_spec(fullname, base_dir):
         module_name = fullname.rsplit(".", 1)[-1]
         package_dir = Path(base_dir) / module_name
-        package_init = package_dir / "__init__.ml"
-        if package_init.is_file():
+        package_init = find_package_init(package_dir)
+        if package_init is not None:
             loader = _MLLoader(package_init, is_package=True)
             return importlib.util.spec_from_file_location(
                 fullname,
@@ -100,8 +104,8 @@ class _MLFinder(importlib.abc.MetaPathFinder):
                 submodule_search_locations=[str(package_dir)],
             )
 
-        module_file = Path(base_dir) / f"{module_name}.ml"
-        if module_file.is_file():
+        module_file = find_module_source(base_dir, module_name)
+        if module_file is not None:
             loader = _MLLoader(module_file, is_package=False)
             return importlib.util.spec_from_file_location(
                 fullname,
@@ -111,7 +115,7 @@ class _MLFinder(importlib.abc.MetaPathFinder):
         return None
 
     def find_spec(self, fullname, path=None, target=None):
-        """Find an import spec for modules/packages backed by `.ml` files."""
+        """Find an import spec for modules/packages backed by source files."""
         del target
         search_paths = path if path is not None else sys.path
         for base in search_paths:
@@ -130,7 +134,7 @@ _FINDER = None
 
 
 def enable_multilingual_imports():
-    """Enable import of `.ml` modules in the active Python process."""
+    """Enable import of `.multi` and `.ml` modules in the active Python process."""
     global _FINDER  # pylint: disable=global-statement
     if _FINDER is not None and _FINDER in sys.meta_path:
         return _FINDER
@@ -141,7 +145,7 @@ def enable_multilingual_imports():
 
 
 def disable_multilingual_imports():
-    """Disable import of `.ml` modules in the active Python process."""
+    """Disable import of multilingual source modules in the active Python process."""
     global _FINDER  # pylint: disable=global-statement
     if _FINDER is not None and _FINDER in sys.meta_path:
         sys.meta_path.remove(_FINDER)

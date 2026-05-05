@@ -15,7 +15,8 @@ Concretement:
 
 ## 2. Installation et demarrage rapide
 
-Les fichiers source du langage utilisent l'extension `.ml` (par exemple `bonjour.ml`).
+Les fichiers source du langage utilisent de preference l'extension `.multi`
+(par exemple `bonjour.multi`). L'extension historique `.ml` reste compatible.
 
 Depuis la racine du projet:
 
@@ -52,16 +53,16 @@ multilingual repl --lang fr --show-python
 # python -m multilingualprogramming repl --lang fr --show-python
 ```
 
-Executer un fichier source (ex. `bonjour.ml`):
+Executer un fichier source (ex. `bonjour.multi`):
 
 ```text
 afficher("Bonjour le monde")
 ```
 
 ```bash
-multilingual run bonjour.ml --lang fr
+multilingual run bonjour.multi --lang fr
 # alternative dev/debug:
-# python -m multilingualprogramming run bonjour.ml --lang fr
+# python -m multilingualprogramming run bonjour.multi --lang fr
 ```
 
 ## 3. Capacites principales du langage

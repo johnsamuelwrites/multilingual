@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 
-"""Integration tests for `.ml` import support across languages."""
+"""Integration tests for `.multi` and `.ml` import support across languages."""
 
 import importlib
 import subprocess
@@ -95,12 +95,63 @@ class MultilingualImportTestSuite(unittest.TestCase):
             self.assertTrue(result.success, result.errors)
             self.assertEqual(result.output.strip(), "42")
 
+    def test_english_program_imports_french_multi_module(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self._write_file(
+                tmp,
+                "module_fr.multi",
+                "soit valeur = 41\n"
+                "def incremente(x):\n"
+                "    retour x + 1\n",
+            )
+
+            original_path = self._with_sys_path(tmp)
+            self._purge_modules(["module_fr"])
+            try:
+                source = (
+                    "import module_fr\n"
+                    "print(module_fr.incremente(module_fr.valeur))\n"
+                )
+                result = ProgramExecutor(language="en").execute(source)
+            finally:
+                self._restore_sys_path(original_path)
+                self._purge_modules(["module_fr"])
+
+            self.assertTrue(result.success, result.errors)
+            self.assertEqual(result.output.strip(), "42")
+
     def test_package_import_from_ml_init_and_submodule(self):
         with tempfile.TemporaryDirectory() as tmp:
             self._write_file(tmp, "pkg/__init__.ml", "let default_value = 5\n")
             self._write_file(
                 tmp,
                 "pkg/tools.ml",
+                "def double(x):\n"
+                "    return x * 2\n",
+            )
+
+            original_path = self._with_sys_path(tmp)
+            self._purge_modules(["pkg", "pkg.tools"])
+            try:
+                source = (
+                    "from pkg import default_value\n"
+                    "from pkg import tools\n"
+                    "print(tools.double(default_value))\n"
+                )
+                result = ProgramExecutor(language="en").execute(source)
+            finally:
+                self._restore_sys_path(original_path)
+                self._purge_modules(["pkg", "pkg.tools"])
+
+            self.assertTrue(result.success, result.errors)
+            self.assertEqual(result.output.strip(), "10")
+
+    def test_package_import_from_multi_init_and_submodule(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self._write_file(tmp, "pkg/__init__.multi", "let default_value = 5\n")
+            self._write_file(
+                tmp,
+                "pkg/tools.multi",
                 "def double(x):\n"
                 "    return x * 2\n",
             )
@@ -354,7 +405,7 @@ class RelativeImportTestSuite(unittest.TestCase):
 
 
 class CLIImportTestSuite(unittest.TestCase):
-    """Validate that `multilingual run` correctly resolves local .ml imports."""
+    """Validate that `multilingual run` resolves local source imports."""
 
     def _write_file(self, root, relative_path, content):
         path = Path(root) / relative_path
@@ -385,6 +436,25 @@ class CLIImportTestSuite(unittest.TestCase):
                 "afficher(utilitaires.ajouter(19, 23))\n",
             )
             proc = self._run_cli(Path(tmp) / "principal.ml")
+
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertEqual(proc.stdout.strip(), "42")
+
+    def test_cli_run_resolves_sibling_multi_module(self):
+        """multilingual run principal.multi finds utilitaires.multi in same directory."""
+        with tempfile.TemporaryDirectory() as tmp:
+            self._write_file(
+                tmp,
+                "utilitaires.multi",
+                "def ajouter(a, b):\n    return a + b\n",
+            )
+            self._write_file(
+                tmp,
+                "principal.multi",
+                "importer utilitaires\n"
+                "afficher(utilitaires.ajouter(19, 23))\n",
+            )
+            proc = self._run_cli(Path(tmp) / "principal.multi")
 
         self.assertEqual(proc.returncode, 0, proc.stderr)
         self.assertEqual(proc.stdout.strip(), "42")

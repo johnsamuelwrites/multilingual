@@ -1,9 +1,24 @@
-﻿## Narrative `.ml` Examples
+## Narrative Source Examples
 
 This folder includes semantically equivalent source programs in different
 human languages. They are designed to show the core project idea quickly.
 
-## 1. Arithmetic Equivalence
+New examples prefer `.multi`. Existing `.ml` files remain available for
+backward compatibility and regression coverage.
+
+## 1. Hello World In `.multi`
+
+- English: `examples/hello_en.multi`
+- French: `examples/hello_fr.multi`
+
+Run:
+
+```bash
+python -m multilingualprogramming run examples/hello_en.multi --lang en
+python -m multilingualprogramming run examples/hello_fr.multi --lang fr
+```
+
+## 2. Arithmetic Equivalence
 
 - English: `examples/arithmetics_en.ml`
 - French: `examples/arithmetics_fr.ml`
@@ -15,7 +30,7 @@ python -m multilingualprogramming run examples/arithmetics_en.ml --lang en
 python -m multilingualprogramming run examples/arithmetics_fr.ml --lang fr
 ```
 
-## 2. Simple CLI Tool
+## 3. Simple CLI Tool
 
 Small realistic example: collect user input and compute invoice total.
 
@@ -29,7 +44,7 @@ python -m multilingualprogramming run examples/cli_tool_en.ml --lang en
 python -m multilingualprogramming run examples/cli_tool_fr.ml --lang fr
 ```
 
-## 3. Tiny Data Processing Script
+## 4. Tiny Data Processing Script
 
 Small realistic example: filter data and compute average.
 
@@ -43,7 +58,7 @@ python -m multilingualprogramming run examples/data_processing_en.ml --lang en
 python -m multilingualprogramming run examples/data_processing_fr.ml --lang fr
 ```
 
-## 4. Japanese Surface Syntax Example
+## 5. Japanese Surface Syntax Example
 
 These two programs compute the same result with different loop phrasing.
 
@@ -57,7 +72,7 @@ python -m multilingualprogramming run examples/surface_for_ja.ml --lang ja
 python -m multilingualprogramming run examples/surface_for_ja_canonical.ml --lang ja
 ```
 
-## 5. Spanish And Portuguese Surface Syntax Examples
+## 6. Spanish And Portuguese Surface Syntax Examples
 
 These files demonstrate iterable-first loop normalization in Romance languages.
 
@@ -75,31 +90,43 @@ python -m multilingualprogramming run examples/surface_for_pt.ml --lang pt
 python -m multilingualprogramming run examples/surface_for_pt_canonical.ml --lang pt
 ```
 
-## 6. Cross-Language Import Examples
+## 7. Cross-Language Import Examples
 
-These examples import `.ml` modules across languages from a shared package:
+These examples import source modules across languages from shared packages:
 
-- Package initializer: `examples/crosslingual/__init__.ml`
-- French module: `examples/crosslingual/fr_math.ml`
-- English module: `examples/crosslingual/en_text.ml`
-- English main: `examples/cross_import_main_en.ml`
-- French main: `examples/cross_import_main_fr.ml`
+- Preferred `.multi` package initializer: `examples/crosslingual_multi/__init__.multi`
+- Preferred `.multi` French module: `examples/crosslingual_multi/fr_math.multi`
+- Preferred `.multi` English module: `examples/crosslingual_multi/en_text.multi`
+- Preferred `.multi` English main: `examples/cross_import_main_en.multi`
+- Legacy package initializer: `examples/crosslingual/__init__.ml`
+- Legacy French module: `examples/crosslingual/fr_math.ml`
+- Legacy English module: `examples/crosslingual/en_text.ml`
+- Legacy English main: `examples/cross_import_main_en.ml`
+- Legacy French main: `examples/cross_import_main_fr.ml`
 
 Run:
 
 ```bash
+python -m multilingualprogramming run examples/cross_import_main_en.multi --lang en
 python -m multilingualprogramming run examples/cross_import_main_en.ml --lang en
 python -m multilingualprogramming run examples/cross_import_main_fr.ml --lang fr
 ```
 
-Expected output:
+Expected output for the preferred `.multi` English entry program:
+
+```text
+crosslingual-imports-multi
+total=42
+```
+
+Expected output for the legacy `.ml` entry programs:
 
 ```text
 crosslingual-imports
 total=42
 ```
 
-for the English entry program, and:
+and:
 
 ```text
 crosslingual-imports
@@ -108,7 +135,7 @@ total=22
 
 for the French entry program.
 
-## 7. Complete Feature Examples (EN/FR/ES)
+## 8. Complete Feature Examples (EN/FR/ES)
 
 These examples use a broad set of supported features in one file:
 

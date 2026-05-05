@@ -95,7 +95,8 @@ Details:
 
 ## Quick Start
 
-Source files use the `.ml` extension. Running the current implementation
+Source files now prefer the `.multi` extension. The legacy `.ml` extension
+remains fully supported for compatibility. Running the current implementation
 requires Python 3.12 or newer.
 
 ### Try The Playground
@@ -177,17 +178,17 @@ REPL commands:
 ## Run a Program
 
 ```bash
-multilingual hello.ml
-multilingual run hello.ml
-multilingual run hello.ml --lang fr
-multilingual run hello.ml --show-backend
+multilingual hello_en.multi
+multilingual run hello_en.multi
+multilingual run hello_fr.multi --lang fr
+multilingual run hello_en.multi --show-backend
 ```
 
 ## Cross-Language Module Imports
 
-You can import `.ml` modules across language surfaces in one program.
+You can import `.multi` and `.ml` modules across language surfaces in one program.
 
-`module_fr.ml`:
+`module_fr.multi`:
 
 ```text
 soit valeur = 41
@@ -195,7 +196,7 @@ def incremente(x):
     retour x + 1
 ```
 
-`main_en.ml`:
+`main_en.multi`:
 
 ```text
 import module_fr
@@ -205,7 +206,7 @@ print(module_fr.incremente(module_fr.valeur))
 Run:
 
 ```bash
-multilingual run main_en.ml --lang en
+multilingual run main_en.multi --lang en
 ```
 
 ## Roadmap

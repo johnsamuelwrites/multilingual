@@ -285,11 +285,11 @@ print(asyncio.run(main()))
         try:
             pkg_dir = root / "pkg"
             pkg_dir.mkdir(parents=True, exist_ok=True)
-            (pkg_dir / "__init__.ml").write_text(
+            (pkg_dir / "__init__.multi").write_text(
                 "let default_value = 5\n",
                 encoding="utf-8",
             )
-            (pkg_dir / "tools.ml").write_text(
+            (pkg_dir / "tools.multi").write_text(
                 "def double(x):\n"
                 "    return x * 2\n",
                 encoding="utf-8",

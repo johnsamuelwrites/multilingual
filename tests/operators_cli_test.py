@@ -339,26 +339,26 @@ class CLITestSuite(unittest.TestCase):
                 cmd_smoke(args)
         self.assertEqual(exc.exception.code, 1)
 
-    def test_main_direct_ml_file_dispatches_to_cmd_run(self):
+    def test_main_direct_multi_file_dispatches_to_cmd_run(self):
         with patch.object(main_module, "cmd_run") as run_mock:
             with patch.object(main_module, "cmd_repl") as repl_mock:
                 with patch.object(sys, "argv", [
                     "multilingual",
-                    "examples/arithmetics_en.ml",
+                    "examples/hello_en.multi",
                 ]):
                     main_module.main()
 
         run_mock.assert_called_once()
         repl_mock.assert_not_called()
         args = run_mock.call_args.args[0]
-        self.assertEqual(args.file, "examples/arithmetics_en.ml")
+        self.assertEqual(args.file, "examples/hello_en.multi")
         self.assertIsNone(args.lang)
 
-    def test_main_direct_ml_file_supports_lang_option(self):
+    def test_main_direct_multi_file_supports_lang_option(self):
         with patch.object(main_module, "cmd_run") as run_mock:
             with patch.object(sys, "argv", [
                 "multilingual",
-                "examples/arithmetics_fr.ml",
+                "examples/hello_fr.multi",
                 "--lang",
                 "fr",
             ]):
@@ -366,7 +366,7 @@ class CLITestSuite(unittest.TestCase):
 
         run_mock.assert_called_once()
         args = run_mock.call_args.args[0]
-        self.assertEqual(args.file, "examples/arithmetics_fr.ml")
+        self.assertEqual(args.file, "examples/hello_fr.multi")
         self.assertEqual(args.lang, "fr")
 
 
