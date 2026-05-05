@@ -328,7 +328,7 @@ Exemples frequents:
 
 Les noms universels Python restent utilisables en parallele.
 
-Le fichier `examples/complete_features_fr.ml` montre un scenario couvrant
+Le fichier `examples/complete_features_fr.multi` montre un scenario couvrant
 plusieurs capacites combinees dans un seul programme.
 
 - import avance avec alias:
@@ -373,7 +373,7 @@ afficher(total_acc est Rien)
 Pour reproduire exactement cet exemple:
 
 ```bash
-multilingual run examples/complete_features_fr.ml --lang fr
+multilingual run examples/complete_features_fr.multi --lang fr
 # alternative dev/debug:
 # python -m multilingualprogramming run examples/complete_features_fr.ml --lang fr
 ```
@@ -623,8 +623,8 @@ Portees de memoire :
 Exemple complet demontrant toutes ces constructions :
 
 ```bash
-multilingual run examples/agent_fr.ml --lang fr
-multilingual run examples/research_swarm_en.ml --lang en
+multilingual run examples/agent_fr.multi --lang fr
+multilingual run examples/research_swarm_en.multi --lang en
 ```
 
 ## 10. Documentation associee

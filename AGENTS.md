@@ -54,7 +54,7 @@ hard-coded.
 ### End-to-end Pipeline
 
 ```
-Source (.ml, 17 languages)
+Source (.multi, .ml, 17 languages)
         │
         ▼
     Lexer                   multilingualprogramming/lexer/lexer.py
@@ -138,7 +138,7 @@ multilingual/
 │   ├── __main__.py                     ← CLI entry point (argparse)
 │   ├── version.py                      ← version = "0.6.0"
 │   ├── exceptions.py                   ← custom exceptions
-│   ├── imports.py                      ← multilingual .ml import support
+│   ├── imports.py                      ← multilingual .multi/.ml import support
 │   ├── unicode_string.py               ← Unicode string utilities
 │   │
 │   ├── codegen/
@@ -221,7 +221,7 @@ multilingual/
 │       └── tuple_memory.py             ← memory management
 │
 ├── tests/                              ← 67 test files, ~22,284 lines
-├── examples/                           ← 33 .ml example files (17 languages)
+├── examples/                           ← 33 .multi example files (17 languages, .ml also supported)
 ├── docs/                               ← 29+ markdown files + French docs
 └── tools/                              ← development utilities
 ```
@@ -710,19 +710,19 @@ python -m pytest -k "inheritance" tests/  # tests with "inheritance" in name
 ### Subcommands
 
 ```bash
-# Execute a .ml file
-multilingual run hello.ml
-multilingual run hello.ml --lang fr
+# Execute a .multi file (or .ml for backward compatibility)
+multilingual run hello.multi
+multilingual run hello.multi --lang fr
 
 # Start interactive REPL
 multilingual repl
 multilingual repl --lang fr --show-python --show-wat
 
 # Transpile to Python (print output)
-multilingual compile hello.ml --lang en
+multilingual compile hello.multi --lang en
 
 # Build WASM bundle
-multilingual build-wasm-bundle hello.ml --lang en --out-dir ./dist
+multilingual build-wasm-bundle hello.multi --lang en --out-dir ./dist
 
 # Validate language packs
 multilingual smoke --all

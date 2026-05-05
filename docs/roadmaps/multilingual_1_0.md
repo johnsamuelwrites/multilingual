@@ -271,10 +271,10 @@ Suggested tests:
 
 Suggested demos:
 
-- `examples/reactive_counter.ml`
-- `examples/multilingual_dashboard.ml`
-- `examples/streaming_chat_fr.ml`
-- `examples/semantic_search_ja.ml`
+- `examples/reactive_counter.multi`
+- `examples/multilingual_dashboard.multi`
+- `examples/streaming_chat_fr.multi`
+- `examples/semantic_search_ja.multi`
 
 Exit criteria:
 
@@ -364,9 +364,9 @@ Suggested tests:
 
 Suggested demos:
 
-- `examples/research_swarm_en.ml`
-- `examples/research_swarm_fr.ml`
-- `examples/research_swarm_ja.ml`
+- `examples/research_swarm_en.multi`
+- `examples/research_swarm_fr.multi`
+- `examples/research_swarm_ja.multi`
 
 Exit criteria:
 
@@ -486,10 +486,10 @@ The highest-value next steps are:
 
 The first public examples of the new direction should include:
 
-- a reactive counter app (`examples/reactive_counter.ml`)
+- a reactive counter app (`examples/reactive_counter.multi`)
 - a multilingual tool-using assistant written in three languages showing
-  identical semantics (`examples/agent_en.ml`, `examples/agent_fr.ml`,
-  `examples/agent_ja.ml`)
+  identical semantics (`examples/agent_en.multi`, `examples/agent_fr.multi`,
+  `examples/agent_ja.multi`)
 - a typed invoice extractor from PDF using `generate` with a declared schema
 - an image captioning pipeline using multimodal `prompt`
 - a retrieval-based question-answering example using `embed` and `nearest`

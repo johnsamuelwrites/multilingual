@@ -3,7 +3,7 @@
 This matrix defines the current compatibility baseline for `multilingual`.
 
 Baseline source of truth:
-- `examples/complete_features_en.ml`
+- `examples/complete_features_en.multi` (`.ml` also supported)
 - `tests/` (2022 tests across 130+ test suites, 2 skipped)
 
 Target runtime:

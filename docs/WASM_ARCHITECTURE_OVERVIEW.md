@@ -12,7 +12,7 @@
                 │                            │
          ┌──────▼──────┐          ┌──────────▼────────┐
          │ User Code   │          │ Standard Library  │
-         │ (.ml files) │          │ (17 languages)    │
+         │ (.multi files) │       │ (17 languages)    │
          └──────┬──────┘          └──────────┬────────┘
                 │                            │
                 └─────────────┬──────────────┘
@@ -100,7 +100,7 @@
 > AST directly to WebAssembly Text (WAT). The generated WAT is compiled to binary WASM by
 > `wabt` / `wat2wasm` and executed by Wasmtime. Class methods, stateful OOP instances
 > (heap allocation via `$__heap_ptr`), `self.attr` field reads/writes, and instance method
-> calls are fully lowered. All 17-language `complete_features_*.ml` examples compile to
+> calls are fully lowered. All 17-language `complete_features_*.multi` examples compile to
 > executable WASM and are validated in CI.
 >
 > **Rust/Cranelift path (stub, planned):** `WasmCodeGenerator.generate()` produces Rust
@@ -576,7 +576,7 @@ multilingual → WASM code generation
 ### Two-Path Execution
 
 ```
-Source Code (.ml)
+Source Code (.multi, .ml)
     ↓
 Lexer & Parser
     ↓

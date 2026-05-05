@@ -608,14 +608,14 @@ Preferred starter examples:
 
 Complete feature coverage examples:
 
-- `examples/complete_features_*.ml` (one file per supported language)
+- `examples/complete_features_*.multi` (one file per supported language; `.ml` also supported)
 
 Run:
 
 ```bash
-python -m multilingualprogramming run examples/complete_features_en.ml --lang en
-python -m multilingualprogramming run examples/complete_features_fr.ml --lang fr
-python -m multilingualprogramming run examples/complete_features_es.ml --lang es
+python -m multilingualprogramming run examples/complete_features_en.multi --lang en
+python -m multilingualprogramming run examples/complete_features_fr.multi --lang fr
+python -m multilingualprogramming run examples/complete_features_es.multi --lang es
 ```
 
 Run all examples from repository root:

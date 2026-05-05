@@ -24,11 +24,11 @@ manifest = WATCodeGenerator().generate_abi_manifest(program_ast)
 ## CLI
 
 ```bash
-multilingual wat-abi path/to/program.ml --lang en
-multilingual wat-host-shim path/to/program.ml --lang en
-multilingual wat-renderer-template path/to/program.ml --lang en
-multilingual encoding-check-generated path/to/program.ml --lang en
-multilingual build-wasm-bundle path/to/program.ml --lang en --out-dir build/wasm
+multilingual wat-abi path/to/program.multi --lang en
+multilingual wat-host-shim path/to/program.multi --lang en
+multilingual wat-renderer-template path/to/program.multi --lang en
+multilingual encoding-check-generated path/to/program.multi --lang en
+multilingual build-wasm-bundle path/to/program.multi --lang en --out-dir build/wasm
 ```
 
 ## Manifest Shape

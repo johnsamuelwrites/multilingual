@@ -1,7 +1,7 @@
 # Modules, packages et projets multi-fichiers (français)
 
 Ce document explique comment structurer un projet multilingual en plusieurs
-fichiers `.ml`, comment écrire des tests avec pytest, et comment intégrer le
+fichiers `.multi` (`.ml` aussi supporté), comment écrire des tests avec pytest, et comment intégrer le
 projet à l'outillage Python standard.
 
 ---
@@ -11,7 +11,7 @@ projet à l'outillage Python standard.
 Un script isolé s'exécute directement :
 
 ```bash
-multilingual run mon_script.ml --lang fr
+multilingual run mon_script.multi --lang fr
 ```
 
 Un projet réel décompose le code en modules et packages, exactement comme en Python.
@@ -20,16 +20,16 @@ Un projet réel décompose le code en modules et packages, exactement comme en P
 
 ## 2. Structure d'un module simple
 
-Un module est un fichier `.ml`.  Il est importé par son nom de fichier sans
+Un module est un fichier `.multi` (ou `.ml`).  Il est importé par son nom de fichier sans
 l'extension.
 
 ```
 projet/
-├── utilitaires.ml      # module
-└── principal.ml        # point d'entrée
+├── utilitaires.multi   # module
+└── principal.multi     # point d'entrée
 ```
 
-`utilitaires.ml` :
+`utilitaires.multi` :
 ```text
 déf ajouter(a, b):
     retour a + b
@@ -38,7 +38,7 @@ déf doubler(x):
     retour x * 2
 ```
 
-`principal.ml` :
+`principal.multi` :
 ```text
 importer utilitaires
 afficher(utilitaires.ajouter(3, 4))    # 7
@@ -46,7 +46,7 @@ afficher(utilitaires.doubler(5))       # 10
 ```
 
 ```bash
-multilingual run projet/principal.ml --lang fr
+multilingual run projet/principal.multi --lang fr
 ```
 
 ---

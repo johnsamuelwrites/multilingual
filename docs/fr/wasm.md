@@ -86,7 +86,7 @@ fn main() -> anyhow::Result<()> {
 
 ```bash
 # Voir le Python généré
-multilingual compile mon_programme.ml --lang fr
+multilingual compile mon_programme.multi --lang fr
 
 # Voir le WAT généré (via le REPL avec --show-wat)
 multilingual repl --lang fr --show-wat

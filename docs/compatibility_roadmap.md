@@ -23,9 +23,9 @@ Goal:
 Deliverables:
 - keep `docs/compatibility_matrix.md` as source-of-truth status table
 - freeze baseline examples:
-  - `examples/complete_features_en.ml`
-  - `examples/complete_features_fr.ml`
-  - `examples/complete_features_es.ml`
+  - `examples/complete_features_en.multi` (`.ml` also supported)
+  - `examples/complete_features_fr.multi` (`.ml` also supported)
+  - `examples/complete_features_es.multi` (`.ml` also supported)
 - add initial differential tests:
   - `tests/compatibility/differential_312_test.py`
 - add CI job running compatibility smoke examples on Python 3.12
@@ -70,7 +70,7 @@ Goal:
 
 Workstreams:
 - package/module resolution parity tests (`import`, `from`, aliases, packages)
-- `.ml` and Python module interop tests
+- `.multi` / `.ml` and Python module interop tests
 - prioritized stdlib parity set (math, json, datetime, itertools, pathlib)
 
 Exit criteria:

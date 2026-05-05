@@ -35,7 +35,7 @@ python -c "import wasmtime; print(wasmtime.__version__)"
 
 ### Step 1 — Write a multilingual source file
 
-Save the following as `hello_wasi.ml` (English keywords; runs in any WASI runtime):
+Save the following as `hello_wasi.multi` (English keywords; runs in any WASI runtime):
 
 ```text
 def fibonacci(n):
@@ -55,7 +55,7 @@ while i < 15:
     i = i + 1
 ```
 
-The same program in French (`hello_wasi_fr.ml`):
+The same program in French (`hello_wasi_fr.multi`):
 
 ```text
 déf fibonacci(n):
@@ -80,7 +80,7 @@ tant que i < 15:
 ### Step 2 — Build the WASM bundle
 
 ```bash
-python -m multilingualprogramming build-wasm-bundle hello_wasi.ml \
+python -m multilingualprogramming build-wasm-bundle hello_wasi.multi \
     --wasm-target wasi \
     --out-dir build/wasi
 ```
@@ -104,7 +104,7 @@ that satisfies WASI without requiring a JavaScript embedding.
 For a French source file, add `--lang fr` (or omit it — the language is auto-detected):
 
 ```bash
-python -m multilingualprogramming build-wasm-bundle hello_wasi_fr.ml \
+python -m multilingualprogramming build-wasm-bundle hello_wasi_fr.multi \
     --wasm-target wasi \
     --out-dir build/wasi
 ```
@@ -144,7 +144,7 @@ Expected output:
 Programs that call `argc()` / `argv(index)` can receive arguments at runtime:
 
 ```text
-# args_demo.ml
+# args_demo.multi
 let count = argc()
 print(count)
 let name = argv(0)
@@ -154,7 +154,7 @@ print(name)
 Build and run:
 
 ```bash
-python -m multilingualprogramming build-wasm-bundle args_demo.ml \
+python -m multilingualprogramming build-wasm-bundle args_demo.multi \
     --wasm-target wasi \
     --out-dir build/wasi
 
@@ -176,13 +176,13 @@ Alice
 Programs using `input()` read from stdin under WASI automatically:
 
 ```text
-# greet.ml
+# greet.multi
 let name = input("Enter your name: ")
 print("Hello,", name)
 ```
 
 ```bash
-python -m multilingualprogramming build-wasm-bundle greet.ml \
+python -m multilingualprogramming build-wasm-bundle greet.multi \
     --wasm-target wasi --out-dir build/wasi
 
 echo "World" | wasmtime build/wasi/module.wasm
@@ -499,7 +499,7 @@ assert result_py == result_wasm
 ### Compilation Pipeline
 
 ```
-Multilingual Source Code (.ml)
+Multilingual Source Code (.multi, .ml)
     ↓
 Lexer & Parser
     ↓
