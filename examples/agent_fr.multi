@@ -1,5 +1,5 @@
 # Agent IA Multilingue — Français
-# La même logique d'agent que agent_en.ml et agent_ja.ml.
+# La même logique d'agent que agent_en.multi et agent_ja.multi.
 # Prouve que Multilingual est la seule plateforme IA où le code d'agent
 # est idiomatique dans n'importe quelle langue humaine.
 #

@@ -92,7 +92,7 @@ class CorpusProjectRegistry:
     PROJECTS = {
         "humanize_numbers": CorpusProject(
             name="humanize_numbers",
-            source_file=Path("tests/corpus/humanize_numbers.ml"),
+            source_file=Path("tests/corpus/humanize_numbers.multi"),
             languages=["en", "fr", "es"],
             category="string_manipulation",
             complexity="simple",
@@ -107,7 +107,7 @@ class CorpusProjectRegistry:
         ),
         "algorithms": CorpusProject(
             name="algorithms",
-            source_file=Path("tests/corpus/algorithms.ml"),
+            source_file=Path("tests/corpus/algorithms.multi"),
             languages=["en"],
             category="algorithm",
             complexity="simple",
@@ -119,7 +119,7 @@ class CorpusProjectRegistry:
         ),
         "json_encoder": CorpusProject(
             name="json_encoder",
-            source_file=Path("tests/corpus/json_encoder.ml"),
+            source_file=Path("tests/corpus/json_encoder.multi"),
             languages=["en"],
             category="data_encoding",
             complexity="moderate",
@@ -134,7 +134,7 @@ class CorpusProjectRegistry:
         ),
         "text_analyzer": CorpusProject(
             name="text_analyzer",
-            source_file=Path("tests/corpus/text_analyzer.ml"),
+            source_file=Path("tests/corpus/text_analyzer.multi"),
             languages=["en"],
             category="text_processing",
             complexity="simple",
@@ -148,7 +148,7 @@ class CorpusProjectRegistry:
         ),
         "date_arithmetic": CorpusProject(
             name="date_arithmetic",
-            source_file=Path("tests/corpus/date_arithmetic.ml"),
+            source_file=Path("tests/corpus/date_arithmetic.multi"),
             languages=["en"],
             category="datetime",
             complexity="moderate",
@@ -162,7 +162,7 @@ class CorpusProjectRegistry:
         ),
         "statistics": CorpusProject(
             name="statistics",
-            source_file=Path("tests/corpus/statistics.ml"),
+            source_file=Path("tests/corpus/statistics.multi"),
             languages=["en"],
             category="data_analysis",
             complexity="simple",
@@ -175,7 +175,7 @@ class CorpusProjectRegistry:
         ),
         "list_utilities": CorpusProject(
             name="list_utilities",
-            source_file=Path("tests/corpus/list_utilities.ml"),
+            source_file=Path("tests/corpus/list_utilities.multi"),
             languages=["en"],
             category="data_manipulation",
             complexity="simple",
@@ -188,7 +188,7 @@ class CorpusProjectRegistry:
         ),
         "string_utilities": CorpusProject(
             name="string_utilities",
-            source_file=Path("tests/corpus/string_utilities.ml"),
+            source_file=Path("tests/corpus/string_utilities.multi"),
             languages=["en"],
             category="string_manipulation",
             complexity="simple",
@@ -201,7 +201,7 @@ class CorpusProjectRegistry:
         ),
         "fibonacci": CorpusProject(
             name="fibonacci",
-            source_file=Path("tests/corpus/fibonacci.ml"),
+            source_file=Path("tests/corpus/fibonacci.multi"),
             languages=["en"],
             category="algorithm",
             complexity="moderate",
@@ -212,7 +212,7 @@ class CorpusProjectRegistry:
         ),
         "simple_calculator": CorpusProject(
             name="simple_calculator",
-            source_file=Path("tests/corpus/simple_calculator.ml"),
+            source_file=Path("tests/corpus/simple_calculator.multi"),
             languages=["en"],
             category="utility",
             complexity="simple",
@@ -226,7 +226,7 @@ class CorpusProjectRegistry:
         ),
         "recursive_factorial": CorpusProject(
             name="recursive_factorial",
-            source_file=Path("tests/corpus/recursive_factorial.ml"),
+            source_file=Path("tests/corpus/recursive_factorial.multi"),
             languages=["en"],
             category="algorithm",
             complexity="moderate",
@@ -239,7 +239,7 @@ class CorpusProjectRegistry:
         ),
         "lambda_functions": CorpusProject(
             name="lambda_functions",
-            source_file=Path("tests/corpus/lambda_functions.ml"),
+            source_file=Path("tests/corpus/lambda_functions.multi"),
             languages=["en"],
             category="functional",
             complexity="moderate",
@@ -252,7 +252,7 @@ class CorpusProjectRegistry:
         ),
         "exception_handling": CorpusProject(
             name="exception_handling",
-            source_file=Path("tests/corpus/exception_handling.ml"),
+            source_file=Path("tests/corpus/exception_handling.multi"),
             languages=["en"],
             category="control_flow",
             complexity="moderate",
@@ -265,7 +265,7 @@ class CorpusProjectRegistry:
         ),
         "comprehensions": CorpusProject(
             name="comprehensions",
-            source_file=Path("tests/corpus/comprehensions.ml"),
+            source_file=Path("tests/corpus/comprehensions.multi"),
             languages=["en"],
             category="advanced",
             complexity="moderate",
@@ -278,7 +278,7 @@ class CorpusProjectRegistry:
         ),
         "edge_cases": CorpusProject(
             name="edge_cases",
-            source_file=Path("tests/corpus/edge_cases.ml"),
+            source_file=Path("tests/corpus/edge_cases.multi"),
             languages=["en"],
             category="robustness",
             complexity="moderate",
@@ -292,7 +292,7 @@ class CorpusProjectRegistry:
         ),
         "performance": CorpusProject(
             name="performance",
-            source_file=Path("tests/corpus/performance.ml"),
+            source_file=Path("tests/corpus/performance.multi"),
             languages=["en"],
             category="performance",
             complexity="moderate",
@@ -305,7 +305,7 @@ class CorpusProjectRegistry:
         ),
         "multilingual_control_flow": CorpusProject(
             name="multilingual_control_flow",
-            source_file=Path("tests/corpus/multilingual_control_flow.ml"),
+            source_file=Path("tests/corpus/multilingual_control_flow.multi"),
             languages=["en", "fr", "es"],
             category="control_flow",
             complexity="moderate",
@@ -318,7 +318,7 @@ class CorpusProjectRegistry:
         ),
         "complete_features": CorpusProject(
             name="complete_features",
-            source_file=Path("examples/complete_features_en.ml"),
+            source_file=Path("examples/complete_features_en.multi"),
             languages=["en", "fr", "es", "de"],
             category="comprehensive",
             complexity="high",
@@ -450,7 +450,7 @@ class HumanizeNumberTestSuite(unittest.TestCase):
     def test_humanize_format_en_basic(self):
         """Humanize numbers in English."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("humanize_numbers.ml"), language="en"
+            self._load_corpus("humanize_numbers.multi"), language="en"
         )
         self.assertTrue(
             result.success, msg=f"Failed: {result.error or 'Unknown error'}"
@@ -460,7 +460,7 @@ class HumanizeNumberTestSuite(unittest.TestCase):
     def test_humanize_format_en_contains_separator(self):
         """English output contains comma separators."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("humanize_numbers.ml"), language="en"
+            self._load_corpus("humanize_numbers.multi"), language="en"
         )
         self.assertTrue(result.success)
         self.assertIn(",", result.output)
@@ -468,7 +468,7 @@ class HumanizeNumberTestSuite(unittest.TestCase):
     def test_humanize_format_en_handles_thousands(self):
         """English handles thousands correctly."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("humanize_numbers.ml"), language="en"
+            self._load_corpus("humanize_numbers.multi"), language="en"
         )
         self.assertTrue(result.success)
         self.assertIn("1,000", result.output)
@@ -476,7 +476,7 @@ class HumanizeNumberTestSuite(unittest.TestCase):
 
     def test_humanize_format_fr_equivalent(self):
         """Humanize numbers in French produces same result."""
-        source = self._load_corpus_for_language("humanize_numbers.ml", "fr")
+        source = self._load_corpus_for_language("humanize_numbers.multi", "fr")
         result = self.runner.execute_multilingual(source, language="fr")
         self.assertTrue(
             result.success, msg=f"Failed: {result.error or 'Unknown error'}"
@@ -486,14 +486,14 @@ class HumanizeNumberTestSuite(unittest.TestCase):
 
     def test_humanize_format_fr_execution_time(self):
         """French execution completes in reasonable time."""
-        source = self._load_corpus_for_language("humanize_numbers.ml", "fr")
+        source = self._load_corpus_for_language("humanize_numbers.multi", "fr")
         result = self.runner.execute_multilingual(source, language="fr")
         self.assertTrue(result.success)
         self.assertLess(result.execution_time_ms, 5000)
 
     def test_humanize_format_es_equivalent(self):
         """Humanize numbers in Spanish produces same result."""
-        source = self._load_corpus_for_language("humanize_numbers.ml", "es")
+        source = self._load_corpus_for_language("humanize_numbers.multi", "es")
         result = self.runner.execute_multilingual(source, language="es")
         self.assertTrue(
             result.success, msg=f"Failed: {result.error or 'Unknown error'}"
@@ -503,7 +503,7 @@ class HumanizeNumberTestSuite(unittest.TestCase):
 
     def test_humanize_format_es_output_lines(self):
         """Spanish output has correct number of lines."""
-        source = self._load_corpus_for_language("humanize_numbers.ml", "es")
+        source = self._load_corpus_for_language("humanize_numbers.multi", "es")
         result = self.runner.execute_multilingual(source, language="es")
         self.assertTrue(result.success)
         output_lines = result.output.strip().split("\n")
@@ -523,7 +523,7 @@ class AlgorithmsTestSuite(unittest.TestCase):
     def test_sieve_of_eratosthenes(self):
         """Generate primes using Sieve of Eratosthenes."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("algorithms.ml"), language="en"
+            self._load_corpus("algorithms.multi"), language="en"
         )
         self.assertTrue(
             result.success, msg=f"Failed: {result.error or 'Unknown error'}"
@@ -537,7 +537,7 @@ class AlgorithmsTestSuite(unittest.TestCase):
     def test_sieve_includes_29(self):
         """Prime generation includes 29."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("algorithms.ml"), language="en"
+            self._load_corpus("algorithms.multi"), language="en"
         )
         self.assertTrue(result.success)
         output_lines = result.output.strip().split("\n")
@@ -546,7 +546,7 @@ class AlgorithmsTestSuite(unittest.TestCase):
     def test_sieve_no_composites(self):
         """Prime generation excludes composite numbers."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("algorithms.ml"), language="en"
+            self._load_corpus("algorithms.multi"), language="en"
         )
         self.assertTrue(result.success)
         output_lines = result.output.strip().split("\n")
@@ -558,7 +558,7 @@ class AlgorithmsTestSuite(unittest.TestCase):
     def test_fizzbuzz_has_fizz(self):
         """FizzBuzz output contains Fizz."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("algorithms.ml"), language="en"
+            self._load_corpus("algorithms.multi"), language="en"
         )
         self.assertTrue(result.success)
         self.assertIn("Fizz", result.output)
@@ -566,7 +566,7 @@ class AlgorithmsTestSuite(unittest.TestCase):
     def test_fizzbuzz_has_buzz(self):
         """FizzBuzz output contains Buzz."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("algorithms.ml"), language="en"
+            self._load_corpus("algorithms.multi"), language="en"
         )
         self.assertTrue(result.success)
         self.assertIn("Buzz", result.output)
@@ -574,7 +574,7 @@ class AlgorithmsTestSuite(unittest.TestCase):
     def test_algorithms_execution_time(self):
         """Algorithm execution completes quickly."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("algorithms.ml"), language="en"
+            self._load_corpus("algorithms.multi"), language="en"
         )
         self.assertTrue(result.success)
         self.assertLess(result.execution_time_ms, 5000)
@@ -593,7 +593,7 @@ class JsonEncoderTestSuite(unittest.TestCase):
     def test_json_encode_basic(self):
         """Encode basic JSON structures."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("json_encoder.ml"), language="en"
+            self._load_corpus("json_encoder.multi"), language="en"
         )
         self.assertTrue(
             result.success, msg=f"Failed: {result.error or 'Unknown error'}"
@@ -604,7 +604,7 @@ class JsonEncoderTestSuite(unittest.TestCase):
     def test_json_encode_dict(self):
         """JSON encodes dictionaries."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("json_encoder.ml"), language="en"
+            self._load_corpus("json_encoder.multi"), language="en"
         )
         self.assertTrue(result.success)
         self.assertIn('{"a"', result.output)
@@ -612,7 +612,7 @@ class JsonEncoderTestSuite(unittest.TestCase):
     def test_json_encode_lists(self):
         """JSON encodes lists."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("json_encoder.ml"), language="en"
+            self._load_corpus("json_encoder.multi"), language="en"
         )
         self.assertTrue(result.success)
         self.assertIn("[", result.output)
@@ -621,7 +621,7 @@ class JsonEncoderTestSuite(unittest.TestCase):
     def test_json_encode_null(self):
         """JSON encodes null values."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("json_encoder.ml"), language="en"
+            self._load_corpus("json_encoder.multi"), language="en"
         )
         self.assertTrue(result.success)
         self.assertIn("null", result.output)
@@ -629,7 +629,7 @@ class JsonEncoderTestSuite(unittest.TestCase):
     def test_json_encode_booleans(self):
         """JSON encodes boolean values."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("json_encoder.ml"), language="en"
+            self._load_corpus("json_encoder.multi"), language="en"
         )
         self.assertTrue(result.success)
         self.assertIn("true", result.output)
@@ -649,7 +649,7 @@ class TextAnalyzerTestSuite(unittest.TestCase):
     def test_word_frequency(self):
         """Analyze word frequency in text."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("text_analyzer.ml"), language="en"
+            self._load_corpus("text_analyzer.multi"), language="en"
         )
         self.assertTrue(
             result.success, msg=f"Failed: {result.error or 'Unknown error'}"
@@ -660,7 +660,7 @@ class TextAnalyzerTestSuite(unittest.TestCase):
     def test_word_frequency_format(self):
         """Word frequency output has correct format."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("text_analyzer.ml"), language="en"
+            self._load_corpus("text_analyzer.multi"), language="en"
         )
         self.assertTrue(result.success)
         output_lines = result.output.strip().split("\n")
@@ -671,7 +671,7 @@ class TextAnalyzerTestSuite(unittest.TestCase):
     def test_word_frequency_the_count(self):
         """Text analyzer counts 'the' correctly."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("text_analyzer.ml"), language="en"
+            self._load_corpus("text_analyzer.multi"), language="en"
         )
         self.assertTrue(result.success)
         self.assertIn("the: 2", result.output)
@@ -679,7 +679,7 @@ class TextAnalyzerTestSuite(unittest.TestCase):
     def test_word_frequency_uses_counter(self):
         """Word frequency analysis uses Counter."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("text_analyzer.ml"), language="en"
+            self._load_corpus("text_analyzer.multi"), language="en"
         )
         self.assertTrue(result.success)
         # Counter should produce frequency output
@@ -705,7 +705,7 @@ class DateArithmeticTestSuite(unittest.TestCase):
     def test_date_arithmetic(self):
         """Perform date arithmetic."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("date_arithmetic.ml"), language="en"
+            self._load_corpus("date_arithmetic.multi"), language="en"
         )
         self.assertTrue(
             result.success, msg=f"Failed: {result.error or 'Unknown error'}"
@@ -716,7 +716,7 @@ class DateArithmeticTestSuite(unittest.TestCase):
     def test_date_addition(self):
         """Date addition with timedelta."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("date_arithmetic.ml"), language="en"
+            self._load_corpus("date_arithmetic.multi"), language="en"
         )
         self.assertTrue(result.success)
         self.assertIn("2023-01-10", result.output)
@@ -724,7 +724,7 @@ class DateArithmeticTestSuite(unittest.TestCase):
     def test_date_subtraction(self):
         """Date arithmetic produces correct results."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("date_arithmetic.ml"), language="en"
+            self._load_corpus("date_arithmetic.multi"), language="en"
         )
         self.assertTrue(result.success)
         output_lines = result.output.strip().split("\n")
@@ -734,7 +734,7 @@ class DateArithmeticTestSuite(unittest.TestCase):
     def test_date_difference(self):
         """Date difference calculation."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("date_arithmetic.ml"), language="en"
+            self._load_corpus("date_arithmetic.multi"), language="en"
         )
         self.assertTrue(result.success)
         self.assertIn("365", result.output)
@@ -742,12 +742,12 @@ class DateArithmeticTestSuite(unittest.TestCase):
     def test_date_arithmetic_french_parity(self):
         """French date arithmetic corpus matches expected output."""
         baseline = self.runner.execute_multilingual(
-            self._load_corpus("date_arithmetic.ml"), language="en"
+            self._load_corpus("date_arithmetic.multi"), language="en"
         )
         self.assertTrue(
             baseline.success, msg=f"English baseline failed: {baseline.error or 'Unknown error'}"
         )
-        source = self._load_corpus_for_language("date_arithmetic.ml", "fr")
+        source = self._load_corpus_for_language("date_arithmetic.multi", "fr")
         result = self.runner.execute_multilingual(source, language="fr")
         self.assertTrue(
             result.success, msg=f"Failed: {result.error or 'Unknown error'}"
@@ -757,12 +757,12 @@ class DateArithmeticTestSuite(unittest.TestCase):
     def test_date_arithmetic_spanish_parity(self):
         """Spanish date arithmetic corpus matches expected output."""
         baseline = self.runner.execute_multilingual(
-            self._load_corpus("date_arithmetic.ml"), language="en"
+            self._load_corpus("date_arithmetic.multi"), language="en"
         )
         self.assertTrue(
             baseline.success, msg=f"English baseline failed: {baseline.error or 'Unknown error'}"
         )
-        source = self._load_corpus_for_language("date_arithmetic.ml", "es")
+        source = self._load_corpus_for_language("date_arithmetic.multi", "es")
         result = self.runner.execute_multilingual(source, language="es")
         self.assertTrue(
             result.success, msg=f"Failed: {result.error or 'Unknown error'}"
@@ -783,7 +783,7 @@ class StatisticsTestSuite(unittest.TestCase):
     def test_statistics_basic(self):
         """Calculate mean, median, and mode."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("statistics.ml"), language="en"
+            self._load_corpus("statistics.multi"), language="en"
         )
         self.assertTrue(
             result.success, msg=f"Failed: {result.error or 'Unknown error'}"
@@ -798,7 +798,7 @@ class StatisticsTestSuite(unittest.TestCase):
     def test_statistics_mean_calculation(self):
         """Mean is calculated correctly from dataset."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("statistics.ml"), language="en"
+            self._load_corpus("statistics.multi"), language="en"
         )
         self.assertTrue(result.success)
         self.assertIn("4.8", result.output)
@@ -806,7 +806,7 @@ class StatisticsTestSuite(unittest.TestCase):
     def test_statistics_median_calculation(self):
         """Median is calculated correctly from dataset."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("statistics.ml"), language="en"
+            self._load_corpus("statistics.multi"), language="en"
         )
         self.assertTrue(result.success)
         output_lines = result.output.strip().split("\n")
@@ -815,7 +815,7 @@ class StatisticsTestSuite(unittest.TestCase):
     def test_statistics_mode_calculation(self):
         """Mode is calculated correctly from dataset."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("statistics.ml"), language="en"
+            self._load_corpus("statistics.multi"), language="en"
         )
         self.assertTrue(result.success)
         self.assertIn("3", result.output)
@@ -834,7 +834,7 @@ class ListUtilitiesTestSuite(unittest.TestCase):
     def test_list_utilities(self):
         """Test list flatten, unique, and chunk operations."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("list_utilities.ml"), language="en"
+            self._load_corpus("list_utilities.multi"), language="en"
         )
         self.assertTrue(
             result.success, msg=f"Failed: {result.error or 'Unknown error'}"
@@ -847,7 +847,7 @@ class ListUtilitiesTestSuite(unittest.TestCase):
     def test_list_flatten(self):
         """List flattening produces flat result."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("list_utilities.ml"), language="en"
+            self._load_corpus("list_utilities.multi"), language="en"
         )
         self.assertTrue(result.success)
         output_lines = result.output.strip().split("\n")
@@ -856,7 +856,7 @@ class ListUtilitiesTestSuite(unittest.TestCase):
     def test_list_unique(self):
         """List deduplication preserves order."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("list_utilities.ml"), language="en"
+            self._load_corpus("list_utilities.multi"), language="en"
         )
         self.assertTrue(result.success)
         output_lines = result.output.strip().split("\n")
@@ -865,7 +865,7 @@ class ListUtilitiesTestSuite(unittest.TestCase):
     def test_list_chunk(self):
         """List chunking groups elements correctly."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("list_utilities.ml"), language="en"
+            self._load_corpus("list_utilities.multi"), language="en"
         )
         self.assertTrue(result.success)
         self.assertIn("[[1, 2], [3, 4], [5]]", result.output)
@@ -884,7 +884,7 @@ class StringUtilitiesTestSuite(unittest.TestCase):
     def test_string_utilities(self):
         """Test string reverse, palindrome, and count operations."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("string_utilities.ml"), language="en"
+            self._load_corpus("string_utilities.multi"), language="en"
         )
         self.assertTrue(
             result.success, msg=f"Failed: {result.error or 'Unknown error'}"
@@ -897,7 +897,7 @@ class StringUtilitiesTestSuite(unittest.TestCase):
     def test_string_reverse(self):
         """String reversal produces correct output."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("string_utilities.ml"), language="en"
+            self._load_corpus("string_utilities.multi"), language="en"
         )
         self.assertTrue(result.success)
         self.assertIn("dlrow olleh", result.output)
@@ -905,7 +905,7 @@ class StringUtilitiesTestSuite(unittest.TestCase):
     def test_string_palindrome(self):
         """Palindrome detection works correctly."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("string_utilities.ml"), language="en"
+            self._load_corpus("string_utilities.multi"), language="en"
         )
         self.assertTrue(result.success)
         self.assertIn("True", result.output)
@@ -913,7 +913,7 @@ class StringUtilitiesTestSuite(unittest.TestCase):
     def test_string_character_count(self):
         """Character counting produces correct count."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("string_utilities.ml"), language="en"
+            self._load_corpus("string_utilities.multi"), language="en"
         )
         self.assertTrue(result.success)
         self.assertIn("4", result.output)
@@ -932,7 +932,7 @@ class FibonacciTestSuite(unittest.TestCase):
     def test_fibonacci_sequence(self):
         """Generate Fibonacci sequence."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("fibonacci.ml"), language="en"
+            self._load_corpus("fibonacci.multi"), language="en"
         )
         self.assertTrue(
             result.success, msg=f"Failed: {result.error or 'Unknown error'}"
@@ -945,7 +945,7 @@ class FibonacciTestSuite(unittest.TestCase):
     def test_fibonacci_starts_with_zero(self):
         """Fibonacci sequence starts with 0."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("fibonacci.ml"), language="en"
+            self._load_corpus("fibonacci.multi"), language="en"
         )
         self.assertTrue(result.success)
         output_lines = result.output.strip().split("\n")
@@ -954,7 +954,7 @@ class FibonacciTestSuite(unittest.TestCase):
     def test_fibonacci_correct_length(self):
         """Fibonacci sequence generates correct number of terms."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("fibonacci.ml"), language="en"
+            self._load_corpus("fibonacci.multi"), language="en"
         )
         self.assertTrue(result.success)
         output_lines = result.output.strip().split("\n")
@@ -963,7 +963,7 @@ class FibonacciTestSuite(unittest.TestCase):
     def test_fibonacci_includes_13(self):
         """Fibonacci sequence includes 13."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("fibonacci.ml"), language="en"
+            self._load_corpus("fibonacci.multi"), language="en"
         )
         self.assertTrue(result.success)
         self.assertIn("13", result.output)
@@ -988,7 +988,7 @@ class SimpleCalculatorTestSuite(unittest.TestCase):
     def test_calculator_operations(self):
         """Perform basic calculator operations."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("simple_calculator.ml"), language="en"
+            self._load_corpus("simple_calculator.multi"), language="en"
         )
         self.assertTrue(
             result.success, msg=f"Failed: {result.error or 'Unknown error'}"
@@ -1002,7 +1002,7 @@ class SimpleCalculatorTestSuite(unittest.TestCase):
     def test_calculator_addition(self):
         """Calculator performs addition correctly."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("simple_calculator.ml"), language="en"
+            self._load_corpus("simple_calculator.multi"), language="en"
         )
         self.assertTrue(result.success)
         output_lines = result.output.strip().split("\n")
@@ -1011,7 +1011,7 @@ class SimpleCalculatorTestSuite(unittest.TestCase):
     def test_calculator_subtraction(self):
         """Calculator performs subtraction correctly."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("simple_calculator.ml"), language="en"
+            self._load_corpus("simple_calculator.multi"), language="en"
         )
         self.assertTrue(result.success)
         output_lines = result.output.strip().split("\n")
@@ -1020,7 +1020,7 @@ class SimpleCalculatorTestSuite(unittest.TestCase):
     def test_calculator_multiplication(self):
         """Calculator performs multiplication correctly."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("simple_calculator.ml"), language="en"
+            self._load_corpus("simple_calculator.multi"), language="en"
         )
         self.assertTrue(result.success)
         output_lines = result.output.strip().split("\n")
@@ -1029,7 +1029,7 @@ class SimpleCalculatorTestSuite(unittest.TestCase):
     def test_calculator_division(self):
         """Calculator performs division correctly."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("simple_calculator.ml"), language="en"
+            self._load_corpus("simple_calculator.multi"), language="en"
         )
         self.assertTrue(result.success)
         output_lines = result.output.strip().split("\n")
@@ -1037,7 +1037,7 @@ class SimpleCalculatorTestSuite(unittest.TestCase):
 
     def test_calculator_operations_french_parity(self):
         """French calculator corpus matches expected output."""
-        source = self._load_corpus_for_language("simple_calculator.ml", "fr")
+        source = self._load_corpus_for_language("simple_calculator.multi", "fr")
         result = self.runner.execute_multilingual(source, language="fr")
         self.assertTrue(
             result.success, msg=f"Failed: {result.error or 'Unknown error'}"
@@ -1046,7 +1046,7 @@ class SimpleCalculatorTestSuite(unittest.TestCase):
 
     def test_calculator_operations_spanish_parity(self):
         """Spanish calculator corpus matches expected output."""
-        source = self._load_corpus_for_language("simple_calculator.ml", "es")
+        source = self._load_corpus_for_language("simple_calculator.multi", "es")
         result = self.runner.execute_multilingual(source, language="es")
         self.assertTrue(
             result.success, msg=f"Failed: {result.error or 'Unknown error'}"
@@ -1073,7 +1073,7 @@ class RecursiveFactorialTestSuite(unittest.TestCase):
     def test_recursive_factorial(self):
         """Calculate factorial using recursion."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("recursive_factorial.ml"), language="en"
+            self._load_corpus("recursive_factorial.multi"), language="en"
         )
         self.assertTrue(
             result.success, msg=f"Failed: {result.error or 'Unknown error'}"
@@ -1085,7 +1085,7 @@ class RecursiveFactorialTestSuite(unittest.TestCase):
     def test_recursive_factorial_5(self):
         """Factorial of 5 is 120."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("recursive_factorial.ml"), language="en"
+            self._load_corpus("recursive_factorial.multi"), language="en"
         )
         self.assertTrue(result.success)
         self.assertIn("120", result.output)
@@ -1093,7 +1093,7 @@ class RecursiveFactorialTestSuite(unittest.TestCase):
     def test_recursive_factorial_6(self):
         """Factorial of 6 is 720."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("recursive_factorial.ml"), language="en"
+            self._load_corpus("recursive_factorial.multi"), language="en"
         )
         self.assertTrue(result.success)
         self.assertIn("720", result.output)
@@ -1101,14 +1101,14 @@ class RecursiveFactorialTestSuite(unittest.TestCase):
     def test_recursive_factorial_7(self):
         """Factorial of 7 is 5040."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("recursive_factorial.ml"), language="en"
+            self._load_corpus("recursive_factorial.multi"), language="en"
         )
         self.assertTrue(result.success)
         self.assertIn("5040", result.output)
 
     def test_recursive_factorial_french_parity(self):
         """French recursive factorial corpus matches expected output."""
-        source = self._load_corpus_for_language("recursive_factorial.ml", "fr")
+        source = self._load_corpus_for_language("recursive_factorial.multi", "fr")
         result = self.runner.execute_multilingual(source, language="fr")
         self.assertTrue(
             result.success, msg=f"Failed: {result.error or 'Unknown error'}"
@@ -1117,7 +1117,7 @@ class RecursiveFactorialTestSuite(unittest.TestCase):
 
     def test_recursive_factorial_spanish_parity(self):
         """Spanish recursive factorial corpus matches expected output."""
-        source = self._load_corpus_for_language("recursive_factorial.ml", "es")
+        source = self._load_corpus_for_language("recursive_factorial.multi", "es")
         result = self.runner.execute_multilingual(source, language="es")
         self.assertTrue(
             result.success, msg=f"Failed: {result.error or 'Unknown error'}"
@@ -1138,7 +1138,7 @@ class LambdaFunctionsTestSuite(unittest.TestCase):
     def test_lambda_functions(self):
         """Test lambda functions with map, filter, reduce."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("lambda_functions.ml"), language="en"
+            self._load_corpus("lambda_functions.multi"), language="en"
         )
         self.assertTrue(
             result.success, msg=f"Failed: {result.error or 'Unknown error'}"
@@ -1148,7 +1148,7 @@ class LambdaFunctionsTestSuite(unittest.TestCase):
     def test_lambda_map(self):
         """Lambda with map function."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("lambda_functions.ml"), language="en"
+            self._load_corpus("lambda_functions.multi"), language="en"
         )
         self.assertTrue(result.success)
         self.assertIn("[2, 4, 6, 8, 10]", result.output)
@@ -1156,7 +1156,7 @@ class LambdaFunctionsTestSuite(unittest.TestCase):
     def test_lambda_filter(self):
         """Lambda with filter function."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("lambda_functions.ml"), language="en"
+            self._load_corpus("lambda_functions.multi"), language="en"
         )
         self.assertTrue(result.success)
         self.assertIn("[2, 4]", result.output)
@@ -1164,7 +1164,7 @@ class LambdaFunctionsTestSuite(unittest.TestCase):
     def test_lambda_reduce(self):
         """Lambda with reduce function."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("lambda_functions.ml"), language="en"
+            self._load_corpus("lambda_functions.multi"), language="en"
         )
         self.assertTrue(result.success)
         self.assertIn("15", result.output)
@@ -1183,7 +1183,7 @@ class ExceptionHandlingTestSuite(unittest.TestCase):
     def test_exception_handling(self):
         """Test try/except/finally blocks."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("exception_handling.ml"), language="en"
+            self._load_corpus("exception_handling.multi"), language="en"
         )
         self.assertTrue(
             result.success, msg=f"Failed: {result.error or 'Unknown error'}"
@@ -1194,7 +1194,7 @@ class ExceptionHandlingTestSuite(unittest.TestCase):
     def test_exception_caught(self):
         """Exception is caught and handled."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("exception_handling.ml"), language="en"
+            self._load_corpus("exception_handling.multi"), language="en"
         )
         self.assertTrue(result.success)
         self.assertIn("Error caught", result.output)
@@ -1202,7 +1202,7 @@ class ExceptionHandlingTestSuite(unittest.TestCase):
     def test_finally_executed(self):
         """Finally block is executed."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("exception_handling.ml"), language="en"
+            self._load_corpus("exception_handling.multi"), language="en"
         )
         self.assertTrue(result.success)
         self.assertIn("Cleanup", result.output)
@@ -1210,7 +1210,7 @@ class ExceptionHandlingTestSuite(unittest.TestCase):
     def test_success_case(self):
         """Normal execution after exception handling."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("exception_handling.ml"), language="en"
+            self._load_corpus("exception_handling.multi"), language="en"
         )
         self.assertTrue(result.success)
         self.assertIn("Success", result.output)
@@ -1229,7 +1229,7 @@ class ComprehensionsTestSuite(unittest.TestCase):
     def test_comprehensions(self):
         """Test list, dict, and set comprehensions."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("comprehensions.ml"), language="en"
+            self._load_corpus("comprehensions.multi"), language="en"
         )
         self.assertTrue(
             result.success, msg=f"Failed: {result.error or 'Unknown error'}"
@@ -1239,7 +1239,7 @@ class ComprehensionsTestSuite(unittest.TestCase):
     def test_list_comprehension(self):
         """List comprehension produces correct result."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("comprehensions.ml"), language="en"
+            self._load_corpus("comprehensions.multi"), language="en"
         )
         self.assertTrue(result.success)
         self.assertIn("[1, 4, 9, 16, 25]", result.output)
@@ -1247,7 +1247,7 @@ class ComprehensionsTestSuite(unittest.TestCase):
     def test_dict_comprehension(self):
         """Dict comprehension produces correct result."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("comprehensions.ml"), language="en"
+            self._load_corpus("comprehensions.multi"), language="en"
         )
         self.assertTrue(result.success)
         self.assertIn("{1: 1, 2: 4, 3: 9}", result.output)
@@ -1255,7 +1255,7 @@ class ComprehensionsTestSuite(unittest.TestCase):
     def test_set_comprehension(self):
         """Set comprehension produces correct result."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("comprehensions.ml"), language="en"
+            self._load_corpus("comprehensions.multi"), language="en"
         )
         self.assertTrue(result.success)
         self.assertIn("{1, 4, 9}", result.output)
@@ -1274,7 +1274,7 @@ class EdgeCasesTestSuite(unittest.TestCase):
     def test_edge_cases(self):
         """Test edge cases like empty collections and negative numbers."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("edge_cases.ml"), language="en"
+            self._load_corpus("edge_cases.multi"), language="en"
         )
         self.assertTrue(
             result.success, msg=f"Failed: {result.error or 'Unknown error'}"
@@ -1285,7 +1285,7 @@ class EdgeCasesTestSuite(unittest.TestCase):
     def test_empty_collection(self):
         """Empty collections handled correctly."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("edge_cases.ml"), language="en"
+            self._load_corpus("edge_cases.multi"), language="en"
         )
         self.assertTrue(result.success)
         self.assertIn("[]", result.output)
@@ -1293,7 +1293,7 @@ class EdgeCasesTestSuite(unittest.TestCase):
     def test_negative_numbers(self):
         """Negative numbers work correctly."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("edge_cases.ml"), language="en"
+            self._load_corpus("edge_cases.multi"), language="en"
         )
         self.assertTrue(result.success)
         self.assertIn("-5", result.output)
@@ -1301,7 +1301,7 @@ class EdgeCasesTestSuite(unittest.TestCase):
     def test_zero_handling(self):
         """Zero is handled correctly."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("edge_cases.ml"), language="en"
+            self._load_corpus("edge_cases.multi"), language="en"
         )
         self.assertTrue(result.success)
         self.assertIn("0", result.output)
@@ -1320,7 +1320,7 @@ class PerformanceTestSuite(unittest.TestCase):
     def test_performance_basic(self):
         """Performance test with larger data structures."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("performance.ml"), language="en"
+            self._load_corpus("performance.multi"), language="en"
         )
         self.assertTrue(
             result.success, msg=f"Failed: {result.error or 'Unknown error'}"
@@ -1331,7 +1331,7 @@ class PerformanceTestSuite(unittest.TestCase):
     def test_large_list_length(self):
         """Large list length calculated correctly."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("performance.ml"), language="en"
+            self._load_corpus("performance.multi"), language="en"
         )
         self.assertTrue(result.success)
         self.assertIn("1000", result.output)
@@ -1339,7 +1339,7 @@ class PerformanceTestSuite(unittest.TestCase):
     def test_large_list_last_element(self):
         """Last element of large list accessed correctly."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("performance.ml"), language="en"
+            self._load_corpus("performance.multi"), language="en"
         )
         self.assertTrue(result.success)
         self.assertIn("999", result.output)
@@ -1347,7 +1347,7 @@ class PerformanceTestSuite(unittest.TestCase):
     def test_large_list_sum(self):
         """Sum of large list calculated correctly."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("performance.ml"), language="en"
+            self._load_corpus("performance.multi"), language="en"
         )
         self.assertTrue(result.success)
         self.assertIn("4950", result.output)
@@ -1366,7 +1366,7 @@ class MultilingualControlFlowTestSuite(unittest.TestCase):
     def test_english_control_flow(self):
         """English while/if control flow works."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("multilingual_control_flow.ml"), language="en"
+            self._load_corpus("multilingual_control_flow.multi"), language="en"
         )
         self.assertTrue(
             result.success, msg=f"Failed: {result.error or 'Unknown error'}"
@@ -1377,7 +1377,7 @@ class MultilingualControlFlowTestSuite(unittest.TestCase):
     def test_french_control_flow(self):
         """French pendant/si control flow works with surface patterns."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("fr/multilingual_control_flow.ml"), language="fr"
+            self._load_corpus("fr/multilingual_control_flow.multi"), language="fr"
         )
         self.assertTrue(
             result.success, msg=f"Failed: {result.error or 'Unknown error'}"
@@ -1387,7 +1387,7 @@ class MultilingualControlFlowTestSuite(unittest.TestCase):
     def test_spanish_control_flow(self):
         """Spanish mientras/si control flow works with surface patterns."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("es/multilingual_control_flow.ml"), language="es"
+            self._load_corpus("es/multilingual_control_flow.multi"), language="es"
         )
         self.assertTrue(
             result.success, msg=f"Failed: {result.error or 'Unknown error'}"
@@ -1397,7 +1397,7 @@ class MultilingualControlFlowTestSuite(unittest.TestCase):
     def test_french_while_loop(self):
         """French 'pendant' while loop works."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("fr/multilingual_control_flow.ml"), language="fr"
+            self._load_corpus("fr/multilingual_control_flow.multi"), language="fr"
         )
         self.assertTrue(result.success)
         self.assertIn("3", result.output)
@@ -1405,7 +1405,7 @@ class MultilingualControlFlowTestSuite(unittest.TestCase):
     def test_french_if_statement(self):
         """French 'si' if statement works."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("fr/multilingual_control_flow.ml"), language="fr"
+            self._load_corpus("fr/multilingual_control_flow.multi"), language="fr"
         )
         self.assertTrue(result.success)
         self.assertIn("greater", result.output)
@@ -1413,7 +1413,7 @@ class MultilingualControlFlowTestSuite(unittest.TestCase):
     def test_spanish_while_loop(self):
         """Spanish 'mientras' while loop works."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("es/multilingual_control_flow.ml"), language="es"
+            self._load_corpus("es/multilingual_control_flow.multi"), language="es"
         )
         self.assertTrue(result.success)
         self.assertIn("3", result.output)
@@ -1421,7 +1421,7 @@ class MultilingualControlFlowTestSuite(unittest.TestCase):
     def test_spanish_if_statement(self):
         """Spanish 'si' if statement works."""
         result = self.runner.execute_multilingual(
-            self._load_corpus("es/multilingual_control_flow.ml"), language="es"
+            self._load_corpus("es/multilingual_control_flow.multi"), language="es"
         )
         self.assertTrue(result.success)
         self.assertIn("greater", result.output)
@@ -1430,13 +1430,13 @@ class MultilingualControlFlowTestSuite(unittest.TestCase):
 class CompleteFeatureTestSuite(unittest.TestCase):
     """Tests comprehensive language features across multiple languages."""
 
-    COMPLETE_FEATURE_FILES = sorted(Path("examples").glob("complete_features_*.ml"))
+    COMPLETE_FEATURE_FILES = sorted(Path("examples").glob("complete_features_*.multi"))
     EXPECTED_OUTPUT = ""
 
     @classmethod
     def setUpClass(cls):
         cls.runner = EcosystemTestRunner()
-        english_source = (Path("examples") / "complete_features_en.ml").read_text(
+        english_source = (Path("examples") / "complete_features_en.multi").read_text(
             encoding="utf-8"
         )
         english_result = cls.runner.execute_multilingual(english_source, language="en")

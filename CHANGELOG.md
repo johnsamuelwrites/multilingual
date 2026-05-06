@@ -149,7 +149,7 @@ The format is inspired by Keep a Changelog, and this project follows SemVer.
   - `Class.method(...)` lowers to mangled class method exports.
   - `obj = Class(...); obj.method(...)` lowers via lightweight local class-type tracking.
 - **Executable WASM validation for complete features**:
-  - New test `tests/complete_features_wasm_execution_test.py` compiles every `examples/complete_features_*.ml` from WAT to binary WASM, materializes `.wat/.wasm` artifacts, instantiates modules, and executes `__main`.
+  - New test `tests/complete_features_wasm_execution_test.py` compiles every `examples/complete_features_*.multi` from WAT to binary WASM, materializes `.wat/.wasm` artifacts, instantiates modules, and executes `__main`.
 - **CI workflow gate for complete-feature WASM execution**:
   - `.github/workflows/wasm-backends-test.yml` now runs the new complete-feature WAT/WASM execution test on primary WASM jobs.
 
@@ -176,7 +176,7 @@ The format is inspired by Keep a Changelog, and this project follows SemVer.
 - **REPL `:wat` command**: Toggles display of generated WAT code before execution (alias `:wasm`).
 - **REPL `:rust` command**: Toggles display of generated Rust/Wasmtime bridge code before execution (alias `:wasmtime`).
 - **CLI `--show-wat` / `--show-rust` flags**: Startup equivalents of `:wat` and `:rust` for the `repl` subcommand.
-- **Python 3.12 feature completion**: All 17 `complete_features_XX.ml` example files updated with the full checklist — numeric literals (hex/octal/binary/scientific), augmented assignments, bitwise operators, chained assignment, type annotations, ternary expressions, default/variadic params, lambdas, list/dict/generator/nested/filtered comprehensions, `try/except/else`, exception chaining, multiple `except` handlers, `match/case/default`, decorators, multiple inheritance, `@staticmethod` / `@classmethod` / `@property`, and docstrings.
+- **Python 3.12 feature completion**: All 17 `complete_features_XX.multi` example files updated with the full checklist — numeric literals (hex/octal/binary/scientific), augmented assignments, bitwise operators, chained assignment, type annotations, ternary expressions, default/variadic params, lambdas, list/dict/generator/nested/filtered comprehensions, `try/except/else`, exception chaining, multiple `except` handlers, `match/case/default`, decorators, multiple inheritance, `@staticmethod` / `@classmethod` / `@property`, and docstrings.
 - **New CLI tests**: `language_completeness_cli_test.py` and `operators_cli_test.py`.
 - **WASM Backend**: WebAssembly compilation target with significant performance gains on compute-intensive operations (benchmark-dependent).
 - **Python ↔ WASM Bridge**: Type conversion and memory management for seamless interop between Python and WASM.
@@ -202,7 +202,7 @@ The format is inspired by Keep a Changelog, and this project follows SemVer.
 ## [0.3.0] - 2026-02-22
 
 ### Added
-- Complete feature examples (`examples/complete_features_XX.ml`) for all 17 supported languages.
+- Complete feature examples (`examples/complete_features_XX.multi`) for all 17 supported languages.
 - Verified feature parity across all languages with comprehensive test coverage.
 
 ### Changed

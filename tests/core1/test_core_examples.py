@@ -35,7 +35,7 @@ _CORE_EXAMPLES_DIR = (
 # ---------------------------------------------------------------------------
 
 def _detect_lang(path: pathlib.Path) -> str:
-    """Infer language code from a filename like *_en.ml → 'en'."""
+    """Infer language code from a filename like *_en.multi → 'en'."""
     stem = path.stem
     if "_" in stem:
         return stem.rsplit("_", 1)[-1]

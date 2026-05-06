@@ -7,9 +7,9 @@
 """Build the canonical browser-ready WASM bundle for the demo directory.
 
 Usage:
-    python build.py [source.ml [language]]
+    python build.py [source.multi [language]]
 
-Defaults: fibonacci_en.ml  language=en
+Defaults: fibonacci_en.multi  language=en
 
 Outputs (all in the same directory as this script):
     module.wat
@@ -92,7 +92,7 @@ def main() -> None:
         source_path = pathlib.Path(args[0])
         language = args[1] if len(args) > 1 else _detect_language(source_path)
     else:
-        source_path = HERE / "fibonacci_en.ml"
+        source_path = HERE / "fibonacci_en.multi"
         language = "en"
 
     if not source_path.exists():

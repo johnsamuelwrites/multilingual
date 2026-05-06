@@ -67,7 +67,7 @@ class BuildOrchestratorTestSuite(unittest.TestCase):
             shutil.rmtree(out)
 
     def test_dom_demo_bundle_matches_browser_runtime_contract(self):
-        example = Path("examples") / "browser" / "dom_demo_en.ml"
+        example = Path("examples") / "browser" / "dom_demo_en.multi"
         program = _parse(example.read_text(encoding="utf-8"))
         out = self._tmpdir("dom_demo_bundle")
         try:

@@ -1,5 +1,5 @@
 # 多言語AIエージェント — 日本語
-# agent_en.ml と agent_fr.ml と同じエージェントロジック。
+# agent_en.multi と agent_fr.multi と同じエージェントロジック。
 # Multilingualが、エージェントコードがどの人間言語でも
 # 慣用的である唯一のAIプラットフォームであることを証明する。
 #

@@ -32,8 +32,8 @@ jobs:
         pip install .
         python -m multilingualprogramming --version
         python -m multilingualprogramming smoke --all
-        python -m multilingualprogramming encoding-check-generated examples/complete_features_en.ml --lang en
-        python -m multilingualprogramming build-wasm-bundle examples/complete_features_en.ml --lang en --out-dir build/wasm
+        python -m multilingualprogramming encoding-check-generated examples/complete_features_en.multi --lang en
+        python -m multilingualprogramming build-wasm-bundle examples/complete_features_en.multi --lang en --out-dir build/wasm
     - name: Test unittests and get code coverage
       run: |
         pytest --cov=multilingualprogramming tests/ -v

@@ -197,11 +197,11 @@ while i < 15:
     Rebuild <code>module.wasm</code> with the DOM demo source, then press
     <em>Run DOM Demo</em> to see WASM manipulate live DOM elements.
     <br/>
-    <code>python build.py dom_demo_en.ml</code>
+    <code>python build.py dom_demo_en.multi</code>
   </p>
 
   <div class="card card--dom-source">
-    <label for="dom-source">DOM demo source (<code>dom_demo_en.ml</code>)</label>
+    <label for="dom-source">DOM demo source (<code>dom_demo_en.multi</code>)</label>
     <textarea id="dom-source" rows="12" spellcheck="false" readonly
       title="DOM demo source program">let panel = dom_get("ml-panel")
 dom_text(panel, "")
@@ -578,7 +578,7 @@ dopoki i < 15:
       } catch (err) {
         domStatusEl.textContent = "error";
         domOutputEl.textContent =
-          `${err.message}\n\nRebuild: python build.py dom_demo_en.ml`;
+          `${err.message}\n\nRebuild: python build.py dom_demo_en.multi`;
       } finally {
         domRunBtn.disabled = false;
       }

@@ -43,8 +43,8 @@ jobs:
       - name: Build browser demo bundles for Pages
         run: |
           mkdir -p docs/browser/fibonacci docs/browser/dom-demo
-          python -m multilingualprogramming build-wasm-bundle examples/browser/fibonacci_en.ml --lang en --out-dir docs/browser/fibonacci
-          python -m multilingualprogramming build-wasm-bundle examples/browser/dom_demo_en.ml --lang en --out-dir docs/browser/dom-demo
+          python -m multilingualprogramming build-wasm-bundle examples/browser/fibonacci_en.multi --lang en --out-dir docs/browser/fibonacci
+          python -m multilingualprogramming build-wasm-bundle examples/browser/dom_demo_en.multi --lang en --out-dir docs/browser/dom-demo
           cp examples/browser/browser_runtime.js docs/browser/fibonacci/browser_runtime.js
           cp examples/browser/browser_runtime.js docs/browser/dom-demo/browser_runtime.js
 

@@ -31,9 +31,9 @@ class CorpusProjectBase(unittest.TestCase):
     def load_corpus_file(cls, project_name: str, language: str = "en") -> str:
         """Load a corpus file from the new corpus layout."""
         if language == "en":
-            filepath = cls.CORPUS_DIR / f"{project_name}.ml"
+            filepath = cls.CORPUS_DIR / f"{project_name}.multi"
         else:
-            filepath = cls.CORPUS_DIR / language / f"{project_name}.ml"
+            filepath = cls.CORPUS_DIR / language / f"{project_name}.multi"
 
         if not filepath.exists():
             raise FileNotFoundError(f"Corpus file not found: {filepath}")
@@ -269,9 +269,9 @@ class CorpusSummaryTest(unittest.TestCase):
         for project in projects:
             for lang in languages:
                 if lang == "en":
-                    filepath = corpus_dir / f"{project}.ml"
+                    filepath = corpus_dir / f"{project}.multi"
                 else:
-                    filepath = corpus_dir / lang / f"{project}.ml"
+                    filepath = corpus_dir / lang / f"{project}.multi"
                 self.assertTrue(filepath.exists(), f"Missing corpus file: {filepath}")
 
 

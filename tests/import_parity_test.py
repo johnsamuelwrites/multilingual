@@ -99,7 +99,7 @@ class MultilingualImportTestSuite(unittest.TestCase):
         """English program can import French-named module."""
         # This tests the existing functionality
         source = """
-# Would normally import from examples/arithmetics_fr.ml
+# Would normally import from examples/arithmetics_fr.multi
 # For now, just verify Python module imports work in English
 import math
 let result = math.sqrt(9)

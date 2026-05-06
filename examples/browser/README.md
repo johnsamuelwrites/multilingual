@@ -10,7 +10,7 @@ The generated module only imports `wasi_snapshot_preview1.fd_write` and
 # 1. Build the canonical browser bundle
 python build.py
 # or
-python -m multilingualprogramming build-wasm-bundle fibonacci_en.ml --lang en --out-dir examples/browser
+python -m multilingualprogramming build-wasm-bundle fibonacci_en.multi --lang en --out-dir examples/browser
 
 # 2. Serve the directory
 python -m http.server 8080
@@ -32,7 +32,7 @@ python -m http.server 8080
 
 This example now matches the production browser flow:
 
-1. Compile `.ml` source ahead of time.
+1. Compile `.multi` source ahead of time.
 2. Ship `module.wasm` plus the generated JS shim/template.
 3. Load the bundle in the browser with minimal JavaScript.
 

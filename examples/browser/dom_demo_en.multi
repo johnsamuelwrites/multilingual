@@ -1,5 +1,5 @@
 # DOM bridge demo — English
-# Build: python build.py dom_demo_en.ml
+# Build: python build.py dom_demo_en.multi
 # Serve examples/browser/ over HTTP and open index.html.
 
 # Clear and set up the demo panel

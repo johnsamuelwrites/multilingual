@@ -31,7 +31,7 @@
   <text class="subtitle" x="40" y="88">Shared frontends normalize language surfaces into one AST and one semantic IR, then target Python or WAT/WASM.</text>
 
   <rect class="box" x="40" y="136" width="180" height="96" />
-  <text class="label" x="60" y="170">Source .ml</text>
+  <text class="label" x="60" y="170">Source .multi</text>
   <text class="small" x="60" y="196">17 human-language surfaces</text>
   <text class="small" x="60" y="216">canonical or alternate phrasing</text>
 

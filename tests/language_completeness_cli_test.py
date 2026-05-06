@@ -364,13 +364,13 @@ class CLITestSuite(unittest.TestCase):
         with patch.object(main_module, "cmd_run") as run_mock:
             with patch.object(sys, "argv", [
                 "multilingual",
-                "examples/arithmetics_fr.ml",
+                "examples/arithmetics_fr.multi",
             ]):
                 main_module.main()
 
         run_mock.assert_called_once()
         args = run_mock.call_args.args[0]
-        self.assertEqual(args.file, "examples/arithmetics_fr.ml")
+        self.assertEqual(args.file, "examples/arithmetics_fr.multi")
         self.assertIsNone(args.lang)
 
     def test_main_direct_multi_file_supports_lang_option(self):

@@ -55,7 +55,7 @@ constructs, OOP patterns, and compatibility fixes across the code generator.
 - Added targeted regressions for class lowering and call lowering in `tests/wat_generator_test.py`.
 
 ### Complete Features: Real WASM Executability Gate
-- Added `tests/complete_features_wasm_execution_test.py` to validate all `examples/complete_features_*.ml` end-to-end:
+- Added `tests/complete_features_wasm_execution_test.py` to validate all `examples/complete_features_*.multi` end-to-end:
   - parse multilingual source
   - generate WAT
   - compile WAT to binary WASM
@@ -99,7 +99,7 @@ constructs, OOP patterns, and compatibility fixes across the code generator.
 - Extends the existing `:python` / `--show-python` pattern uniformly across all three backends.
 
 ### Python 3.12 Feature Completion
-- All 17 `complete_features_XX.ml` example files now cover the full Python 3.12 feature checklist: numeric literals, augmented and bitwise assignments, chained assignment, type annotations, ternary expressions, default/variadic parameters, lambdas, list/dict/generator/nested/filtered comprehensions, `try/except/else`, exception chaining, multiple handlers, `match/case/default`, decorators, multiple inheritance, static/class methods, properties, and docstrings.
+- All 17 `complete_features_XX.multi` example files now cover the full Python 3.12 feature checklist: numeric literals, augmented and bitwise assignments, chained assignment, type annotations, ternary expressions, default/variadic parameters, lambdas, list/dict/generator/nested/filtered comprehensions, `try/except/else`, exception chaining, multiple handlers, `match/case/default`, decorators, multiple inheritance, static/class methods, properties, and docstrings.
 - Keyword-variable name clashes (Spanish `y` = AND, Danish/Swedish `i` = IN) resolved in example files.
 
 ### Quality and Fixes
@@ -111,7 +111,7 @@ constructs, OOP patterns, and compatibility fixes across the code generator.
 ## v0.3.0
 
 ### Complete Features Repository
-- Created comprehensive `examples/complete_features_XX.ml` files for all 17 supported languages.
+- Created comprehensive `examples/complete_features_XX.multi` files for all 17 supported languages.
 - Each file demonstrates full language feature set: imports, functions, closures, classes, control flow, generators, exceptions, comprehensions, and advanced constructs.
 - Ensures feature parity across all languages—if code works in English, equivalent translated code works identically in all other 16 languages.
 

@@ -67,6 +67,6 @@ jobs:
 
       - name: Run compatibility smoke examples
         run: |
-          python -m multilingualprogramming run examples/complete_features_en.ml --lang en
-          python -m multilingualprogramming run examples/complete_features_fr.ml --lang fr
-          python -m multilingualprogramming run examples/complete_features_es.ml --lang es
+          python -m multilingualprogramming run examples/complete_features_en.multi --lang en
+          python -m multilingualprogramming run examples/complete_features_fr.multi --lang fr
+          python -m multilingualprogramming run examples/complete_features_es.multi --lang es

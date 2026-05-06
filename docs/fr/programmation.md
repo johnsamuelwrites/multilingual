@@ -375,7 +375,7 @@ Pour reproduire exactement cet exemple:
 ```bash
 multilingual run examples/complete_features_fr.multi --lang fr
 # alternative dev/debug:
-# python -m multilingualprogramming run examples/complete_features_fr.ml --lang fr
+# python -m multilingualprogramming run examples/complete_features_fr.multi --lang fr
 ```
 
 ## 5. Commandes REPL utiles
